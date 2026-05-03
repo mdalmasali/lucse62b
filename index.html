@@ -286,7 +286,7 @@
         const navBtn = document.getElementById('navLoginBtn');
         if(navBtn) {
           navBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
-          navBtn.href = "#"; // Could be a dashboard later
+          navBtn.href = "pages/profile.html";
           navBtn.style.color = 'var(--green)';
         }
 
@@ -294,7 +294,7 @@
         const mobileBtn = document.getElementById('mobileLoginBtn');
         if(mobileBtn) {
           mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
-          mobileBtn.href = "#";
+          mobileBtn.href = "pages/profile.html";
           mobileBtn.style.color = 'var(--green)';
         }
       }
