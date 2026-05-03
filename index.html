@@ -20,11 +20,10 @@
   <div class="particles" id="particles"></div>
 
   <div class="wrapper">
-    <!-- Top Nav -->
     <nav class="topbar fade-in">
       <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html">Home</a></li>
         <li><a href="pages/students.html">Students</a></li>
         <li><a href="pages/info.html">Info</a></li>
         <li><a href="pages/resources.html">Resources</a></li>
@@ -43,7 +42,7 @@
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
-      <a href="index.html" class="active">Home</a>
+      <a href="index.html">Home</a>
       <a href="pages/students.html">Students</a>
       <a href="pages/info.html">Info</a>
       <a href="pages/resources.html">Resources</a>
@@ -51,6 +50,9 @@
       <a href="pages/gallery.html">Gallery</a>
       <a href="pages/login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
+    <!-- Top Nav -->
+    
+    
 
     <!-- Top Notice Ticker -->
     <div class="notice-ticker-wrap fade-in delay-1" id="tickerWrap" style="display: none;">
@@ -226,11 +228,21 @@
       </div>
     </div>
 
-    <footer>
+    
+      <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="pages/students.html">Students Directory</a>
+        <a href="pages/info.html">Class Info</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B, Leading University. <br>
-        <a href="pages/admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; display: inline-block; margin-top: 8px;"><i class="fa-solid fa-lock"></i> Admin Login</a>
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
+      </div>
+      <div style="margin-top: 10px;">
+        <a href="pages/admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
       </div>
     </footer>
   </div>
@@ -276,33 +288,11 @@
       document.body.appendChild(s);
     }
     
-    // Check Student Login State
-    function checkLoginState() {
-      const userData = localStorage.getItem('lu62b_student');
-      if (userData) {
-        const user = JSON.parse(userData);
-        
-        // Update Desktop Nav
-        const navBtn = document.getElementById('navLoginBtn');
-        if(navBtn) {
-          navBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
-          navBtn.href = "pages/profile.html";
-          navBtn.style.color = 'var(--green)';
-        }
-
-        // Update Mobile Nav
-        const mobileBtn = document.getElementById('mobileLoginBtn');
-        if(mobileBtn) {
-          mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
-          mobileBtn.href = "pages/profile.html";
-          mobileBtn.style.color = 'var(--green)';
-        }
-      }
-    }
+    // Check Student Login State is handled by auth.js
     
     // Initialize
     loadTopNotice();
-    checkLoginState();
   </script>
+  <script src="assets/js/auth.js"></script>
 </body>
 </html>

@@ -1020,3 +1020,49 @@ footer {
   .folders-grid { grid-template-columns: repeat(3, 1fr); }
   .contact-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Footer */
+footer {
+  margin-top: auto;
+  padding: 40px 24px;
+  background: rgba(3, 3, 5, 0.7);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  border-radius: 24px 24px 0 0;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.footer-brand {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #fff, var(--accent-bright));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.footer-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+.footer-links a:hover {
+  color: var(--accent-bright);
+}
+.footer-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

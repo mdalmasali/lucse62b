@@ -120,8 +120,33 @@
       <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
+        <li><a href="students.html">Students</a></li>
+        <li><a href="info.html">Info</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="notices.html">Notices</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
     </nav>
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a href="students.html">Students</a>
+      <a href="info.html">Info</a>
+      <a href="resources.html">Resources</a>
+      <a href="notices.html">Notices</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    </div>
+    
 
     <div class="login-container fade-in delay-1">
       <i class="fa-solid fa-user-graduate login-icon"></i>
@@ -166,6 +191,22 @@
         <i class="fa-solid fa-arrow-left"></i> Back to Home
       </a>
     </div>
+      <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="info.html">Class Info</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
+      </div>
+      <div style="margin-top: 10px;">
+        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
+      </div>
+    </footer>
   </div>
 
   <script>
@@ -360,5 +401,6 @@
       }
     }
   </script>
+<script src="../assets/js/auth.js"></script>
 </body>
 </html>
