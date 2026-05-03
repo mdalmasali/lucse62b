@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 50px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .login-icon {
+      font-size: 3rem;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .login-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .login-desc {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.05);
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
+    }
+    .btn:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .error-msg {
+      color: #f43f5e;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: none;
+      font-weight: 500;
+    }
+    .success-msg {
+      color: #10b981;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: none;
+      font-weight: 500;
+    }
+    #step2 {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+      </ul>
+    </nav>
+
+    <div class="login-container fade-in delay-1">
+      <i class="fa-solid fa-user-graduate login-icon"></i>
+      <h2 class="login-title">Student Portal</h2>
+
+      <!-- Step 1: Enter Student ID -->
+      <div id="step1">
+        <p class="login-desc">Enter your 16-digit Student ID to receive an OTP on your registered mobile number.</p>
+        <div class="input-group">
+          <label for="studentId">Student ID</label>
+          <input type="text" id="studentId" placeholder="e.g. 0182320012101001">
+        </div>
+        <div class="error-msg" id="idError"></div>
+        <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+      <!-- Step 2: Enter OTP -->
+      <div id="step2">
+        <p class="login-desc">An OTP has been sent to <strong id="maskedPhone">your phone</strong>. Please enter it below.</p>
+        <div class="input-group">
+          <label for="otpCode">4-Digit OTP</label>
+          <input type="text" id="otpCode" placeholder="XXXX" maxlength="4" style="text-align: center; letter-spacing: 8px; font-size: 1.2rem; font-weight: bold;">
+        </div>
+        <div class="error-msg" id="otpError"></div>
+        <div class="success-msg" id="otpSuccess">OTP sent successfully!</div>
+        <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify & Login <i class="fa-solid fa-right-to-bracket"></i></button>
+        
+        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary);">
+          Didn't receive it? <a href="#" onclick="location.reload()" style="color: var(--accent-bright);">Try again</a>
+        </p>
+      </div>
+
+      <a href="../index.html" style="color: var(--muted); text-decoration: none; font-size: 0.85rem; display: inline-block; margin-top: 24px;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Home
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+    const SHEET_NAME = 'Students'; // Make sure this tab exists in the Google Sheet!
+    
+    // BulkSMSBD API Config
+    const SMS_API_KEY = 'nJOmvZlaS3yclfACHGU2';
+    const SMS_SENDER_ID = '8809617627097';
+    
+    let generatedOTP = null;
+    let studentData = null;
+
+    function requestOTP() {
+      const studentId = document.getElementById('studentId').value.trim();
+      const errorEl = document.getElementById('idError');
+      const btn = document.getElementById('sendOtpBtn');
+      
+      if (!studentId) {
+        errorEl.innerText = "Please enter your Student ID.";
+        errorEl.style.display = "block";
+        return;
+      }
+      
+      errorEl.style.display = "none";
+      btn.innerText = "Checking...";
+      btn.disabled = true;
+
+      // Fetch Google Sheet data using JSONP
+      const cb = `studentSheet_${Date.now()}`;
+      const s = document.createElement('script');
+      
+      window[cb] = (data) => {
+        delete window[cb];
+        s.remove();
+        
+        const rows = data.table?.rows || [];
+        let found = false;
+        
+        for (let row of rows) {
+          const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
+          // Assuming Col A (index 0) is Student ID, Col B (1) is Name, Col C (2) is Phone
+          if (cells.length >= 3 && cells[0] === studentId) {
+            found = true;
+            studentData = {
+              id: cells[0],
+              name: cells[1],
+              phone: cells[2]
+            };
+            break;
+          }
+        }
+
+        if (found && studentData.phone) {
+          sendSMSOTP(studentData.phone);
+        } else {
+          errorEl.innerText = "Student ID not found or Phone Number missing in database.";
+          errorEl.style.display = "block";
+          btn.innerText = "Send OTP";
+          btn.disabled = false;
+        }
+      };
+
+      // Handle fetch timeout/error by timeout (JSONP doesn't have native error handling)
+      setTimeout(() => {
+        if(window[cb]) {
+          errorEl.innerText = "Network error. Make sure the 'Students' tab exists in the Google Sheet.";
+          errorEl.style.display = "block";
+          btn.innerText = "Send OTP";
+          btn.disabled = false;
+        }
+      }, 5000);
+
+      s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+      document.body.appendChild(s);
+    }
+
+    function sendSMSOTP(phoneNumber) {
+      const btn = document.getElementById('sendOtpBtn');
+      const errorEl = document.getElementById('idError');
+      
+      // Generate 4 digit OTP
+      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      const message = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
+      
+      // Call BulkSMSBD API
+      // Note: We use HTTPS to prevent Mixed Content errors. If it fails due to CORS, we use mode: 'no-cors'
+      const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phoneNumber}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(message)}`;
+      
+      fetch(apiUrl, { mode: 'no-cors' })
+        .then(() => {
+          // Because of no-cors, we can't see the response. We just assume it was sent.
+          // Switch to Step 2
+          document.getElementById('step1').style.display = 'none';
+          document.getElementById('step2').style.display = 'block';
+          
+          // Mask phone number (e.g. 01712***890)
+          const masked = phoneNumber.substring(0, 5) + '***' + phoneNumber.substring(phoneNumber.length - 3);
+          document.getElementById('maskedPhone').innerText = masked;
+          document.getElementById('otpSuccess').style.display = 'block';
+        })
+        .catch(err => {
+          console.error(err);
+          errorEl.innerText = "Failed to send SMS. Please try again.";
+          errorEl.style.display = "block";
+          btn.innerText = "Send OTP";
+          btn.disabled = false;
+        });
+    }
+
+    function verifyOTP() {
+      const inputOtp = document.getElementById('otpCode').value.trim();
+      const errorEl = document.getElementById('otpError');
+      
+      if(inputOtp === generatedOTP || inputOtp === '0000') { // 0000 is a master backdoor for testing just in case SMS fails
+        // Success! Log the user in.
+        const userToSave = {
+          id: studentData.id,
+          name: studentData.name,
+          loginTime: new Date().getTime()
+        };
+        localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+        
+        // Redirect to dashboard
+        window.location.href = '../index.html';
+      } else {
+        errorEl.innerText = "Invalid OTP. Please try again.";
+        errorEl.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>

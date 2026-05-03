@@ -30,6 +30,7 @@
         <li><a href="pages/resources.html">Resources</a></li>
         <li><a href="pages/notices.html">Notices</a></li>
         <li><a href="pages/gallery.html">Gallery</a></li>
+        <li><a href="pages/login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
         <div class="status-dot"></div>
@@ -48,6 +49,7 @@
       <a href="pages/resources.html">Resources</a>
       <a href="pages/notices.html">Notices</a>
       <a href="pages/gallery.html">Gallery</a>
+      <a href="pages/login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
     <!-- Top Notice Ticker -->
@@ -274,8 +276,33 @@
       document.body.appendChild(s);
     }
     
-    // Load notice on page load
+    // Check Student Login State
+    function checkLoginState() {
+      const userData = localStorage.getItem('lu62b_student');
+      if (userData) {
+        const user = JSON.parse(userData);
+        
+        // Update Desktop Nav
+        const navBtn = document.getElementById('navLoginBtn');
+        if(navBtn) {
+          navBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
+          navBtn.href = "#"; // Could be a dashboard later
+          navBtn.style.color = 'var(--green)';
+        }
+
+        // Update Mobile Nav
+        const mobileBtn = document.getElementById('mobileLoginBtn');
+        if(mobileBtn) {
+          mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> ${user.name.split(' ')[0]}`;
+          mobileBtn.href = "#";
+          mobileBtn.style.color = 'var(--green)';
+        }
+      }
+    }
+    
+    // Initialize
     loadTopNotice();
+    checkLoginState();
   </script>
 </body>
 </html>
