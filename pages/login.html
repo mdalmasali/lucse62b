@@ -10,7 +10,7 @@
   <style>
     .login-container {
       max-width: 400px;
-      margin: 100px auto;
+      margin: 80px auto 40px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 24px;
@@ -19,6 +19,7 @@
       -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 24px 50px rgba(0,0,0,0.5);
       text-align: center;
+      box-sizing: border-box;
     }
     .login-icon {
       font-size: 3rem;
@@ -141,6 +142,33 @@
       color: var(--accent-bright);
       text-decoration: none;
       font-size: 0.85rem;
+    }
+    .otp-sent-badge {
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--green);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+      text-align: left;
+    }
+    @media (max-width: 640px) {
+      .login-container {
+        margin: 16px;
+        padding: 28px 20px;
+        border-radius: 20px;
+        max-width: 100%;
+      }
+      .login-icon { font-size: 2.4rem; margin-bottom: 14px; }
+      .login-title { font-size: 1.5rem; }
+      .login-desc { font-size: 0.85rem; margin-bottom: 18px; }
+      .input-group { margin-bottom: 16px; }
+      .input-group input { padding: 13px 14px; font-size: 0.95rem; }
+      .btn { padding: 13px 20px; font-size: 0.95rem; }
+      .forgot-password { flex-direction: column; gap: 6px; }
+      #otpCode { letter-spacing: 12px; font-size: 1.4rem; padding: 14px 10px; }
     }
   </style>
 </head>
@@ -283,7 +311,10 @@
 
       <!-- Reset Password with OTP -->
       <div id="resetPasswordStep" style="display: none;">
-        <p class="login-desc">Enter OTP and your new password</p>
+        <div class="otp-sent-badge" id="resetOtpSentBadge">
+          <i class="fa-solid fa-circle-check"></i> OTP sent to <strong id="resetMaskedPhone"></strong>
+        </div>
+        <p class="login-desc" id="resetDesc">Enter OTP and your new password</p>
         <div class="input-group">
           <label for="resetOtp">OTP</label>
           <input type="text" id="resetOtp" placeholder="XXXX" maxlength="4" style="text-align: center; letter-spacing: 8px; font-size: 1.2rem; font-weight: bold;">
@@ -617,6 +648,12 @@
           sendSMSOTP(student.phone)
             .then(() => {
               incrementOTPLimit();
+              const masked = student.phone
+                ? student.phone.substring(0, 5) + '***' + student.phone.substring(student.phone.length - 3)
+                : 'your registered number';
+              document.getElementById('resetMaskedPhone').innerText = masked;
+              document.getElementById('resetOtpSentBadge').style.display = 'block';
+              document.getElementById('resetDesc').style.display = 'none';
               document.getElementById('forgotPasswordStep').style.display = 'none';
               document.getElementById('resetPasswordStep').style.display = 'block';
               currentFlow = 'reset';
