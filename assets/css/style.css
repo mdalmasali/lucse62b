@@ -145,6 +145,11 @@ body {
   50% { box-shadow: 0 0 14px var(--green), 0 0 24px rgba(16,185,129,0.3); }
 }
 
+/* ── Auth-only nav items (hidden for guests, visible for logged-in students) ── */
+.auth-only { display: none !important; }
+.lu62b-logged-in .topbar-links .auth-only { display: list-item !important; }
+.lu62b-logged-in .mobile-nav-overlay .auth-only { display: flex !important; }
+
 /* ── Top Notice Ticker ── */
 .notice-ticker-wrap {
   display: flex;

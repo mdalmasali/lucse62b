@@ -12,23 +12,34 @@
   const isInPages = window.location.pathname.includes('/pages/');
 
   if (userData) {
+    // Mark body so CSS can reveal student-only nav items
+    document.documentElement.classList.add('lu62b-logged-in');
+
     const user = JSON.parse(userData);
     const profilePath = isInPages ? 'profile.html' : 'pages/profile.html';
 
-    // Update Desktop Nav
-    const navBtn = document.getElementById('navLoginBtn');
-    if (navBtn) {
-      navBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
-      navBtn.href = profilePath;
-      navBtn.style.color = 'var(--green)';
+    function updateNavButtons() {
+      // Update Desktop Nav
+      const navBtn = document.getElementById('navLoginBtn');
+      if (navBtn) {
+        navBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
+        navBtn.href = profilePath;
+        navBtn.style.color = 'var(--green)';
+      }
+
+      // Update Mobile Nav
+      const mobileBtn = document.getElementById('mobileLoginBtn');
+      if (mobileBtn) {
+        mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
+        mobileBtn.href = profilePath;
+        mobileBtn.style.color = 'var(--green)';
+      }
     }
 
-    // Update Mobile Nav
-    const mobileBtn = document.getElementById('mobileLoginBtn');
-    if (mobileBtn) {
-      mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
-      mobileBtn.href = profilePath;
-      mobileBtn.style.color = 'var(--green)';
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateNavButtons);
+    } else {
+      updateNavButtons();
     }
   }
 

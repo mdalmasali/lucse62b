@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Students | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -23,10 +24,10 @@
       <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
-        <li><a href="students.html">Students</a></li>
-        <li><a href="info.html">Info</a></li>
-        <li><a href="resources.html">Resources</a></li>
-        <li><a href="notices.html">Notices</a></li>
+        <li class="auth-only"><a href="students.html">Students</a></li>
+        <li class="auth-only"><a href="info.html">Info</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li class="auth-only"><a href="notices.html">Notices</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
@@ -42,10 +43,10 @@
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
-      <a href="students.html">Students</a>
-      <a href="info.html">Info</a>
-      <a href="resources.html">Resources</a>
-      <a href="notices.html">Notices</a>
+      <a class="auth-only" href="students.html">Students</a>
+      <a class="auth-only" href="info.html">Info</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a class="auth-only" href="notices.html">Notices</a>
       <a href="gallery.html">Gallery</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
@@ -54,7 +55,7 @@
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
-      <a href="students.html" class="active">Students</a>
+      <a class="auth-only active" href="students.html">Students</a>
       <a href="info.html">Info</a>
       <a href="resources.html">Resources</a>
       <a href="notices.html">Notices</a>
@@ -98,6 +99,17 @@
   </div>
 
   <script src="../assets/js/script.js"></script>
+  <script>
+    // Access Control - Only logged in students can see this page
+    (function() {
+      const userData = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      if (!userData) {
+        // Redirect to login if not logged in
+        window.location.href = 'login.html';
+      }
+    })();
+  </script>
+  <script src="../assets/js/auth.js"></script>
   <script>
     const ham=document.getElementById('hamburger'),mNav=document.getElementById('mobileNav'),mClose=document.getElementById('mobileNavClose');
     if(ham&&mNav&&mClose){ham.addEventListener('click',()=>{ham.classList.toggle('open');mNav.classList.toggle('open');});mClose.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');});mNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');}));}
