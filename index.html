@@ -50,6 +50,16 @@
       <a href="pages/gallery.html">Gallery</a>
     </div>
 
+    <!-- Top Notice Ticker -->
+    <div class="notice-ticker-wrap fade-in delay-1" id="tickerWrap" style="display: none;">
+      <div class="ticker-badge">LATEST</div>
+      <div class="ticker-content">
+        <marquee behavior="scroll" direction="left" id="topNoticeMarquee" scrollamount="5" onmouseover="this.stop();" onmouseout="this.start();">
+          Loading top notice...
+        </marquee>
+      </div>
+    </div>
+
     <!-- Hero Section -->
     <section class="hero fade-in delay-1">
       <div class="avatar-container">
@@ -216,7 +226,10 @@
 
     <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
-      <div class="footer-note">Built with ❤️ for CSE Batch 62, Section B, Leading University.</div>
+      <div class="footer-note">
+        Built with ❤️ for CSE Batch 62, Section B, Leading University. <br>
+        <a href="pages/admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; display: inline-block; margin-top: 8px;"><i class="fa-solid fa-lock"></i> Admin Login</a>
+      </div>
     </footer>
   </div>
 
@@ -230,6 +243,39 @@
       mClose.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); });
       mNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); }));
     }
+
+    // Fetch Top Notice from Google Sheets
+    function loadTopNotice() {
+      const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+      const SHEET_NAME = 'AutoBOT';
+      const cb = `botSheet_ticker_${Date.now()}`;
+      
+      const s = document.createElement('script');
+      window[cb] = (data) => {
+        delete window[cb];
+        s.remove();
+        
+        let noticeText = null;
+        const rows = data.table?.rows || [];
+        rows.forEach(row => {
+          const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
+          if (cells.length >= 2 && cells[0].toLowerCase() === 'top notice') {
+            noticeText = cells[1];
+          }
+        });
+
+        if (noticeText && noticeText !== '') {
+          document.getElementById('topNoticeMarquee').innerHTML = noticeText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent-bright);">$1</a>');
+          document.getElementById('tickerWrap').style.display = 'flex';
+        }
+      };
+      
+      s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+      document.body.appendChild(s);
+    }
+    
+    // Load notice on page load
+    loadTopNotice();
   </script>
 </body>
 </html>

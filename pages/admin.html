@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Portal | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .admin-container {
+      max-width: 600px;
+      margin: 80px auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 50px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .admin-icon {
+      font-size: 3rem;
+      color: var(--accent-bright);
+      margin-bottom: 20px;
+    }
+    .admin-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(to right, #fff, var(--accent-bright));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .admin-desc {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .admin-action-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+    .admin-action-title {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .admin-btn {
+      display: inline-block;
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.3s, box-shadow 0.3s;
+      margin-top: 16px;
+    }
+    .admin-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
+    }
+    .instructions {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+      </ul>
+      <div class="topbar-status"><div class="status-dot"></div>Admin Panel</div>
+    </nav>
+
+    <div class="admin-container fade-in delay-1">
+      <i class="fa-solid fa-user-shield admin-icon"></i>
+      <h1 class="admin-title">CR / Admin Control Panel</h1>
+      <p class="admin-desc">Manage portal information, top notices, and class resources securely through our interconnected database.</p>
+
+      <div class="admin-action-box">
+        <div class="admin-action-title"><i class="fa-solid fa-bullhorn" style="color: #f43f5e;"></i> Update Top Notice</div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">The Top Notice scrolls across the main dashboard. To update it, open the database and edit the row where the keyword is <strong>Top Notice</strong>.</p>
+        <a href="https://docs.google.com/spreadsheets/d/1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc/edit#gid=0" target="_blank" class="admin-btn">
+          <i class="fa-solid fa-database"></i> Open Secure Database
+        </a>
+        <div class="instructions">
+          <strong>Instructions:</strong><br>
+          1. Click the button above to open the Google Sheet.<br>
+          2. Find the row with <strong>Top Notice</strong> in Column A.<br>
+          3. Write your notice in Column B.<br>
+          4. The website will automatically update! (If you want to remove the notice, just delete the text in Column B).
+        </div>
+      </div>
+
+      <div class="admin-action-box">
+        <div class="admin-action-title"><i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> Update Info Hub Data</div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">Add or modify Assignments, Lab Reports, Routines, and more.</p>
+        <div class="instructions" style="margin-top: 6px;">
+          Simply add a new row in the same database. Use standard keywords (e.g., "assignment", "routine") in Column A, and the details/links in Column B.
+        </div>
+      </div>
+      
+      <a href="../index.html" style="color: var(--muted); text-decoration: none; font-size: 0.9rem; display: inline-block; margin-top: 20px;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">Secure Admin Access</div>
+    </footer>
+  </div>
+</body>
+</html>
