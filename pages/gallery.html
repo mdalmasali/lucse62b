@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gallery | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
   <!-- Background layers -->
@@ -20,9 +21,9 @@
   <div class="wrapper">
     <!-- Top Nav -->
     <nav class="topbar fade-in">
-      <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
-        <li><a href="index.html">Home</a></li>
+        <li><a href="../index.html">Home</a></li>
         <li><a href="students.html">Students</a></li>
         <li><a href="info.html">Info</a></li>
         <li><a href="resources.html">Resources</a></li>
@@ -34,7 +35,7 @@
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
-      <a href="index.html">Home</a>
+      <a href="../index.html">Home</a>
       <a href="students.html">Students</a>
       <a href="info.html">Info</a>
       <a href="resources.html">Resources</a>
@@ -50,49 +51,49 @@
     <!-- Gallery Grid -->
     <div class="gallery-grid fade-in delay-2">
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-15.jpg" alt="Class Photo 1">
+        <img src="../assets/images/photo_2026-05-04_00-37-15.jpg" alt="Class Photo 1">
         <div class="gallery-overlay">
           <span>Campus Life</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-17.jpg" alt="Class Photo 2">
+        <img src="../assets/images/photo_2026-05-04_00-37-17.jpg" alt="Class Photo 2">
         <div class="gallery-overlay">
           <span>Study Session</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-23.jpg" alt="Class Photo 3">
+        <img src="../assets/images/photo_2026-05-04_00-37-23.jpg" alt="Class Photo 3">
         <div class="gallery-overlay">
           <span>Event Highlights</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-34.jpg" alt="Class Photo 4">
+        <img src="../assets/images/photo_2026-05-04_00-37-34.jpg" alt="Class Photo 4">
         <div class="gallery-overlay">
           <span>Friends & Group</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-43.jpg" alt="Class Photo 5">
+        <img src="../assets/images/photo_2026-05-04_00-37-43.jpg" alt="Class Photo 5">
         <div class="gallery-overlay">
           <span>Tour Memory</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-37-53.jpg" alt="Class Photo 6">
+        <img src="../assets/images/photo_2026-05-04_00-37-53.jpg" alt="Class Photo 6">
         <div class="gallery-overlay">
           <span>Classroom</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-38-01.jpg" alt="Class Photo 7">
+        <img src="../assets/images/photo_2026-05-04_00-38-01.jpg" alt="Class Photo 7">
         <div class="gallery-overlay">
           <span>Project Work</span>
         </div>
       </div>
       <div class="gallery-item">
-        <img src="Photos/photo_2026-05-04_00-38-10.jpg" alt="Class Photo 8">
+        <img src="../assets/images/photo_2026-05-04_00-38-10.jpg" alt="Class Photo 8">
         <div class="gallery-overlay">
           <span>Farewell Day</span>
         </div>
@@ -105,7 +106,7 @@
     </footer>
   </div>
 
-  <script src="script.js"></script>
+  <script src="../assets/js/script.js"></script>
   <script>
     const ham=document.getElementById('hamburger'),mNav=document.getElementById('mobileNav'),mClose=document.getElementById('mobileNavClose');
     if(ham&&mNav&&mClose){ham.addEventListener('click',()=>{ham.classList.toggle('open');mNav.classList.toggle('open');});mClose.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');});mNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');}));}
