@@ -163,7 +163,7 @@
   <script>
     // Configuration
     const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
-    const SHEET_NAME = 'Students'; // Make sure this tab exists in the Google Sheet!
+    const SHEET_NAME = 'Overall 62 B'; // Matching your actual tab name
     
     // BulkSMSBD API Config
     const SMS_API_KEY = 'nJOmvZlaS3yclfACHGU2';
@@ -200,13 +200,43 @@
         
         for (let row of rows) {
           const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
-          // Assuming Col A (index 0) is Student ID, Col B (1) is Name, Col C (2) is Phone
-          if (cells.length >= 3 && cells[0] === studentId) {
+          
+          let idIndex = -1;
+          for (let i = 0; i < cells.length; i++) {
+            if (cells[i] === studentId) {
+              idIndex = i;
+              break;
+            }
+          }
+          
+          if (idIndex !== -1) {
             found = true;
+            let phone = null;
+            let name = "Student"; // fallback
+            
+            // Find Phone Number using Regex
+            for (let i = 0; i < cells.length; i++) {
+              let val = cells[i].replace(/\s+/g, '');
+              // Match BD phone number starting with 01 (11 digits), or +8801 / 8801
+              if (/^(?:\+?88)?01\d{9}$/.test(val)) {
+                if (val.startsWith('+88')) val = val.substring(3);
+                else if (val.startsWith('88')) val = val.substring(2);
+                phone = val;
+                break;
+              }
+            }
+            
+            // Guess Name (usually right next to ID and doesn't have numbers)
+            if (idIndex > 0 && cells[idIndex - 1].length > 2 && !/\d/.test(cells[idIndex - 1])) {
+              name = cells[idIndex - 1];
+            } else if (idIndex < cells.length - 1 && cells[idIndex + 1].length > 2 && !/\d/.test(cells[idIndex + 1])) {
+              name = cells[idIndex + 1];
+            }
+            
             studentData = {
-              id: cells[0],
-              name: cells[1],
-              phone: cells[2]
+              id: studentId,
+              name: name,
+              phone: phone
             };
             break;
           }
@@ -225,7 +255,7 @@
       // Handle fetch timeout/error by timeout (JSONP doesn't have native error handling)
       setTimeout(() => {
         if(window[cb]) {
-          errorEl.innerText = "Network error. Make sure the 'Students' tab exists in the Google Sheet.";
+          errorEl.innerText = "Network error. Make sure the 'Overall 62 B' tab exists in the Google Sheet.";
           errorEl.style.display = "block";
           btn.innerText = "Send OTP";
           btn.disabled = false;
