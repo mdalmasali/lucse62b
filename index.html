@@ -249,26 +249,17 @@
 
   <script src="assets/js/script.js"></script>
   <script>
-    const ham = document.getElementById('hamburger');
-    const mNav = document.getElementById('mobileNav');
-    const mClose = document.getElementById('mobileNavClose');
-    if (ham && mNav && mClose) {
-      ham.addEventListener('click', () => { ham.classList.toggle('open'); mNav.classList.toggle('open'); });
-      mClose.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); });
-      mNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); }));
-    }
-
     // Fetch Top Notice from Google Sheets
     function loadTopNotice() {
       const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
       const SHEET_NAME = 'Website';
       const cb = `botSheet_ticker_${Date.now()}`;
-      
+
       const s = document.createElement('script');
       window[cb] = (data) => {
         delete window[cb];
         s.remove();
-        
+
         let noticeText = null;
         const rows = data.table?.rows || [];
         rows.forEach(row => {
@@ -280,16 +271,21 @@
 
         if (noticeText && noticeText !== '') {
           document.getElementById('topNoticeMarquee').innerHTML = noticeText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent-bright);">$1</a>');
-          document.getElementById('tickerWrap').style.display = 'flex';
+          const tickerWrap = document.getElementById('tickerWrap');
+          tickerWrap.style.display = 'flex';
+          // Trigger animation
+          tickerWrap.offsetHeight; // Force reflow
+          tickerWrap.style.animation = 'none';
+          setTimeout(() => {
+            tickerWrap.style.animation = '';
+          }, 10);
         }
       };
-      
+
       s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
       document.body.appendChild(s);
     }
-    
-    // Check Student Login State is handled by auth.js
-    
+
     // Initialize
     loadTopNotice();
   </script>

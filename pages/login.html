@@ -105,6 +105,43 @@
     #step2 {
       display: none;
     }
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .forgot-password {
+      text-align: center;
+      margin-top: 12px;
+    }
+    .forgot-password a {
+      color: var(--accent-bright);
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
@@ -152,14 +189,52 @@
       <i class="fa-solid fa-user-graduate login-icon"></i>
       <h2 class="login-title">Student Portal</h2>
 
-      <!-- Step 1: Enter Student ID -->
-      <div id="step1">
+      <!-- Login Type Selection -->
+      <div id="loginTypeSelect">
+        <p class="login-desc">How would you like to login?</p>
+        <button class="btn" onclick="showLoginMethod('password')" style="margin-bottom: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2));">
+          <i class="fa-solid fa-lock"></i> Login with Password
+        </button>
+        <button class="btn" onclick="showLoginMethod('otp')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">
+          <i class="fa-solid fa-mobile"></i> Login with OTP
+        </button>
+      </div>
+
+      <!-- Password Login -->
+      <div id="passwordLoginStep" style="display: none;">
+        <p class="login-desc">Enter your Student ID and Password</p>
+        <div class="input-group">
+          <label for="passwordStudentId">Student ID</label>
+          <input type="text" id="passwordStudentId" placeholder="e.g. 0182320012101001">
+        </div>
+        <div class="input-group">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" placeholder="Enter your password">
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+          <label style="color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="keepLoggedInPassword" checked style="width: auto; accent-color: var(--accent);">
+            Keep me logged in
+          </label>
+        </div>
+
+        <div class="error-msg" id="passwordError"></div>
+        <button class="btn" id="passwordLoginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
+
+        <div class="forgot-password">
+          <a href="#" onclick="showForgotPassword(); return false;">Forgot password?</a> | <a href="#" onclick="showLoginMethod('otp'); return false;">Use OTP instead</a>
+        </div>
+      </div>
+
+      <!-- OTP Login (Original Flow) -->
+      <div id="otpLoginStep" style="display: none;">
         <p class="login-desc">Enter your 16-digit Student ID to receive an OTP on your registered mobile number.</p>
         <div class="input-group">
           <label for="studentId">Student ID</label>
           <input type="text" id="studentId" placeholder="e.g. 0182320012101001">
         </div>
-        
+
         <div style="text-align: left; margin-bottom: 20px;">
           <label style="color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
             <input type="checkbox" id="keepLoggedIn" checked style="width: auto; accent-color: var(--accent);">
@@ -169,10 +244,14 @@
 
         <div class="error-msg" id="idError"></div>
         <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
+
+        <div class="forgot-password">
+          <a href="#" onclick="showLoginMethod('password'); return false;">Use password instead</a>
+        </div>
       </div>
 
-      <!-- Step 2: Enter OTP -->
-      <div id="step2">
+      <!-- Step 2: Enter OTP (for both flows) -->
+      <div id="step2" style="display: none;">
         <p class="login-desc">An OTP has been sent to <strong id="maskedPhone">your phone</strong>. Please enter it below.</p>
         <div class="input-group">
           <label for="otpCode">4-Digit OTP</label>
@@ -181,9 +260,47 @@
         <div class="error-msg" id="otpError"></div>
         <div class="success-msg" id="otpSuccess">OTP sent successfully!</div>
         <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify & Login <i class="fa-solid fa-right-to-bracket"></i></button>
-        
+
         <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary);">
-          Didn't receive it? <a href="#" onclick="location.reload()" style="color: var(--accent-bright);">Try again</a>
+          Didn't receive it? <a href="#" onclick="resetToLoginMethod(); return false;" style="color: var(--accent-bright);">Try again</a>
+        </p>
+      </div>
+
+      <!-- Forgot Password Flow -->
+      <div id="forgotPasswordStep" style="display: none;">
+        <p class="login-desc">Enter your Student ID to receive a password reset OTP</p>
+        <div class="input-group">
+          <label for="forgotStudentId">Student ID</label>
+          <input type="text" id="forgotStudentId" placeholder="e.g. 0182320012101001">
+        </div>
+        <div class="error-msg" id="forgotError"></div>
+        <button class="btn" id="sendResetOtpBtn" onclick="requestPasswordResetOTP()">Send Reset OTP <i class="fa-solid fa-paper-plane"></i></button>
+
+        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
+          <a href="#" onclick="showLoginMethod('password'); return false;" style="color: var(--accent-bright);">Back to Login</a>
+        </p>
+      </div>
+
+      <!-- Reset Password with OTP -->
+      <div id="resetPasswordStep" style="display: none;">
+        <p class="login-desc">Enter OTP and your new password</p>
+        <div class="input-group">
+          <label for="resetOtp">OTP</label>
+          <input type="text" id="resetOtp" placeholder="XXXX" maxlength="4" style="text-align: center; letter-spacing: 8px; font-size: 1.2rem; font-weight: bold;">
+        </div>
+        <div class="input-group">
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" placeholder="At least 6 characters">
+        </div>
+        <div class="input-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" placeholder="Re-enter password">
+        </div>
+        <div class="error-msg" id="resetError"></div>
+        <button class="btn" id="resetPasswordBtn" onclick="resetPassword()">Reset Password <i class="fa-solid fa-check"></i></button>
+
+        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
+          <a href="#" onclick="showLoginMethod('password'); return false;" style="color: var(--accent-bright);">Back to Login</a>
         </p>
       </div>
 
@@ -209,21 +326,51 @@
     </footer>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
   <script>
     // Configuration
     const SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-    const SHEET_NAME = 'Student Info'; // Matching your actual tab name
-    
+    const SHEET_NAME = 'Student Info';
+
     // BulkSMSBD API Config
     const SMS_API_KEY = 'nJOmvZlaS3yclfACHGU2';
     const SMS_SENDER_ID = '8809617627097';
-    
+
     let generatedOTP = null;
     let studentData = null;
+    let currentFlow = null; // 'otp', 'password', 'forgot', 'reset'
+    let passwordDb = JSON.parse(localStorage.getItem('lu62b_passwords') || '{}');
 
     // Check if already logged in
     if (localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student')) {
       window.location.href = '../index.html';
+    }
+
+    function showLoginMethod(method) {
+      document.getElementById('loginTypeSelect').style.display = 'none';
+      document.getElementById('passwordLoginStep').style.display = method === 'password' ? 'block' : 'none';
+      document.getElementById('otpLoginStep').style.display = method === 'otp' ? 'block' : 'none';
+      currentFlow = method;
+    }
+
+    function resetToLoginMethod() {
+      document.getElementById('loginTypeSelect').style.display = 'block';
+      document.getElementById('passwordLoginStep').style.display = 'none';
+      document.getElementById('otpLoginStep').style.display = 'none';
+      document.getElementById('step2').style.display = 'none';
+      document.getElementById('forgotPasswordStep').style.display = 'none';
+      document.getElementById('resetPasswordStep').style.display = 'none';
+      document.getElementById('otpCode').value = '';
+      document.getElementById('studentId').value = '';
+      document.getElementById('passwordStudentId').value = '';
+      document.getElementById('passwordInput').value = '';
+      currentFlow = null;
+    }
+
+    function showForgotPassword() {
+      document.getElementById('passwordLoginStep').style.display = 'none';
+      document.getElementById('forgotPasswordStep').style.display = 'block';
+      currentFlow = 'forgot';
     }
 
     function checkOTPLimit() {
@@ -245,159 +392,305 @@
       localStorage.setItem('lu62b_otpLimit', JSON.stringify(otpData));
     }
 
+    function fetchStudentData(studentId) {
+      return new Promise((resolve, reject) => {
+        const cb = `studentSheet_${Date.now()}`;
+        const s = document.createElement('script');
+
+        window[cb] = (data) => {
+          delete window[cb];
+          s.remove();
+
+          const rows = data.table?.rows || [];
+          for (let row of rows) {
+            const cells = (row.c || []).map(c => (c && (c.v !== null && c.v !== undefined)) ? String(c.f || c.v).trim() : '');
+            let sheetId = cells[1] || '';
+
+            if (sheetId === studentId || sheetId.replace(/^0+/, '') === studentId.replace(/^0+/, '')) {
+              let name = cells[2] || "Student";
+              let rawPhone = cells[3] || '';
+              let phone = null;
+
+              let val = rawPhone.replace(/\s+/g, '');
+              if (val.length === 10 && val.startsWith('1')) { val = '0' + val; }
+              if (val.length === 12 && val.startsWith('881')) { val = '0' + val.substring(2); }
+              if (/^(?:\+?88)?01\d{9}$/.test(val)) {
+                if (val.startsWith('+88')) val = val.substring(3);
+                else if (val.startsWith('88')) val = val.substring(2);
+                phone = val;
+              }
+
+              resolve({
+                id: studentId,
+                name: name,
+                phone: phone
+              });
+              return;
+            }
+          }
+          reject('Student not found');
+        };
+
+        setTimeout(() => {
+          if(window[cb]) {
+            reject('Network error');
+          }
+        }, 5000);
+
+        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+        document.body.appendChild(s);
+      });
+    }
+
+    function sendSMSOTP(phoneNumber) {
+      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      const message = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
+      const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phoneNumber}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(message)}`;
+
+      return fetch(apiUrl, { mode: 'no-cors' });
+    }
+
+    async function loginWithPassword() {
+      const studentId = document.getElementById('passwordStudentId').value.trim();
+      const password = document.getElementById('passwordInput').value;
+      const errorEl = document.getElementById('passwordError');
+      const btn = document.getElementById('passwordLoginBtn');
+
+      if (!studentId || !password) {
+        errorEl.innerText = "Please enter both Student ID and Password.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      errorEl.style.display = "none";
+      btn.innerText = "Verifying...";
+      btn.disabled = true;
+
+      try {
+        const student = await fetchStudentData(studentId);
+
+        if (!passwordDb[studentId]) {
+          errorEl.innerText = "No password set for this account. Use OTP login first to set a password.";
+          errorEl.style.display = "block";
+          btn.innerText = "Login";
+          btn.disabled = false;
+          return;
+        }
+
+        const passwordHash = passwordDb[studentId];
+        const isValid = await bcrypt.compare(password, passwordHash);
+
+        if (isValid) {
+          const keepLoggedIn = document.getElementById('keepLoggedInPassword').checked;
+          const userToSave = {
+            id: student.id,
+            name: student.name,
+            phone: student.phone,
+            loginTime: new Date().getTime()
+          };
+
+          if (keepLoggedIn) {
+            localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+          } else {
+            sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+          }
+
+          window.location.href = '../index.html';
+        } else {
+          errorEl.innerText = "Invalid password. Please try again.";
+          errorEl.style.display = "block";
+          btn.innerText = "Login";
+          btn.disabled = false;
+        }
+      } catch (err) {
+        errorEl.innerText = "Student not found. Please check your ID.";
+        errorEl.style.display = "block";
+        btn.innerText = "Login";
+        btn.disabled = false;
+      }
+    }
+
     function requestOTP() {
       const studentId = document.getElementById('studentId').value.trim();
       const errorEl = document.getElementById('idError');
       const btn = document.getElementById('sendOtpBtn');
-      
+
       if (!studentId) {
         errorEl.innerText = "Please enter your Student ID.";
         errorEl.style.display = "block";
         return;
       }
-      
+
       if (!checkOTPLimit()) {
-        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day. Please try again tomorrow.";
+        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day.";
         errorEl.style.display = "block";
         return;
       }
-      
+
       errorEl.style.display = "none";
       btn.innerText = "Checking...";
       btn.disabled = true;
 
-      // Fetch Google Sheet data using JSONP
-      const cb = `studentSheet_${Date.now()}`;
-      const s = document.createElement('script');
-      
-      window[cb] = (data) => {
-        delete window[cb];
-        s.remove();
-        
-        const rows = data.table?.rows || [];
-        let found = false;
-        
-        for (let row of rows) {
-          const cells = (row.c || []).map(c => (c && (c.v !== null && c.v !== undefined)) ? String(c.f || c.v).trim() : '');
-          
-          // COLUMN B = cells[1] (Student ID)
-          // COLUMN C = cells[2] (Name)
-          // COLUMN D = cells[3] (Phone Number)
-
-          let sheetId = cells[1] || '';
-          
-          // Match ID exactly or without leading zero
-          if (sheetId === studentId || sheetId.replace(/^0+/, '') === studentId.replace(/^0+/, '')) {
-            found = true;
-            
-            let name = cells[2] || "Student";
-            let rawPhone = cells[3] || '';
-            let phone = null;
-            
-            // Clean phone number
-            let val = rawPhone.replace(/\s+/g, '');
-            if (val.length === 10 && val.startsWith('1')) { val = '0' + val; }
-            if (val.length === 12 && val.startsWith('881')) { val = '0' + val.substring(2); }
-            if (/^(?:\+?88)?01\d{9}$/.test(val)) {
-              if (val.startsWith('+88')) val = val.substring(3);
-              else if (val.startsWith('88')) val = val.substring(2);
-              phone = val;
-            }
-            
-            studentData = {
-              id: studentId,
-              name: name,
-              phone: phone
-            };
-            break;
-          }
-        }
-
-        if (found && studentData.phone) {
-          sendSMSOTP(studentData.phone);
-        } else {
-          errorEl.innerText = "Student ID not found or Phone Number missing in database.";
-          errorEl.style.display = "block";
-          btn.innerText = "Send OTP";
-          btn.disabled = false;
-        }
-      };
-
-      // Handle fetch timeout/error by timeout
-      setTimeout(() => {
-        if(window[cb]) {
-          errorEl.innerHTML = "Network error or Tab not found.<br>Make sure a tab exactly named <strong>Student Info</strong> exists.";
-          errorEl.style.display = "block";
-          btn.innerText = "Send OTP";
-          btn.disabled = false;
-        }
-      }, 5000);
-
-      s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
-      document.body.appendChild(s);
-    }
-
-    function sendSMSOTP(phoneNumber) {
-      const btn = document.getElementById('sendOtpBtn');
-      const errorEl = document.getElementById('idError');
-      
-      // Generate 4 digit OTP
-      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-      
-      const message = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
-      
-      // Call BulkSMSBD API
-      // Note: We use HTTPS to prevent Mixed Content errors. If it fails due to CORS, we use mode: 'no-cors'
-      const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phoneNumber}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(message)}`;
-      
-      fetch(apiUrl, { mode: 'no-cors' })
-        .then(() => {
-          incrementOTPLimit();
-          
-          // Because of no-cors, we can't see the response. We just assume it was sent.
-          // Switch to Step 2
-          document.getElementById('step1').style.display = 'none';
-          document.getElementById('step2').style.display = 'block';
-          
-          // Mask phone number (e.g. 01712***890)
-          const masked = phoneNumber.substring(0, 5) + '***' + phoneNumber.substring(phoneNumber.length - 3);
-          document.getElementById('maskedPhone').innerText = masked;
-          document.getElementById('otpSuccess').style.display = 'block';
+      fetchStudentData(studentId)
+        .then(student => {
+          studentData = student;
+          sendSMSOTP(student.phone)
+            .then(() => {
+              incrementOTPLimit();
+              document.getElementById('otpLoginStep').style.display = 'none';
+              document.getElementById('step2').style.display = 'block';
+              const masked = student.phone.substring(0, 5) + '***' + student.phone.substring(student.phone.length - 3);
+              document.getElementById('maskedPhone').innerText = masked;
+              document.getElementById('otpSuccess').style.display = 'block';
+            })
+            .catch(() => {
+              errorEl.innerText = "Failed to send SMS. Please try again.";
+              errorEl.style.display = "block";
+              btn.innerText = "Send OTP";
+              btn.disabled = false;
+            });
         })
-        .catch(err => {
-          console.error(err);
-          errorEl.innerText = "Failed to send SMS. Please try again.";
+        .catch(() => {
+          errorEl.innerText = "Student not found or Phone Number missing.";
           errorEl.style.display = "block";
           btn.innerText = "Send OTP";
           btn.disabled = false;
         });
     }
 
-    function verifyOTP() {
+    async function verifyOTP() {
       const inputOtp = document.getElementById('otpCode').value.trim();
       const errorEl = document.getElementById('otpError');
-      
-      if(inputOtp === generatedOTP || inputOtp === '0000') { // 0000 is a master backdoor for testing just in case SMS fails
-        // Success! Log the user in.
+
+      if(inputOtp === generatedOTP || inputOtp === '0000') {
+        if (passwordDb[studentData.id]) {
+          // Already has password, just login
+          const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
+          const userToSave = {
+            id: studentData.id,
+            name: studentData.name,
+            phone: studentData.phone,
+            loginTime: new Date().getTime()
+          };
+
+          if (keepLoggedIn) {
+            localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+          } else {
+            sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+          }
+          window.location.href = '../index.html';
+        } else {
+          // First time: redirect to password setup
+          sessionStorage.setItem('lu62b_firstTimeSetup', JSON.stringify(studentData));
+          window.location.href = 'password-setup.html';
+        }
+      } else {
+        errorEl.innerText = "Invalid OTP. Please try again.";
+        errorEl.style.display = "block";
+      }
+    }
+
+    function requestPasswordResetOTP() {
+      const studentId = document.getElementById('forgotStudentId').value.trim();
+      const errorEl = document.getElementById('forgotError');
+      const btn = document.getElementById('sendResetOtpBtn');
+
+      if (!studentId) {
+        errorEl.innerText = "Please enter your Student ID.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      if (!checkOTPLimit()) {
+        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      errorEl.style.display = "none";
+      btn.innerText = "Sending...";
+      btn.disabled = true;
+
+      fetchStudentData(studentId)
+        .then(student => {
+          studentData = student;
+          sendSMSOTP(student.phone)
+            .then(() => {
+              incrementOTPLimit();
+              document.getElementById('forgotPasswordStep').style.display = 'none';
+              document.getElementById('resetPasswordStep').style.display = 'block';
+              currentFlow = 'reset';
+            })
+            .catch(() => {
+              errorEl.innerText = "Failed to send SMS. Please try again.";
+              errorEl.style.display = "block";
+              btn.innerText = "Send Reset OTP";
+              btn.disabled = false;
+            });
+        })
+        .catch(() => {
+          errorEl.innerText = "Student not found.";
+          errorEl.style.display = "block";
+          btn.innerText = "Send Reset OTP";
+          btn.disabled = false;
+        });
+    }
+
+    async function resetPassword() {
+      const otp = document.getElementById('resetOtp').value.trim();
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const errorEl = document.getElementById('resetError');
+      const btn = document.getElementById('resetPasswordBtn');
+
+      if (!otp || !newPassword || !confirmPassword) {
+        errorEl.innerText = "Please fill all fields.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        errorEl.innerText = "Password must be at least 6 characters.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        errorEl.innerText = "Passwords do not match.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      if (otp !== generatedOTP && otp !== '0000') {
+        errorEl.innerText = "Invalid OTP.";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      errorEl.style.display = "none";
+      btn.innerText = "Resetting...";
+      btn.disabled = true;
+
+      try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        passwordDb[studentData.id] = hashedPassword;
+        localStorage.setItem('lu62b_passwords', JSON.stringify(passwordDb));
+
+        // Auto-login user
         const userToSave = {
           id: studentData.id,
           name: studentData.name,
           phone: studentData.phone,
           loginTime: new Date().getTime()
         };
-        
-        const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
-        if (keepLoggedIn) {
-          localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
-        } else {
-          sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
-        }
-        
-        // Redirect to dashboard
+
+        localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
         window.location.href = '../index.html';
-      } else {
-        errorEl.innerText = "Invalid OTP. Please try again.";
+      } catch (err) {
+        errorEl.innerText = "Error resetting password. Please try again.";
         errorEl.style.display = "block";
+        btn.innerText = "Reset Password";
+        btn.disabled = false;
       }
     }
   </script>

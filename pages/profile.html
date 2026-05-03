@@ -104,11 +104,274 @@
       font-weight: 600;
       transition: all 0.3s ease;
     }
+    .btn-logout {
+      background: rgba(244, 63, 94, 0.1);
+      color: #f43f5e;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
     .btn-logout:hover {
       background: #f43f5e;
       color: #fff;
     }
-  </style>
+
+    .btn-change-password {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      margin-left: 10px;
+    }
+    .btn-change-password:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+    }
+
+    .settings-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 30px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 50px rgba(0,0,0,0.5);
+      margin-bottom: 30px;
+    }
+
+    .settings-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-item:last-child {
+      border-bottom: none;
+    }
+
+    .settings-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .settings-label .label-title {
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .settings-label .label-desc {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal-content {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 420px;
+      width: 90%;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 50px rgba(0,0,0,0.5);
+      animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .input-group {
+      margin-bottom: 18px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .error-msg {
+      color: #f43f5e;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .success-msg {
+      color: #10b981;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-primary:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    @media (max-width: 640px) {
+      .settings-section {
+        padding: 20px;
+      }
+      .modal-content {
+        padding: 24px;
+      }
+      .btn-change-password {
+        margin-left: 0;
+        margin-top: 10px;
+        width: 100%;
+      }
+    }
+</style>
 </head>
 <body>
   <div class="bg-canvas">
@@ -157,7 +420,7 @@
         <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
         <div class="user-name" id="userName">Loading...</div>
         <div class="user-id" id="userId">ID: ---------</div>
-        
+
         <div class="user-info-row">
           <div class="info-badge">
             <i class="fa-solid fa-phone" style="color: var(--green);"></i>
@@ -173,11 +436,67 @@
           </div>
         </div>
 
-        <button class="btn-logout" onclick="logout()">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
-        </button>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn-change-password" onclick="openChangePasswordModal()">
+            <i class="fa-solid fa-key"></i> Change Password
+          </button>
+          <button class="btn-logout" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
       </div>
 
+      <!-- Settings Section -->
+      <div class="settings-section" id="settingsSection" style="display: none;">
+        <div class="settings-title">
+          <i class="fa-solid fa-gear"></i> Account Settings
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-label">
+            <span class="label-title">Password Status</span>
+            <span class="label-desc" id="passwordStatus">Password not set</span>
+          </div>
+          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">🔓</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title"><i class="fa-solid fa-key"></i> Change Password</div>
+          <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+        </div>
+
+        <div class="input-group">
+          <label for="currentPassword">Current Password</label>
+          <input type="password" id="currentPassword" placeholder="Enter your current password">
+          <div class="error-msg" id="currentPasswordError"></div>
+        </div>
+
+        <div class="input-group">
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" placeholder="At least 6 characters">
+          <div class="error-msg" id="newPasswordError"></div>
+        </div>
+
+        <div class="input-group">
+          <label for="confirmNewPassword">Confirm New Password</label>
+          <input type="password" id="confirmNewPassword" placeholder="Re-enter new password">
+          <div class="error-msg" id="confirmPasswordError"></div>
+        </div>
+
+        <div class="error-msg" id="generalError"></div>
+        <div class="success-msg" id="successMsg"></div>
+
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
+          <button class="btn-primary" id="changePasswordBtn" onclick="changePassword()">Update Password</button>
+        </div>
+      </div>
     </div>
 
     <footer>
@@ -198,25 +517,155 @@
     </footer>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script>
+    let currentUser = null;
+    let passwordDb = JSON.parse(localStorage.getItem('lu62b_passwords') || '{}');
+
     // Check if user is logged in
     const userData = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
     if (!userData) {
       window.location.href = 'login.html';
     } else {
-      const user = JSON.parse(userData);
-      
+      currentUser = JSON.parse(userData);
+
       // Populate Data
-      document.getElementById('userName').innerText = user.name || 'Student';
-      document.getElementById('userId').innerText = 'ID: ' + user.id;
-      
+      document.getElementById('userName').innerText = currentUser.name || 'Student';
+      document.getElementById('userId').innerText = 'ID: ' + currentUser.id;
+
       // Format phone number safely
-      let phone = user.phone || 'N/A';
+      let phone = currentUser.phone || 'N/A';
       if (phone !== 'N/A' && phone.length >= 11) {
         phone = phone.substring(0, 5) + '...' + phone.substring(phone.length - 3);
       }
       document.getElementById('userPhone').innerText = phone;
+
+      // Show settings section and password status
+      document.getElementById('settingsSection').style.display = 'block';
+      if (passwordDb[currentUser.id]) {
+        document.getElementById('passwordStatus').innerText = 'Password is set';
+        document.getElementById('statusIcon').innerText = '🔐';
+        document.getElementById('statusIcon').style.color = 'var(--green)';
+      } else {
+        document.getElementById('passwordStatus').innerText = 'Password not set yet';
+        document.getElementById('statusIcon').innerText = '🔓';
+      }
+    }
+
+    function openChangePasswordModal() {
+      document.getElementById('changePasswordModal').classList.add('open');
+      clearModalFields();
+    }
+
+    function closeChangePasswordModal() {
+      document.getElementById('changePasswordModal').classList.remove('open');
+      clearModalFields();
+    }
+
+    function clearModalFields() {
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmNewPassword').value = '';
+      document.getElementById('currentPasswordError').style.display = 'none';
+      document.getElementById('newPasswordError').style.display = 'none';
+      document.getElementById('confirmPasswordError').style.display = 'none';
+      document.getElementById('generalError').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmNewPassword').value;
+      const btn = document.getElementById('changePasswordBtn');
+
+      // Clear previous errors
+      document.getElementById('currentPasswordError').style.display = 'none';
+      document.getElementById('newPasswordError').style.display = 'none';
+      document.getElementById('confirmPasswordError').style.display = 'none';
+      document.getElementById('generalError').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+
+      // Validation
+      if (!currentPassword) {
+        document.getElementById('currentPasswordError').innerText = 'Please enter current password';
+        document.getElementById('currentPasswordError').style.display = 'block';
+        return;
+      }
+
+      if (!newPassword) {
+        document.getElementById('newPasswordError').innerText = 'Please enter new password';
+        document.getElementById('newPasswordError').style.display = 'block';
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        document.getElementById('newPasswordError').innerText = 'Password must be at least 6 characters';
+        document.getElementById('newPasswordError').style.display = 'block';
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        document.getElementById('confirmPasswordError').innerText = 'Passwords do not match';
+        document.getElementById('confirmPasswordError').style.display = 'block';
+        return;
+      }
+
+      if (currentPassword === newPassword) {
+        document.getElementById('newPasswordError').innerText = 'New password must be different from current password';
+        document.getElementById('newPasswordError').style.display = 'block';
+        return;
+      }
+
+      btn.innerText = 'Updating...';
+      btn.disabled = true;
+
+      try {
+        // Verify current password
+        if (!passwordDb[currentUser.id]) {
+          document.getElementById('currentPasswordError').innerText = 'No password set. Please use forgot password option.';
+          document.getElementById('currentPasswordError').style.display = 'block';
+          btn.innerText = 'Update Password';
+          btn.disabled = false;
+          return;
+        }
+
+        const isValid = await bcrypt.compare(currentPassword, passwordDb[currentUser.id]);
+
+        if (!isValid) {
+          document.getElementById('currentPasswordError').innerText = 'Current password is incorrect';
+          document.getElementById('currentPasswordError').style.display = 'block';
+          btn.innerText = 'Update Password';
+          btn.disabled = false;
+          return;
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        passwordDb[currentUser.id] = hashedPassword;
+        localStorage.setItem('lu62b_passwords', JSON.stringify(passwordDb));
+
+        // Update status
+        document.getElementById('passwordStatus').innerText = 'Password is set';
+        document.getElementById('statusIcon').innerText = '🔐';
+        document.getElementById('statusIcon').style.color = 'var(--green)';
+
+        document.getElementById('successMsg').innerText = 'Password updated successfully!';
+        document.getElementById('successMsg').style.display = 'block';
+
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          closeChangePasswordModal();
+        }, 2000);
+
+      } catch (err) {
+        document.getElementById('generalError').innerText = 'Error updating password. Please try again.';
+        document.getElementById('generalError').style.display = 'block';
+      }
+
+      btn.innerText = 'Update Password';
+      btn.disabled = false;
     }
 
     function logout() {
@@ -224,6 +673,13 @@
       sessionStorage.removeItem('lu62b_student');
       window.location.href = '../index.html';
     }
+
+    // Close modal when clicking outside
+    document.getElementById('changePasswordModal').addEventListener('click', (e) => {
+      if (e.target.id === 'changePasswordModal') {
+        closeChangePasswordModal();
+      }
+    });
   </script>
 </body>
 </html>
