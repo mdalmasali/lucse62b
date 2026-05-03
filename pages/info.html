@@ -107,16 +107,6 @@
 
   <script src="../assets/js/script.js"></script>
   <script>
-    /* ── Hamburger ── */
-    const ham = document.getElementById('hamburger');
-    const mNav = document.getElementById('mobileNav');
-    const mClose = document.getElementById('mobileNavClose');
-    if (ham && mNav && mClose) {
-      ham.addEventListener('click', () => { ham.classList.toggle('open'); mNav.classList.toggle('open'); });
-      mClose.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); });
-      mNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); }));
-    }
-
     /* ── Config ── */
     const BOT_SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
     const BOT_SHEET_NAME = 'AutoBOT';

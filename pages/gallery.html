@@ -138,10 +138,6 @@
   </div>
 
   <script src="../assets/js/script.js"></script>
-  <script>
-    const ham=document.getElementById('hamburger'),mNav=document.getElementById('mobileNav'),mClose=document.getElementById('mobileNavClose');
-    if(ham&&mNav&&mClose){ham.addEventListener('click',()=>{ham.classList.toggle('open');mNav.classList.toggle('open');});mClose.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');});mNav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ham.classList.remove('open');mNav.classList.remove('open');}));}
-  </script>
 <script src="../assets/js/auth.js"></script>
 </body>
 </html>
