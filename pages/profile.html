@@ -127,15 +127,42 @@
       align-items: center;
       gap: 10px;
     }
+    
+    .dob-setup-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .dob-input {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      width: 100%;
+      max-width: 300px;
+    }
+    .dob-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
 
     .iframe-container {
       width: 100%;
-      height: 500px;
+      height: 600px;
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid var(--border);
       position: relative;
-      background: #fff; /* Universities usually have white backgrounds */
+      background: #fff;
     }
 
     .iframe-container iframe {
@@ -218,25 +245,38 @@
       <!-- Result Integration -->
       <div class="result-section fade-in delay-2">
         <h2 class="section-title">
-          <i class="fa-solid fa-square-poll-vertical" style="color: #38bdf8;"></i> Semester Results
+          <i class="fa-solid fa-square-poll-vertical" style="color: #38bdf8;"></i> Auto Semester Results
         </h2>
         <p style="color: var(--text-secondary); margin-bottom: 20px;">
-          View your latest academic results directly from the university portal.
+          Set your Date of Birth once, and we'll automatically fetch your results without you having to login!
         </p>
+
+        <!-- Hidden form to auto-submit to LU Result Site -->
+        <form id="autoResultForm" target="luResultFrame" method="POST" action="https://lus.ac.bd/result/" style="display: none;">
+          <input type="hidden" name="student_id" id="formStudentId">
+          <input type="hidden" name="dob" id="formDob">
+        </form>
+
+        <div class="dob-setup-box" id="dobSetupBox">
+          <label style="font-size: 0.9rem; font-weight: 600; color: var(--text);">Enter Date of Birth (DD/MM/YYYY):</label>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="dobInput" class="dob-input" placeholder="e.g. 11/04/2002">
+            <button class="btn-logout" style="background: var(--accent); color: white; border: none; padding: 12px 24px;" onclick="saveDobAndFetch()">Save & Fetch Results</button>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">Your DOB is saved securely in your browser's local storage.</p>
+        </div>
         
-        <div class="iframe-container">
+        <div class="iframe-container" id="iframeWrapper" style="display: none;">
           <div class="iframe-loading" id="iframeLoader">
             <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent);"></i>
-            <span>Loading University Portal...</span>
+            <span>Loading Result...</span>
           </div>
-          <!-- Note: LU Result site is embedded. If they block iframes, the fallback button below handles it. -->
-          <iframe src="https://lus.ac.bd/result/" onload="document.getElementById('iframeLoader').style.display='none'"></iframe>
+          <iframe name="luResultFrame" id="luResultFrame" onload="document.getElementById('iframeLoader').style.display='none'"></iframe>
         </div>
 
         <div style="text-align: center; margin-top: 15px;">
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">If the result page doesn't load above (due to browser security), click the button below:</p>
           <a href="https://lus.ac.bd/result/" target="_blank" class="fallback-btn">
-            <i class="fa-solid fa-external-link-alt"></i> Open Result Site
+            <i class="fa-solid fa-external-link-alt"></i> Open LU Result Site Manually
           </a>
         </div>
       </div>
@@ -262,11 +302,38 @@
         phone = phone.substring(0, 5) + '...' + phone.substring(phone.length - 3);
       }
       document.getElementById('userPhone').innerText = phone;
+
+      // Auto-load result if DOB is saved
+      const savedDob = localStorage.getItem('lu62b_dob');
+      if (savedDob) {
+        document.getElementById('dobInput').value = savedDob;
+        saveDobAndFetch();
+      }
+    }
+
+    function saveDobAndFetch() {
+      const dob = document.getElementById('dobInput').value.trim();
+      if (!dob) return;
+      
+      const userData = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student'));
+      
+      // Save DOB in localStorage
+      localStorage.setItem('lu62b_dob', dob);
+      
+      // Prepare form
+      document.getElementById('formStudentId').value = userData.id;
+      document.getElementById('formDob').value = dob;
+      
+      // Show iframe and submit
+      document.getElementById('iframeWrapper').style.display = 'block';
+      document.getElementById('iframeLoader').style.display = 'flex';
+      document.getElementById('autoResultForm').submit();
     }
 
     function logout() {
       localStorage.removeItem('lu62b_student');
       sessionStorage.removeItem('lu62b_student');
+      // We don't remove DOB so they don't have to re-enter it next time
       window.location.href = '../index.html';
     }
   </script>
