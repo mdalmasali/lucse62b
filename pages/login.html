@@ -134,6 +134,14 @@
           <label for="studentId">Student ID</label>
           <input type="text" id="studentId" placeholder="e.g. 0182320012101001">
         </div>
+        
+        <div style="text-align: left; margin-bottom: 20px;">
+          <label style="color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="keepLoggedIn" checked style="width: auto; accent-color: var(--accent);">
+            Keep me logged in
+          </label>
+        </div>
+
         <div class="error-msg" id="idError"></div>
         <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
       </div>
@@ -172,6 +180,30 @@
     let generatedOTP = null;
     let studentData = null;
 
+    // Check if already logged in
+    if (localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student')) {
+      window.location.href = '../index.html';
+    }
+
+    function checkOTPLimit() {
+      const today = new Date().toDateString();
+      let otpData = JSON.parse(localStorage.getItem('lu62b_otpLimit') || '{}');
+      if (otpData.date !== today) {
+        otpData = { date: today, count: 0 };
+      }
+      return otpData.count < 5;
+    }
+
+    function incrementOTPLimit() {
+      const today = new Date().toDateString();
+      let otpData = JSON.parse(localStorage.getItem('lu62b_otpLimit') || '{}');
+      if (otpData.date !== today) {
+        otpData = { date: today, count: 0 };
+      }
+      otpData.count += 1;
+      localStorage.setItem('lu62b_otpLimit', JSON.stringify(otpData));
+    }
+
     function requestOTP() {
       const studentId = document.getElementById('studentId').value.trim();
       const errorEl = document.getElementById('idError');
@@ -179,6 +211,12 @@
       
       if (!studentId) {
         errorEl.innerText = "Please enter your Student ID.";
+        errorEl.style.display = "block";
+        return;
+      }
+      
+      if (!checkOTPLimit()) {
+        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day. Please try again tomorrow.";
         errorEl.style.display = "block";
         return;
       }
@@ -273,6 +311,8 @@
       
       fetch(apiUrl, { mode: 'no-cors' })
         .then(() => {
+          incrementOTPLimit();
+          
           // Because of no-cors, we can't see the response. We just assume it was sent.
           // Switch to Step 2
           document.getElementById('step1').style.display = 'none';
@@ -304,7 +344,13 @@
           phone: studentData.phone,
           loginTime: new Date().getTime()
         };
-        localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+        
+        const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
+        if (keepLoggedIn) {
+          localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+        } else {
+          sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+        }
         
         // Redirect to dashboard
         window.location.href = '../index.html';
