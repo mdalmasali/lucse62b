@@ -163,7 +163,7 @@
   <script>
     // Configuration
     const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
-    const SHEET_NAME = 'Overall 62 B'; // Matching your actual tab name
+    const SHEET_NAME = 'Student Info'; // Matching your actual tab name
     
     // BulkSMSBD API Config
     const SMS_API_KEY = 'nJOmvZlaS3yclfACHGU2';
@@ -201,18 +201,18 @@
         for (let row of rows) {
           const cells = (row.c || []).map(c => (c && (c.v !== null && c.v !== undefined)) ? String(c.f || c.v).trim() : '');
           
-          // COLUMN A = cells[0] (Student ID)
-          // COLUMN B = cells[1] (Name)
-          // COLUMN C = cells[2] (Phone Number)
+          // COLUMN B = cells[1] (Student ID)
+          // COLUMN C = cells[2] (Name)
+          // COLUMN D = cells[3] (Phone Number)
 
-          let sheetId = cells[0] || '';
+          let sheetId = cells[1] || '';
           
           // Match ID exactly or without leading zero
           if (sheetId === studentId || sheetId.replace(/^0+/, '') === studentId.replace(/^0+/, '')) {
             found = true;
             
-            let name = cells[1] || "Student";
-            let rawPhone = cells[2] || '';
+            let name = cells[2] || "Student";
+            let rawPhone = cells[3] || '';
             let phone = null;
             
             // Clean phone number
@@ -247,7 +247,7 @@
       // Handle fetch timeout/error by timeout
       setTimeout(() => {
         if(window[cb]) {
-          errorEl.innerHTML = "Network error or Tab not found.<br>Make sure a tab exactly named <strong>Overall 62 B</strong> exists.";
+          errorEl.innerHTML = "Network error or Tab not found.<br>Make sure a tab exactly named <strong>Student Info</strong> exists.";
           errorEl.style.display = "block";
           btn.innerText = "Send OTP";
           btn.disabled = false;
