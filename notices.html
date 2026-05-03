@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notices | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="wrapper">
+    <!-- Top Nav -->
+    <nav class="topbar fade-in">
+      <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="students.html">Students</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="notices.html" class="active">Notices</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+      </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+    </nav>
+
+    <div class="section-header fade-in delay-1" style="margin-top: 40px;">
+      <span class="section-label">🚨 Important Notices</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="content-grid fade-in delay-2">
+      <aside class="sidebar">
+        <ul class="sidebar-menu">
+          <li><a href="#" class="active">All Notices</a></li>
+          <li><a href="#">Urgent</a></li>
+          <li><a href="#">Exams & Tests</a></li>
+          <li><a href="#">General Info</a></li>
+        </ul>
+      </aside>
+
+      <div class="main-content">
+        <!-- Notice Item -->
+        <div class="notice-card">
+          <div class="notice-meta">
+            <span class="notice-tag tag-rose" style="background: rgba(244,63,94,0.1); color: #fb7185;">Urgent</span>
+            <span>🕒 Today, 10:00 AM</span>
+            <span>👤 CR</span>
+          </div>
+          <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; margin-bottom: 8px;">Assignment 2 Deadline Extended</h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">The deadline for CSE 325 Assignment 2 has been extended by two days. The new submission date is Friday, May 8th, before 11:59 PM. Make sure to follow the updated rubric.</p>
+        </div>
+
+        <!-- Notice Item -->
+        <div class="notice-card">
+          <div class="notice-meta">
+            <span class="notice-tag tag-amber" style="background: rgba(245,158,11,0.1); color: #fbbf24;">Exam</span>
+            <span>🕒 Yesterday</span>
+            <span>👤 Prof. Ahmed</span>
+          </div>
+          <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; margin-bottom: 8px;">Midterm Syllabus for CSE 323</h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">The midterm exam for Database Systems will cover Chapters 1 through 5. Focus particularly on ER Modeling and Relational Algebra. The exam will be held next Tuesday in Room 402.</p>
+        </div>
+
+        <!-- Notice Item -->
+        <div class="notice-card">
+          <div class="notice-meta">
+            <span class="notice-tag tag-cyan" style="background: rgba(14,165,233,0.1); color: #38bdf8;">General</span>
+            <span>🕒 May 1, 2026</span>
+            <span>👤 CR</span>
+          </div>
+          <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; margin-bottom: 8px;">Class Cancellation</h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">Tomorrow's Software Engineering class at 8:00 AM has been cancelled due to an unavoidable faculty meeting. A make-up class will be scheduled soon.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">Built with ❤️ for CSE Batch 62, Section B, Leading University.</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

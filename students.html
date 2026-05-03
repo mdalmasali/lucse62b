@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Students | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="wrapper">
+    <!-- Top Nav -->
+    <nav class="topbar fade-in">
+      <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="students.html" class="active">Students</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="notices.html">Notices</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+      </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+    </nav>
+
+    <div class="section-header fade-in delay-1" style="margin-top: 40px; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="section-label">🎓 Class Directory</span>
+        <div class="section-line" style="width: 100px; flex: none;"></div>
+      </div>
+    </div>
+
+    <div class="student-sheet-note fade-in delay-2" id="student-sheet-note">
+      Live sync from Google Sheet. This page checks for updates every 60 seconds while open.
+    </div>
+
+    <div class="student-sections fade-in delay-2" id="student-sections">
+      <div class="student-loading" id="student-loading-state">
+        Loading student data from Google Sheet...
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">Built with ❤️ for CSE Batch 62, Section B, Leading University.</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

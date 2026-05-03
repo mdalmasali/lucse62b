@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gallery | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="wrapper">
+    <!-- Top Nav -->
+    <nav class="topbar fade-in">
+      <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="students.html">Students</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="notices.html">Notices</a></li>
+        <li><a href="gallery.html" class="active">Gallery</a></li>
+      </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+    </nav>
+
+    <div class="section-header fade-in delay-1" style="margin-top: 40px;">
+      <span class="section-label">📸 Memories & Events</span>
+      <div class="section-line"></div>
+    </div>
+
+    <!-- Gallery Grid -->
+    <div class="gallery-grid fade-in delay-2">
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-15.jpg" alt="Class Photo 1">
+        <div class="gallery-overlay">
+          <span>Campus Life</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-17.jpg" alt="Class Photo 2">
+        <div class="gallery-overlay">
+          <span>Study Session</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-23.jpg" alt="Class Photo 3">
+        <div class="gallery-overlay">
+          <span>Event Highlights</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-34.jpg" alt="Class Photo 4">
+        <div class="gallery-overlay">
+          <span>Friends & Group</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-43.jpg" alt="Class Photo 5">
+        <div class="gallery-overlay">
+          <span>Tour Memory</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-37-53.jpg" alt="Class Photo 6">
+        <div class="gallery-overlay">
+          <span>Classroom</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-38-01.jpg" alt="Class Photo 7">
+        <div class="gallery-overlay">
+          <span>Project Work</span>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="photos/photo_2026-05-04_00-38-10.jpg" alt="Class Photo 8">
+        <div class="gallery-overlay">
+          <span>Farewell Day</span>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">Built with ❤️ for CSE Batch 62, Section B, Leading University.</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

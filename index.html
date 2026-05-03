@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSE 62B | Leading University</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="wrapper">
+    <!-- Top Nav -->
+    <nav class="topbar fade-in">
+      <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="students.html">Students</a></li>
+        <li><a href="resources.html">Resources</a></li>
+        <li><a href="notices.html">Notices</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+      </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero fade-in delay-1">
+      <div class="avatar-container">
+        <div class="avatar-glow"></div>
+        <div class="avatar-ring">
+          <div class="avatar-img-wrap">
+            🎓
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-info">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>Leading University</span>
+        </div>
+        <h1 class="hero-name">CSE 62B</h1>
+        <p class="hero-sub">Welcome to the official digital portal for the Department of Computer Science & Engineering, Batch 62, Section B. Access all class materials, essential resources, and important notices securely from one place.</p>
+        <div class="hero-tags">
+          <span class="tag tag-purple">💻 Dept. of CSE</span>
+          <span class="tag tag-cyan">🎓 Batch 62</span>
+          <span class="tag tag-amber">👥 Section B</span>
+          <span class="tag tag-green">🏛️ Leading University</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider fade-in delay-2"></div>
+
+    <!-- Stats -->
+    <div class="stats-row fade-in delay-2">
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" id="today-date">May 2026</div>
+        <div class="stat-label">Current Term</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value">30+</div>
+        <div class="stat-label">Materials</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-value">Active</div>
+        <div class="stat-label">Portal Status</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎓</div>
+        <div class="stat-value">4</div>
+        <div class="stat-label">Active Courses</div>
+      </div>
+    </div>
+
+    <!-- Main Links -->
+    <div class="section-header fade-in delay-3">
+      <span class="section-label">📁 Navigation</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="folders-grid fade-in delay-3">
+      <a href="resources.html" class="folder-card" style="--card-accent:rgba(139,92,246,0.5);--card-shadow:0 0 40px rgba(139,92,246,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(139,92,246,0.15),transparent 70%);--icon-bg:rgba(139,92,246,0.1);--icon-border:rgba(139,92,246,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">📚</div>
+        <div class="folder-name">Class Material</div>
+        <div class="folder-desc">Lectures, notes & PDFs</div>
+      </a>
+      <a href="notices.html" class="folder-card" style="--card-accent:rgba(245,158,11,0.5);--card-shadow:0 0 40px rgba(245,158,11,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.15),transparent 70%);--icon-bg:rgba(245,158,11,0.1);--icon-border:rgba(245,158,11,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">🚨</div>
+        <div class="folder-name">Notices</div>
+        <div class="folder-desc">Important announcements</div>
+      </a>
+      <a href="#" class="folder-card" style="--card-accent:rgba(14,165,233,0.5);--card-shadow:0 0 40px rgba(14,165,233,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(14,165,233,0.15),transparent 70%);--icon-bg:rgba(14,165,233,0.1);--icon-border:rgba(14,165,233,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">📅</div>
+        <div class="folder-name">Schedule</div>
+        <div class="folder-desc">Class routines & routines</div>
+      </a>
+      <a href="#" class="folder-card" style="--card-accent:rgba(16,185,129,0.5);--card-shadow:0 0 40px rgba(16,185,129,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(16,185,129,0.15),transparent 70%);--icon-bg:rgba(16,185,129,0.1);--icon-border:rgba(16,185,129,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">📝</div>
+        <div class="folder-name">Assignments</div>
+        <div class="folder-desc">Uploads & deadlines</div>
+      </a>
+      <a href="gallery.html" class="folder-card" style="--card-accent:rgba(236,72,153,0.5);--card-shadow:0 0 40px rgba(236,72,153,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(236,72,153,0.15),transparent 70%);--icon-bg:rgba(236,72,153,0.1);--icon-border:rgba(236,72,153,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">📸</div>
+        <div class="folder-name">Gallery</div>
+        <div class="folder-desc">Class photos & events</div>
+      </a>
+    </div>
+
+    <!-- Gallery Preview Section -->
+    <div class="section-header fade-in delay-3" style="margin-top: 12px; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="section-label">📸 Memories Preview</span>
+        <div class="section-line" style="width: 100px; flex: none;"></div>
+      </div>
+      <a href="gallery.html" class="view-all-link">View Gallery →</a>
+    </div>
+    <div class="bento-gallery fade-in delay-3">
+      <div class="bento-item bento-large">
+        <img src="photos/photo_2026-05-04_00-37-15.jpg" alt="Featured Memory 1">
+        <div class="bento-overlay"><span>Campus Life</span></div>
+      </div>
+      <div class="bento-item">
+        <img src="photos/photo_2026-05-04_00-37-23.jpg" alt="Featured Memory 2">
+        <div class="bento-overlay"><span>Event Highlights</span></div>
+      </div>
+      <div class="bento-item">
+        <img src="photos/photo_2026-05-04_00-37-34.jpg" alt="Featured Memory 3">
+        <div class="bento-overlay"><span>Friends & Group</span></div>
+      </div>
+    </div>
+
+    <!-- Contact Info Panel -->
+    <div class="contact-panel fade-in delay-4">
+      <div class="contact-header">
+        <div class="contact-title">
+          <h3>Class Representatives</h3>
+          <p class="contact-badge">Contact for queries</p>
+        </div>
+      </div>
+      <div class="contact-grid">
+        <!-- CR 1 -->
+        <div class="contact-detail" style="align-items: center;">
+          <div class="cr-avatar" style="border: 2px solid rgba(14,165,233,0.4);">
+            <img src="Photos/CR Image/CR 1.jpg" alt="Md. Almas Ali">
+          </div>
+          <div class="contact-text">
+            <span>Class Representative</span>
+            <strong>Md. Almas Ali</strong>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; margin-top: 2px;">ID: 0182320012101068</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal;">📞 01781782704</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; display: flex; align-items: center; gap: 4px;">✉️ <a href="mailto:cse_0182320012101068@lus.ac.bd" style="color: var(--accent2); text-decoration: none;">cse_0182320012101068@lus.ac.bd</a></span>
+            <a href="https://wa.me/8801781782704" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background-color: #25D366; color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; margin-top: 10px; width: fit-content; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Message on WhatsApp
+            </a>
+          </div>
+        </div>
+        <!-- CR 2 -->
+        <div class="contact-detail" style="align-items: center;">
+          <div class="cr-avatar" style="border: 2px solid rgba(109,40,217,0.4);">
+            <img src="Photos/CR Image/CR 2.jpg" alt="MD. Shahriar Khan">
+          </div>
+          <div class="contact-text">
+            <span>Class Representative</span>
+            <strong>MD. Shahriar Khan</strong>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; margin-top: 2px;">ID: 0182320012101051</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal;">📞 01752184464</span>
+            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; display: flex; align-items: center; gap: 4px;">✉️ <a href="mailto:cse_0182320012101051@lus.ac.bd" style="color: var(--accent2); text-decoration: none;">cse_0182320012101051@lus.ac.bd</a></span>
+            <a href="https://wa.me/8801752184464" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background-color: #25D366; color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; margin-top: 10px; width: fit-content; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Message on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">Built with ❤️ for CSE Batch 62, Section B, Leading University.</div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
