@@ -199,11 +199,12 @@
         let found = false;
         
         for (let row of rows) {
-          const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
+          const cells = (row.c || []).map(c => (c && (c.v !== null && c.v !== undefined)) ? String(c.f || c.v).trim() : '');
           
           let idIndex = -1;
           for (let i = 0; i < cells.length; i++) {
-            if (cells[i] === studentId) {
+            // Match exact or without leading zero (Excel often strips leading zeros)
+            if (cells[i] === studentId || cells[i] === studentId.replace(/^0+/, '')) {
               idIndex = i;
               break;
             }
@@ -216,7 +217,16 @@
             
             // Find Phone Number using Regex
             for (let i = 0; i < cells.length; i++) {
-              let val = cells[i].replace(/\s+/g, '');
+              let val = String(cells[i]).replace(/\s+/g, '');
+              
+              // Handle Excel removing the leading zero (e.g., 1712345678 becomes 01712345678)
+              if (val.length === 10 && val.startsWith('1')) {
+                val = '0' + val;
+              }
+              if (val.length === 12 && val.startsWith('881')) {
+                val = '0' + val.substring(2);
+              }
+
               // Match BD phone number starting with 01 (11 digits), or +8801 / 8801
               if (/^(?:\+?88)?01\d{9}$/.test(val)) {
                 if (val.startsWith('+88')) val = val.substring(3);
