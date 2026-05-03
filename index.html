@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Official digital portal for CSE Batch 62, Section B at Leading University. Access class materials, schedules, notices and more.">
 </head>
 <body>
   <!-- Background layers -->
@@ -25,6 +26,7 @@
       <ul class="topbar-links">
         <li><a href="index.html" class="active">Home</a></li>
         <li><a href="students.html">Students</a></li>
+        <li><a href="info.html">Info</a></li>
         <li><a href="resources.html">Resources</a></li>
         <li><a href="notices.html">Notices</a></li>
         <li><a href="gallery.html">Gallery</a></li>
@@ -33,7 +35,20 @@
         <div class="status-dot"></div>
         Portal Active
       </div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
     </nav>
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="index.html" class="active">Home</a>
+      <a href="students.html">Students</a>
+      <a href="info.html">Info</a>
+      <a href="resources.html">Resources</a>
+      <a href="notices.html">Notices</a>
+      <a href="gallery.html">Gallery</a>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero fade-in delay-1">
@@ -118,6 +133,12 @@
         <div class="folder-name">Assignments</div>
         <div class="folder-desc">Uploads & deadlines</div>
       </a>
+      <a href="info.html" class="folder-card" style="--card-accent:rgba(14,165,233,0.5);--card-shadow:0 0 40px rgba(14,165,233,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(14,165,233,0.15),transparent 70%);--icon-bg:rgba(14,165,233,0.1);--icon-border:rgba(14,165,233,0.25);">
+        <span class="folder-arrow">↗</span>
+        <div class="folder-icon-wrap">📋</div>
+        <div class="folder-name">Info Hub</div>
+        <div class="folder-desc">Auto-updated class info</div>
+      </a>
       <a href="gallery.html" class="folder-card" style="--card-accent:rgba(236,72,153,0.5);--card-shadow:0 0 40px rgba(236,72,153,0.12);--card-glow:radial-gradient(circle at 50% 0%,rgba(236,72,153,0.15),transparent 70%);--icon-bg:rgba(236,72,153,0.1);--icon-border:rgba(236,72,153,0.25);">
         <span class="folder-arrow">↗</span>
         <div class="folder-icon-wrap">📸</div>
@@ -200,5 +221,15 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    const ham = document.getElementById('hamburger');
+    const mNav = document.getElementById('mobileNav');
+    const mClose = document.getElementById('mobileNavClose');
+    if (ham && mNav && mClose) {
+      ham.addEventListener('click', () => { ham.classList.toggle('open'); mNav.classList.toggle('open'); });
+      mClose.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); });
+      mNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { ham.classList.remove('open'); mNav.classList.remove('open'); }));
+    }
+  </script>
 </body>
 </html>
