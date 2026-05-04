@@ -343,127 +343,117 @@
   </div>
 
   <script>
-    const SHEET_ID    = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-    const SHEET_NAME  = 'Materials';
-    const MARKS_SHEET = 'Marks';
+    const SHEET_ID      = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+    const SHEET_NAME    = 'Materials';
+    const MARKS_SHEET   = 'Marks';
+    const DRIVE_API_KEY = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
 
-    /* Course icon map */
-    const COURSE_ICONS = {
-      'CSE': 'fa-laptop-code',
-      'GED': 'fa-book-open',
-      'MAT': 'fa-square-root-variable',
-      'PHY': 'fa-atom',
-      'EEE': 'fa-bolt',
-      'default': 'fa-graduation-cap',
-    };
-    function getCourseIcon(code) {
-      const prefix = code.split('-')[0];
-      return COURSE_ICONS[prefix] || COURSE_ICONS['default'];
+    /* ── Course icons ── */
+    const COURSE_ICONS = { CSE:'fa-laptop-code', GED:'fa-book-open', MAT:'fa-square-root-variable', PHY:'fa-atom', EEE:'fa-bolt', default:'fa-graduation-cap' };
+    function getCourseIcon(code) { return COURSE_ICONS[code.split('-')[0]] || COURSE_ICONS.default; }
+
+    /* ── File type from Drive mimeType ── */
+    function mimeToType(m) {
+      if (!m) return 'other';
+      if (m === 'application/pdf') return 'pdf';
+      if (m.startsWith('video/')) return 'video';
+      if (m.includes('powerpoint') || m === 'application/vnd.google-apps.presentation') return 'ppt';
+      if (m.includes('zip') || m.includes('rar') || m.includes('x-msdownload') || m.includes('octet-stream')) return 'zip';
+      if (m.startsWith('image/')) return 'image';
+      if (m.includes('word') || m === 'application/vnd.google-apps.document') return 'doc';
+      return 'other';
     }
 
-    /* File type meta */
     const TYPE_META = {
-      pdf:   { icon: 'fa-file-pdf',       cls: 'ftype-pdf',   label: 'PDF',          view: false },
-      video: { icon: 'fa-circle-play',     cls: 'ftype-video', label: 'Video',         view: true  },
-      ppt:   { icon: 'fa-file-powerpoint', cls: 'ftype-ppt',   label: 'Presentation', view: false },
-      pptx:  { icon: 'fa-file-powerpoint', cls: 'ftype-ppt',   label: 'Presentation', view: false },
-      zip:   { icon: 'fa-file-zipper',     cls: 'ftype-zip',   label: 'Archive',       view: false },
-      exe:   { icon: 'fa-file-zipper',     cls: 'ftype-zip',   label: 'Software',      view: false },
-      image: { icon: 'fa-file-image',      cls: 'ftype-image', label: 'Image',         view: true  },
-      doc:   { icon: 'fa-file-word',       cls: 'ftype-doc',   label: 'Document',      view: false },
-      docx:  { icon: 'fa-file-word',       cls: 'ftype-doc',   label: 'Document',      view: false },
+      pdf:   { icon: 'fa-file-pdf',        cls: 'ftype-pdf',   label: 'PDF',           view: false },
+      video: { icon: 'fa-circle-play',      cls: 'ftype-video', label: 'Video',          view: true  },
+      ppt:   { icon: 'fa-file-powerpoint',  cls: 'ftype-ppt',   label: 'Presentation',  view: false },
+      zip:   { icon: 'fa-file-zipper',      cls: 'ftype-zip',   label: 'Software / ZIP', view: false },
+      image: { icon: 'fa-file-image',       cls: 'ftype-image', label: 'Image',          view: true  },
+      doc:   { icon: 'fa-file-word',        cls: 'ftype-doc',   label: 'Document',       view: false },
+      other: { icon: 'fa-file',             cls: 'ftype-other', label: 'File',           view: false },
     };
-    function typeMeta(t) {
-      return TYPE_META[(t||'').toLowerCase().trim()] ||
-             { icon: 'fa-file', cls: 'ftype-other', label: t||'File', view: false };
-    }
+    function typeMeta(mimeType) { return TYPE_META[mimeToType(mimeType)] || TYPE_META.other; }
 
-    function driveLink(url, type) {
-      if (!url) return '#';
-      const m = url.match(/\/file\/d\/([^\/\?]+)/);
-      if (m) {
-        const id = m[1];
-        const t  = (type||'').toLowerCase();
-        if (t === 'video' || t === 'image') return `https://drive.google.com/file/d/${id}/preview`;
-        return `https://drive.google.com/uc?export=download&id=${id}`;
-      }
-      return url;
-    }
-
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    function fileUrl(file) {
+      const { id, mimeType } = file;
+      const t = mimeToType(mimeType);
+      if (t === 'video' || t === 'image') return `https://drive.google.com/file/d/${id}/preview`;
+      if (mimeType === 'application/vnd.google-apps.document')     return `https://docs.google.com/document/d/${id}/export?format=pdf`;
+      if (mimeType === 'application/vnd.google-apps.presentation') return `https://docs.google.com/presentation/d/${id}/export/pptx`;
+      if (mimeType === 'application/vnd.google-apps.spreadsheet')  return `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`;
+      return `https://drive.google.com/uc?export=download&id=${id}`;
     }
 
     /* ── Mark colors ── */
     const MARK_COLORS = [
-      { num: '#818cf8', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.22)',  bar: '#818cf8' },
-      { num: '#34d399', bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.22)',  bar: '#34d399' },
-      { num: '#fb923c', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.22)',  bar: '#fb923c' },
-      { num: '#f87171', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.22)',   bar: '#f87171' },
-      { num: '#a78bfa', bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.22)',  bar: '#a78bfa' },
-      { num: '#fbbf24', bg: 'rgba(234,179,8,0.1)',   border: 'rgba(234,179,8,0.22)',   bar: '#fbbf24' },
-      { num: '#38bdf8', bg: 'rgba(14,165,233,0.1)',  border: 'rgba(14,165,233,0.22)',  bar: '#38bdf8' },
+      { num:'#818cf8', bg:'rgba(99,102,241,0.1)',  border:'rgba(99,102,241,0.22)',  bar:'#818cf8' },
+      { num:'#34d399', bg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.22)',  bar:'#34d399' },
+      { num:'#fb923c', bg:'rgba(249,115,22,0.1)',  border:'rgba(249,115,22,0.22)',  bar:'#fb923c' },
+      { num:'#f87171', bg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.22)',   bar:'#f87171' },
+      { num:'#a78bfa', bg:'rgba(139,92,246,0.1)',  border:'rgba(139,92,246,0.22)',  bar:'#a78bfa' },
+      { num:'#fbbf24', bg:'rgba(234,179,8,0.1)',   border:'rgba(234,179,8,0.22)',   bar:'#fbbf24' },
+      { num:'#38bdf8', bg:'rgba(14,165,233,0.1)',  border:'rgba(14,165,233,0.22)',  bar:'#38bdf8' },
     ];
 
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
     /* ── State ── */
-    let grouped      = {};   // { courseCode: { name, colorIdx, files:[] } }
-    let marksData    = {};   // { courseCode: [{component, marks}, ...] }
+    let grouped      = {};  // { code: { name, colorIdx, folderId, files: null|[] } }
+    let marksData    = {};  // { code: [{component, marks}] }
     let activeCourse = null;
 
-    /* ── Level 1: render course cards ── */
-    function renderCourses() {
-      const grid = document.getElementById('courseGrid');
-      const codes = Object.keys(grouped);
+    /* ── Drive API: list files in a folder ── */
+    async function loadFolderFiles(folderId) {
+      const url = `https://www.googleapis.com/drive/v3/files?q=%27${folderId}%27+in+parents+and+trashed%3Dfalse&orderBy=name&fields=files(id%2Cname%2CmimeType)&key=${DRIVE_API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Drive API ' + res.status);
+      const data = await res.json();
+      return data.files || [];
+    }
 
+    /* ── Level 1: course cards ── */
+    function renderCourses() {
+      const grid  = document.getElementById('courseGrid');
+      const codes = Object.keys(grouped);
       if (!codes.length) {
-        grid.innerHTML = `<div class="res-empty" style="grid-column:1/-1;">
-          <i class="fa-regular fa-folder-open"></i>
-          <h3>No materials yet</h3>
-          <p>Materials will appear here once uploaded to the sheet.</p>
-        </div>`;
+        grid.innerHTML = `<div class="res-empty" style="grid-column:1/-1;"><i class="fa-regular fa-folder-open"></i><h3>No courses yet</h3><p>Add course rows to the Materials sheet.</p></div>`;
         return;
       }
-
-      grid.innerHTML = codes.map((code, idx) => {
-        const g   = grouped[code];
-        const ci  = g.colorIdx;
-        const ico = getCourseIcon(code);
+      grid.innerHTML = codes.map(code => {
+        const g  = grouped[code];
+        const ci = g.colorIdx;
         return `
           <div class="course-card ca-${ci}" onclick="showMaterials('${esc(code)}')">
             <div class="cc-top">
-              <div class="cc-icon"><i class="fa-solid ${ico}"></i></div>
+              <div class="cc-icon"><i class="fa-solid ${getCourseIcon(code)}"></i></div>
               <div class="cc-arrow"><i class="fa-solid fa-chevron-right"></i></div>
             </div>
             <div>
               <div class="cc-code">${esc(code)}</div>
               <div class="cc-name" style="margin-top:6px;">${esc(g.name)}</div>
-              <div class="cc-count" style="margin-top:4px;">${g.files.length} material${g.files.length!==1?'s':''}</div>
+              <div class="cc-count" style="margin-top:4px;"><i class="fa-solid fa-folder-open" style="font-size:0.7rem;margin-right:4px;"></i>Tap to browse</div>
             </div>
           </div>`;
       }).join('');
     }
 
-    /* ── Render mark distribution ── */
+    /* ── Mark distribution (inside course view) ── */
     function renderMarks(code) {
       const sec   = document.getElementById('marksSection');
       const items = marksData[code] || [];
-
       if (!items.length) { sec.innerHTML = ''; return; }
-
-      const total = items.reduce((s, i) => s + (parseFloat(i.marks) || 0), 0);
+      const total    = items.reduce((s, i) => s + (parseFloat(i.marks) || 0), 0);
       const itemsHtml = items.map((item, idx) => {
-        const c    = MARK_COLORS[idx % MARK_COLORS.length];
-        const pct  = total > 0 ? ((parseFloat(item.marks)||0) / total * 100).toFixed(0) : 0;
+        const c   = MARK_COLORS[idx % MARK_COLORS.length];
+        const pct = total > 0 ? ((parseFloat(item.marks)||0) / total * 100).toFixed(0) : 0;
         return `
           <div class="mark-item" style="background:${c.bg};border-color:${c.border};">
             <div class="mark-num" style="color:${c.num};">${esc(item.marks)}</div>
             <div class="mark-label">${esc(item.component)}</div>
-            <div class="mark-bar">
-              <div class="mark-bar-fill" style="width:${pct}%;background:${c.bar};"></div>
-            </div>
+            <div class="mark-bar"><div class="mark-bar-fill" style="width:${pct}%;background:${c.bar};"></div></div>
           </div>`;
       }).join('');
-
       sec.innerHTML = `
         <div class="marks-section">
           <div class="marks-header">
@@ -475,12 +465,11 @@
         </div>`;
     }
 
-    /* ── Level 2: show course materials ── */
-    function showMaterials(code) {
+    /* ── Level 2: open a course ── */
+    async function showMaterials(code) {
       activeCourse = code;
-      const g   = grouped[code];
-      const ci  = g.colorIdx;
-      const ico = getCourseIcon(code);
+      const g  = grouped[code];
+      const ci = g.colorIdx;
 
       document.getElementById('coursesView').classList.add('hidden');
       document.getElementById('materialsView').classList.add('active');
@@ -488,34 +477,49 @@
 
       document.getElementById('matHeader').className = `mat-course-header fade-in ca-${ci}`;
       document.getElementById('matHeader').innerHTML = `
-        <div class="mat-course-icon ca-${ci}"><i class="fa-solid ${ico}"></i></div>
+        <div class="mat-course-icon ca-${ci}"><i class="fa-solid ${getCourseIcon(code)}"></i></div>
         <div>
           <div class="mat-course-code ca-${ci}">${esc(code)}</div>
           <div class="mat-course-name" style="margin-top:4px;">${esc(g.name)}</div>
-        </div>
-        <span class="mat-file-count">${g.files.length} file${g.files.length!==1?'s':''}</span>`;
+        </div>`;
 
       renderMarks(code);
-      renderFiles(g.files);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      /* Load files from Drive API if not cached */
+      if (g.files === null) {
+        document.getElementById('fileList').innerHTML =
+          `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive…</span></div>`;
+        try {
+          g.files = await loadFolderFiles(g.folderId);
+        } catch (e) {
+          g.files = [];
+          document.getElementById('fileList').innerHTML =
+            `<div class="res-empty" style="border-radius:0 0 18px 18px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <h3>Could not load files</h3>
+              <p>Make sure the folder is shared as "Anyone with the link".</p>
+            </div>`;
+          return;
+        }
+      }
+      renderFiles(g.files);
     }
 
     function renderFiles(files) {
       const list = document.getElementById('fileList');
-      if (!files.length) {
-        list.innerHTML = `<div class="res-empty" style="border-radius:0 0 18px 18px;">
-          <i class="fa-regular fa-folder-open"></i>
-          <h3>No files found</h3></div>`;
+      if (!files || !files.length) {
+        list.innerHTML = `<div class="res-empty" style="border-radius:0 0 18px 18px;"><i class="fa-regular fa-folder-open"></i><h3>No files in this folder</h3></div>`;
         return;
       }
       list.innerHTML = files.map(f => {
-        const tm  = typeMeta(f.type);
-        const url = driveLink(f.driveLink, f.type);
+        const tm  = typeMeta(f.mimeType);
+        const url = fileUrl(f);
         return `
           <div class="file-item">
             <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
             <div class="file-info">
-              <span class="file-name" title="${esc(f.title)}">${esc(f.title)}</span>
+              <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
               <span class="file-type-label">${tm.label}</span>
             </div>
             <a class="file-btn ${tm.view?'vw':'dl'}" href="${url}" target="_blank" rel="noopener">
@@ -528,10 +532,10 @@
 
     function filterFiles(q) {
       if (!activeCourse) return;
-      const files = grouped[activeCourse].files;
+      const files = grouped[activeCourse].files || [];
       const lq = q.trim().toLowerCase();
       if (!lq) { renderFiles(files); return; }
-      renderFiles(files.filter(f => f.title.toLowerCase().includes(lq)));
+      renderFiles(files.filter(f => f.name.toLowerCase().includes(lq)));
     }
 
     function showCourses() {
@@ -541,7 +545,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── Load sheet ── */
+    /* ── Sheet helpers ── */
     function setSyncText(text, ok = true) {
       const el  = document.getElementById('syncText');
       const dot = document.querySelector('.sync-badge .sync-dot');
@@ -567,63 +571,54 @@
 
     async function syncData() {
       try {
-        /* Load Materials and Marks sheets in parallel */
         const [matData, mrkData] = await Promise.allSettled([
           fetchSheet(SHEET_NAME),
           fetchSheet(MARKS_SHEET)
         ]);
 
-        /* ── Parse Materials ── */
+        /* Parse Materials sheet: CourseCode | CourseName | FolderID */
         if (matData.status === 'fulfilled') {
-          const rows       = matData.value.table?.rows || [];
-          const newGrouped = {};
-          colorCounter     = 0;
+          const rows = matData.value.table?.rows || [];
+          const ng   = {};
+          colorCounter = 0;
           rows.forEach(row => {
             const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
-            if (cells.length < 5) return;
-            const [courseCode, courseName, title, type, link] = cells;
-            if (!courseCode || !title || courseCode.toLowerCase() === 'coursecode') return;
-            if (!newGrouped[courseCode]) {
-              newGrouped[courseCode] = { name: courseName || courseCode, colorIdx: colorCounter++ % COLORS, files: [] };
+            if (cells.length < 3) return;
+            const [courseCode, courseName, folderId] = cells;
+            if (!courseCode || !folderId || courseCode.toLowerCase() === 'coursecode') return;
+            if (!ng[courseCode]) {
+              ng[courseCode] = { name: courseName || courseCode, colorIdx: colorCounter++ % COLORS, folderId, files: null };
             }
-            newGrouped[courseCode].files.push({ title, type, driveLink: link });
           });
-          grouped = newGrouped;
+          /* Preserve cached files when refreshing */
+          Object.keys(ng).forEach(k => { if (grouped[k]?.files) ng[k].files = grouped[k].files; });
+          grouped = ng;
         }
 
-        /* ── Parse Marks ── */
+        /* Parse Marks sheet: CourseCode | Component | Marks */
         if (mrkData.status === 'fulfilled') {
-          const rows      = mrkData.value.table?.rows || [];
-          const newMarks  = {};
+          const rows = mrkData.value.table?.rows || [];
+          const nm   = {};
           rows.forEach(row => {
             const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
             if (cells.length < 3) return;
             const [courseCode, component, marks] = cells;
             if (!courseCode || !component || courseCode.toLowerCase() === 'coursecode') return;
-            if (!newMarks[courseCode]) newMarks[courseCode] = [];
-            newMarks[courseCode].push({ component, marks });
+            if (!nm[courseCode]) nm[courseCode] = [];
+            nm[courseCode].push({ component, marks });
           });
-          marksData = newMarks;
+          marksData = nm;
         }
 
-        /* ── Refresh current view ── */
-        if (activeCourse && grouped[activeCourse]) {
-          renderMarks(activeCourse);
-          renderFiles(grouped[activeCourse].files);
-        } else if (!activeCourse) {
-          renderCourses();
-        }
+        if (!activeCourse) renderCourses();
+        else if (grouped[activeCourse]) renderMarks(activeCourse);
 
         setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
       } catch (err) {
         setSyncText('Sync failed — retrying…', false);
         if (!Object.keys(grouped).length) {
-          document.getElementById('courseGrid').innerHTML = `
-            <div class="res-empty" style="grid-column:1/-1;">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <h3>Could not load courses</h3>
-              <p>Please refresh or check back shortly.</p>
-            </div>`;
+          document.getElementById('courseGrid').innerHTML =
+            `<div class="res-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i><h3>Could not load</h3><p>Please refresh.</p></div>`;
         }
       }
     }
