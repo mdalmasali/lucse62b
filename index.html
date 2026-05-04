@@ -113,6 +113,51 @@
       </div>
     </section>
 
+    <!-- Graduation Countdown -->
+    <div class="grad-countdown fade-in delay-2">
+      <div class="grad-countdown-inner">
+        <div class="gc-header">
+          <span class="gc-icon">🎓</span>
+          <div>
+            <div class="gc-title">Countdown to Graduation</div>
+            <div class="gc-sub">Honours Programme &nbsp;·&nbsp; CSE Batch 62, Section B &nbsp;·&nbsp; August 2027</div>
+          </div>
+        </div>
+        <div class="gc-units">
+          <div class="gc-unit">
+            <div class="gc-num" id="gc-days">000</div>
+            <div class="gc-label">Days</div>
+          </div>
+          <div class="gc-sep">:</div>
+          <div class="gc-unit">
+            <div class="gc-num" id="gc-hrs">00</div>
+            <div class="gc-label">Hours</div>
+          </div>
+          <div class="gc-sep">:</div>
+          <div class="gc-unit">
+            <div class="gc-num" id="gc-min">00</div>
+            <div class="gc-label">Minutes</div>
+          </div>
+          <div class="gc-sep">:</div>
+          <div class="gc-unit">
+            <div class="gc-num" id="gc-sec">00</div>
+            <div class="gc-label">Seconds</div>
+          </div>
+        </div>
+        <div class="gc-progress-wrap">
+          <div class="gc-progress-track">
+            <div class="gc-progress-fill" id="gcFill"></div>
+            <div class="gc-progress-dot" id="gcDot"></div>
+          </div>
+          <div class="gc-progress-labels">
+            <span>Started · Sep 2023</span>
+            <span class="gc-pct" id="gcPct">0%</span>
+            <span>Graduation · Aug 2027</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="divider fade-in delay-2"></div>
 
     <!-- Stats -->
@@ -342,5 +387,54 @@
     loadTopNotice();
   </script>
   <script src="assets/js/auth.js"></script>
+  <script>
+    /* ── Graduation Countdown Timer ── */
+    (function () {
+      const GRAD  = new Date(2027, 7, 31, 23, 59, 59); // Aug 31 2027
+      const START = new Date(2023, 8,  1,  0,  0,  0); // Sep  1 2023
+      const TOTAL = GRAD - START;
+
+      function pad(n, d) { return String(n).padStart(d || 2, '0'); }
+
+      let prevSec = -1;
+
+      function tick() {
+        const now  = new Date();
+        let   diff = Math.max(0, GRAD - now);
+
+        const days  = Math.floor(diff / 86400000); diff -= days  * 86400000;
+        const hours = Math.floor(diff /  3600000); diff -= hours *  3600000;
+        const mins  = Math.floor(diff /    60000); diff -= mins  *    60000;
+        const secs  = Math.floor(diff /     1000);
+
+        document.getElementById('gc-days').textContent = pad(days, 3);
+        document.getElementById('gc-hrs').textContent  = pad(hours);
+        document.getElementById('gc-min').textContent  = pad(mins);
+
+        const secEl = document.getElementById('gc-sec');
+        if (secs !== prevSec) {
+          prevSec = secs;
+          secEl.classList.remove('tick');
+          void secEl.offsetWidth;
+          secEl.classList.add('tick');
+          secEl.textContent = pad(secs);
+          setTimeout(function () { secEl.classList.remove('tick'); }, 130);
+        }
+
+        /* Progress bar */
+        const elapsed = Math.max(0, now - START);
+        const pct     = Math.min(100, (elapsed / TOTAL) * 100);
+        const fill    = document.getElementById('gcFill');
+        const dot     = document.getElementById('gcDot');
+        const pctEl   = document.getElementById('gcPct');
+        if (fill)  fill.style.width = pct.toFixed(3) + '%';
+        if (dot)   dot.style.left   = pct.toFixed(3) + '%';
+        if (pctEl) pctEl.textContent = pct.toFixed(1) + '% complete';
+      }
+
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
 </body>
 </html>
