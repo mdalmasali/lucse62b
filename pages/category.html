@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Loading… | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+        <li class="auth-only"><a href="students.html">Students</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li class="auth-only"><a href="notices.html">Notices</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+      </ul>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        Portal Active
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a class="auth-only" href="students.html">Students</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a class="auth-only" href="notices.html">Notices</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    </div>
+
+    <div class="section-header fade-in delay-1" style="margin-top: 40px;">
+      <span class="section-label" id="pageLabel">⏳ Loading…</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="sync-badge fade-in delay-1" id="syncBadge">
+      <span class="sync-dot"></span>
+      <span id="syncText">Connecting to Google Sheet…</span>
+    </div>
+
+    <div class="info-search-bar fade-in delay-2">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search…" autocomplete="off"/>
+    </div>
+
+    <div class="info-cards fade-in delay-3" id="infoCards">
+      <div class="info-loading">
+        <div class="spin"></div>
+        <div>Loading…</div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="notices.html">Notices</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const BOT_SHEET_ID   = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+    const BOT_SHEET_NAME = 'AutoBOT';
+
+    const CAT_META = {
+      'assignment':   { icon: '📝', color: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.35)',  tag: '#34d399', label: 'Assignment' },
+      'tutorial':     { icon: '📖', color: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.35)',  tag: '#818cf8', label: 'Tutorial' },
+      'lab report':   { icon: '🔬', color: 'rgba(20,184,166,0.12)',  border: 'rgba(20,184,166,0.35)',  tag: '#2dd4bf', label: 'Lab Report' },
+      'viva':         { icon: '🎙️', color: 'rgba(244,63,94,0.1)',    border: 'rgba(244,63,94,0.35)',   tag: '#fb7185', label: 'Viva' },
+      'lab final':    { icon: '⚗️', color: 'rgba(234,179,8,0.1)',    border: 'rgba(234,179,8,0.35)',   tag: '#fbbf24', label: 'Lab Final' },
+      'project':      { icon: '🚀', color: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.35)', tag: '#c4b5fd', label: 'Project' },
+      'presentation': { icon: '📊', color: 'rgba(249,115,22,0.1)',   border: 'rgba(249,115,22,0.35)',  tag: '#fb923c', label: 'Presentation' },
+    };
+
+    const KEYWORD_MAP = [
+      { keys: ['assignment'],              cat: 'assignment' },
+      { keys: ['tutorial', 'quiz', 'lab test'], cat: 'tutorial' },
+      { keys: ['lab report'],              cat: 'lab report' },
+      { keys: ['viva'],                    cat: 'viva' },
+      { keys: ['lab final', 'lab exam'],   cat: 'lab final' },
+      { keys: ['project'],                 cat: 'project' },
+      { keys: ['presentation'],            cat: 'presentation' },
+    ];
+
+    /* Read ?cat= from URL */
+    const params = new URLSearchParams(window.location.search);
+    const activeCat = (params.get('cat') || '').toLowerCase().trim();
+    const meta = CAT_META[activeCat];
+
+    if (!meta) {
+      document.title = 'Not Found | CSE 62B LU';
+      document.getElementById('pageLabel').textContent = '❌ Unknown category';
+      document.getElementById('infoCards').innerHTML =
+        '<div class="info-empty">Unknown category. <a href="../index.html">Go Home</a></div>';
+    } else {
+      document.title = meta.label + ' | CSE 62B LU';
+      document.getElementById('pageLabel').textContent = meta.icon + ' ' + meta.label;
+      document.getElementById('searchInput').placeholder = 'Search ' + meta.label + '…';
+    }
+
+    function resolveCategory(keyword) {
+      const kl = keyword.toLowerCase().trim();
+      for (const m of KEYWORD_MAP) {
+        for (const k of m.keys) {
+          if (kl === k || kl.includes(k)) return m.cat;
+        }
+      }
+      return null;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function linkify(text) {
+      return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    }
+
+    let allItems = [];
+    let searchQuery = '';
+
+    function renderCards() {
+      const container = document.getElementById('infoCards');
+      let filtered = searchQuery
+        ? allItems.filter(i =>
+            i.keyword.toLowerCase().includes(searchQuery) ||
+            i.reply.toLowerCase().includes(searchQuery))
+        : allItems;
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="info-empty">😕 No entries found yet for this category.</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'info-card';
+        card.innerHTML = `
+          <div class="info-card-header">
+            <div class="info-card-icon" style="background:${meta.color};border:1px solid ${meta.border};">${meta.icon}</div>
+            <div class="info-card-title">${escapeHtml(item.keyword)}</div>
+            <span class="info-card-tag" style="color:${meta.tag};border-color:${meta.border};background:${meta.color};">${meta.label}</span>
+          </div>
+          <div class="info-card-body">${linkify(escapeHtml(item.reply))}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function loadSheet() {
+      return new Promise((resolve, reject) => {
+        const cb = `botCat_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s = document.createElement('script');
+        const t = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = (data) => { cleanup(); resolve(data); };
+        s.src = `https://docs.google.com/spreadsheets/d/${BOT_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(BOT_SHEET_NAME)}`;
+        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function setSyncText(text, ok = true) {
+      const el = document.getElementById('syncText');
+      const dot = document.querySelector('.sync-badge .sync-dot');
+      if (el) el.textContent = text;
+      if (dot) dot.style.background = ok ? 'var(--green)' : '#f87171';
+    }
+
+    async function syncData() {
+      if (!meta) return;
+      try {
+        const data = await loadSheet();
+        const rows = data.table?.rows || [];
+        const items = [];
+        rows.forEach(row => {
+          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+          if (cells.length >= 2 && cells[0] && cells[1]) {
+            if (['keyword','keywords','key'].includes(cells[0].toLowerCase())) return;
+            const cat = resolveCategory(cells[0]);
+            if (cat === activeCat) items.push({ keyword: cells[0], reply: cells[1] });
+          }
+        });
+        allItems = items;
+        renderCards();
+        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        setSyncText('Sync failed — retrying shortly…', false);
+        if (!allItems.length)
+          document.getElementById('infoCards').innerHTML =
+            '<div class="info-empty">⚠️ Could not load data. Please refresh.</div>';
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      renderCards();
+    });
+
+    syncData();
+    setInterval(syncData, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncData(); });
+  </script>
+  <script src="../assets/js/auth.js"></script>
+</body>
+</html>
