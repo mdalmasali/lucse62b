@@ -13,91 +13,124 @@
     /* ── Semester bar ── */
     .sem-bar {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(109,40,217,0.08);
-      border: 1px solid rgba(109,40,217,0.2);
-      border-radius: 14px; padding: 12px 18px;
-      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+      background: rgba(109,40,217,0.08); border: 1px solid rgba(109,40,217,0.2);
+      border-radius: 14px; padding: 12px 18px; margin-bottom: 24px; flex-wrap: wrap; gap: 8px;
     }
     .sem-bar-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
     .sem-badge {
-      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-      font-size: 0.82rem; color: #a78bfa;
-      background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
-      padding: 4px 12px; border-radius: 100px;
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.82rem;
+      color: #a78bfa; background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.3); padding: 4px 12px; border-radius: 100px;
     }
 
-    /* ── Search bar ── */
-    .res-search {
-      display: flex; align-items: center; gap: 10px;
+    /* ── Course card grid ── */
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px; margin-bottom: 44px;
+    }
+    .course-card {
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
+      border-radius: 20px; padding: 22px 20px;
+      cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      display: flex; flex-direction: column; gap: 14px;
+      -webkit-tap-highlight-color: transparent;
     }
-    .res-search input {
-      flex: 1; background: none; border: none; outline: none;
-      color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem;
+    .course-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
     }
-    .res-search input::placeholder { color: var(--muted); }
+    .course-card:active { transform: scale(0.97); }
 
-    /* ── Course filter tabs ── */
-    .res-tabs {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+    .cc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .cc-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
     }
-    .res-tab {
-      padding: 7px 16px; border-radius: 100px; font-size: 0.78rem;
-      font-weight: 600; border: 1px solid var(--border);
-      background: var(--card); color: var(--text-secondary);
-      cursor: pointer; transition: all 0.2s; white-space: nowrap;
-      font-family: 'Inter', sans-serif;
-    }
-    .res-tab:hover { border-color: var(--accent); color: var(--text); }
-    .res-tab.active {
-      background: rgba(109,40,217,0.15); border-color: rgba(109,40,217,0.5);
-      color: #a78bfa;
-    }
-
-    /* ── Course group ── */
-    .course-group { margin-bottom: 20px; }
-    .course-group.hidden { display: none; }
-
-    .course-group-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 18px; background: var(--card);
-      border: 1px solid var(--border); border-radius: 16px 16px 0 0;
-      cursor: pointer; user-select: none; transition: background 0.2s;
-      flex-wrap: wrap;
-    }
-    .course-group-header:hover { background: rgba(255,255,255,0.04); }
-    .course-group-header.collapsed { border-radius: 16px; }
-
-    .course-code-badge {
-      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-      font-size: 0.78rem; color: #60a5fa;
-      background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.25);
-      padding: 3px 10px; border-radius: 8px; flex-shrink: 0;
-    }
-    .course-group-name {
-      font-family: 'Space Grotesk', sans-serif; font-weight: 600;
-      font-size: 0.95rem; color: var(--text); flex: 1; min-width: 140px;
-    }
-    .course-file-count {
-      font-size: 0.75rem; color: var(--muted); margin-left: auto;
-    }
-    .course-chevron {
-      color: var(--muted); font-size: 0.75rem; transition: transform 0.25s;
+    .cc-arrow {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.05); color: var(--muted);
+      font-size: 0.8rem; transition: background 0.2s, color 0.2s;
       flex-shrink: 0;
     }
-    .course-group-header.collapsed .course-chevron { transform: rotate(-90deg); }
+    .course-card:hover .cc-arrow { background: rgba(139,92,246,0.2); color: #a78bfa; }
 
-    /* ── File list ── */
-    .course-files {
-      border: 1px solid var(--border); border-top: none;
-      border-radius: 0 0 16px 16px; overflow: hidden;
+    .cc-code {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem;
+      font-weight: 700; letter-spacing: 0.5px;
+      padding: 3px 10px; border-radius: 8px; width: fit-content;
     }
-    .course-files.collapsed { display: none; }
+    .cc-name {
+      font-family: 'Space Grotesk', sans-serif; font-size: 1rem;
+      font-weight: 600; color: var(--text); line-height: 1.3;
+    }
+    .cc-count { font-size: 0.78rem; color: var(--muted); }
 
+    /* Course accent colors */
+    .ca-0 { background: rgba(99,102,241,0.12); }  .ca-0 .cc-icon { background: rgba(99,102,241,0.15); color: #818cf8; } .ca-0 .cc-code { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); } .ca-0 { border-color: rgba(99,102,241,0.18); }
+    .ca-1 { background: rgba(14,165,233,0.06); }  .ca-1 .cc-icon { background: rgba(14,165,233,0.12); color: #38bdf8; } .ca-1 .cc-code { background: rgba(14,165,233,0.1); color: #38bdf8; border: 1px solid rgba(14,165,233,0.25); } .ca-1 { border-color: rgba(14,165,233,0.18); }
+    .ca-2 { background: rgba(20,184,166,0.06); }  .ca-2 .cc-icon { background: rgba(20,184,166,0.12); color: #2dd4bf; } .ca-2 .cc-code { background: rgba(20,184,166,0.1); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.25); } .ca-2 { border-color: rgba(20,184,166,0.18); }
+    .ca-3 { background: rgba(249,115,22,0.06); }  .ca-3 .cc-icon { background: rgba(249,115,22,0.1); color: #fb923c; }  .ca-3 .cc-code { background: rgba(249,115,22,0.1); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }  .ca-3 { border-color: rgba(249,115,22,0.18); }
+    .ca-4 { background: rgba(236,72,153,0.06); }  .ca-4 .cc-icon { background: rgba(236,72,153,0.1); color: #f472b6; }  .ca-4 .cc-code { background: rgba(236,72,153,0.1); color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }  .ca-4 { border-color: rgba(236,72,153,0.18); }
+    .ca-5 { background: rgba(234,179,8,0.06); }   .ca-5 .cc-icon { background: rgba(234,179,8,0.1); color: #fbbf24; }   .ca-5 .cc-code { background: rgba(234,179,8,0.1); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }   .ca-5 { border-color: rgba(234,179,8,0.18); }
+
+    /* ── Materials view (level 2) ── */
+    .materials-view { display: none; }
+    .materials-view.active { display: block; }
+    .courses-view.hidden { display: none; }
+
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; margin-bottom: 20px;
+      padding: 8px 14px; border-radius: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      transition: color 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .back-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    .mat-course-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 20px; border-radius: 18px 18px 0 0;
+      border: 1px solid var(--border); margin-bottom: 0;
+    }
+    .mat-course-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    }
+    .mat-course-code {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.8rem; padding: 3px 10px; border-radius: 8px;
+    }
+    .mat-course-name {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: 1.05rem; color: var(--text);
+    }
+    .mat-file-count { font-size: 0.78rem; color: var(--muted); margin-left: auto; }
+
+    /* Search inside materials view */
+    .mat-search {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-top: none; padding: 12px 16px;
+    }
+    .mat-search input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    }
+    .mat-search input::placeholder { color: var(--muted); }
+
+    /* File list */
+    .file-list {
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 18px 18px; overflow: hidden; margin-bottom: 44px;
+    }
     .file-item {
       display: flex; align-items: center; gap: 14px;
-      padding: 13px 18px; transition: background 0.15s;
+      padding: 14px 20px; transition: background 0.15s;
       border-bottom: 1px solid rgba(255,255,255,0.04);
     }
     .file-item:last-child { border-bottom: none; }
@@ -105,78 +138,66 @@
     .file-item.hidden { display: none; }
 
     .file-type-icon {
-      width: 38px; height: 38px; border-radius: 10px;
+      width: 40px; height: 40px; border-radius: 11px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1rem; flex-shrink: 0;
     }
-    .ftype-pdf    { background: rgba(239,68,68,0.12);   color: #f87171; }
-    .ftype-video  { background: rgba(139,92,246,0.12);  color: #a78bfa; }
-    .ftype-ppt    { background: rgba(249,115,22,0.12);  color: #fb923c; }
-    .ftype-zip    { background: rgba(14,165,233,0.12);  color: #38bdf8; }
-    .ftype-image  { background: rgba(16,185,129,0.12);  color: #34d399; }
-    .ftype-doc    { background: rgba(99,102,241,0.12);  color: #818cf8; }
-    .ftype-other  { background: rgba(148,163,184,0.1);  color: #94a3b8; }
+    .ftype-pdf   { background: rgba(239,68,68,0.12);  color: #f87171; }
+    .ftype-video { background: rgba(139,92,246,0.12); color: #a78bfa; }
+    .ftype-ppt   { background: rgba(249,115,22,0.12); color: #fb923c; }
+    .ftype-zip   { background: rgba(14,165,233,0.12); color: #38bdf8; }
+    .ftype-image { background: rgba(16,185,129,0.12); color: #34d399; }
+    .ftype-doc   { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .ftype-other { background: rgba(148,163,184,0.1); color: #94a3b8; }
 
     .file-info { flex: 1; min-width: 0; }
     .file-name {
-      font-size: 0.9rem; font-weight: 500; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      display: block;
+      font-size: 0.92rem; font-weight: 500; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
     }
     .file-type-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
     .file-btn {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 10px; font-size: 0.78rem;
+      padding: 8px 16px; border-radius: 10px; font-size: 0.8rem;
       font-weight: 600; text-decoration: none; flex-shrink: 0;
       transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
     .file-btn:hover { transform: translateY(-1px); }
-    .file-btn.download {
-      background: rgba(16,185,129,0.12); color: #34d399;
-      border: 1px solid rgba(16,185,129,0.25);
-    }
-    .file-btn.download:hover { box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
-    .file-btn.view {
-      background: rgba(14,165,233,0.1); color: #38bdf8;
-      border: 1px solid rgba(14,165,233,0.25);
-    }
-    .file-btn.view:hover { box-shadow: 0 4px 12px rgba(14,165,233,0.2); }
+    .file-btn.dl { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .file-btn.dl:hover { box-shadow: 0 4px 14px rgba(16,185,129,0.2); }
+    .file-btn.vw { background: rgba(14,165,233,0.1); color: #38bdf8; border: 1px solid rgba(14,165,233,0.25); }
+    .file-btn.vw:hover { box-shadow: 0 4px 14px rgba(14,165,233,0.2); }
 
-    /* ── Empty / Loading states ── */
+    /* Empty / loading */
     .res-empty {
       text-align: center; padding: 60px 20px;
       background: var(--card); border: 1px solid var(--border);
       border-radius: 20px; color: var(--text-secondary);
     }
-    .res-empty i { font-size: 3rem; opacity: 0.4; margin-bottom: 16px; display: block; }
-    .res-empty h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
-    .res-empty p { font-size: 0.85rem; }
-
+    .res-empty i { font-size: 2.8rem; opacity: 0.35; margin-bottom: 16px; display: block; }
+    .res-empty h3 { font-size: 1.05rem; color: var(--text); margin-bottom: 8px; }
+    .res-empty p  { font-size: 0.85rem; }
     .res-loading {
       display: flex; align-items: center; justify-content: center;
       gap: 12px; padding: 50px 20px; color: var(--text-secondary); font-size: 0.9rem;
     }
 
-    /* ── Sheet guide card (shown to admin only via JS) ── */
-    .sheet-guide {
-      background: rgba(234,179,8,0.06); border: 1px solid rgba(234,179,8,0.2);
-      border-radius: 14px; padding: 14px 18px; margin-bottom: 20px;
-      font-size: 0.82rem; color: #fbbf24; display: none;
-    }
-    .sheet-guide strong { display: block; margin-bottom: 4px; font-size: 0.85rem; }
-
-    /* Mobile tweaks */
+    /* Mobile */
     @media (max-width: 640px) {
-      .sem-bar { padding: 10px 14px; }
-      .course-group-header { padding: 12px 14px; gap: 8px; }
-      .course-group-name { font-size: 0.88rem; }
-      .file-item { padding: 11px 14px; gap: 10px; }
-      .file-type-icon { width: 34px; height: 34px; font-size: 0.9rem; border-radius: 9px; }
-      .file-name { font-size: 0.84rem; }
-      .file-btn { padding: 6px 11px; font-size: 0.72rem; }
-      .res-tab { padding: 6px 12px; font-size: 0.72rem; }
+      .course-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .course-card { padding: 16px 14px; border-radius: 16px; gap: 10px; }
+      .cc-icon { width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px; }
+      .cc-name { font-size: 0.88rem; }
+      .cc-count { font-size: 0.72rem; }
+      .cc-arrow { width: 28px; height: 28px; }
+      .file-item { padding: 12px 14px; gap: 10px; }
+      .file-type-icon { width: 36px; height: 36px; font-size: 0.88rem; border-radius: 10px; }
+      .file-name { font-size: 0.85rem; }
+      .file-btn { padding: 7px 12px; font-size: 0.75rem; }
+      .mat-course-header { padding: 14px 16px; gap: 10px; }
+      .mat-course-name { font-size: 0.95rem; }
     }
   </style>
 </head>
@@ -205,7 +226,6 @@
         <span></span><span></span><span></span>
       </button>
     </nav>
-
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
@@ -214,45 +234,45 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">📚 Class Materials</span>
-      <div class="section-line"></div>
+    <!-- ── Level 1: Course selection ── -->
+    <div class="courses-view" id="coursesView">
+      <div class="section-header fade-in delay-1" style="margin-top: 40px;">
+        <span class="section-label">📚 Class Materials</span>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="sem-bar fade-in delay-1">
+        <span class="sem-bar-label">📅 Current Semester</span>
+        <span class="sem-badge">7th Semester · 2025–26</span>
+      </div>
+
+      <div class="sync-badge fade-in delay-1" id="syncBadge">
+        <span class="sync-dot"></span>
+        <span id="syncText">Connecting…</span>
+      </div>
+
+      <div id="courseGrid" class="course-grid fade-in delay-2">
+        <div class="res-loading" style="grid-column:1/-1;">
+          <div class="spin"></div><span>Loading courses…</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Semester info bar -->
-    <div class="sem-bar fade-in delay-1">
-      <span class="sem-bar-label">📅 Current Semester</span>
-      <span class="sem-badge">7th Semester · 2025–26</span>
-    </div>
+    <!-- ── Level 2: Materials for selected course ── -->
+    <div class="materials-view" id="materialsView">
+      <div style="margin-top: 40px;">
+        <div class="back-btn fade-in" id="backBtn" onclick="showCourses()">
+          <i class="fa-solid fa-arrow-left"></i> Back to Courses
+        </div>
 
-    <!-- Admin guide (only shown if localStorage has admin flag) -->
-    <div class="sheet-guide" id="sheetGuide">
-      <strong>📋 Admin: Materials Sheet এ file info add করো</strong>
-      Columns: CourseCode | CourseName | Title | Type (pdf/video/pptx/zip/image) | DriveLink
-    </div>
+        <div id="matHeader" class="mat-course-header fade-in"></div>
 
-    <!-- Sync badge -->
-    <div class="sync-badge fade-in delay-1" id="syncBadge">
-      <span class="sync-dot"></span>
-      <span id="syncText">Connecting…</span>
-    </div>
+        <div class="mat-search">
+          <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.85rem;"></i>
+          <input type="text" id="matSearch" placeholder="Search files…" autocomplete="off" oninput="filterFiles(this.value)">
+        </div>
 
-    <!-- Search -->
-    <div class="res-search fade-in delay-2">
-      <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.9rem;"></i>
-      <input type="text" id="searchInput" placeholder="Search materials, course name…" autocomplete="off">
-    </div>
-
-    <!-- Course filter tabs -->
-    <div class="res-tabs fade-in delay-2" id="resTabs">
-      <button class="res-tab active" data-course="all">All Courses</button>
-    </div>
-
-    <!-- Materials container -->
-    <div id="materialsContainer" class="fade-in delay-3">
-      <div class="res-loading">
-        <div class="spin"></div>
-        <span>Loading materials…</span>
+        <div class="file-list fade-in" id="fileList"></div>
       </div>
     </div>
 
@@ -272,172 +292,159 @@
   </div>
 
   <script>
-    /* ── Config ─────────────────────────────────────────── */
     const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     const SHEET_NAME = 'Materials';
 
-    /* ── File type helpers ───────────────────────────────── */
-    const TYPE_META = {
-      pdf:   { icon: 'fa-file-pdf',        cls: 'ftype-pdf',   label: 'PDF Document',  btn: 'download' },
-      video: { icon: 'fa-circle-play',      cls: 'ftype-video', label: 'Video',         btn: 'view'     },
-      ppt:   { icon: 'fa-file-powerpoint',  cls: 'ftype-ppt',   label: 'Presentation',  btn: 'download' },
-      pptx:  { icon: 'fa-file-powerpoint',  cls: 'ftype-ppt',   label: 'Presentation',  btn: 'download' },
-      zip:   { icon: 'fa-file-zipper',      cls: 'ftype-zip',   label: 'Archive/Software', btn: 'download' },
-      exe:   { icon: 'fa-file-zipper',      cls: 'ftype-zip',   label: 'Software',      btn: 'download' },
-      image: { icon: 'fa-file-image',       cls: 'ftype-image', label: 'Image',         btn: 'view'     },
-      doc:   { icon: 'fa-file-word',        cls: 'ftype-doc',   label: 'Document',      btn: 'download' },
-      docx:  { icon: 'fa-file-word',        cls: 'ftype-doc',   label: 'Document',      btn: 'download' },
+    /* Course icon map */
+    const COURSE_ICONS = {
+      'CSE': 'fa-laptop-code',
+      'GED': 'fa-book-open',
+      'MAT': 'fa-square-root-variable',
+      'PHY': 'fa-atom',
+      'EEE': 'fa-bolt',
+      'default': 'fa-graduation-cap',
     };
-
-    function getTypeMeta(type) {
-      const t = (type || '').toLowerCase().trim();
-      return TYPE_META[t] || { icon: 'fa-file', cls: 'ftype-other', label: type || 'File', btn: 'download' };
+    function getCourseIcon(code) {
+      const prefix = code.split('-')[0];
+      return COURSE_ICONS[prefix] || COURSE_ICONS['default'];
     }
 
-    /* Convert any Drive share link to direct download or embed */
-    function getDriveLink(rawUrl, type) {
-      if (!rawUrl) return '#';
-      const fileMatch = rawUrl.match(/\/file\/d\/([^\/\?]+)/);
-      const t = (type || '').toLowerCase();
-      if (fileMatch) {
-        const id = fileMatch[1];
-        if (t === 'video' || t === 'image') {
-          return `https://drive.google.com/file/d/${id}/preview`;
-        }
+    /* File type meta */
+    const TYPE_META = {
+      pdf:   { icon: 'fa-file-pdf',       cls: 'ftype-pdf',   label: 'PDF',          view: false },
+      video: { icon: 'fa-circle-play',     cls: 'ftype-video', label: 'Video',         view: true  },
+      ppt:   { icon: 'fa-file-powerpoint', cls: 'ftype-ppt',   label: 'Presentation', view: false },
+      pptx:  { icon: 'fa-file-powerpoint', cls: 'ftype-ppt',   label: 'Presentation', view: false },
+      zip:   { icon: 'fa-file-zipper',     cls: 'ftype-zip',   label: 'Archive',       view: false },
+      exe:   { icon: 'fa-file-zipper',     cls: 'ftype-zip',   label: 'Software',      view: false },
+      image: { icon: 'fa-file-image',      cls: 'ftype-image', label: 'Image',         view: true  },
+      doc:   { icon: 'fa-file-word',       cls: 'ftype-doc',   label: 'Document',      view: false },
+      docx:  { icon: 'fa-file-word',       cls: 'ftype-doc',   label: 'Document',      view: false },
+    };
+    function typeMeta(t) {
+      return TYPE_META[(t||'').toLowerCase().trim()] ||
+             { icon: 'fa-file', cls: 'ftype-other', label: t||'File', view: false };
+    }
+
+    function driveLink(url, type) {
+      if (!url) return '#';
+      const m = url.match(/\/file\/d\/([^\/\?]+)/);
+      if (m) {
+        const id = m[1];
+        const t  = (type||'').toLowerCase();
+        if (t === 'video' || t === 'image') return `https://drive.google.com/file/d/${id}/preview`;
         return `https://drive.google.com/uc?export=download&id=${id}`;
       }
-      return rawUrl; // folder link or already direct
+      return url;
     }
 
-    /* ── State ───────────────────────────────────────────── */
-    let allItems   = [];
-    let activeCourse = 'all';
-    let searchQuery  = '';
-
-    /* ── Render ──────────────────────────────────────────── */
-    function render() {
-      const container = document.getElementById('materialsContainer');
-
-      let items = allItems;
-
-      if (searchQuery) {
-        items = items.filter(i =>
-          i.title.toLowerCase().includes(searchQuery) ||
-          i.courseCode.toLowerCase().includes(searchQuery) ||
-          i.courseName.toLowerCase().includes(searchQuery)
-        );
-      }
-
-      if (activeCourse !== 'all') {
-        items = items.filter(i => i.courseCode === activeCourse);
-      }
-
-      if (!items.length) {
-        container.innerHTML = `
-          <div class="res-empty">
-            <i class="fa-regular fa-folder-open"></i>
-            <h3>${searchQuery ? 'No results found' : 'No materials uploaded yet'}</h3>
-            <p>${searchQuery ? 'Try a different search term.' : 'Check back soon — materials will appear here once uploaded.'}</p>
-          </div>`;
-        return;
-      }
-
-      /* Group by course */
-      const grouped = {};
-      items.forEach(item => {
-        if (!grouped[item.courseCode]) {
-          grouped[item.courseCode] = { name: item.courseName, files: [] };
-        }
-        grouped[item.courseCode].files.push(item);
-      });
-
-      container.innerHTML = '';
-
-      Object.entries(grouped).forEach(([code, group]) => {
-        const div = document.createElement('div');
-        div.className = 'course-group';
-        div.dataset.course = code;
-
-        const filesHtml = group.files.map(f => {
-          const tm  = getTypeMeta(f.type);
-          const url = getDriveLink(f.driveLink, f.type);
-          const isView = tm.btn === 'view';
-          return `
-            <div class="file-item">
-              <div class="file-type-icon ${tm.cls}">
-                <i class="fa-solid ${tm.icon}"></i>
-              </div>
-              <div class="file-info">
-                <span class="file-name" title="${escHtml(f.title)}">${escHtml(f.title)}</span>
-                <span class="file-type-label">${tm.label}</span>
-              </div>
-              <a class="file-btn ${isView ? 'view' : 'download'}"
-                 href="${url}" target="_blank" rel="noopener">
-                <i class="fa-solid ${isView ? 'fa-eye' : 'fa-download'}"></i>
-                ${isView ? 'View' : 'Download'}
-              </a>
-            </div>`;
-        }).join('');
-
-        div.innerHTML = `
-          <div class="course-group-header" onclick="toggleCourse(this)">
-            <span class="course-code-badge">${escHtml(code)}</span>
-            <span class="course-group-name">${escHtml(group.name)}</span>
-            <span class="course-file-count">${group.files.length} file${group.files.length !== 1 ? 's' : ''}</span>
-            <i class="fa-solid fa-chevron-down course-chevron"></i>
-          </div>
-          <div class="course-files">${filesHtml}</div>`;
-
-        container.appendChild(div);
-      });
-    }
-
-    function toggleCourse(header) {
-      header.classList.toggle('collapsed');
-      header.nextElementSibling.classList.toggle('collapsed');
-    }
-
-    function escHtml(s) {
+    function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    /* ── Build course tabs ───────────────────────────────── */
-    function buildTabs() {
-      const tabs = document.getElementById('resTabs');
-      const seen = new Set();
-      const courses = [];
-      allItems.forEach(i => {
-        if (!seen.has(i.courseCode)) {
-          seen.add(i.courseCode);
-          courses.push({ code: i.courseCode, name: i.courseName });
-        }
-      });
+    /* ── State ── */
+    let grouped    = {};   // { courseCode: { name, colorIdx, files:[] } }
+    let activeCourse = null;
 
-      tabs.innerHTML = `<button class="res-tab ${activeCourse === 'all' ? 'active' : ''}" data-course="all">All Courses</button>`;
-      courses.forEach(c => {
-        const btn = document.createElement('button');
-        btn.className = 'res-tab' + (activeCourse === c.code ? ' active' : '');
-        btn.dataset.course = c.code;
-        btn.textContent = c.code;
-        btn.title = c.name;
-        tabs.appendChild(btn);
-      });
+    /* ── Level 1: render course cards ── */
+    function renderCourses() {
+      const grid = document.getElementById('courseGrid');
+      const codes = Object.keys(grouped);
+
+      if (!codes.length) {
+        grid.innerHTML = `<div class="res-empty" style="grid-column:1/-1;">
+          <i class="fa-regular fa-folder-open"></i>
+          <h3>No materials yet</h3>
+          <p>Materials will appear here once uploaded to the sheet.</p>
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = codes.map((code, idx) => {
+        const g   = grouped[code];
+        const ci  = g.colorIdx;
+        const ico = getCourseIcon(code);
+        return `
+          <div class="course-card ca-${ci}" onclick="showMaterials('${esc(code)}')">
+            <div class="cc-top">
+              <div class="cc-icon"><i class="fa-solid ${ico}"></i></div>
+              <div class="cc-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+            <div>
+              <div class="cc-code">${esc(code)}</div>
+              <div class="cc-name" style="margin-top:6px;">${esc(g.name)}</div>
+              <div class="cc-count" style="margin-top:4px;">${g.files.length} material${g.files.length!==1?'s':''}</div>
+            </div>
+          </div>`;
+      }).join('');
     }
 
-    document.getElementById('resTabs').addEventListener('click', e => {
-      const btn = e.target.closest('.res-tab');
-      if (!btn) return;
-      activeCourse = btn.dataset.course;
-      document.querySelectorAll('.res-tab').forEach(b => b.classList.toggle('active', b === btn));
-      render();
-    });
+    /* ── Level 2: show course materials ── */
+    function showMaterials(code) {
+      activeCourse = code;
+      const g   = grouped[code];
+      const ci  = g.colorIdx;
+      const ico = getCourseIcon(code);
 
-    document.getElementById('searchInput').addEventListener('input', e => {
-      searchQuery = e.target.value.trim().toLowerCase();
-      render();
-    });
+      document.getElementById('coursesView').classList.add('hidden');
+      document.getElementById('materialsView').classList.add('active');
+      document.getElementById('matSearch').value = '';
 
-    /* ── Load from Google Sheet ──────────────────────────── */
+      document.getElementById('matHeader').className = `mat-course-header fade-in ca-${ci}`;
+      document.getElementById('matHeader').innerHTML = `
+        <div class="mat-course-icon ca-${ci}"><i class="fa-solid ${ico}"></i></div>
+        <div>
+          <div class="mat-course-code ca-${ci}">${esc(code)}</div>
+          <div class="mat-course-name" style="margin-top:4px;">${esc(g.name)}</div>
+        </div>
+        <span class="mat-file-count">${g.files.length} file${g.files.length!==1?'s':''}</span>`;
+
+      renderFiles(g.files);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderFiles(files) {
+      const list = document.getElementById('fileList');
+      if (!files.length) {
+        list.innerHTML = `<div class="res-empty" style="border-radius:0 0 18px 18px;">
+          <i class="fa-regular fa-folder-open"></i>
+          <h3>No files found</h3></div>`;
+        return;
+      }
+      list.innerHTML = files.map(f => {
+        const tm  = typeMeta(f.type);
+        const url = driveLink(f.driveLink, f.type);
+        return `
+          <div class="file-item">
+            <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
+            <div class="file-info">
+              <span class="file-name" title="${esc(f.title)}">${esc(f.title)}</span>
+              <span class="file-type-label">${tm.label}</span>
+            </div>
+            <a class="file-btn ${tm.view?'vw':'dl'}" href="${url}" target="_blank" rel="noopener">
+              <i class="fa-solid ${tm.view?'fa-eye':'fa-download'}"></i>
+              ${tm.view?'View':'Download'}
+            </a>
+          </div>`;
+      }).join('');
+    }
+
+    function filterFiles(q) {
+      if (!activeCourse) return;
+      const files = grouped[activeCourse].files;
+      const lq = q.trim().toLowerCase();
+      if (!lq) { renderFiles(files); return; }
+      renderFiles(files.filter(f => f.title.toLowerCase().includes(lq)));
+    }
+
+    function showCourses() {
+      activeCourse = null;
+      document.getElementById('coursesView').classList.remove('hidden');
+      document.getElementById('materialsView').classList.remove('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ── Load sheet ── */
     function setSyncText(text, ok = true) {
       const el  = document.getElementById('syncText');
       const dot = document.querySelector('.sync-badge .sync-dot');
@@ -458,47 +465,52 @@
       });
     }
 
+    const COLORS = 6;
+    let colorCounter = 0;
+
     async function syncData() {
       try {
         const data = await loadSheet();
         const rows = data.table?.rows || [];
-        const items = [];
+        const newGrouped = {};
+        colorCounter = 0;
 
         rows.forEach(row => {
           const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
-          /* Expected columns: CourseCode | CourseName | Title | Type | DriveLink */
           if (cells.length < 5) return;
           const [courseCode, courseName, title, type, driveLink] = cells;
           if (!courseCode || !title || courseCode.toLowerCase() === 'coursecode') return;
-          items.push({ courseCode, courseName: courseName || courseCode, title, type, driveLink });
+          if (!newGrouped[courseCode]) {
+            newGrouped[courseCode] = {
+              name: courseName || courseCode,
+              colorIdx: colorCounter++ % COLORS,
+              files: []
+            };
+          }
+          newGrouped[courseCode].files.push({ title, type, driveLink });
         });
 
-        allItems = items;
-        buildTabs();
-        render();
-        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        grouped = newGrouped;
+
+        /* If currently viewing a course, refresh its file list */
+        if (activeCourse && grouped[activeCourse]) {
+          renderFiles(grouped[activeCourse].files);
+        } else if (!activeCourse) {
+          renderCourses();
+        }
+
+        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
       } catch (err) {
         setSyncText('Sync failed — retrying…', false);
-        if (!allItems.length) {
-          document.getElementById('materialsContainer').innerHTML = `
-            <div class="res-empty">
+        if (!Object.keys(grouped).length) {
+          document.getElementById('courseGrid').innerHTML = `
+            <div class="res-empty" style="grid-column:1/-1;">
               <i class="fa-solid fa-triangle-exclamation"></i>
-              <h3>Could not load materials</h3>
-              <p>Please refresh the page or check back shortly.</p>
+              <h3>Could not load courses</h3>
+              <p>Please refresh or check back shortly.</p>
             </div>`;
         }
       }
-    }
-
-    /* Admin guide */
-    const stored = localStorage.getItem('lu62b_student');
-    if (stored) {
-      try {
-        const u = JSON.parse(stored);
-        if (u.role === 'admin' || u.role === 'cr') {
-          document.getElementById('sheetGuide').style.display = 'block';
-        }
-      } catch(e) {}
     }
 
     syncData();
