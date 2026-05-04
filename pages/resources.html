@@ -184,6 +184,54 @@
       gap: 12px; padding: 50px 20px; color: var(--text-secondary); font-size: 0.9rem;
     }
 
+    /* ── Mark Distribution ── */
+    .marks-section {
+      margin-bottom: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-top: none;
+    }
+    .marks-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .marks-header i { color: #fbbf24; font-size: 0.95rem; }
+    .marks-header span {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 0.88rem; color: var(--text);
+    }
+    .marks-total-badge {
+      margin-left: auto; font-size: 0.72rem; font-weight: 700;
+      color: #fbbf24; background: rgba(234,179,8,0.1);
+      border: 1px solid rgba(234,179,8,0.25);
+      padding: 3px 10px; border-radius: 100px;
+    }
+    .marks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 10px; padding: 14px 20px 18px;
+    }
+    .mark-item {
+      border-radius: 14px; padding: 14px 10px 12px;
+      text-align: center; border: 1px solid transparent;
+    }
+    .mark-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem; font-weight: 900; line-height: 1;
+    }
+    .mark-label {
+      font-size: 0.7rem; color: var(--text-secondary);
+      margin-top: 5px; font-weight: 600; letter-spacing: 0.2px;
+    }
+    .mark-bar {
+      height: 3px; border-radius: 100px; margin-top: 10px;
+      background: rgba(255,255,255,0.06); overflow: hidden;
+    }
+    .mark-bar-fill { height: 100%; border-radius: 100px; }
+    .marks-empty {
+      padding: 14px 20px 18px;
+      font-size: 0.82rem; color: var(--muted); font-style: italic;
+    }
+
     /* Mobile */
     @media (max-width: 640px) {
       .course-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -267,6 +315,9 @@
 
         <div id="matHeader" class="mat-course-header fade-in"></div>
 
+        <!-- Mark Distribution (injected here) -->
+        <div id="marksSection"></div>
+
         <div class="mat-search">
           <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.85rem;"></i>
           <input type="text" id="matSearch" placeholder="Search files…" autocomplete="off" oninput="filterFiles(this.value)">
@@ -292,8 +343,9 @@
   </div>
 
   <script>
-    const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-    const SHEET_NAME = 'Materials';
+    const SHEET_ID    = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+    const SHEET_NAME  = 'Materials';
+    const MARKS_SHEET = 'Marks';
 
     /* Course icon map */
     const COURSE_ICONS = {
@@ -342,8 +394,20 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    /* ── Mark colors ── */
+    const MARK_COLORS = [
+      { num: '#818cf8', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.22)',  bar: '#818cf8' },
+      { num: '#34d399', bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.22)',  bar: '#34d399' },
+      { num: '#fb923c', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.22)',  bar: '#fb923c' },
+      { num: '#f87171', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.22)',   bar: '#f87171' },
+      { num: '#a78bfa', bg: 'rgba(139,92,246,0.1)',  border: 'rgba(139,92,246,0.22)',  bar: '#a78bfa' },
+      { num: '#fbbf24', bg: 'rgba(234,179,8,0.1)',   border: 'rgba(234,179,8,0.22)',   bar: '#fbbf24' },
+      { num: '#38bdf8', bg: 'rgba(14,165,233,0.1)',  border: 'rgba(14,165,233,0.22)',  bar: '#38bdf8' },
+    ];
+
     /* ── State ── */
-    let grouped    = {};   // { courseCode: { name, colorIdx, files:[] } }
+    let grouped      = {};   // { courseCode: { name, colorIdx, files:[] } }
+    let marksData    = {};   // { courseCode: [{component, marks}, ...] }
     let activeCourse = null;
 
     /* ── Level 1: render course cards ── */
@@ -379,6 +443,38 @@
       }).join('');
     }
 
+    /* ── Render mark distribution ── */
+    function renderMarks(code) {
+      const sec   = document.getElementById('marksSection');
+      const items = marksData[code] || [];
+
+      if (!items.length) { sec.innerHTML = ''; return; }
+
+      const total = items.reduce((s, i) => s + (parseFloat(i.marks) || 0), 0);
+      const itemsHtml = items.map((item, idx) => {
+        const c    = MARK_COLORS[idx % MARK_COLORS.length];
+        const pct  = total > 0 ? ((parseFloat(item.marks)||0) / total * 100).toFixed(0) : 0;
+        return `
+          <div class="mark-item" style="background:${c.bg};border-color:${c.border};">
+            <div class="mark-num" style="color:${c.num};">${esc(item.marks)}</div>
+            <div class="mark-label">${esc(item.component)}</div>
+            <div class="mark-bar">
+              <div class="mark-bar-fill" style="width:${pct}%;background:${c.bar};"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      sec.innerHTML = `
+        <div class="marks-section">
+          <div class="marks-header">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Mark Distribution</span>
+            <span class="marks-total-badge">Total: ${total}</span>
+          </div>
+          <div class="marks-grid">${itemsHtml}</div>
+        </div>`;
+    }
+
     /* ── Level 2: show course materials ── */
     function showMaterials(code) {
       activeCourse = code;
@@ -399,6 +495,7 @@
         </div>
         <span class="mat-file-count">${g.files.length} file${g.files.length!==1?'s':''}</span>`;
 
+      renderMarks(code);
       renderFiles(g.files);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -452,14 +549,14 @@
       if (dot) dot.style.background = ok ? 'var(--green)' : '#f87171';
     }
 
-    function loadSheet() {
+    function fetchSheet(sheetName) {
       return new Promise((resolve, reject) => {
         const cb = `res_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const s  = document.createElement('script');
         const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
         function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
         window[cb] = data => { cleanup(); resolve(data); };
-        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
         s.onerror = () => { cleanup(); reject(new Error('Load error')); };
         document.body.appendChild(s);
       });
@@ -470,30 +567,48 @@
 
     async function syncData() {
       try {
-        const data = await loadSheet();
-        const rows = data.table?.rows || [];
-        const newGrouped = {};
-        colorCounter = 0;
+        /* Load Materials and Marks sheets in parallel */
+        const [matData, mrkData] = await Promise.allSettled([
+          fetchSheet(SHEET_NAME),
+          fetchSheet(MARKS_SHEET)
+        ]);
 
-        rows.forEach(row => {
-          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
-          if (cells.length < 5) return;
-          const [courseCode, courseName, title, type, driveLink] = cells;
-          if (!courseCode || !title || courseCode.toLowerCase() === 'coursecode') return;
-          if (!newGrouped[courseCode]) {
-            newGrouped[courseCode] = {
-              name: courseName || courseCode,
-              colorIdx: colorCounter++ % COLORS,
-              files: []
-            };
-          }
-          newGrouped[courseCode].files.push({ title, type, driveLink });
-        });
+        /* ── Parse Materials ── */
+        if (matData.status === 'fulfilled') {
+          const rows       = matData.value.table?.rows || [];
+          const newGrouped = {};
+          colorCounter     = 0;
+          rows.forEach(row => {
+            const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+            if (cells.length < 5) return;
+            const [courseCode, courseName, title, type, link] = cells;
+            if (!courseCode || !title || courseCode.toLowerCase() === 'coursecode') return;
+            if (!newGrouped[courseCode]) {
+              newGrouped[courseCode] = { name: courseName || courseCode, colorIdx: colorCounter++ % COLORS, files: [] };
+            }
+            newGrouped[courseCode].files.push({ title, type, driveLink: link });
+          });
+          grouped = newGrouped;
+        }
 
-        grouped = newGrouped;
+        /* ── Parse Marks ── */
+        if (mrkData.status === 'fulfilled') {
+          const rows      = mrkData.value.table?.rows || [];
+          const newMarks  = {};
+          rows.forEach(row => {
+            const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+            if (cells.length < 3) return;
+            const [courseCode, component, marks] = cells;
+            if (!courseCode || !component || courseCode.toLowerCase() === 'coursecode') return;
+            if (!newMarks[courseCode]) newMarks[courseCode] = [];
+            newMarks[courseCode].push({ component, marks });
+          });
+          marksData = newMarks;
+        }
 
-        /* If currently viewing a course, refresh its file list */
+        /* ── Refresh current view ── */
         if (activeCourse && grouped[activeCourse]) {
+          renderMarks(activeCourse);
           renderFiles(grouped[activeCourse].files);
         } else if (!activeCourse) {
           renderCourses();
