@@ -250,6 +250,45 @@
       .mat-course-header { padding: 14px 16px; gap: 10px; }
       .mat-course-name { font-size: 0.95rem; }
     }
+
+    /* ── Preview Modal ── */
+    .preview-modal {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: none; flex-direction: column;
+    }
+    .preview-modal.open { display: flex; }
+    .preview-topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: rgba(10,10,15,0.8);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .preview-title {
+      flex: 1; font-size: 0.88rem; font-weight: 600;
+      color: var(--text); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .preview-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .preview-close:hover { background: rgba(255,255,255,0.18); }
+    .preview-download {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 10px; font-size: 0.78rem;
+      font-weight: 600; text-decoration: none; flex-shrink: 0;
+      background: rgba(16,185,129,0.12); color: #34d399;
+      border: 1px solid rgba(16,185,129,0.25);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .preview-frame {
+      flex: 1; border: none; background: #111;
+    }
   </style>
 </head>
 <body>
@@ -345,7 +384,36 @@
     </footer>
   </div>
 
+  <!-- Preview Modal -->
+  <div class="preview-modal" id="previewModal">
+    <div class="preview-topbar">
+      <button class="preview-close" onclick="closePreview()" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <span class="preview-title" id="previewTitle"></span>
+      <a class="preview-download" id="previewDl" href="#" target="_blank" rel="noopener">
+        <i class="fa-solid fa-download"></i> Download
+      </a>
+    </div>
+    <iframe class="preview-frame" id="previewFrame" src="" allowfullscreen></iframe>
+  </div>
+
   <script>
+    /* ── Preview modal ── */
+    function openPreview(name, previewUrl, downloadUrl) {
+      document.getElementById('previewTitle').textContent = name;
+      document.getElementById('previewFrame').src = previewUrl;
+      document.getElementById('previewDl').href = downloadUrl;
+      document.getElementById('previewModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePreview() {
+      document.getElementById('previewModal').classList.remove('open');
+      document.getElementById('previewFrame').src = '';
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+
     const SHEET_ID      = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     const SHEET_NAME    = 'Materials';
     const MARKS_SHEET   = 'Marks';
@@ -509,6 +577,18 @@
       renderFiles(g.files);
     }
 
+    /* Check if file type supports Drive preview */
+    function canPreview(mimeType) {
+      const m = mimeType || '';
+      return m === 'application/pdf'
+        || m.startsWith('video/')
+        || m.startsWith('audio/')
+        || m.startsWith('image/')
+        || m === 'application/vnd.google-apps.presentation'
+        || m === 'application/vnd.google-apps.document'
+        || m === 'application/vnd.google-apps.spreadsheet';
+    }
+
     function renderFiles(files) {
       const list = document.getElementById('fileList');
       if (!files || !files.length) {
@@ -516,8 +596,13 @@
         return;
       }
       list.innerHTML = files.map(f => {
-        const tm  = typeMeta(f.mimeType);
-        const url = fileUrl(f);
+        const tm       = typeMeta(f.mimeType);
+        const dlUrl    = fileUrl(f);
+        const prevUrl  = `https://drive.google.com/file/d/${f.id}/preview`;
+        const preview  = canPreview(f.mimeType);
+        const nameEsc  = esc(f.name).replace(/'/g, '\\x27');
+        const prevEsc  = esc(prevUrl);
+        const dlEsc    = esc(dlUrl);
         return `
           <div class="file-item">
             <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
@@ -525,10 +610,14 @@
               <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
               <span class="file-type-label">${tm.label}</span>
             </div>
-            <a class="file-btn ${tm.view?'vw':'dl'}" href="${url}" target="_blank" rel="noopener">
-              <i class="fa-solid ${tm.view?'fa-eye':'fa-download'}"></i>
-              ${tm.view?'View':'Download'}
-            </a>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              ${preview ? `<button class="file-btn vw" onclick="openPreview('${nameEsc}','${prevEsc}','${dlEsc}')" style="border:none;cursor:pointer;">
+                <i class="fa-solid fa-eye"></i> Preview
+              </button>` : ''}
+              <a class="file-btn dl" href="${dlUrl}" target="_blank" rel="noopener">
+                <i class="fa-solid fa-download"></i> Download
+              </a>
+            </div>
           </div>`;
       }).join('');
     }
