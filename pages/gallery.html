@@ -8,16 +8,83 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    /* ── Lightbox ── */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.96);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 16px 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .lightbox.open { display: flex; }
+    .lightbox-inner {
+      position: relative;
+      max-width: 860px;
+      width: 100%;
+      animation: lbPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes lbPop {
+      from { transform: scale(0.88); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+    .lightbox-inner img {
+      width: 100%;
+      max-height: 75vh;
+      object-fit: contain;
+      border-radius: 18px;
+      display: block;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8);
+    }
+    .lightbox-close {
+      position: fixed;
+      top: 14px; right: 14px;
+      width: 44px; height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px);
+      transition: background 0.2s, transform 0.15s;
+      z-index: 1001;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
+    .lightbox-close:active { transform: scale(0.9); }
+    .lightbox-caption {
+      margin-top: 14px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.75);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Gallery count badge ── */
+    .gallery-count {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      margin-top: -4px;
+    }
+  </style>
 </head>
 <body>
-  <!-- Background layers -->
   <div class="bg-canvas">
     <div class="bg-orb bg-orb-1"></div>
     <div class="bg-orb bg-orb-2"></div>
     <div class="bg-orb bg-orb-3"></div>
   </div>
   <div class="grid-overlay"></div>
-  <div class="particles" id="particles"></div>
 
   <div class="wrapper">
     <nav class="topbar fade-in">
@@ -25,10 +92,7 @@
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
-        <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li class="auth-only"><a href="notices.html">Notices</a></li>
-        <li><a href="gallery.html">Gallery</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -39,98 +103,67 @@
         <span></span><span></span><span></span>
       </button>
     </nav>
-    <!-- Mobile Nav Overlay -->
+
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a class="auth-only" href="notices.html">Notices</a>
-      <a href="gallery.html">Gallery</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-    </div>
-    <!-- Top Nav -->
-    
-    <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
-      <a href="../index.html">Home</a>
-      <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="info.html">Info</a>
-      <a class="auth-only" href="resources.html">Resources</a>
-      <a class="auth-only" href="notices.html">Notices</a>
-      <a href="gallery.html" class="active">Gallery</a>
     </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">📸 Memories & Events</span>
+      <span class="section-label">📸 Memories &amp; Events</span>
       <div class="section-line"></div>
     </div>
+    <div class="gallery-count fade-in delay-1">8 photos</div>
 
-    <!-- Gallery Grid -->
-    <div class="gallery-grid fade-in delay-2">
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-15.jpg" alt="Class Photo 1">
-        <div class="gallery-overlay">
-          <span>Campus Life</span>
-        </div>
+    <div class="gallery-grid fade-in delay-2" id="galleryGrid">
+      <div class="gallery-item" data-caption="Campus Life">
+        <img src="../assets/images/photo_2026-05-04_00-37-15.jpg" alt="Campus Life" loading="lazy">
+        <div class="gallery-overlay"><span>Campus Life</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-17.jpg" alt="Class Photo 2">
-        <div class="gallery-overlay">
-          <span>Study Session</span>
-        </div>
+      <div class="gallery-item" data-caption="Study Session">
+        <img src="../assets/images/photo_2026-05-04_00-37-17.jpg" alt="Study Session" loading="lazy">
+        <div class="gallery-overlay"><span>Study Session</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-23.jpg" alt="Class Photo 3">
-        <div class="gallery-overlay">
-          <span>Event Highlights</span>
-        </div>
+      <div class="gallery-item" data-caption="Event Highlights">
+        <img src="../assets/images/photo_2026-05-04_00-37-23.jpg" alt="Event Highlights" loading="lazy">
+        <div class="gallery-overlay"><span>Event Highlights</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-34.jpg" alt="Class Photo 4">
-        <div class="gallery-overlay">
-          <span>Friends & Group</span>
-        </div>
+      <div class="gallery-item" data-caption="Friends &amp; Group">
+        <img src="../assets/images/photo_2026-05-04_00-37-34.jpg" alt="Friends and Group" loading="lazy">
+        <div class="gallery-overlay"><span>Friends &amp; Group</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-43.jpg" alt="Class Photo 5">
-        <div class="gallery-overlay">
-          <span>Tour Memory</span>
-        </div>
+      <div class="gallery-item" data-caption="Tour Memory">
+        <img src="../assets/images/photo_2026-05-04_00-37-43.jpg" alt="Tour Memory" loading="lazy">
+        <div class="gallery-overlay"><span>Tour Memory</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-37-53.jpg" alt="Class Photo 6">
-        <div class="gallery-overlay">
-          <span>Classroom</span>
-        </div>
+      <div class="gallery-item" data-caption="Classroom">
+        <img src="../assets/images/photo_2026-05-04_00-37-53.jpg" alt="Classroom" loading="lazy">
+        <div class="gallery-overlay"><span>Classroom</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-38-01.jpg" alt="Class Photo 7">
-        <div class="gallery-overlay">
-          <span>Project Work</span>
-        </div>
+      <div class="gallery-item" data-caption="Project Work">
+        <img src="../assets/images/photo_2026-05-04_00-38-01.jpg" alt="Project Work" loading="lazy">
+        <div class="gallery-overlay"><span>Project Work</span></div>
       </div>
-      <div class="gallery-item">
-        <img src="../assets/images/photo_2026-05-04_00-38-10.jpg" alt="Class Photo 8">
-        <div class="gallery-overlay">
-          <span>Farewell Day</span>
-        </div>
+      <div class="gallery-item" data-caption="Farewell Day">
+        <img src="../assets/images/photo_2026-05-04_00-38-10.jpg" alt="Farewell Day" loading="lazy">
+        <div class="gallery-overlay"><span>Farewell Day</span></div>
       </div>
     </div>
 
-    
-      <footer>
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
-        <a href="info.html">Class Info</a>
+        <a href="notices.html">Notices</a>
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
+        © 2026 MD. Almas Ali &amp; MD. Shahriar Khan. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -138,7 +171,40 @@
     </footer>
   </div>
 
-  <script src="../assets/js/script.js"></script>
-<script src="../assets/js/auth.js"></script>
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <button class="lightbox-close" id="lbClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    <div class="lightbox-inner">
+      <img id="lbImg" src="" alt="">
+      <div class="lightbox-caption" id="lbCaption"></div>
+    </div>
+  </div>
+
+  <script>
+    const lb      = document.getElementById('lightbox');
+    const lbImg   = document.getElementById('lbImg');
+    const lbCap   = document.getElementById('lbCaption');
+    const lbClose = document.getElementById('lbClose');
+
+    document.querySelectorAll('.gallery-item').forEach(item => {
+      item.addEventListener('click', () => {
+        lbImg.src = item.querySelector('img').src;
+        lbCap.textContent = item.dataset.caption || '';
+        lb.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    function closeLb() {
+      lb.classList.remove('open');
+      document.body.style.overflow = '';
+      lbImg.src = '';
+    }
+
+    lbClose.addEventListener('click', closeLb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+  </script>
+  <script src="../assets/js/auth.js"></script>
 </body>
 </html>

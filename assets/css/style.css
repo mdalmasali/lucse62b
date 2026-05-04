@@ -1434,6 +1434,13 @@ footer {
   .footer-links a { font-size: 0.78rem; }
   .footer-note { font-size: 0.75rem; }
 
+  /* Gallery */
+  .gallery-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 100px; }
+  .gallery-item { border-radius: 12px; aspect-ratio: 1/1; }
+  .gallery-item:first-child { grid-column: span 2; aspect-ratio: 16/9; }
+  .gallery-overlay { opacity: 1; background: linear-gradient(to top, rgba(0,0,0,0.68) 0%, transparent 55%); }
+  .gallery-overlay span { font-size: 0.72rem; }
+
   /* Content grid (resources/notices) */
   .content-grid { grid-template-columns: 1fr; gap: 10px; }
 
