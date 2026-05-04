@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CSE 62B | Leading University</title>
+  <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
@@ -150,7 +151,7 @@
             <div class="gc-progress-dot" id="gcDot"></div>
           </div>
           <div class="gc-progress-labels">
-            <span>Started · Sep 2023</span>
+            <span>Started · Aug 2023</span>
             <span class="gc-pct" id="gcPct">0%</span>
             <span>Graduation · Aug 2027</span>
           </div>
@@ -159,30 +160,6 @@
     </div>
 
     <div class="divider fade-in delay-2"></div>
-
-    <!-- Stats -->
-    <div class="stats-row fade-in delay-2">
-      <div class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div class="stat-value" id="today-date">May 2026</div>
-        <div class="stat-label">Current Term</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">📚</div>
-        <div class="stat-value">30+</div>
-        <div class="stat-label">Materials</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-value">Active</div>
-        <div class="stat-label">Portal Status</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🎓</div>
-        <div class="stat-value">4</div>
-        <div class="stat-label">Active Courses</div>
-      </div>
-    </div>
 
     <!-- Main Links -->
     <div class="section-header fade-in delay-3">
@@ -391,7 +368,7 @@
     /* ── Graduation Countdown Timer ── */
     (function () {
       const GRAD  = new Date(2027, 7, 31, 23, 59, 59); // Aug 31 2027
-      const START = new Date(2023, 8,  1,  0,  0,  0); // Sep  1 2023
+      const START = new Date(2023, 7,  1,  0,  0,  0); // Aug  1 2023
       const TOTAL = GRAD - START;
 
       function pad(n, d) { return String(n).padStart(d || 2, '0'); }

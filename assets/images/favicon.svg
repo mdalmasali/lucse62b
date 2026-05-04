@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="60%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="tx" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#c4b5fd"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Subtle top shine -->
+  <rect width="64" height="28" rx="14" fill="rgba(255,255,255,0.06)"/>
+  <rect y="14" width="64" height="14" fill="rgba(255,255,255,0)"/>
+  <!-- Border glow -->
+  <rect width="64" height="64" rx="14" fill="none" stroke="rgba(139,92,246,0.5)" stroke-width="1.5"/>
+  <!-- 62B text -->
+  <text
+    x="32" y="40"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="23"
+    font-weight="900"
+    text-anchor="middle"
+    fill="url(#tx)"
+    filter="url(#glow)"
+    letter-spacing="-1"
+  >62B</text>
+</svg>
