@@ -5,20 +5,188 @@
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
-  <title>Resources | CSE 62B LU</title>
+  <title>Materials | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    /* ── Semester bar ── */
+    .sem-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(109,40,217,0.08);
+      border: 1px solid rgba(109,40,217,0.2);
+      border-radius: 14px; padding: 12px 18px;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+    }
+    .sem-bar-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+    .sem-badge {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.82rem; color: #a78bfa;
+      background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+      padding: 4px 12px; border-radius: 100px;
+    }
+
+    /* ── Search bar ── */
+    .res-search {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
+    }
+    .res-search input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem;
+    }
+    .res-search input::placeholder { color: var(--muted); }
+
+    /* ── Course filter tabs ── */
+    .res-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .res-tab {
+      padding: 7px 16px; border-radius: 100px; font-size: 0.78rem;
+      font-weight: 600; border: 1px solid var(--border);
+      background: var(--card); color: var(--text-secondary);
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+    }
+    .res-tab:hover { border-color: var(--accent); color: var(--text); }
+    .res-tab.active {
+      background: rgba(109,40,217,0.15); border-color: rgba(109,40,217,0.5);
+      color: #a78bfa;
+    }
+
+    /* ── Course group ── */
+    .course-group { margin-bottom: 20px; }
+    .course-group.hidden { display: none; }
+
+    .course-group-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 16px 16px 0 0;
+      cursor: pointer; user-select: none; transition: background 0.2s;
+      flex-wrap: wrap;
+    }
+    .course-group-header:hover { background: rgba(255,255,255,0.04); }
+    .course-group-header.collapsed { border-radius: 16px; }
+
+    .course-code-badge {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.78rem; color: #60a5fa;
+      background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.25);
+      padding: 3px 10px; border-radius: 8px; flex-shrink: 0;
+    }
+    .course-group-name {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: 0.95rem; color: var(--text); flex: 1; min-width: 140px;
+    }
+    .course-file-count {
+      font-size: 0.75rem; color: var(--muted); margin-left: auto;
+    }
+    .course-chevron {
+      color: var(--muted); font-size: 0.75rem; transition: transform 0.25s;
+      flex-shrink: 0;
+    }
+    .course-group-header.collapsed .course-chevron { transform: rotate(-90deg); }
+
+    /* ── File list ── */
+    .course-files {
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 16px 16px; overflow: hidden;
+    }
+    .course-files.collapsed { display: none; }
+
+    .file-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 18px; transition: background 0.15s;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-item:hover { background: rgba(255,255,255,0.03); }
+    .file-item.hidden { display: none; }
+
+    .file-type-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .ftype-pdf    { background: rgba(239,68,68,0.12);   color: #f87171; }
+    .ftype-video  { background: rgba(139,92,246,0.12);  color: #a78bfa; }
+    .ftype-ppt    { background: rgba(249,115,22,0.12);  color: #fb923c; }
+    .ftype-zip    { background: rgba(14,165,233,0.12);  color: #38bdf8; }
+    .ftype-image  { background: rgba(16,185,129,0.12);  color: #34d399; }
+    .ftype-doc    { background: rgba(99,102,241,0.12);  color: #818cf8; }
+    .ftype-other  { background: rgba(148,163,184,0.1);  color: #94a3b8; }
+
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 0.9rem; font-weight: 500; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: block;
+    }
+    .file-type-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    .file-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 10px; font-size: 0.78rem;
+      font-weight: 600; text-decoration: none; flex-shrink: 0;
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .file-btn:hover { transform: translateY(-1px); }
+    .file-btn.download {
+      background: rgba(16,185,129,0.12); color: #34d399;
+      border: 1px solid rgba(16,185,129,0.25);
+    }
+    .file-btn.download:hover { box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
+    .file-btn.view {
+      background: rgba(14,165,233,0.1); color: #38bdf8;
+      border: 1px solid rgba(14,165,233,0.25);
+    }
+    .file-btn.view:hover { box-shadow: 0 4px 12px rgba(14,165,233,0.2); }
+
+    /* ── Empty / Loading states ── */
+    .res-empty {
+      text-align: center; padding: 60px 20px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; color: var(--text-secondary);
+    }
+    .res-empty i { font-size: 3rem; opacity: 0.4; margin-bottom: 16px; display: block; }
+    .res-empty h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+    .res-empty p { font-size: 0.85rem; }
+
+    .res-loading {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 50px 20px; color: var(--text-secondary); font-size: 0.9rem;
+    }
+
+    /* ── Sheet guide card (shown to admin only via JS) ── */
+    .sheet-guide {
+      background: rgba(234,179,8,0.06); border: 1px solid rgba(234,179,8,0.2);
+      border-radius: 14px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 0.82rem; color: #fbbf24; display: none;
+    }
+    .sheet-guide strong { display: block; margin-bottom: 4px; font-size: 0.85rem; }
+
+    /* Mobile tweaks */
+    @media (max-width: 640px) {
+      .sem-bar { padding: 10px 14px; }
+      .course-group-header { padding: 12px 14px; gap: 8px; }
+      .course-group-name { font-size: 0.88rem; }
+      .file-item { padding: 11px 14px; gap: 10px; }
+      .file-type-icon { width: 34px; height: 34px; font-size: 0.9rem; border-radius: 9px; }
+      .file-name { font-size: 0.84rem; }
+      .file-btn { padding: 6px 11px; font-size: 0.72rem; }
+      .res-tab { padding: 6px 12px; font-size: 0.72rem; }
+    }
+  </style>
 </head>
 <body>
-  <!-- Background layers -->
   <div class="bg-canvas">
     <div class="bg-orb bg-orb-1"></div>
     <div class="bg-orb bg-orb-2"></div>
     <div class="bg-orb bg-orb-3"></div>
   </div>
   <div class="grid-overlay"></div>
-  <div class="particles" id="particles"></div>
 
   <div class="wrapper">
     <nav class="topbar fade-in">
@@ -26,7 +194,6 @@
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
-        <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
@@ -38,58 +205,306 @@
         <span></span><span></span><span></span>
       </button>
     </nav>
-    <!-- Mobile Nav Overlay -->
+
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">📚 Class Resources</span>
+      <span class="section-label">📚 Class Materials</span>
       <div class="section-line"></div>
     </div>
 
-    <div class="content-grid fade-in delay-2">
-      <aside class="sidebar">
-        <ul class="sidebar-menu">
-          <li><a href="#" class="active">All Materials</a></li>
-          <!-- Admin will add folders here -->
-        </ul>
-      </aside>
+    <!-- Semester info bar -->
+    <div class="sem-bar fade-in delay-1">
+      <span class="sem-bar-label">📅 Current Semester</span>
+      <span class="sem-badge">7th Semester · 2025–26</span>
+    </div>
 
-      <div class="main-content">
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary); background: var(--card); border: 1px solid var(--border); border-radius: 16px;">
-          <i class="fa-regular fa-folder-open" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;"></i>
-          <h3>No resources yet</h3>
-          <p style="font-size: 0.9rem; margin-top: 8px;">Admins will upload class materials, slides, and notes here.</p>
-        </div>
+    <!-- Admin guide (only shown if localStorage has admin flag) -->
+    <div class="sheet-guide" id="sheetGuide">
+      <strong>📋 Admin: Materials Sheet এ file info add করো</strong>
+      Columns: CourseCode | CourseName | Title | Type (pdf/video/pptx/zip/image) | DriveLink
+    </div>
+
+    <!-- Sync badge -->
+    <div class="sync-badge fade-in delay-1" id="syncBadge">
+      <span class="sync-dot"></span>
+      <span id="syncText">Connecting…</span>
+    </div>
+
+    <!-- Search -->
+    <div class="res-search fade-in delay-2">
+      <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.9rem;"></i>
+      <input type="text" id="searchInput" placeholder="Search materials, course name…" autocomplete="off">
+    </div>
+
+    <!-- Course filter tabs -->
+    <div class="res-tabs fade-in delay-2" id="resTabs">
+      <button class="res-tab active" data-course="all">All Courses</button>
+    </div>
+
+    <!-- Materials container -->
+    <div id="materialsContainer" class="fade-in delay-3">
+      <div class="res-loading">
+        <div class="spin"></div>
+        <span>Loading materials…</span>
       </div>
     </div>
 
-    
-      <footer>
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
-        <a href="info.html">Class Info</a>
+        <a href="notices.html">Notices</a>
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
-      </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
+        © 2026 MD. Almas Ali &amp; MD. Shahriar Khan. All Rights Reserved.
       </div>
     </footer>
   </div>
 
-  <script src="../assets/js/script.js"></script>
-<script src="../assets/js/auth.js"></script>
+  <script>
+    /* ── Config ─────────────────────────────────────────── */
+    const SHEET_ID   = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+    const SHEET_NAME = 'Materials';
+
+    /* ── File type helpers ───────────────────────────────── */
+    const TYPE_META = {
+      pdf:   { icon: 'fa-file-pdf',        cls: 'ftype-pdf',   label: 'PDF Document',  btn: 'download' },
+      video: { icon: 'fa-circle-play',      cls: 'ftype-video', label: 'Video',         btn: 'view'     },
+      ppt:   { icon: 'fa-file-powerpoint',  cls: 'ftype-ppt',   label: 'Presentation',  btn: 'download' },
+      pptx:  { icon: 'fa-file-powerpoint',  cls: 'ftype-ppt',   label: 'Presentation',  btn: 'download' },
+      zip:   { icon: 'fa-file-zipper',      cls: 'ftype-zip',   label: 'Archive/Software', btn: 'download' },
+      exe:   { icon: 'fa-file-zipper',      cls: 'ftype-zip',   label: 'Software',      btn: 'download' },
+      image: { icon: 'fa-file-image',       cls: 'ftype-image', label: 'Image',         btn: 'view'     },
+      doc:   { icon: 'fa-file-word',        cls: 'ftype-doc',   label: 'Document',      btn: 'download' },
+      docx:  { icon: 'fa-file-word',        cls: 'ftype-doc',   label: 'Document',      btn: 'download' },
+    };
+
+    function getTypeMeta(type) {
+      const t = (type || '').toLowerCase().trim();
+      return TYPE_META[t] || { icon: 'fa-file', cls: 'ftype-other', label: type || 'File', btn: 'download' };
+    }
+
+    /* Convert any Drive share link to direct download or embed */
+    function getDriveLink(rawUrl, type) {
+      if (!rawUrl) return '#';
+      const fileMatch = rawUrl.match(/\/file\/d\/([^\/\?]+)/);
+      const t = (type || '').toLowerCase();
+      if (fileMatch) {
+        const id = fileMatch[1];
+        if (t === 'video' || t === 'image') {
+          return `https://drive.google.com/file/d/${id}/preview`;
+        }
+        return `https://drive.google.com/uc?export=download&id=${id}`;
+      }
+      return rawUrl; // folder link or already direct
+    }
+
+    /* ── State ───────────────────────────────────────────── */
+    let allItems   = [];
+    let activeCourse = 'all';
+    let searchQuery  = '';
+
+    /* ── Render ──────────────────────────────────────────── */
+    function render() {
+      const container = document.getElementById('materialsContainer');
+
+      let items = allItems;
+
+      if (searchQuery) {
+        items = items.filter(i =>
+          i.title.toLowerCase().includes(searchQuery) ||
+          i.courseCode.toLowerCase().includes(searchQuery) ||
+          i.courseName.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      if (activeCourse !== 'all') {
+        items = items.filter(i => i.courseCode === activeCourse);
+      }
+
+      if (!items.length) {
+        container.innerHTML = `
+          <div class="res-empty">
+            <i class="fa-regular fa-folder-open"></i>
+            <h3>${searchQuery ? 'No results found' : 'No materials uploaded yet'}</h3>
+            <p>${searchQuery ? 'Try a different search term.' : 'Check back soon — materials will appear here once uploaded.'}</p>
+          </div>`;
+        return;
+      }
+
+      /* Group by course */
+      const grouped = {};
+      items.forEach(item => {
+        if (!grouped[item.courseCode]) {
+          grouped[item.courseCode] = { name: item.courseName, files: [] };
+        }
+        grouped[item.courseCode].files.push(item);
+      });
+
+      container.innerHTML = '';
+
+      Object.entries(grouped).forEach(([code, group]) => {
+        const div = document.createElement('div');
+        div.className = 'course-group';
+        div.dataset.course = code;
+
+        const filesHtml = group.files.map(f => {
+          const tm  = getTypeMeta(f.type);
+          const url = getDriveLink(f.driveLink, f.type);
+          const isView = tm.btn === 'view';
+          return `
+            <div class="file-item">
+              <div class="file-type-icon ${tm.cls}">
+                <i class="fa-solid ${tm.icon}"></i>
+              </div>
+              <div class="file-info">
+                <span class="file-name" title="${escHtml(f.title)}">${escHtml(f.title)}</span>
+                <span class="file-type-label">${tm.label}</span>
+              </div>
+              <a class="file-btn ${isView ? 'view' : 'download'}"
+                 href="${url}" target="_blank" rel="noopener">
+                <i class="fa-solid ${isView ? 'fa-eye' : 'fa-download'}"></i>
+                ${isView ? 'View' : 'Download'}
+              </a>
+            </div>`;
+        }).join('');
+
+        div.innerHTML = `
+          <div class="course-group-header" onclick="toggleCourse(this)">
+            <span class="course-code-badge">${escHtml(code)}</span>
+            <span class="course-group-name">${escHtml(group.name)}</span>
+            <span class="course-file-count">${group.files.length} file${group.files.length !== 1 ? 's' : ''}</span>
+            <i class="fa-solid fa-chevron-down course-chevron"></i>
+          </div>
+          <div class="course-files">${filesHtml}</div>`;
+
+        container.appendChild(div);
+      });
+    }
+
+    function toggleCourse(header) {
+      header.classList.toggle('collapsed');
+      header.nextElementSibling.classList.toggle('collapsed');
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Build course tabs ───────────────────────────────── */
+    function buildTabs() {
+      const tabs = document.getElementById('resTabs');
+      const seen = new Set();
+      const courses = [];
+      allItems.forEach(i => {
+        if (!seen.has(i.courseCode)) {
+          seen.add(i.courseCode);
+          courses.push({ code: i.courseCode, name: i.courseName });
+        }
+      });
+
+      tabs.innerHTML = `<button class="res-tab ${activeCourse === 'all' ? 'active' : ''}" data-course="all">All Courses</button>`;
+      courses.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'res-tab' + (activeCourse === c.code ? ' active' : '');
+        btn.dataset.course = c.code;
+        btn.textContent = c.code;
+        btn.title = c.name;
+        tabs.appendChild(btn);
+      });
+    }
+
+    document.getElementById('resTabs').addEventListener('click', e => {
+      const btn = e.target.closest('.res-tab');
+      if (!btn) return;
+      activeCourse = btn.dataset.course;
+      document.querySelectorAll('.res-tab').forEach(b => b.classList.toggle('active', b === btn));
+      render();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    /* ── Load from Google Sheet ──────────────────────────── */
+    function setSyncText(text, ok = true) {
+      const el  = document.getElementById('syncText');
+      const dot = document.querySelector('.sync-badge .sync-dot');
+      if (el)  el.textContent = text;
+      if (dot) dot.style.background = ok ? 'var(--green)' : '#f87171';
+    }
+
+    function loadSheet() {
+      return new Promise((resolve, reject) => {
+        const cb = `res_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = data => { cleanup(); resolve(data); };
+        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    async function syncData() {
+      try {
+        const data = await loadSheet();
+        const rows = data.table?.rows || [];
+        const items = [];
+
+        rows.forEach(row => {
+          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+          /* Expected columns: CourseCode | CourseName | Title | Type | DriveLink */
+          if (cells.length < 5) return;
+          const [courseCode, courseName, title, type, driveLink] = cells;
+          if (!courseCode || !title || courseCode.toLowerCase() === 'coursecode') return;
+          items.push({ courseCode, courseName: courseName || courseCode, title, type, driveLink });
+        });
+
+        allItems = items;
+        buildTabs();
+        render();
+        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+      } catch (err) {
+        setSyncText('Sync failed — retrying…', false);
+        if (!allItems.length) {
+          document.getElementById('materialsContainer').innerHTML = `
+            <div class="res-empty">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <h3>Could not load materials</h3>
+              <p>Please refresh the page or check back shortly.</p>
+            </div>`;
+        }
+      }
+    }
+
+    /* Admin guide */
+    const stored = localStorage.getItem('lu62b_student');
+    if (stored) {
+      try {
+        const u = JSON.parse(stored);
+        if (u.role === 'admin' || u.role === 'cr') {
+          document.getElementById('sheetGuide').style.display = 'block';
+        }
+      } catch(e) {}
+    }
+
+    syncData();
+    setInterval(syncData, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncData(); });
+  </script>
+  <script src="../assets/js/auth.js"></script>
 </body>
 </html>
