@@ -360,7 +360,7 @@
         }
       } catch(e) {
         errEl.innerHTML = e==='Student not found'
-          ? '🚫 এই Student ID আমাদের Section-এ নেই।<br><small style="opacity:0.8;font-size:0.8em;">এই portal শুধুমাত্র CSE Batch 62, Section B-এর students-দের জন্য।</small>'
+          ? '🚫 Student ID not found in our section.<br><small style="opacity:0.8;font-size:0.8em;">This portal is only for CSE Batch 62, Section B students.</small>'
           : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
