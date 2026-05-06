@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Result Dashboard | CSE 62B Portal</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0d0d1a 0%, #1a0033 50%, #0d0d1a 100%);
+      color: #e0e0ff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(0, 229, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* ── Navigation ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.1);
+      border-radius: 12px;
+      margin-bottom: 32px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .nav-brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #00e5ff;
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #b0b0ff;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #00e5ff;
+    }
+
+    .nav-back {
+      padding: 8px 16px;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 8px;
+      color: #00e5ff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .nav-back:hover {
+      background: rgba(0, 229, 255, 0.2);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+    }
+
+    /* ── Views ── */
+    .view {
+      display: none;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── Login Form ── */
+    .login-container {
+      max-width: 450px;
+      margin: 60px auto;
+      padding: 40px;
+      background: rgba(26, 26, 46, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 229, 255, 0.1);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .login-header p {
+      color: #b0b0ff;
+      font-size: 0.95rem;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e0e0ff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 8px;
+      color: #e0e0ff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      background: rgba(0, 229, 255, 0.1);
+      border-color: #00e5ff;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+    }
+
+    .dob-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .dob-group select {
+      width: 100%;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      border: none;
+      border-radius: 8px;
+      color: #0d0d1a;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      padding: 12px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* ── Dashboard ── */
+    .dashboard-header {
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .dashboard-title h2 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    .dashboard-title p {
+      color: #b0b0ff;
+      font-size: 0.95rem;
+    }
+
+    .logout-btn {
+      padding: 10px 20px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #ff6b6b;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* ── Profile Card ── */
+    .profile-card {
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 700;
+      color: #0d0d1a;
+      box-shadow: 0 8px 24px rgba(0, 229, 255, 0.3);
+    }
+
+    .profile-info h3 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+    }
+
+    .profile-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+    }
+
+    .meta-label {
+      color: #b0b0ff;
+      font-size: 0.9rem;
+    }
+
+    .meta-value {
+      color: #00e5ff;
+      font-weight: 600;
+    }
+
+    /* ── Stats Grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: #00e5ff;
+      box-shadow: 0 8px 24px rgba(0, 229, 255, 0.15);
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      color: #b0b0ff;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Semester Card ── */
+    .semester-card {
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .semester-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid rgba(0, 229, 255, 0.1);
+    }
+
+    .semester-title h4 {
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+    }
+
+    .semester-title p {
+      color: #b0b0ff;
+      font-size: 0.9rem;
+    }
+
+    .semester-gpa {
+      text-align: center;
+    }
+
+    .semester-gpa-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .semester-gpa-label {
+      color: #b0b0ff;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    .courses-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .course-item {
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      transition: all 0.3s;
+    }
+
+    .course-item:hover {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: #00e5ff;
+    }
+
+    .course-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .course-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #b0b0ff;
+    }
+
+    .course-grade {
+      color: #00e5ff;
+      font-weight: 700;
+    }
+
+    /* ── Semesters List ── */
+    .semesters-section {
+      margin-top: 32px;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(0, 229, 255, 0.2);
+    }
+
+    .semesters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .semester-mini {
+      background: rgba(26, 26, 46, 0.6);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .semester-mini:hover {
+      border-color: #00e5ff;
+      box-shadow: 0 8px 24px rgba(0, 229, 255, 0.15);
+    }
+
+    .semester-mini-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .semester-mini-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .semester-mini-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      background: rgba(0, 229, 255, 0.05);
+      border-radius: 6px;
+    }
+
+    /* ── Analytics View ── */
+    .analytics-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .analytics-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: rgba(26, 26, 46, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .chart-title {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+    }
+
+    /* ── Performance Extremes ── */
+    .extremes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .extremes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .extreme-card {
+      background: rgba(26, 26, 46, 0.6);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .extreme-card.highest {
+      border-color: rgba(34, 197, 94, 0.3);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .extreme-card.lowest {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .extreme-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .extreme-icon {
+      font-size: 1.5rem;
+    }
+
+    .extreme-course {
+      margin-bottom: 16px;
+    }
+
+    .extreme-course-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .extreme-course-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #b0b0ff;
+    }
+
+    .extreme-mark {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: #00e5ff;
+    }
+
+    /* ── Compare Students ── */
+    .compare-container {
+      background: rgba(26, 26, 46, 0.6);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .compare-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .compare-inputs {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .compare-form-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .dob-group-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .compare-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      border: none;
+      border-radius: 8px;
+      color: #0d0d1a;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      grid-column: 1 / -1;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .compare-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3);
+    }
+
+    .compare-results {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    .compare-results.show {
+      display: grid;
+    }
+
+    @media (max-width: 768px) {
+      .compare-results {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .student-comparison-card {
+      background: rgba(26, 26, 46, 0.6);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .student-comparison-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+    }
+
+    .comparison-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+    }
+
+    .comparison-label {
+      color: #b0b0ff;
+    }
+
+    .comparison-value {
+      color: #00e5ff;
+      font-weight: 600;
+    }
+
+    /* ── Loading State ── */
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 229, 255, 0.2);
+      border-top-color: #00e5ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      color: #b0b0ff;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .wrapper {
+        padding: 16px;
+      }
+
+      nav {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .nav-links {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .profile-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .profile-avatar {
+        margin: 0 auto;
+      }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
+    }
+
+    /* ── Tab Navigation ── */
+    .tab-navigation {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      background: rgba(26, 26, 46, 0.6);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 8px;
+      color: #b0b0ff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    .tab-btn:hover {
+      border-color: #00e5ff;
+      color: #00e5ff;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #00e5ff, #7c3aed);
+      border-color: transparent;
+      color: #0d0d1a;
+    }
+
+    /* ── Success Message ── */
+    .success-message {
+      padding: 16px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 8px;
+      color: #22c55e;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Navigation -->
+    <nav>
+      <a href="../index.html" class="nav-brand">CSE 62B · RESULT DASHBOARD</a>
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <ul class="nav-links" style="display: none;" id="navLinks">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="#" id="analyticsNavBtn" style="cursor: pointer;">Analytics</a></li>
+        </ul>
+        <a href="../index.html" class="nav-back"><i class="fas fa-arrow-left"></i> Back to Home</a>
+      </div>
+    </nav>
+
+    <!-- Login View -->
+    <div class="view active" id="loginView">
+      <div class="login-container">
+        <div class="login-header">
+          <h1>Result Portal</h1>
+          <p>Enter your credentials to view your academic results</p>
+        </div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="studentId">Student ID</label>
+            <input type="text" id="studentId" placeholder="e.g., 0182320012101068" required>
+          </div>
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <div class="dob-group">
+              <select id="dobDay" required>
+                <option value="">Day</option>
+              </select>
+              <select id="dobMonth" required>
+                <option value="">Month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+              <select id="dobYear" required>
+                <option value="">Year</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="submit-btn">Access Results</button>
+          <div class="error-message" id="loginError"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div class="view" id="dashboardView">
+      <div class="dashboard-header">
+        <div class="dashboard-title">
+          <h2>Your Academic Dashboard</h2>
+          <p id="studentGreeting"></p>
+        </div>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      </div>
+
+      <div class="tab-navigation">
+        <button class="tab-btn active" id="overviewTab">Overview</button>
+        <button class="tab-btn" id="analyticsTab">Analytics</button>
+        <button class="tab-btn" id="compareTab">Compare</button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div id="overviewContent" style="display: block;">
+        <!-- Profile Card -->
+        <div class="profile-card" id="profileCard"></div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Latest Semester -->
+        <div class="semester-card" id="latestSemester"></div>
+
+        <!-- All Semesters -->
+        <div class="semesters-section">
+          <h3 class="section-title">All Semesters</h3>
+          <div class="semesters-grid" id="semestersGrid"></div>
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div id="analyticsContent" style="display: none;">
+        <div class="success-message" id="analyticsMessage"></div>
+        <div class="analytics-container">
+          <div class="chart-card">
+            <h3 class="chart-title">Grade Distribution</h3>
+            <div class="chart-container">
+              <canvas id="gradeChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">GPA Trend</h3>
+            <div class="chart-container">
+              <canvas id="gpaChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="section-title">Performance Extremes</h3>
+        <div class="extremes-grid" id="extremesGrid"></div>
+      </div>
+
+      <!-- Compare Tab -->
+      <div id="compareContent" style="display: none;">
+        <div class="compare-container">
+          <h3 class="chart-title">Compare Two Students</h3>
+          <div class="compare-inputs">
+            <div class="compare-form">
+              <div class="compare-form-title">Student 1</div>
+              <input type="text" id="compareStudent1Id" placeholder="Student ID" class="form-control" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+              <div class="dob-group-compare">
+                <select id="compareStudent1Day" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Day</option>
+                </select>
+                <select id="compareStudent1Month" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Month</option>
+                  <option value="01">Jan</option>
+                  <option value="02">Feb</option>
+                  <option value="03">Mar</option>
+                  <option value="04">Apr</option>
+                  <option value="05">May</option>
+                  <option value="06">Jun</option>
+                  <option value="07">Jul</option>
+                  <option value="08">Aug</option>
+                  <option value="09">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dec</option>
+                </select>
+                <select id="compareStudent1Year" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Year</option>
+                </select>
+              </div>
+            </div>
+            <div class="compare-form">
+              <div class="compare-form-title">Student 2</div>
+              <input type="text" id="compareStudent2Id" placeholder="Student ID" class="form-control" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+              <div class="dob-group-compare">
+                <select id="compareStudent2Day" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Day</option>
+                </select>
+                <select id="compareStudent2Month" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Month</option>
+                  <option value="01">Jan</option>
+                  <option value="02">Feb</option>
+                  <option value="03">Mar</option>
+                  <option value="04">Apr</option>
+                  <option value="05">May</option>
+                  <option value="06">Jun</option>
+                  <option value="07">Jul</option>
+                  <option value="08">Aug</option>
+                  <option value="09">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dec</option>
+                </select>
+                <select id="compareStudent2Year" style="padding: 10px 16px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 8px; color: #e0e0ff; font-family: 'Inter', sans-serif;">
+                  <option value="">Year</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <button class="compare-btn" id="compareBtn">Compare Students</button>
+          <div class="compare-results" id="compareResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Configuration ──
+    const API_ENDPOINT = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
+    const CORS_PROXY = 'https://corsproxy.io/?';
+
+    // ── Global State ──
+    let currentStudentData = null;
+    let gradeChart = null;
+    let gpaChart = null;
+
+    // ── Initialize ──
+    function init() {
+      populateDateDropdowns();
+      setupEventListeners();
+    }
+
+    function populateDateDropdowns() {
+      // Day dropdown
+      const daySelect = document.getElementById('dobDay');
+      for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = String(i).padStart(2, '0');
+        option.textContent = i;
+        daySelect.appendChild(option);
+      }
+
+      // Year dropdown
+      const yearSelect = document.getElementById('dobYear');
+      const currentYear = new Date().getFullYear();
+      for (let i = currentYear; i >= 1960; i--) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        yearSelect.appendChild(option);
+      }
+
+      // Clone for compare dropdowns
+      document.getElementById('compareStudent1Day').innerHTML = daySelect.innerHTML;
+      document.getElementById('compareStudent2Day').innerHTML = daySelect.innerHTML;
+      document.getElementById('compareStudent1Year').innerHTML = yearSelect.innerHTML;
+      document.getElementById('compareStudent2Year').innerHTML = yearSelect.innerHTML;
+
+      // Month clones
+      const monthSelects = [
+        'compareStudent1Month',
+        'compareStudent2Month'
+      ];
+      monthSelects.forEach(id => {
+        document.getElementById(id).innerHTML = document.getElementById('dobMonth').innerHTML;
+      });
+    }
+
+    function setupEventListeners() {
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('overviewTab').addEventListener('click', switchTab.bind(null, 'overview'));
+      document.getElementById('analyticsTab').addEventListener('click', switchTab.bind(null, 'analytics'));
+      document.getElementById('compareTab').addEventListener('click', switchTab.bind(null, 'compare'));
+      document.getElementById('compareBtn').addEventListener('click', compareStudents);
+      document.getElementById('analyticsNavBtn').addEventListener('click', switchTab.bind(null, 'analytics'));
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      const tabMap = { overview: 'overviewTab', analytics: 'analyticsTab', compare: 'compareTab' };
+      if (tabMap[tab]) document.getElementById(tabMap[tab]).classList.add('active');
+
+      // Update content
+      document.getElementById('overviewContent').style.display = 'none';
+      document.getElementById('analyticsContent').style.display = 'none';
+      document.getElementById('compareContent').style.display = 'none';
+
+      if (tab === 'overview') {
+        document.getElementById('overviewContent').style.display = 'block';
+      } else if (tab === 'analytics') {
+        document.getElementById('analyticsContent').style.display = 'block';
+        setTimeout(() => {
+          renderAnalytics();
+        }, 100);
+      } else if (tab === 'compare') {
+        document.getElementById('compareContent').style.display = 'block';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const studentId = document.getElementById('studentId').value.trim();
+      const day = document.getElementById('dobDay').value;
+      const month = document.getElementById('dobMonth').value;
+      const year = document.getElementById('dobYear').value;
+
+      if (!studentId || !day || !month || !year) {
+        showLoginError('Please fill in all fields');
+        return;
+      }
+
+      const birthDate = `${year}-${month}-${day}`;
+      
+      showLoginError(''); // Clear previous errors
+      await fetchStudentResults(studentId, birthDate);
+    }
+
+    async function fetchStudentResults(studentId, birthDate) {
+      const loginBtn = document.querySelector('#loginForm .submit-btn');
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px; display: inline-block;"></div> Fetching...';
+
+      try {
+        const formData = new URLSearchParams();
+        formData.append('action', 'get-result');
+        formData.append('student_id', studentId);
+        formData.append('birth_date', birthDate);
+
+        // Try with CORS proxy first
+        let response = await fetch(CORS_PROXY + encodeURIComponent(API_ENDPOINT), {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+
+        let data = await response.text();
+        
+        // Try to parse as JSON first
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          // If not JSON, it might be HTML. Try to extract JSON from it
+          const jsonMatch = data.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            data = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('Invalid response format');
+          }
+        }
+
+        if (data.error || !data.data) {
+          throw new Error(data.error || 'No data returned');
+        }
+
+        currentStudentData = data.data;
+        displayDashboard();
+      } catch (error) {
+        console.error('Error:', error);
+        showLoginError(`Error: ${error.message}. Please check your Student ID and Date of Birth.`);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = 'Access Results';
+      }
+    }
+
+    function displayDashboard() {
+      // Switch views
+      document.getElementById('loginView').classList.remove('active');
+      document.getElementById('dashboardView').classList.add('active');
+
+      const data = currentStudentData;
+
+      // Profile card
+      renderProfileCard(data);
+
+      // Stats grid
+      renderStatsGrid(data);
+
+      // Latest semester
+      renderLatestSemester(data);
+
+      // All semesters
+      renderAllSemesters(data);
+
+      // Greeting
+      const studentName = data.student_name || 'Student';
+      document.getElementById('studentGreeting').textContent = `Welcome back, ${studentName}!`;
+    }
+
+    function renderProfileCard(data) {
+      const avatar = (data.student_name || '').charAt(0).toUpperCase() || 'S';
+      const card = `
+        <div class="profile-avatar">${avatar}</div>
+        <div class="profile-info">
+          <h3>${data.student_name || 'N/A'}</h3>
+          <div class="profile-meta">
+            <div class="meta-item">
+              <span class="meta-label">Student ID</span>
+              <span class="meta-value">${data.student_id || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Department</span>
+              <span class="meta-value">${data.department || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Admission Semester</span>
+              <span class="meta-value">${data.admission_semester || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Status</span>
+              <span class="meta-value">${data.status || 'Active'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('profileCard').innerHTML = card;
+    }
+
+    function renderStatsGrid(data) {
+      const stats = `
+        <div class="stat-card">
+          <div class="stat-value">${(data.cgpa || 0).toFixed(2)}</div>
+          <div class="stat-label">CGPA</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${data.total_credit || 0}</div>
+          <div class="stat-label">Total Credit</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${data.courses_completed || 0}</div>
+          <div class="stat-label">Courses Done</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${data.total_marks || 0}</div>
+          <div class="stat-label">Total Marks</div>
+        </div>
+      `;
+      document.getElementById('statsGrid').innerHTML = stats;
+    }
+
+    function renderLatestSemester(data) {
+      const semesters = data.semesters || [];
+      if (semesters.length === 0) {
+        document.getElementById('latestSemester').innerHTML = '<p style="text-align: center; color: #b0b0ff;">No semester data available</p>';
+        return;
+      }
+
+      const latest = semesters[0];
+      const courses = latest.courses || [];
+
+      let coursesHtml = courses.map(course => `
+        <div class="course-item">
+          <div class="course-name">${course.course_name || course.code || 'N/A'}</div>
+          <div class="course-info">
+            <span>${course.credit || 0} Credit</span>
+            <span class="course-grade">${course.grade || 'N/A'}</span>
+          </div>
+        </div>
+      `).join('');
+
+      const html = `
+        <div class="semester-header">
+          <div class="semester-title">
+            <h4>${latest.semester_name || latest.semester || 'Latest Semester'}</h4>
+            <p>${latest.year || ''}</p>
+          </div>
+          <div class="semester-gpa">
+            <div class="semester-gpa-value">${(latest.gpa || 0).toFixed(2)}</div>
+            <div class="semester-gpa-label">GPA</div>
+          </div>
+        </div>
+        <div class="courses-list">
+          ${coursesHtml}
+        </div>
+      `;
+      document.getElementById('latestSemester').innerHTML = html;
+    }
+
+    function renderAllSemesters(data) {
+      const semesters = data.semesters || [];
+      if (semesters.length === 0) {
+        document.getElementById('semestersGrid').innerHTML = '<p style="color: #b0b0ff;">No semester data available</p>';
+        return;
+      }
+
+      const html = semesters.map((sem, idx) => `
+        <div class="semester-mini" onclick="expandSemester(${idx})">
+          <div class="semester-mini-title">${sem.semester_name || sem.semester || `Semester ${idx + 1}`}</div>
+          <div class="semester-mini-stats">
+            <div class="semester-mini-stat">
+              <span>GPA</span>
+              <span style="color: #00e5ff; font-weight: 700;">${(sem.gpa || 0).toFixed(2)}</span>
+            </div>
+            <div class="semester-mini-stat">
+              <span>Courses</span>
+              <span style="color: #00e5ff; font-weight: 700;">${(sem.courses || []).length}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('semestersGrid').innerHTML = html;
+    }
+
+    function renderAnalytics() {
+      if (!currentStudentData) return;
+
+      const data = currentStudentData;
+      const semesters = data.semesters || [];
+
+      // Collect all grades
+      const gradeCount = {
+        'A+': 0, 'A': 0, 'A-': 0,
+        'B+': 0, 'B': 0, 'B-': 0,
+        'C+': 0, 'C': 0, 'D': 0, 'F': 0
+      };
+
+      semesters.forEach(semester => {
+        (semester.courses || []).forEach(course => {
+          const grade = course.grade || '';
+          if (gradeCount.hasOwnProperty(grade)) {
+            gradeCount[grade]++;
+          }
+        });
+      });
+
+      // Render grade chart
+      renderGradeChart(gradeCount);
+
+      // Render GPA trend
+      renderGPATrendChart(semesters);
+
+      // Render performance extremes
+      renderPerformanceExtremes(semesters);
+    }
+
+    function renderGradeChart(gradeCount) {
+      const ctx = document.getElementById('gradeChart').getContext('2d');
+      
+      if (gradeChart) {
+        gradeChart.destroy();
+      }
+
+      const grades = Object.keys(gradeCount);
+      const counts = Object.values(gradeCount);
+      
+      const colors = grades.map(grade => {
+        if (grade.includes('A')) return '#00e5ff'; // Cyan
+        if (grade.includes('B')) return '#a855f7'; // Purple
+        if (grade.includes('F')) return '#ef4444'; // Red
+        return '#6b7280'; // Gray
+      });
+
+      gradeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: grades,
+          datasets: [{
+            label: 'Count',
+            data: counts,
+            backgroundColor: colors,
+            borderColor: colors,
+            borderWidth: 2,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: Math.max(...counts) + 2,
+              ticks: {
+                color: '#b0b0ff',
+                stepSize: 1
+              },
+              grid: {
+                color: 'rgba(0, 229, 255, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#b0b0ff'
+              },
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderGPATrendChart(semesters) {
+      const ctx = document.getElementById('gpaChart').getContext('2d');
+      
+      if (gpaChart) {
+        gpaChart.destroy();
+      }
+
+      const semesterLabels = semesters.map((sem, idx) => sem.semester_name || `Sem ${idx + 1}`);
+      const gpaValues = semesters.map(sem => (sem.gpa || 0).toFixed(2));
+
+      gpaChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: semesterLabels,
+          datasets: [{
+            label: 'GPA',
+            data: gpaValues,
+            borderColor: '#00e5ff',
+            backgroundColor: 'rgba(0, 229, 255, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            pointBackgroundColor: '#00e5ff',
+            pointBorderColor: '#0d0d1a',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 4,
+              ticks: {
+                color: '#b0b0ff'
+              },
+              grid: {
+                color: 'rgba(0, 229, 255, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#b0b0ff'
+              },
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPerformanceExtremes(semesters) {
+      let highest = null, lowest = null;
+
+      semesters.forEach(semester => {
+        (semester.courses || []).forEach(course => {
+          const marks = course.marks || course.mark || 0;
+          if (marks > 0) {
+            if (!highest || marks > highest.marks) {
+              highest = { ...course, marks };
+            }
+            if (!lowest || marks < lowest.marks) {
+              lowest = { ...course, marks };
+            }
+          }
+        });
+      });
+
+      const html = `
+        ${highest ? `
+          <div class="extreme-card highest">
+            <div class="extreme-header">
+              <span class="extreme-icon">🏆</span>
+              <span>Highest Mark</span>
+            </div>
+            <div class="extreme-course">
+              <div class="extreme-course-name">${highest.course_name || highest.code || 'N/A'}</div>
+              <div class="extreme-course-info">
+                <span>Grade: ${highest.grade || 'N/A'}</span>
+                <span class="extreme-mark">${highest.marks} / 100</span>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+        ${lowest ? `
+          <div class="extreme-card lowest">
+            <div class="extreme-header">
+              <span class="extreme-icon">📉</span>
+              <span>Lowest Mark</span>
+            </div>
+            <div class="extreme-course">
+              <div class="extreme-course-name">${lowest.course_name || lowest.code || 'N/A'}</div>
+              <div class="extreme-course-info">
+                <span>Grade: ${lowest.grade || 'N/A'}</span>
+                <span class="extreme-mark">${lowest.marks} / 100</span>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      document.getElementById('extremesGrid').innerHTML = html;
+    }
+
+    async function compareStudents() {
+      const student1Id = document.getElementById('compareStudent1Id').value.trim();
+      const student1Day = document.getElementById('compareStudent1Day').value;
+      const student1Month = document.getElementById('compareStudent1Month').value;
+      const student1Year = document.getElementById('compareStudent1Year').value;
+
+      const student2Id = document.getElementById('compareStudent2Id').value.trim();
+      const student2Day = document.getElementById('compareStudent2Day').value;
+      const student2Month = document.getElementById('compareStudent2Month').value;
+      const student2Year = document.getElementById('compareStudent2Year').value;
+
+      if (!student1Id || !student1Day || !student1Month || !student1Year ||
+          !student2Id || !student2Day || !student2Month || !student2Year) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      if (student1Id === student2Id) {
+        alert('Please select different students');
+        return;
+      }
+
+      const dob1 = `${student1Year}-${student1Month}-${student1Day}`;
+      const dob2 = `${student2Year}-${student2Month}-${student2Day}`;
+
+      const btn = document.getElementById('compareBtn');
+      btn.disabled = true;
+      btn.textContent = 'Comparing...';
+
+      try {
+        const [data1, data2] = await Promise.all([
+          fetchResultsData(student1Id, dob1),
+          fetchResultsData(student2Id, dob2)
+        ]);
+
+        displayComparison(data1, data2);
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Compare Students';
+      }
+    }
+
+    async function fetchResultsData(studentId, birthDate) {
+      const formData = new URLSearchParams();
+      formData.append('action', 'get-result');
+      formData.append('student_id', studentId);
+      formData.append('birth_date', birthDate);
+
+      const response = await fetch(CORS_PROXY + encodeURIComponent(API_ENDPOINT), {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch data for ${studentId}`);
+
+      let data = await response.text();
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        const jsonMatch = data.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          data = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Invalid response');
+        }
+      }
+
+      if (data.error || !data.data) throw new Error(data.error || 'No data returned');
+      return data.data;
+    }
+
+    function displayComparison(data1, data2) {
+      const html = `
+        <div class="student-comparison-card">
+          <div class="student-comparison-name">${data1.student_name || 'Student 1'}</div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Student ID</span>
+            <span class="comparison-value">${data1.student_id}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">CGPA</span>
+            <span class="comparison-value">${(data1.cgpa || 0).toFixed(2)}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Total Credit</span>
+            <span class="comparison-value">${data1.total_credit || 0}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Courses Done</span>
+            <span class="comparison-value">${data1.courses_completed || 0}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Department</span>
+            <span class="comparison-value">${data1.department || 'N/A'}</span>
+          </div>
+        </div>
+        <div class="student-comparison-card">
+          <div class="student-comparison-name">${data2.student_name || 'Student 2'}</div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Student ID</span>
+            <span class="comparison-value">${data2.student_id}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">CGPA</span>
+            <span class="comparison-value">${(data2.cgpa || 0).toFixed(2)}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Total Credit</span>
+            <span class="comparison-value">${data2.total_credit || 0}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Courses Done</span>
+            <span class="comparison-value">${data2.courses_completed || 0}</span>
+          </div>
+          <div class="comparison-stat">
+            <span class="comparison-label">Department</span>
+            <span class="comparison-value">${data2.department || 'N/A'}</span>
+          </div>
+        </div>
+      `;
+      document.getElementById('compareResults').classList.add('show');
+      document.getElementById('compareResults').innerHTML = html;
+    }
+
+    function logout() {
+      currentStudentData = null;
+      document.getElementById('loginView').classList.add('active');
+      document.getElementById('dashboardView').classList.remove('active');
+      document.getElementById('loginForm').reset();
+      document.getElementById('compareResults').classList.remove('show');
+      document.getElementById('compareResults').innerHTML = '';
+    }
+
+    function showLoginError(message) {
+      const errorEl = document.getElementById('loginError');
+      if (message) {
+        errorEl.textContent = message;
+        errorEl.classList.add('show');
+      } else {
+        errorEl.classList.remove('show');
+        errorEl.textContent = '';
+      }
+    }
+
+    function expandSemester(idx) {
+      const semesters = currentStudentData.semesters || [];
+      if (idx < semesters.length) {
+        const semester = semesters[idx];
+        alert(`${semester.semester_name || `Semester ${idx + 1}`}\nGPA: ${(semester.gpa || 0).toFixed(2)}\nCourses: ${(semester.courses || []).length}`);
+      }
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
