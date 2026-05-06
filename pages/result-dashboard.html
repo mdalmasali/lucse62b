@@ -573,19 +573,30 @@
       }
     }
 
+    /* ── Mark field labels & display order ── */
+    const MARK_SKIP = new Set(['CCode','CTitle','CYear','Semister','LG','GP','GradePoint']);
+    const MARK_ORDER = ['Total','ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE'];
+    const MARK_LABELS = {
+      Total:'Total', ATT:'Attendance', CT:'Class Test', CT1:'CT-1', CT2:'CT-2',
+      TUT:'Tutorial', Tutorial:'Tutorial', PR:'Presentation', AS:'Assignment',
+      Assignment:'Assignment', VIVA:'Viva', VI:'Viva', MTE:'Midterm', FE:'Final Exam'
+    };
+    function markLabel(k) { return MARK_LABELS[k] || k; }
+
     /* ── Normalize LUS response → flat structure render functions expect ── */
     function normalizeData(raw) {
       const s = raw.student;
 
-      // marks lookup: "CCode|CYear|Semister" → {total, att, mid, fin}
+      // Capture ALL numeric mark fields dynamically from row_data
       const markMap = {};
       for (const r of (raw.row_data?.result || [])) {
-        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = {
-          total: parseFloat(r.Total) || 0,
-          att:   parseFloat(r.ATT)   || 0,
-          mid:   parseFloat(r.MTE)   || 0,
-          fin:   parseFloat(r.FE)    || 0,
-        };
+        const entry = {};
+        for (const [k, v] of Object.entries(r)) {
+          if (MARK_SKIP.has(k)) continue;
+          const n = parseFloat(v);
+          if (!isNaN(n) && n >= 0) entry[k] = n;
+        }
+        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = entry;
       }
 
       // Flatten year-keyed results → sorted array (newest first)
@@ -601,11 +612,12 @@
               course_code:  c.course_code,
               grade: c.grade,
               credit: parseFloat(c.credit) || 0,
-              mark: m.total || 0,
-              marks: m.total || 0,
-              att: m.att || 0,
-              mid: m.mid || 0,
-              fin: m.fin || 0,
+              mark:  m.Total || 0,
+              marks: m.Total || 0,
+              att:   m.ATT   || 0,
+              mid:   m.MTE   || 0,
+              fin:   m.FE    || 0,
+              extraMarks: m,
             };
           });
           semesters.push({
@@ -858,13 +870,20 @@
       const s = (resData.semesters||[])[i];
       if (!s) return;
       const courses = (s.courses||[]).map(c => {
-        const chips = [
-          c.mark > 0 ? `<span class="sem-modal-mark-chip">Total <strong>${c.mark}/100</strong></span>` : '',
-          c.att  > 0 ? `<span class="sem-modal-mark-chip">ATT <strong>${c.att}</strong></span>` : '',
-          c.mid  > 0 ? `<span class="sem-modal-mark-chip">Mid <strong>${c.mid}</strong></span>` : '',
-          c.fin  > 0 ? `<span class="sem-modal-mark-chip">Final <strong>${c.fin}</strong></span>` : '',
-          `<span class="sem-modal-mark-chip">${c.credit} Cr</span>`
-        ].filter(Boolean).join('');
+        const em = c.extraMarks || {};
+        const seenKeys = new Set();
+        const orderedChips = MARK_ORDER
+          .filter(k => em[k] > 0 && !seenKeys.has(markLabel(k)) && seenKeys.add(markLabel(k)))
+          .map(k => `<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${em[k]}</strong></span>`);
+        // Any remaining fields not in MARK_ORDER
+        Object.entries(em).forEach(([k, v]) => {
+          if (v > 0 && !MARK_ORDER.includes(k) && !seenKeys.has(markLabel(k))) {
+            seenKeys.add(markLabel(k));
+            orderedChips.push(`<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${v}</strong></span>`);
+          }
+        });
+        orderedChips.push(`<span class="sem-modal-mark-chip">${c.credit} Cr</span>`);
+        const chips = orderedChips.join('');
         return `<div class="sem-modal-course">
           <div class="sem-modal-course-top">
             <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
