@@ -301,7 +301,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B ∑ PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B ÔøΩ PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -318,7 +318,7 @@
       </button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">?</button>
+      <button class="mobile-nav-close" id="mobileNavClose">‚úï</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="resources.html">Resources</a>
@@ -329,23 +329,23 @@
     <!-- -- Level 1: Course selection -- -->
     <div class="courses-view" id="coursesView">
       <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-        <span class="section-label">?? Class Materials</span>
+        <span class="section-label">üìö Class Materials</span>
         <div class="section-line"></div>
       </div>
 
       <div class="sem-bar fade-in delay-1">
-        <span class="sem-bar-label">?? Current Semester</span>
-        <span class="sem-badge">7th Semester ∑ 2025ñ26</span>
+        <span class="sem-bar-label">üìÖ Current Semester</span>
+        <span class="sem-badge">7th Semester ÔøΩ 2025ÔøΩ26</span>
       </div>
 
       <div class="sync-badge fade-in delay-1" id="syncBadge">
         <span class="sync-dot"></span>
-        <span id="syncText">ConnectingÖ</span>
+        <span id="syncText">ConnectingÔøΩ</span>
       </div>
 
       <div id="courseGrid" class="course-grid fade-in delay-2">
         <div class="res-loading" style="grid-column:1/-1;">
-          <div class="spin"></div><span>Loading coursesÖ</span>
+          <div class="spin"></div><span>Loading coursesÔøΩ</span>
         </div>
       </div>
     </div>
@@ -364,7 +364,7 @@
 
         <div class="mat-search">
           <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.85rem;"></i>
-          <input type="text" id="matSearch" placeholder="Search filesÖ" autocomplete="off" oninput="filterFiles(this.value)">
+          <input type="text" id="matSearch" placeholder="Search filesÔøΩ" autocomplete="off" oninput="filterFiles(this.value)">
         </div>
 
         <div class="file-list fade-in" id="fileList"></div>
@@ -372,7 +372,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B ∑ PORTAL</div>
+      <div class="footer-brand">CSE 62B ÔøΩ PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -380,8 +380,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ?? for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ‚ù§Ô∏è for CSE Batch 62, Section B.<br>
+        ÔøΩ 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -562,7 +562,7 @@
       /* Load files from Drive API if not cached */
       if (g.files === null) {
         document.getElementById('fileList').innerHTML =
-          `<div class="res-loading"><div class="spin"></div><span>Loading files from DriveÖ</span></div>`;
+          `<div class="res-loading"><div class="spin"></div><span>Loading files from DriveÔøΩ</span></div>`;
         try {
           g.files = await loadFolderFiles(g.folderId);
         } catch (e) {
@@ -707,9 +707,9 @@
         if (!activeCourse) renderCourses();
         else if (grouped[activeCourse]) renderMarks(activeCourse);
 
-        setSyncText(`Live sync ∑ ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+        setSyncText(`Live sync ÔøΩ ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
       } catch (err) {
-        setSyncText('Sync failed ó retryingÖ', false);
+        setSyncText('Sync failed ÔøΩ retryingÔøΩ', false);
         if (!Object.keys(grouped).length) {
           document.getElementById('courseGrid').innerHTML =
             `<div class="res-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i><h3>Could not load</h3><p>Please refresh.</p></div>`;

@@ -167,7 +167,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B ∑ PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B ÔøΩ PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -181,7 +181,7 @@
       <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">?</button>
+      <button class="mobile-nav-close" id="mobileNavClose">‚úï</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -194,11 +194,11 @@
     <!-- Level 1: Events -->
     <div class="events-view" id="eventsView">
       <div class="section-header fade-in delay-1" style="margin-top:40px;">
-        <span class="section-label">?? Memories &amp; Events</span>
+        <span class="section-label">üì∏ Memories &amp; Events</span>
         <div class="section-line"></div>
       </div>
       <div class="event-grid fade-in delay-2" id="eventGrid">
-        <div class="gal-loading"><div class="spin"></div><span>Loading eventsÖ</span></div>
+        <div class="gal-loading"><div class="spin"></div><span>Loading eventsÔøΩ</span></div>
       </div>
     </div>
 
@@ -209,7 +209,7 @@
           <i class="fa-solid fa-arrow-left"></i> Back to Events
         </div>
         <div class="section-header fade-in" style="margin-bottom:20px;">
-          <span class="section-label" id="eventLabel">?? Event</span>
+          <span class="section-label" id="eventLabel">üì∏ Event</span>
           <div class="section-line"></div>
         </div>
         <div class="photo-grid fade-in" id="photoGrid"></div>
@@ -217,7 +217,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B ∑ PORTAL</div>
+      <div class="footer-brand">CSE 62B ÔøΩ PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -225,8 +225,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ?? for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ‚ù§Ô∏è for CSE Batch 62, Section B.<br>
+        ÔøΩ 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -343,11 +343,11 @@
     async function openEvent(folderId, folderName) {
       document.getElementById('eventsView').classList.add('hidden');
       document.getElementById('photosView').classList.add('active');
-      document.getElementById('eventLabel').textContent = '?? ' + folderName;
+      document.getElementById('eventLabel').textContent = 'üì∏ ' + folderName;
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       const grid = document.getElementById('photoGrid');
-      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photosÖ</span></div>';
+      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photosÔøΩ</span></div>';
 
       try {
         const photos = await driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);

@@ -79,7 +79,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -93,7 +93,7 @@
       <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">?</button>
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -141,7 +141,7 @@
         <button class="btn" id="loginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
         <div class="link-row">
           <a href="#" onclick="showForgotPassword();return false;">Forgot password?</a>
-          &ensp;�&ensp;
+          &ensp;�&ensp;
           <a href="#" onclick="goBack();return false;">Back</a>
         </div>
       </div>
@@ -216,7 +216,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B � PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -224,8 +224,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ?? for CSE Batch 62, Section B.<br>
-        � 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -344,7 +344,7 @@
       const btn    = document.getElementById('continueBtn');
       errEl.style.display = 'none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
-      btn.innerText='Checking�'; btn.disabled=true;
+      btn.innerText='Checking�'; btn.disabled=true;
       try {
         studentData = await fetchStudentData(sid);
         const hash  = await getPasswordHash(sid);
@@ -360,7 +360,7 @@
         }
       } catch(e) {
         errEl.innerHTML = e==='Student not found'
-          ? '?? ?? Student ID ?????? Section-? ????<br><small style="opacity:0.8;font-size:0.8em;">?? portal ????????? CSE Batch 62, Section B-?? students-??? ?????</small>'
+          ? '🚫 এই Student ID আমাদের Section-এ নেই।<br><small style="opacity:0.8;font-size:0.8em;">এই portal শুধুমাত্র CSE Batch 62, Section B-এর students-দের জন্য।</small>'
           : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
@@ -373,7 +373,7 @@
       const btn   = document.getElementById('loginBtn');
       errEl.style.display='none';
       if (!pwd) { errEl.innerText='Please enter your password.'; errEl.style.display='block'; return; }
-      btn.innerText='Logging in�'; btn.disabled=true;
+      btn.innerText='Logging in�'; btn.disabled=true;
       try {
         const hash  = await getPasswordHash(studentData.id);
         const valid = await bcrypt.compare(pwd, hash);
@@ -408,7 +408,7 @@
         errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.';
         errEl.style.display='block'; return;
       }
-      btn.innerText='Sending�'; btn.disabled=true;
+      btn.innerText='Sending�'; btn.disabled=true;
       sendSMSOTP(studentData.phone).then(()=>{
         incrementOTPLimit();
         const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
@@ -428,7 +428,7 @@
       const btn   = document.getElementById('verifyOtpBtn');
       errEl.style.display='none';
       if (code===generatedOTP||code==='0000') {
-        btn.innerText='Checking�'; btn.disabled=true;
+        btn.innerText='Checking�'; btn.disabled=true;
         try {
           const hash = await getPasswordHash(studentData.id);
           if (hash) {
@@ -463,7 +463,7 @@
       errEl.style.display='none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
       if (!checkOTPLimit()) { errEl.innerText='Daily OTP limit reached.'; errEl.style.display='block'; return; }
-      btn.innerText='Sending�'; btn.disabled=true;
+      btn.innerText='Sending�'; btn.disabled=true;
       try {
         studentData = await fetchStudentData(sid);
         await sendSMSOTP(studentData.phone);
@@ -489,7 +489,7 @@
       if (npwd.length<6) { errEl.innerText='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
       if (npwd!==cpwd) { errEl.innerText='Passwords do not match.'; errEl.style.display='block'; return; }
       if (otp!==generatedOTP&&otp!=='0000') { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
-      btn.innerText='Resetting�'; btn.disabled=true;
+      btn.innerText='Resetting�'; btn.disabled=true;
       try {
         const hash = await bcrypt.hash(npwd, 10);
         await savePasswordHash(studentData.id, hash);

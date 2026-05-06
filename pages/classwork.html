@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <title>Classwork | CSE 62B LU</title>
-  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B ó synced live from Google Sheets."/>
+  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B ÔøΩ synced live from Google Sheets."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -22,7 +22,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B ∑ PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B ÔøΩ PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -41,7 +41,7 @@
       </button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">?</button>
+      <button class="mobile-nav-close" id="mobileNavClose">‚úï</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -52,18 +52,18 @@
     </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">?? Classwork</span>
+      <span class="section-label">üìù Classwork</span>
       <div class="section-line"></div>
     </div>
 
     <div class="sync-badge fade-in delay-1" id="syncBadge">
       <span class="sync-dot"></span>
-      <span id="syncText">Connecting to Google SheetÖ</span>
+      <span id="syncText">Connecting to Google SheetÔøΩ</span>
     </div>
 
     <div class="info-search-bar fade-in delay-2">
       <span class="search-icon">??</span>
-      <input type="text" id="searchInput" placeholder="Search assignment, lab report, vivaÖ" autocomplete="off"/>
+      <input type="text" id="searchInput" placeholder="Search assignment, lab report, vivaÔøΩ" autocomplete="off"/>
     </div>
 
     <div class="info-tabs fade-in delay-2" id="infoTabs">
@@ -73,12 +73,12 @@
     <div class="info-cards fade-in delay-3" id="infoCards">
       <div class="info-loading">
         <div class="spin"></div>
-        <div>Loading classworkÖ</div>
+        <div>Loading classworkÔøΩ</div>
       </div>
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B ∑ PORTAL</div>
+      <div class="footer-brand">CSE 62B ÔøΩ PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -86,8 +86,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ?? for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ‚ù§Ô∏è for CSE Batch 62, Section B.<br>
+        ÔøΩ 2026 MD. Almas Ali. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -175,7 +175,7 @@
         );
       }
       if (!filtered.length) {
-        container.innerHTML = '<div class="info-empty">?? No results found.</div>';
+        container.innerHTML = '<div class="info-empty">üòï No results found.</div>';
         return;
       }
       container.innerHTML = '';
@@ -244,12 +244,12 @@
         allItems = items;
         buildTabs(items);
         renderCards();
-        setSyncText(`Live sync ∑ Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        setSyncText(`Live sync ÔøΩ Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        setSyncText('Sync failed ó retrying shortlyÖ', false);
+        setSyncText('Sync failed ÔøΩ retrying shortlyÔøΩ', false);
         if (!allItems.length) {
           document.getElementById('infoCards').innerHTML =
-            '<div class="info-empty">?? Could not load data from Google Sheet. Please refresh.</div>';
+            '<div class="info-empty">‚ö†Ô∏è Could not load data from Google Sheet. Please refresh. Please refresh.</div>';
         }
       }
     }
