@@ -591,12 +591,18 @@
     }
 
     /* ── Mark field labels & display order ── */
-    const MARK_SKIP = new Set(['CCode','CTitle','CYear','Semister','LG','GP','GradePoint']);
-    const MARK_ORDER = ['Total','ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE'];
+    const MARK_SKIP = new Set([
+      'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
+      'SID','SName','Dept','Department','Program','Teacher',
+      'Reference','Serial','InputBy','Batch','Secttion',
+      'TPoint','CDate'
+    ]);
+    const MARK_ORDER = ['Total','ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
     const MARK_LABELS = {
       Total:'Total', ATT:'Attendance', CT:'Class Test', CT1:'CT-1', CT2:'CT-2',
       TUT:'Tutorial', Tutorial:'Tutorial', PR:'Presentation', AS:'Assignment',
-      Assignment:'Assignment', VIVA:'Viva', VI:'Viva', MTE:'Midterm', FE:'Final Exam'
+      Assignment:'Assignment', VIVA:'Viva', VI:'Viva', MTE:'Midterm', FE:'Final Exam',
+      GPA:'GPA', CCredit:'Credit'
     };
     function markLabel(k) { return MARK_LABELS[k] || k; }
 
@@ -679,7 +685,7 @@
       let lastErr = null;
       for (let i = 0; i < PROXIES.length; i++) {
         const btn = document.getElementById('rLoginBtn');
-        if (btn) btn.innerHTML = `<span class="rspinner"></span> Trying ${i+1}/${PROXIES.length}...`;
+        if (btn) btn.innerHTML = `<span class="rspinner"></span> Fetching result…`;
         try {
           const raw = await PROXIES[i](id, dob);
           let data;

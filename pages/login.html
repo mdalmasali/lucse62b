@@ -359,8 +359,8 @@
           showOnly('stepOtp');
         }
       } catch(e) {
-        errEl.innerText = e==='Student not found'
-          ? 'Student ID not found. Please double-check your 16-digit ID.'
+        errEl.innerHTML = e==='Student not found'
+          ? '🚫 এই Student ID আমাদের Section-এ নেই।<br><small style="opacity:0.8;font-size:0.8em;">এই portal শুধুমাত্র CSE Batch 62, Section B-এর students-দের জন্য।</small>'
           : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
