@@ -143,15 +143,7 @@
       <div class="hero-photo-showcase">
         <div class="photo-frame-glow"></div>
         <div class="photo-frame-ring"></div>
-        <div class="photo-frame-inner">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-15.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-17.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-23.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-34.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-43.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-37-53.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-38-01.jpg" alt="CSE 62B Memories">
-          <img class="photo-slide" src="assets/images/photo_2026-05-04_00-38-10.jpg" alt="CSE 62B Memories">
+        <div class="photo-frame-inner" id="heroPhotoFrame">
         </div>
         <a href="pages/gallery.html" class="photo-gallery-badge">
           <i class="fa-solid fa-images"></i> Gallery
@@ -305,28 +297,6 @@
       </a>
     </div>
 
-    <!-- Gallery Preview Section -->
-    <div class="section-header fade-in delay-3" style="margin-top: 12px; justify-content: space-between;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <span class="section-label">📸 Memories Preview</span>
-        <div class="section-line" style="width: 100px; flex: none;"></div>
-      </div>
-      <a href="pages/gallery.html" class="view-all-link">View Gallery →</a>
-    </div>
-    <div class="bento-gallery fade-in delay-3">
-      <div class="bento-item bento-large">
-        <img src="assets/images/photo_2026-05-04_00-37-15.jpg" alt="Featured Memory 1">
-        <div class="bento-overlay"><span>Campus Life</span></div>
-      </div>
-      <div class="bento-item">
-        <img src="assets/images/photo_2026-05-04_00-37-23.jpg" alt="Featured Memory 2">
-        <div class="bento-overlay"><span>Event Highlights</span></div>
-      </div>
-      <div class="bento-item">
-        <img src="assets/images/photo_2026-05-04_00-37-34.jpg" alt="Featured Memory 3">
-        <div class="bento-overlay"><span>Friends & Group</span></div>
-      </div>
-    </div>
 
     <!-- Contact Info Panel -->
     <div class="contact-panel fade-in delay-4">
@@ -481,6 +451,48 @@
 
       tick();
       setInterval(tick, 1000);
+    })();
+  </script>
+  <script>
+    /* ── Hero photo frame — Drive images ── */
+    (async function loadHeroPhotos() {
+      const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
+      const KEY    = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
+      const frame  = document.getElementById('heroPhotoFrame');
+      if (!frame) return;
+
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      try {
+        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
+        const folders = (await fRes.json()).files || [];
+
+        const batches = await Promise.all(folders.map(f =>
+          fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=6&fields=files(id)&key=${KEY}`)
+            .then(r => r.json()).then(d => d.files || []).catch(() => [])
+        ));
+
+        let images = shuffle(batches.flat());
+        if (!images.length) return;
+
+        /* Always fill 8 slots so CSS nth-child delays are correct */
+        while (images.length < 8) images = [...images, ...images];
+        images = images.slice(0, 8);
+
+        images.forEach(img => {
+          const el = document.createElement('img');
+          el.className = 'photo-slide';
+          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
+          el.alt = '';
+          frame.appendChild(el);
+        });
+      } catch (e) { /* fail silently */ }
     })();
   </script>
   <script>
