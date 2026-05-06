@@ -10,165 +10,61 @@
   <link rel="stylesheet" href="../assets/css/style.css">
   <style>
     .login-container {
-      max-width: 400px;
-      margin: 80px auto 40px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 40px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      max-width: 400px; margin: 80px auto 40px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 24px; padding: 40px;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 24px 50px rgba(0,0,0,0.5);
-      text-align: center;
-      box-sizing: border-box;
+      text-align: center; box-sizing: border-box;
     }
-    .login-icon {
-      font-size: 3rem;
-      color: var(--accent);
-      margin-bottom: 20px;
-    }
-    .login-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: var(--text);
-    }
-    .login-desc {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-    .input-group {
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    .input-group label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
+    .login-icon { font-size: 3rem; color: var(--accent); margin-bottom: 20px; }
+    .login-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+    .login-desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px; }
+    .input-group { margin-bottom: 20px; text-align: left; }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
     .input-group input {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      width: 100%; padding: 14px 16px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 1rem;
+      transition: border-color 0.3s; box-sizing: border-box;
     }
-    .input-group input:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: rgba(255,255,255,0.05);
-    }
+    .input-group input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.05); }
     .btn {
-      display: inline-block;
-      width: 100%;
-      padding: 14px 24px;
+      display: inline-block; width: 100%; padding: 14px 24px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-      font-weight: 600;
-      font-size: 1rem;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+      color: #fff; font-weight: 600; font-size: 1rem;
+      border: none; border-radius: 12px; cursor: pointer;
       transition: transform 0.3s, box-shadow 0.3s;
     }
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 20px rgba(124, 58, 237, 0.4);
-    }
-    .btn:disabled {
-      background: var(--muted);
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-    .error-msg {
-      color: #f43f5e;
-      font-size: 0.85rem;
-      margin-top: 10px;
-      display: none;
-      font-weight: 500;
-    }
-    .success-msg {
-      color: #10b981;
-      font-size: 0.85rem;
-      margin-top: 10px;
-      display: none;
-      font-weight: 500;
-    }
-    #step2 {
-      display: none;
-    }
-    .tabs {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 10px;
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      font-weight: 600;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s;
-    }
-    .tab-btn.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    .forgot-password {
-      text-align: center;
-      margin-top: 12px;
-    }
-    .forgot-password a {
-      color: var(--accent-bright);
-      text-decoration: none;
-      font-size: 0.85rem;
-    }
+    .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(124,58,237,0.4); }
+    .btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+    .error-msg { color: #f43f5e; font-size: 0.85rem; margin-top: 10px; display: none; font-weight: 500; }
+    .success-msg { color: #10b981; font-size: 0.85rem; margin-top: 10px; display: none; font-weight: 500; }
     .otp-sent-badge {
-      background: rgba(16,185,129,0.12);
-      border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: var(--green);
-      font-size: 0.85rem;
-      margin-bottom: 16px;
-      display: none;
-      text-align: left;
+      background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 10px; padding: 10px 14px; color: var(--green);
+      font-size: 0.85rem; margin-bottom: 16px; text-align: left;
     }
+    .link-row { margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary); }
+    .link-row a { color: var(--accent-bright); text-decoration: none; }
+    .welcome-badge {
+      background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+      text-align: left; display: flex; align-items: center; gap: 12px;
+    }
+    .welcome-badge-avatar {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 1rem; flex-shrink: 0;
+    }
+    .welcome-badge-name { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .welcome-badge-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
     @media (max-width: 640px) {
-      .login-container {
-        margin: 16px;
-        padding: 28px 20px;
-        border-radius: 20px;
-        max-width: 100%;
-      }
+      .login-container { margin: 16px; padding: 28px 20px; border-radius: 20px; max-width: 100%; }
       .login-icon { font-size: 2.4rem; margin-bottom: 14px; }
       .login-title { font-size: 1.5rem; }
-      .login-desc { font-size: 0.85rem; margin-bottom: 18px; }
-      .input-group { margin-bottom: 16px; }
-      .input-group input { padding: 13px 14px; font-size: 0.95rem; }
-      .btn { padding: 13px 20px; font-size: 0.95rem; }
-      .forgot-password { flex-direction: column; gap: 6px; }
       #otpCode { letter-spacing: 12px; font-size: 1.4rem; padding: 14px 10px; }
     }
   </style>
@@ -192,15 +88,9 @@
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
-      <div class="topbar-status">
-        <div class="status-dot"></div>
-        Portal Active
-      </div>
-      <button class="hamburger" id="hamburger" aria-label="Open menu">
-        <span></span><span></span><span></span>
-      </button>
+      <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
-    <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
@@ -210,113 +100,100 @@
       <a class="auth-only" href="resources.html">Resources</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
-    
 
     <div class="login-container fade-in delay-1">
       <i class="fa-solid fa-user-graduate login-icon"></i>
       <h2 class="login-title">Student Portal</h2>
 
-      <!-- Login Type Selection -->
-      <div id="loginTypeSelect">
-        <p class="login-desc">How would you like to login?</p>
-        <button class="btn" onclick="showLoginMethod('password')" style="margin-bottom: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2));">
-          <i class="fa-solid fa-lock"></i> Login with Password
-        </button>
-        <button class="btn" onclick="showLoginMethod('otp')" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">
-          <i class="fa-solid fa-mobile"></i> Login with OTP
-        </button>
+      <!-- Step 1: Student ID -->
+      <div id="stepId">
+        <p class="login-desc">Enter your Student ID to continue.</p>
+        <div class="input-group">
+          <label for="studentIdInput">Student ID</label>
+          <input type="text" id="studentIdInput" placeholder="e.g. 0182320012101001" inputmode="numeric">
+        </div>
+        <div class="error-msg" id="idError"></div>
+        <button class="btn" id="continueBtn" onclick="checkStudentId()">Continue <i class="fa-solid fa-arrow-right"></i></button>
       </div>
 
-      <!-- Password Login -->
-      <div id="passwordLoginStep" style="display: none;">
-        <p class="login-desc">Enter your Student ID and Password</p>
-        <div class="input-group">
-          <label for="passwordStudentId">Student ID</label>
-          <input type="text" id="passwordStudentId" placeholder="e.g. 0182320012101001">
+      <!-- Step 2a: Password login -->
+      <div id="stepPassword" style="display:none;">
+        <div class="welcome-badge">
+          <div class="welcome-badge-avatar" id="pwdAvatar"></div>
+          <div>
+            <div class="welcome-badge-name" id="pwdName"></div>
+            <div class="welcome-badge-sub">Returning student</div>
+          </div>
         </div>
         <div class="input-group">
           <label for="passwordInput">Password</label>
           <input type="password" id="passwordInput" placeholder="Enter your password">
         </div>
-
-        <div style="text-align: left; margin-bottom: 20px;">
-          <label style="color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="keepLoggedInPassword" checked style="width: auto; accent-color: var(--accent);">
+        <div style="text-align:left; margin-bottom:20px;">
+          <label style="color:var(--text-secondary);font-size:0.85rem;display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="keepLoggedIn" checked style="width:auto;accent-color:var(--accent);">
             Keep me logged in
           </label>
         </div>
-
         <div class="error-msg" id="passwordError"></div>
-        <button class="btn" id="passwordLoginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
-
-        <div class="forgot-password">
-          <a href="#" onclick="showForgotPassword(); return false;">Forgot password?</a> | <a href="#" onclick="showLoginMethod('otp'); return false;">Use OTP instead</a>
+        <button class="btn" id="loginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
+        <div class="link-row">
+          <a href="#" onclick="showForgotPassword();return false;">Forgot password?</a>
+          &ensp;·&ensp;
+          <a href="#" onclick="goBack();return false;">Back</a>
         </div>
       </div>
 
-      <!-- OTP Login (Original Flow) -->
-      <div id="otpLoginStep" style="display: none;">
-        <p class="login-desc">Enter your 16-digit Student ID to receive an OTP on your registered mobile number.</p>
-        <div class="input-group">
-          <label for="studentId">Student ID</label>
-          <input type="text" id="studentId" placeholder="e.g. 0182320012101001">
+      <!-- Step 2b: First-time OTP -->
+      <div id="stepOtp" style="display:none;">
+        <div class="welcome-badge">
+          <div class="welcome-badge-avatar" id="otpAvatar"></div>
+          <div>
+            <div class="welcome-badge-name" id="otpName"></div>
+            <div class="welcome-badge-sub">New account setup</div>
+          </div>
         </div>
-
-        <div style="text-align: left; margin-bottom: 20px;">
-          <label style="color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="keepLoggedIn" checked style="width: auto; accent-color: var(--accent);">
-            Keep me logged in
-          </label>
-        </div>
-
-        <div class="error-msg" id="idError"></div>
+        <p class="login-desc" style="margin-bottom:16px;">We'll send an OTP to your registered number to verify and set up your account.</p>
+        <div class="error-msg" id="otpStepError"></div>
         <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
-
-        <div class="forgot-password">
-          <a href="#" onclick="showLoginMethod('password'); return false;">Use password instead</a>
-        </div>
+        <div class="link-row"><a href="#" onclick="goBack();return false;">Back</a></div>
       </div>
 
-      <!-- Step 2: Enter OTP (for both flows) -->
-      <div id="step2" style="display: none;">
-        <p class="login-desc">An OTP has been sent to <strong id="maskedPhone">your phone</strong>. Please enter it below.</p>
+      <!-- Step 3: OTP verification -->
+      <div id="stepVerify" style="display:none;">
+        <p class="login-desc">OTP sent to <strong id="maskedPhone"></strong>.</p>
+        <div class="success-msg" id="otpSuccess" style="display:block;margin-bottom:12px;">✓ OTP sent successfully!</div>
         <div class="input-group">
           <label for="otpCode">4-Digit OTP</label>
-          <input type="text" id="otpCode" placeholder="XXXX" maxlength="4" style="text-align: center; letter-spacing: 8px; font-size: 1.2rem; font-weight: bold;">
+          <input type="text" id="otpCode" placeholder="XXXX" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:1.2rem;font-weight:bold;">
         </div>
         <div class="error-msg" id="otpError"></div>
-        <div class="success-msg" id="otpSuccess">OTP sent successfully!</div>
-        <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify & Login <i class="fa-solid fa-right-to-bracket"></i></button>
-
-        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary);">
-          Didn't receive it? <a href="#" onclick="resetToLoginMethod(); return false;" style="color: var(--accent-bright);">Try again</a>
-        </p>
+        <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify & Continue <i class="fa-solid fa-check"></i></button>
+        <div class="link-row">
+          <a href="#" onclick="goBack();return false;">Try again</a>
+        </div>
       </div>
 
-      <!-- Forgot Password Flow -->
-      <div id="forgotPasswordStep" style="display: none;">
-        <p class="login-desc">Enter your Student ID to receive a password reset OTP</p>
+      <!-- Forgot Password -->
+      <div id="stepForgot" style="display:none;">
+        <p class="login-desc">Enter your Student ID to receive a password reset OTP.</p>
         <div class="input-group">
           <label for="forgotStudentId">Student ID</label>
           <input type="text" id="forgotStudentId" placeholder="e.g. 0182320012101001">
         </div>
         <div class="error-msg" id="forgotError"></div>
         <button class="btn" id="sendResetOtpBtn" onclick="requestPasswordResetOTP()">Send Reset OTP <i class="fa-solid fa-paper-plane"></i></button>
-
-        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
-          <a href="#" onclick="showLoginMethod('password'); return false;" style="color: var(--accent-bright);">Back to Login</a>
-        </p>
+        <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Login</a></div>
       </div>
 
-      <!-- Reset Password with OTP -->
-      <div id="resetPasswordStep" style="display: none;">
-        <div class="otp-sent-badge" id="resetOtpSentBadge">
+      <!-- Reset Password -->
+      <div id="stepReset" style="display:none;">
+        <div class="otp-sent-badge">
           <i class="fa-solid fa-circle-check"></i> OTP sent to <strong id="resetMaskedPhone"></strong>
         </div>
-        <p class="login-desc" id="resetDesc">Enter OTP and your new password</p>
         <div class="input-group">
           <label for="resetOtp">OTP</label>
-          <input type="text" id="resetOtp" placeholder="XXXX" maxlength="4" style="text-align: center; letter-spacing: 8px; font-size: 1.2rem; font-weight: bold;">
+          <input type="text" id="resetOtp" placeholder="XXXX" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:1.2rem;font-weight:bold;">
         </div>
         <div class="input-group">
           <label for="newPassword">New Password</label>
@@ -328,17 +205,15 @@
         </div>
         <div class="error-msg" id="resetError"></div>
         <button class="btn" id="resetPasswordBtn" onclick="resetPassword()">Reset Password <i class="fa-solid fa-check"></i></button>
-
-        <p style="margin-top: 16px; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">
-          <a href="#" onclick="showLoginMethod('password'); return false;" style="color: var(--accent-bright);">Back to Login</a>
-        </p>
+        <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Login</a></div>
       </div>
 
-      <a href="../index.html" style="color: var(--muted); text-decoration: none; font-size: 0.85rem; display: inline-block; margin-top: 24px;">
+      <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.85rem;display:inline-block;margin-top:24px;">
         <i class="fa-solid fa-arrow-left"></i> Back to Home
       </a>
     </div>
-      <footer>
+
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
@@ -350,34 +225,51 @@
         Built with ❤️ for CSE Batch 62, Section B.<br>
         © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
       </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
-      </div>
     </footer>
   </div>
 
   <script src="../assets/js/bcrypt.min.js"></script>
   <script>
-    // Configuration
-    const SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+    const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     const SHEET_NAME = 'Student Info';
-
-    // BulkSMSBD API Config
-    const SMS_API_KEY = 'nJOmvZlaS3yclfACHGU2';
+    const SMS_API_KEY   = 'nJOmvZlaS3yclfACHGU2';
     const SMS_SENDER_ID = '8809617627097';
+    const SUPABASE_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+    const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
+    if (localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student')) {
+      window.location.href = '../index.html';
+    }
+
+    let studentData  = null;
     let generatedOTP = null;
-    let studentData = null;
-    let currentFlow = null; // 'otp', 'password', 'forgot', 'reset'
-    const SUPABASE_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
+    const ALL_STEPS = ['stepId','stepPassword','stepOtp','stepVerify','stepForgot','stepReset'];
+
+    function showOnly(id) {
+      ALL_STEPS.forEach(s => {
+        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+      });
+    }
+
+    function goBack() {
+      studentData = null;
+      generatedOTP = null;
+      document.getElementById('studentIdInput').value = '';
+      showOnly('stepId');
+    }
+
+    function initials(name) {
+      return name.trim().split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase()||'').join('');
+    }
+
+    /* ── Supabase helpers ── */
     async function getPasswordHash(studentId) {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`,
         { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
       );
-      if (!res.ok) throw new Error('Supabase error ' + res.status);
+      if (!res.ok) throw new Error('Supabase error');
       const data = await res.json();
       return data[0]?.password_hash || null;
     }
@@ -386,411 +278,234 @@
       const res = await fetch(`${SUPABASE_URL}/rest/v1/student_passwords`, {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
+          'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
         },
         body: JSON.stringify({ student_id: studentId, password_hash: passwordHash, updated_at: new Date().toISOString() })
       });
-      if (!res.ok) throw new Error('Failed to save: ' + res.status);
+      if (!res.ok) throw new Error('Save failed');
     }
 
-    // Check if already logged in
-    if (localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student')) {
-      window.location.href = '../index.html';
-    }
-
-    function showLoginMethod(method) {
-      document.getElementById('loginTypeSelect').style.display = 'none';
-      document.getElementById('passwordLoginStep').style.display = method === 'password' ? 'block' : 'none';
-      document.getElementById('otpLoginStep').style.display = method === 'otp' ? 'block' : 'none';
-      currentFlow = method;
-    }
-
-    function resetToLoginMethod() {
-      document.getElementById('loginTypeSelect').style.display = 'block';
-      document.getElementById('passwordLoginStep').style.display = 'none';
-      document.getElementById('otpLoginStep').style.display = 'none';
-      document.getElementById('step2').style.display = 'none';
-      document.getElementById('forgotPasswordStep').style.display = 'none';
-      document.getElementById('resetPasswordStep').style.display = 'none';
-      document.getElementById('otpCode').value = '';
-      document.getElementById('studentId').value = '';
-      document.getElementById('passwordStudentId').value = '';
-      document.getElementById('passwordInput').value = '';
-      currentFlow = null;
-    }
-
-    function showForgotPassword() {
-      document.getElementById('passwordLoginStep').style.display = 'none';
-      document.getElementById('forgotPasswordStep').style.display = 'block';
-      currentFlow = 'forgot';
-    }
-
-    function checkOTPLimit() {
-      const today = new Date().toDateString();
-      let otpData = JSON.parse(localStorage.getItem('lu62b_otpLimit') || '{}');
-      if (otpData.date !== today) {
-        otpData = { date: today, count: 0 };
-      }
-      return otpData.count < 5;
-    }
-
-    function incrementOTPLimit() {
-      const today = new Date().toDateString();
-      let otpData = JSON.parse(localStorage.getItem('lu62b_otpLimit') || '{}');
-      if (otpData.date !== today) {
-        otpData = { date: today, count: 0 };
-      }
-      otpData.count += 1;
-      localStorage.setItem('lu62b_otpLimit', JSON.stringify(otpData));
-    }
-
+    /* ── Fetch student from sheet ── */
     function fetchStudentData(studentId) {
       return new Promise((resolve, reject) => {
-        const cb = `studentSheet_${Date.now()}`;
-        const s = document.createElement('script');
-
+        const cb = `s_${Date.now()}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { if(window[cb]){delete window[cb];s.remove();reject('Network error');} }, 8000);
         window[cb] = (data) => {
-          delete window[cb];
-          s.remove();
-
+          clearTimeout(t); delete window[cb]; s.remove();
           const rows = data.table?.rows || [];
-          for (let row of rows) {
-            const cells = (row.c || []).map(c => (c && (c.v !== null && c.v !== undefined)) ? String(c.f || c.v).trim() : '');
-            let sheetId = cells[1] || '';
-
-            if (sheetId === studentId || sheetId.replace(/^0+/, '') === studentId.replace(/^0+/, '')) {
-              let name = cells[2] || "Student";
-              let rawPhone = cells[3] || '';
-              let phone = null;
-
-              let val = rawPhone.replace(/\s+/g, '');
-              if (val.length === 10 && val.startsWith('1')) { val = '0' + val; }
-              if (val.length === 12 && val.startsWith('881')) { val = '0' + val.substring(2); }
-              if (/^(?:\+?88)?01\d{9}$/.test(val)) {
-                if (val.startsWith('+88')) val = val.substring(3);
-                else if (val.startsWith('88')) val = val.substring(2);
-                phone = val;
-              }
-
-              resolve({
-                id: studentId,
-                name: name,
-                phone: phone
-              });
+          for (const row of rows) {
+            const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
+            let sid = cells[1]||'';
+            if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
+              let raw = (cells[3]||'').replace(/\s+/g,'');
+              if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
+              if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
+              if (raw.startsWith('+88')) raw=raw.substring(3);
+              else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
+              resolve({ id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null });
               return;
             }
           }
           reject('Student not found');
         };
-
-        setTimeout(() => {
-          if(window[cb]) {
-            reject('Network error');
-          }
-        }, 5000);
-
         s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
         document.body.appendChild(s);
       });
     }
 
-    function sendSMSOTP(phoneNumber) {
-      generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-      const message = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
-      const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phoneNumber}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(message)}`;
-
-      return fetch(apiUrl, { mode: 'no-cors' });
+    /* ── OTP helpers ── */
+    function checkOTPLimit() {
+      const today = new Date().toDateString();
+      let d = JSON.parse(localStorage.getItem('lu62b_otpLimit')||'{}');
+      if (d.date!==today) d={date:today,count:0};
+      return d.count<5;
+    }
+    function incrementOTPLimit() {
+      const today = new Date().toDateString();
+      let d = JSON.parse(localStorage.getItem('lu62b_otpLimit')||'{}');
+      if (d.date!==today) d={date:today,count:0};
+      d.count++;
+      localStorage.setItem('lu62b_otpLimit',JSON.stringify(d));
+    }
+    function sendSMSOTP(phone) {
+      generatedOTP = Math.floor(1000+Math.random()*9000).toString();
+      const msg = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
+      return fetch(`https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phone}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(msg)}`,{mode:'no-cors'});
     }
 
+    /* ── Step 1: Check Student ID ── */
+    async function checkStudentId() {
+      const sid    = document.getElementById('studentIdInput').value.trim();
+      const errEl  = document.getElementById('idError');
+      const btn    = document.getElementById('continueBtn');
+      errEl.style.display = 'none';
+      if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
+      btn.innerText='Checking…'; btn.disabled=true;
+      try {
+        studentData = await fetchStudentData(sid);
+        const hash  = await getPasswordHash(sid);
+        const inits = initials(studentData.name);
+        if (hash) {
+          document.getElementById('pwdAvatar').textContent = inits;
+          document.getElementById('pwdName').textContent   = studentData.name;
+          showOnly('stepPassword');
+        } else {
+          document.getElementById('otpAvatar').textContent = inits;
+          document.getElementById('otpName').textContent   = studentData.name;
+          showOnly('stepOtp');
+        }
+      } catch(e) {
+        errEl.innerText = e==='Student not found'
+          ? 'Student ID not found. Please double-check your 16-digit ID.'
+          : 'Connection error. Please try again.';
+        errEl.style.display='block';
+      } finally { btn.innerText='Continue'; btn.disabled=false; }
+    }
+
+    /* ── Password login ── */
     async function loginWithPassword() {
-      const studentId = document.getElementById('passwordStudentId').value.trim();
-      const password = document.getElementById('passwordInput').value;
-      const errorEl = document.getElementById('passwordError');
-      const btn = document.getElementById('passwordLoginBtn');
-
-      if (!studentId || !password) {
-        errorEl.innerText = "Please enter both Student ID and Password.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      errorEl.style.display = "none";
-      btn.innerText = "Verifying...";
-      btn.disabled = true;
-
-      // Step 1: Find student in sheet
-      let student;
+      const pwd   = document.getElementById('passwordInput').value;
+      const errEl = document.getElementById('passwordError');
+      const btn   = document.getElementById('loginBtn');
+      errEl.style.display='none';
+      if (!pwd) { errEl.innerText='Please enter your password.'; errEl.style.display='block'; return; }
+      btn.innerText='Logging in…'; btn.disabled=true;
       try {
-        student = await fetchStudentData(studentId);
-      } catch (err) {
-        errorEl.innerText = err === 'Network error'
-          ? "Connection timeout. Please check your internet and try again."
-          : "Student ID not found. Please double-check your 16-digit ID.";
-        errorEl.style.display = "block";
-        btn.innerText = "Login";
-        btn.disabled = false;
-        return;
-      }
-
-      // Step 2: Check if password was ever set
-      let passwordHash;
-      try {
-        passwordHash = await getPasswordHash(studentId);
-      } catch (e) {
-        errorEl.innerText = "Connection error. Please check your internet and try again.";
-        errorEl.style.display = "block";
-        btn.innerText = "Login";
-        btn.disabled = false;
-        return;
-      }
-
-      if (!passwordHash) {
-        errorEl.innerText = "No password set yet. Please use OTP login first to set your password.";
-        errorEl.style.display = "block";
-        btn.innerText = "Login";
-        btn.disabled = false;
-        return;
-      }
-
-      // Step 3: Verify password
-      try {
-        const isValid = await bcrypt.compare(password, passwordHash);
-
-        if (isValid) {
-          const keepLoggedIn = document.getElementById('keepLoggedInPassword').checked;
-          const userToSave = {
-            id: student.id,
-            name: student.name,
-            phone: student.phone,
-            loginTime: new Date().getTime()
-          };
-          if (keepLoggedIn) {
-            localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
-          } else {
-            sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
-          }
-          window.location.href = '../index.html';
+        const hash  = await getPasswordHash(studentData.id);
+        const valid = await bcrypt.compare(pwd, hash);
+        if (valid) {
+          const keep = document.getElementById('keepLoggedIn').checked;
+          const u = { id:studentData.id, name:studentData.name, phone:studentData.phone, loginTime:Date.now() };
+          keep ? localStorage.setItem('lu62b_student',JSON.stringify(u))
+               : sessionStorage.setItem('lu62b_student',JSON.stringify(u));
+          window.location.href='../index.html';
         } else {
-          errorEl.innerText = "Incorrect password. Please try again or use 'Forgot password?'";
-          errorEl.style.display = "block";
-          btn.innerText = "Login";
-          btn.disabled = false;
+          errEl.innerText='Incorrect password. Try again or use Forgot Password.';
+          errEl.style.display='block';
+          btn.innerText='Login'; btn.disabled=false;
         }
-      } catch (err) {
-        console.error('bcrypt error:', err);
-        errorEl.innerText = "Login error: " + (err.message || "Please refresh and try again.");
-        errorEl.style.display = "block";
-        btn.innerText = "Login";
-        btn.disabled = false;
+      } catch(e) {
+        errEl.innerText='Login error. Please try again.';
+        errEl.style.display='block';
+        btn.innerText='Login'; btn.disabled=false;
       }
     }
 
+    /* ── OTP: first-time setup ── */
     function requestOTP() {
-      const studentId = document.getElementById('studentId').value.trim();
-      const errorEl = document.getElementById('idError');
-      const btn = document.getElementById('sendOtpBtn');
-
-      if (!studentId) {
-        errorEl.innerText = "Please enter your Student ID.";
-        errorEl.style.display = "block";
-        return;
+      const errEl = document.getElementById('otpStepError');
+      const btn   = document.getElementById('sendOtpBtn');
+      errEl.style.display='none';
+      if (!studentData?.phone) {
+        errEl.innerText='No phone number found for this student. Contact admin.';
+        errEl.style.display='block'; return;
       }
-
       if (!checkOTPLimit()) {
-        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day.";
-        errorEl.style.display = "block";
-        return;
+        errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.';
+        errEl.style.display='block'; return;
       }
-
-      errorEl.style.display = "none";
-      btn.innerText = "Checking...";
-      btn.disabled = true;
-
-      fetchStudentData(studentId)
-        .then(student => {
-          studentData = student;
-          sendSMSOTP(student.phone)
-            .then(() => {
-              incrementOTPLimit();
-              document.getElementById('otpLoginStep').style.display = 'none';
-              document.getElementById('step2').style.display = 'block';
-              const masked = student.phone.substring(0, 5) + '***' + student.phone.substring(student.phone.length - 3);
-              document.getElementById('maskedPhone').innerText = masked;
-              document.getElementById('otpSuccess').style.display = 'block';
-            })
-            .catch(() => {
-              errorEl.innerText = "Failed to send SMS. Please try again.";
-              errorEl.style.display = "block";
-              btn.innerText = "Send OTP";
-              btn.disabled = false;
-            });
-        })
-        .catch(() => {
-          errorEl.innerText = "Student not found or Phone Number missing.";
-          errorEl.style.display = "block";
-          btn.innerText = "Send OTP";
-          btn.disabled = false;
-        });
+      btn.innerText='Sending…'; btn.disabled=true;
+      sendSMSOTP(studentData.phone).then(()=>{
+        incrementOTPLimit();
+        const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
+        document.getElementById('maskedPhone').textContent=masked;
+        showOnly('stepVerify');
+      }).catch(()=>{
+        errEl.innerText='Failed to send OTP. Please try again.';
+        errEl.style.display='block';
+        btn.innerText='Send OTP'; btn.disabled=false;
+      });
     }
 
+    /* ── OTP: verify ── */
     async function verifyOTP() {
-      const inputOtp = document.getElementById('otpCode').value.trim();
-      const errorEl  = document.getElementById('otpError');
-      const btn      = document.getElementById('verifyOtpBtn');
-
-      if (inputOtp === generatedOTP || inputOtp === '0000') {
-        btn.innerText = 'Checking…';
-        btn.disabled  = true;
-
-        let existingHash;
+      const code  = document.getElementById('otpCode').value.trim();
+      const errEl = document.getElementById('otpError');
+      const btn   = document.getElementById('verifyOtpBtn');
+      errEl.style.display='none';
+      if (code===generatedOTP||code==='0000') {
+        btn.innerText='Checking…'; btn.disabled=true;
         try {
-          existingHash = await getPasswordHash(studentData.id);
-        } catch (e) {
-          errorEl.innerText = 'Connection error. Please try again.';
-          errorEl.style.display = 'block';
-          btn.innerText = 'Verify & Login';
-          btn.disabled  = false;
-          return;
-        }
-
-        if (existingHash) {
-          // Already has password — log straight in
-          const keepLoggedIn = document.getElementById('keepLoggedIn').checked;
-          const userToSave = {
-            id: studentData.id,
-            name: studentData.name,
-            phone: studentData.phone,
-            loginTime: new Date().getTime()
-          };
-          if (keepLoggedIn) {
-            localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+          const hash = await getPasswordHash(studentData.id);
+          if (hash) {
+            const u={id:studentData.id,name:studentData.name,phone:studentData.phone,loginTime:Date.now()};
+            localStorage.setItem('lu62b_student',JSON.stringify(u));
+            window.location.href='../index.html';
           } else {
-            sessionStorage.setItem('lu62b_student', JSON.stringify(userToSave));
+            sessionStorage.setItem('lu62b_firstTimeSetup',JSON.stringify(studentData));
+            window.location.href='password-setup.html';
           }
-          window.location.href = '../index.html';
-        } else {
-          // First time — go to password setup
-          sessionStorage.setItem('lu62b_firstTimeSetup', JSON.stringify(studentData));
-          window.location.href = 'password-setup.html';
+        } catch(e) {
+          errEl.innerText='Connection error. Please try again.';
+          errEl.style.display='block';
+          btn.innerText='Verify & Continue'; btn.disabled=false;
         }
       } else {
-        errorEl.innerText = 'Invalid OTP. Please try again.';
-        errorEl.style.display = 'block';
+        errEl.innerText='Invalid OTP. Please try again.';
+        errEl.style.display='block';
       }
     }
 
-    function requestPasswordResetOTP() {
-      const studentId = document.getElementById('forgotStudentId').value.trim();
-      const errorEl = document.getElementById('forgotError');
-      const btn = document.getElementById('sendResetOtpBtn');
+    /* ── Forgot password ── */
+    function showForgotPassword() {
+      document.getElementById('forgotStudentId').value = studentData?.id || '';
+      showOnly('stepForgot');
+    }
 
-      if (!studentId) {
-        errorEl.innerText = "Please enter your Student ID.";
-        errorEl.style.display = "block";
-        return;
+    async function requestPasswordResetOTP() {
+      const sid   = document.getElementById('forgotStudentId').value.trim();
+      const errEl = document.getElementById('forgotError');
+      const btn   = document.getElementById('sendResetOtpBtn');
+      errEl.style.display='none';
+      if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
+      if (!checkOTPLimit()) { errEl.innerText='Daily OTP limit reached.'; errEl.style.display='block'; return; }
+      btn.innerText='Sending…'; btn.disabled=true;
+      try {
+        studentData = await fetchStudentData(sid);
+        await sendSMSOTP(studentData.phone);
+        incrementOTPLimit();
+        const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
+        document.getElementById('resetMaskedPhone').textContent=masked;
+        showOnly('stepReset');
+      } catch(e) {
+        errEl.innerText = e==='Student not found' ? 'Student not found.' : 'Failed to send OTP.';
+        errEl.style.display='block';
+        btn.innerText='Send Reset OTP'; btn.disabled=false;
       }
-
-      if (!checkOTPLimit()) {
-        errorEl.innerText = "Daily Limit Exceeded! You can only request 5 OTPs per day.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      errorEl.style.display = "none";
-      btn.innerText = "Sending...";
-      btn.disabled = true;
-
-      fetchStudentData(studentId)
-        .then(student => {
-          studentData = student;
-          sendSMSOTP(student.phone)
-            .then(() => {
-              incrementOTPLimit();
-              const masked = student.phone
-                ? student.phone.substring(0, 5) + '***' + student.phone.substring(student.phone.length - 3)
-                : 'your registered number';
-              document.getElementById('resetMaskedPhone').innerText = masked;
-              document.getElementById('resetOtpSentBadge').style.display = 'block';
-              document.getElementById('resetDesc').style.display = 'none';
-              document.getElementById('forgotPasswordStep').style.display = 'none';
-              document.getElementById('resetPasswordStep').style.display = 'block';
-              currentFlow = 'reset';
-            })
-            .catch(() => {
-              errorEl.innerText = "Failed to send SMS. Please try again.";
-              errorEl.style.display = "block";
-              btn.innerText = "Send Reset OTP";
-              btn.disabled = false;
-            });
-        })
-        .catch(() => {
-          errorEl.innerText = "Student not found.";
-          errorEl.style.display = "block";
-          btn.innerText = "Send Reset OTP";
-          btn.disabled = false;
-        });
     }
 
     async function resetPassword() {
-      const otp = document.getElementById('resetOtp').value.trim();
-      const newPassword = document.getElementById('newPassword').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      const errorEl = document.getElementById('resetError');
-      const btn = document.getElementById('resetPasswordBtn');
-
-      if (!otp || !newPassword || !confirmPassword) {
-        errorEl.innerText = "Please fill all fields.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      if (newPassword.length < 6) {
-        errorEl.innerText = "Password must be at least 6 characters.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      if (newPassword !== confirmPassword) {
-        errorEl.innerText = "Passwords do not match.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      if (otp !== generatedOTP && otp !== '0000') {
-        errorEl.innerText = "Invalid OTP.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      errorEl.style.display = "none";
-      btn.innerText = "Resetting...";
-      btn.disabled = true;
-
+      const otp  = document.getElementById('resetOtp').value.trim();
+      const npwd = document.getElementById('newPassword').value;
+      const cpwd = document.getElementById('confirmPassword').value;
+      const errEl= document.getElementById('resetError');
+      const btn  = document.getElementById('resetPasswordBtn');
+      errEl.style.display='none';
+      if (!otp||!npwd||!cpwd) { errEl.innerText='Please fill all fields.'; errEl.style.display='block'; return; }
+      if (npwd.length<6) { errEl.innerText='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
+      if (npwd!==cpwd) { errEl.innerText='Passwords do not match.'; errEl.style.display='block'; return; }
+      if (otp!==generatedOTP&&otp!=='0000') { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
+      btn.innerText='Resetting…'; btn.disabled=true;
       try {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await savePasswordHash(studentData.id, hashedPassword);
-
-        // Auto-login user
-        const userToSave = {
-          id: studentData.id,
-          name: studentData.name,
-          phone: studentData.phone,
-          loginTime: new Date().getTime()
-        };
-
-        localStorage.setItem('lu62b_student', JSON.stringify(userToSave));
-        window.location.href = '../index.html';
-      } catch (err) {
-        errorEl.innerText = "Error resetting password. Please try again.";
-        errorEl.style.display = "block";
-        btn.innerText = "Reset Password";
-        btn.disabled = false;
+        const hash = await bcrypt.hash(npwd, 10);
+        await savePasswordHash(studentData.id, hash);
+        const u={id:studentData.id,name:studentData.name,phone:studentData.phone,loginTime:Date.now()};
+        localStorage.setItem('lu62b_student',JSON.stringify(u));
+        window.location.href='../index.html';
+      } catch(e) {
+        errEl.innerText='Error resetting password. Please try again.';
+        errEl.style.display='block';
+        btn.innerText='Reset Password'; btn.disabled=false;
       }
     }
+
+    /* Enter key support */
+    document.getElementById('studentIdInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkStudentId();});
+    document.getElementById('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')loginWithPassword();});
+    document.getElementById('otpCode').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOTP();});
   </script>
-<script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/auth.js"></script>
 </body>
 </html>

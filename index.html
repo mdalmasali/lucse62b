@@ -9,6 +9,22 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <meta name="description" content="Official digital portal for CSE Batch 62, Section B at Leading University. Access class materials, schedules, notices and more.">
+  <style>
+    .memories-strip {
+      position: relative; width: 100%; height: 280px;
+      border-radius: 20px; overflow: hidden;
+      background: var(--card); border: 1px solid var(--border);
+    }
+    .mem-slide {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0;
+      transition: opacity 1.4s ease;
+    }
+    .mem-slide.active { opacity: 1; }
+    @media (max-width: 640px) {
+      .memories-strip { height: 200px; border-radius: 14px; }
+    }
+  </style>
 </head>
 <body>
   <!-- Background layers -->
@@ -154,6 +170,24 @@
             <span>Graduation · Aug 2027</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Memories Slideshow -->
+    <div class="memories-section fade-in delay-2" id="memoriesSection" style="margin-bottom:44px;display:none;">
+      <div class="section-header" style="margin-bottom:16px;">
+        <span class="section-label">📸 Memories</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="memories-strip" id="memoriesStrip">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);">
+          <div class="spin"></div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:8px;">
+        <a href="pages/gallery.html" style="font-size:0.78rem;color:var(--muted);text-decoration:none;font-weight:600;">
+          View All Events <i class="fa-solid fa-arrow-right" style="font-size:0.7rem;"></i>
+        </a>
       </div>
     </div>
 
@@ -409,6 +443,61 @@
 
       tick();
       setInterval(tick, 1000);
+    })();
+  </script>
+  <script>
+    /* ── Memories slideshow ── */
+    (async function initMemories() {
+      const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
+      const KEY    = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
+
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      try {
+        /* 1. Get subfolders */
+        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
+        const fData = await fRes.json();
+        const folders = fData.files || [];
+
+        /* 2. Get images from each folder in parallel (max 8 per folder) */
+        const batches = await Promise.all(folders.map(f =>
+          fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=8&fields=files(id)&key=${KEY}`)
+            .then(r => r.json()).then(d => d.files || []).catch(() => [])
+        ));
+
+        let images = shuffle(batches.flat());
+        if (!images.length) return;
+
+        /* 3. Build slideshow */
+        const strip = document.getElementById('memoriesStrip');
+        strip.innerHTML = '';
+        images.forEach((img, i) => {
+          const el = document.createElement('img');
+          el.className = 'mem-slide' + (i === 0 ? ' active' : '');
+          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w1200`;
+          el.alt = '';
+          el.loading = i < 3 ? 'eager' : 'lazy';
+          strip.appendChild(el);
+        });
+
+        document.getElementById('memoriesSection').style.display = 'block';
+
+        /* 4. Cycle through */
+        let cur = 0;
+        setInterval(() => {
+          const slides = strip.querySelectorAll('.mem-slide');
+          slides[cur].classList.remove('active');
+          cur = (cur + 1) % slides.length;
+          slides[cur].classList.add('active');
+        }, 4500);
+
+      } catch (e) { /* Silently fail */ }
     })();
   </script>
 </body>
