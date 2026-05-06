@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -79,27 +79,27 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
         <li class="auth-only"><a href="classwork.html">Classwork</a></li>
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
       <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">?</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -141,7 +141,7 @@
         <button class="btn" id="loginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
         <div class="link-row">
           <a href="#" onclick="showForgotPassword();return false;">Forgot password?</a>
-          &ensp;·&ensp;
+          &ensp;�&ensp;
           <a href="#" onclick="goBack();return false;">Back</a>
         </div>
       </div>
@@ -164,7 +164,7 @@
       <!-- Step 3: OTP verification -->
       <div id="stepVerify" style="display:none;">
         <p class="login-desc">OTP sent to <strong id="maskedPhone"></strong>.</p>
-        <div class="success-msg" id="otpSuccess" style="display:block;margin-bottom:12px;">✓ OTP sent successfully!</div>
+        <div class="success-msg" id="otpSuccess" style="display:block;margin-bottom:12px;">? OTP sent successfully!</div>
         <div class="input-group">
           <label for="otpCode">4-Digit OTP</label>
           <input type="text" id="otpCode" placeholder="XXXX" maxlength="4" style="text-align:center;letter-spacing:8px;font-size:1.2rem;font-weight:bold;">
@@ -216,7 +216,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -224,8 +224,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ?? for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -265,7 +265,7 @@
       return name.trim().split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase()||'').join('');
     }
 
-    /* ── Supabase helpers ── */
+    /* -- Supabase helpers -- */
     async function getPasswordHash(studentId) {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`,
@@ -288,7 +288,7 @@
       if (!res.ok) throw new Error('Save failed');
     }
 
-    /* ── Fetch student from sheet ── */
+    /* -- Fetch student from sheet -- */
     function fetchStudentData(studentId) {
       return new Promise((resolve, reject) => {
         const cb = `s_${Date.now()}`;
@@ -317,7 +317,7 @@
       });
     }
 
-    /* ── OTP helpers ── */
+    /* -- OTP helpers -- */
     function checkOTPLimit() {
       const today = new Date().toDateString();
       let d = JSON.parse(localStorage.getItem('lu62b_otpLimit')||'{}');
@@ -337,14 +337,14 @@
       return fetch(`https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phone}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(msg)}`,{mode:'no-cors'});
     }
 
-    /* ── Step 1: Check Student ID ── */
+    /* -- Step 1: Check Student ID -- */
     async function checkStudentId() {
       const sid    = document.getElementById('studentIdInput').value.trim();
       const errEl  = document.getElementById('idError');
       const btn    = document.getElementById('continueBtn');
       errEl.style.display = 'none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
-      btn.innerText='Checking…'; btn.disabled=true;
+      btn.innerText='Checking�'; btn.disabled=true;
       try {
         studentData = await fetchStudentData(sid);
         const hash  = await getPasswordHash(sid);
@@ -360,20 +360,20 @@
         }
       } catch(e) {
         errEl.innerHTML = e==='Student not found'
-          ? '🚫 এই Student ID আমাদের Section-এ নেই।<br><small style="opacity:0.8;font-size:0.8em;">এই portal শুধুমাত্র CSE Batch 62, Section B-এর students-দের জন্য।</small>'
+          ? '?? ?? Student ID ?????? Section-? ????<br><small style="opacity:0.8;font-size:0.8em;">?? portal ????????? CSE Batch 62, Section B-?? students-??? ?????</small>'
           : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
     }
 
-    /* ── Password login ── */
+    /* -- Password login -- */
     async function loginWithPassword() {
       const pwd   = document.getElementById('passwordInput').value;
       const errEl = document.getElementById('passwordError');
       const btn   = document.getElementById('loginBtn');
       errEl.style.display='none';
       if (!pwd) { errEl.innerText='Please enter your password.'; errEl.style.display='block'; return; }
-      btn.innerText='Logging in…'; btn.disabled=true;
+      btn.innerText='Logging in�'; btn.disabled=true;
       try {
         const hash  = await getPasswordHash(studentData.id);
         const valid = await bcrypt.compare(pwd, hash);
@@ -395,7 +395,7 @@
       }
     }
 
-    /* ── OTP: first-time setup ── */
+    /* -- OTP: first-time setup -- */
     function requestOTP() {
       const errEl = document.getElementById('otpStepError');
       const btn   = document.getElementById('sendOtpBtn');
@@ -408,7 +408,7 @@
         errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.';
         errEl.style.display='block'; return;
       }
-      btn.innerText='Sending…'; btn.disabled=true;
+      btn.innerText='Sending�'; btn.disabled=true;
       sendSMSOTP(studentData.phone).then(()=>{
         incrementOTPLimit();
         const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
@@ -421,14 +421,14 @@
       });
     }
 
-    /* ── OTP: verify ── */
+    /* -- OTP: verify -- */
     async function verifyOTP() {
       const code  = document.getElementById('otpCode').value.trim();
       const errEl = document.getElementById('otpError');
       const btn   = document.getElementById('verifyOtpBtn');
       errEl.style.display='none';
       if (code===generatedOTP||code==='0000') {
-        btn.innerText='Checking…'; btn.disabled=true;
+        btn.innerText='Checking�'; btn.disabled=true;
         try {
           const hash = await getPasswordHash(studentData.id);
           if (hash) {
@@ -450,7 +450,7 @@
       }
     }
 
-    /* ── Forgot password ── */
+    /* -- Forgot password -- */
     function showForgotPassword() {
       document.getElementById('forgotStudentId').value = studentData?.id || '';
       showOnly('stepForgot');
@@ -463,7 +463,7 @@
       errEl.style.display='none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
       if (!checkOTPLimit()) { errEl.innerText='Daily OTP limit reached.'; errEl.style.display='block'; return; }
-      btn.innerText='Sending…'; btn.disabled=true;
+      btn.innerText='Sending�'; btn.disabled=true;
       try {
         studentData = await fetchStudentData(sid);
         await sendSMSOTP(studentData.phone);
@@ -489,7 +489,7 @@
       if (npwd.length<6) { errEl.innerText='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
       if (npwd!==cpwd) { errEl.innerText='Passwords do not match.'; errEl.style.display='block'; return; }
       if (otp!==generatedOTP&&otp!=='0000') { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
-      btn.innerText='Resetting…'; btn.disabled=true;
+      btn.innerText='Resetting�'; btn.disabled=true;
       try {
         const hash = await bcrypt.hash(npwd, 10);
         await savePasswordHash(studentData.id, hash);

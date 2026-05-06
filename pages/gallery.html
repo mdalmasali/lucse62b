@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <style>
-    /* ── Event grid (level 1) ── */
+    /* -- Event grid (level 1) -- */
     .event-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -54,7 +54,7 @@
     }
     .event-meta { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
-    /* ── Photo grid (level 2) ── */
+    /* -- Photo grid (level 2) -- */
     .photos-view { display: none; }
     .photos-view.active { display: block; }
     .events-view.hidden { display: none; }
@@ -82,7 +82,7 @@
     }
     .photo-thumb:hover { transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 
-    /* ── Lightbox ── */
+    /* -- Lightbox -- */
     .lightbox {
       position: fixed; inset: 0; z-index: 1000;
       background: rgba(0,0,0,0.97); display: none;
@@ -133,7 +133,7 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* ── Loading / empty ── */
+    /* -- Loading / empty -- */
     .gal-loading {
       display: flex; align-items: center; justify-content: center;
       gap: 12px; padding: 60px 20px; color: var(--text-secondary);
@@ -145,7 +145,7 @@
     }
     .gal-empty i { font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 16px; }
 
-    /* ── Mobile ── */
+    /* -- Mobile -- */
     @media (max-width: 640px) {
       .event-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
       .event-card { border-radius: 14px; }
@@ -167,38 +167,38 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
         <li class="auth-only"><a href="classwork.html">Classwork</a></li>
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
       <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">?</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
     <!-- Level 1: Events -->
     <div class="events-view" id="eventsView">
       <div class="section-header fade-in delay-1" style="margin-top:40px;">
-        <span class="section-label">📸 Memories &amp; Events</span>
+        <span class="section-label">?? Memories &amp; Events</span>
         <div class="section-line"></div>
       </div>
       <div class="event-grid fade-in delay-2" id="eventGrid">
-        <div class="gal-loading"><div class="spin"></div><span>Loading events…</span></div>
+        <div class="gal-loading"><div class="spin"></div><span>Loading events�</span></div>
       </div>
     </div>
 
@@ -209,7 +209,7 @@
           <i class="fa-solid fa-arrow-left"></i> Back to Events
         </div>
         <div class="section-header fade-in" style="margin-bottom:20px;">
-          <span class="section-label" id="eventLabel">📸 Event</span>
+          <span class="section-label" id="eventLabel">?? Event</span>
           <div class="section-line"></div>
         </div>
         <div class="photo-grid fade-in" id="photoGrid"></div>
@@ -217,7 +217,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -225,8 +225,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ?? for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -256,7 +256,7 @@
       return (await res.json()).files || [];
     }
 
-    /* ── Level 1: load events ── */
+    /* -- Level 1: load events -- */
     async function loadEvents() {
       const grid = document.getElementById('eventGrid');
       try {
@@ -336,18 +336,18 @@
       }
     }
 
-    /* ── Level 2: open event ── */
+    /* -- Level 2: open event -- */
     let currentPhotos = [];
     let lbIndex = 0;
 
     async function openEvent(folderId, folderName) {
       document.getElementById('eventsView').classList.add('hidden');
       document.getElementById('photosView').classList.add('active');
-      document.getElementById('eventLabel').textContent = '📸 ' + folderName;
+      document.getElementById('eventLabel').textContent = '?? ' + folderName;
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       const grid = document.getElementById('photoGrid');
-      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photos…</span></div>';
+      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photos�</span></div>';
 
       try {
         const photos = await driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
@@ -379,7 +379,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── Lightbox ── */
+    /* -- Lightbox -- */
     function openLb(idx) {
       lbIndex = idx;
       renderLb();

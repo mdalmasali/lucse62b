@@ -269,6 +269,7 @@
     .sem-modal-course-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .sem-modal-course-name { font-weight:600; font-size:0.9rem; color:var(--text); }
     .sem-modal-grade { font-weight:700; font-size:0.9rem; color:#a78bfa; }
+    .sem-modal-total { font-size:0.82rem; color:var(--text-secondary); font-weight:600; }
     .sem-modal-marks { display:flex; gap:8px; flex-wrap:wrap; }
     .sem-modal-mark-chip {
       background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
@@ -597,7 +598,7 @@
       'Reference','Serial','InputBy','Batch','Secttion',
       'TPoint','CDate'
     ]);
-    const MARK_ORDER = ['Total','ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
+    const MARK_ORDER = ['ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
     const MARK_LABELS = {
       Total:'Total', ATT:'Attendance', CT:'Class Test', CT1:'CT-1', CT2:'CT-2',
       TUT:'Tutorial', Tutorial:'Tutorial', PR:'Presentation', AS:'Assignment',
@@ -936,7 +937,10 @@
         return `<div class="sem-modal-course">
           <div class="sem-modal-course-top">
             <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
-            <div class="sem-modal-grade">${c.grade||'—'}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              ${c.mark > 0 ? `<span class="sem-modal-total">${c.mark}/100</span>` : ''}
+              <div class="sem-modal-grade">${c.grade||'—'}</div>
+            </div>
           </div>
           ${c.teacher ? `<div class="sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="sem-modal-marks">${chips}</div>

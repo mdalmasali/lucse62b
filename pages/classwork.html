@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <title>Classwork | CSE 62B LU</title>
-  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B — synced live from Google Sheets."/>
+  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B � synced live from Google Sheets."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -22,14 +22,14 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
         <li class="auth-only"><a href="classwork.html">Classwork</a></li>
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -41,29 +41,29 @@
       </button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">?</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">📝 Classwork</span>
+      <span class="section-label">?? Classwork</span>
       <div class="section-line"></div>
     </div>
 
     <div class="sync-badge fade-in delay-1" id="syncBadge">
       <span class="sync-dot"></span>
-      <span id="syncText">Connecting to Google Sheet…</span>
+      <span id="syncText">Connecting to Google Sheet�</span>
     </div>
 
     <div class="info-search-bar fade-in delay-2">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Search assignment, lab report, viva…" autocomplete="off"/>
+      <span class="search-icon">??</span>
+      <input type="text" id="searchInput" placeholder="Search assignment, lab report, viva�" autocomplete="off"/>
     </div>
 
     <div class="info-tabs fade-in delay-2" id="infoTabs">
@@ -73,12 +73,12 @@
     <div class="info-cards fade-in delay-3" id="infoCards">
       <div class="info-loading">
         <div class="spin"></div>
-        <div>Loading classwork…</div>
+        <div>Loading classwork�</div>
       </div>
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -86,8 +86,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ?? for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -102,13 +102,13 @@
     const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
     const CAT_META = {
-      'assignment':   { icon: '📝', color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
-      'tutorial':    { icon: '📖', color: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
-      'lab report':  { icon: '🔬', color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', tag: '#34d399', label: 'Lab Report' },
-      'viva':        { icon: '🎤', color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
-      'lab final':   { icon: '🏁', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
-      'project':     { icon: '💡', color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
-      'presentation':{ icon: '🖥️', color: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)', tag: '#818cf8', label: 'Presentation' },
+      'assignment':   { icon: '??', color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
+      'tutorial':    { icon: '??', color: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
+      'lab report':  { icon: '??', color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', tag: '#34d399', label: 'Lab Report' },
+      'viva':        { icon: '??', color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
+      'lab final':   { icon: '??', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
+      'project':     { icon: '??', color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
+      'presentation':{ icon: '???', color: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)', tag: '#818cf8', label: 'Presentation' },
     };
 
     const ALLOWED_CATS = new Set(['assignment', 'tutorial', 'lab report', 'viva', 'lab final', 'project', 'presentation']);
@@ -175,7 +175,7 @@
         );
       }
       if (!filtered.length) {
-        container.innerHTML = '<div class="info-empty">😕 No results found.</div>';
+        container.innerHTML = '<div class="info-empty">?? No results found.</div>';
         return;
       }
       container.innerHTML = '';
@@ -244,12 +244,12 @@
         allItems = items;
         buildTabs(items);
         renderCards();
-        setSyncText(`Live sync · Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        setSyncText(`Live sync � Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        setSyncText('Sync failed — retrying shortly…', false);
+        setSyncText('Sync failed � retrying shortly�', false);
         if (!allItems.length) {
           document.getElementById('infoCards').innerHTML =
-            '<div class="info-empty">⚠️ Could not load data from Google Sheet. Please refresh.</div>';
+            '<div class="info-empty">?? Could not load data from Google Sheet. Please refresh.</div>';
         }
       }
     }

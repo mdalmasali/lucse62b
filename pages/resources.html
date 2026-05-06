@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <style>
-    /* ── Semester bar ── */
+    /* -- Semester bar -- */
     .sem-bar {
       display: flex; align-items: center; justify-content: space-between;
       background: rgba(109,40,217,0.08); border: 1px solid rgba(109,40,217,0.2);
@@ -23,7 +23,7 @@
       border: 1px solid rgba(139,92,246,0.3); padding: 4px 12px; border-radius: 100px;
     }
 
-    /* ── Course card grid ── */
+    /* -- Course card grid -- */
     .course-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -76,7 +76,7 @@
     .ca-4 { background: rgba(236,72,153,0.06); }  .ca-4 .cc-icon { background: rgba(236,72,153,0.1); color: #f472b6; }  .ca-4 .cc-code { background: rgba(236,72,153,0.1); color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }  .ca-4 { border-color: rgba(236,72,153,0.18); }
     .ca-5 { background: rgba(234,179,8,0.06); }   .ca-5 .cc-icon { background: rgba(234,179,8,0.1); color: #fbbf24; }   .ca-5 .cc-code { background: rgba(234,179,8,0.1); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }   .ca-5 { border-color: rgba(234,179,8,0.18); }
 
-    /* ── Materials view (level 2) ── */
+    /* -- Materials view (level 2) -- */
     .materials-view { display: none; }
     .materials-view.active { display: block; }
     .courses-view.hidden { display: none; }
@@ -184,7 +184,7 @@
       gap: 12px; padding: 50px 20px; color: var(--text-secondary); font-size: 0.9rem;
     }
 
-    /* ── Mark Distribution ── */
+    /* -- Mark Distribution -- */
     .marks-section {
       margin-bottom: 0;
       background: var(--card); border: 1px solid var(--border);
@@ -251,7 +251,7 @@
       .mat-course-name { font-size: 0.95rem; }
     }
 
-    /* ── Preview Modal ── */
+    /* -- Preview Modal -- */
     .preview-modal {
       position: fixed; inset: 0; z-index: 1000;
       background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
@@ -301,12 +301,12 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -318,39 +318,39 @@
       </button>
     </nav>
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">?</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <!-- ── Level 1: Course selection ── -->
+    <!-- -- Level 1: Course selection -- -->
     <div class="courses-view" id="coursesView">
       <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-        <span class="section-label">📚 Class Materials</span>
+        <span class="section-label">?? Class Materials</span>
         <div class="section-line"></div>
       </div>
 
       <div class="sem-bar fade-in delay-1">
-        <span class="sem-bar-label">📅 Current Semester</span>
-        <span class="sem-badge">7th Semester · 2025–26</span>
+        <span class="sem-bar-label">?? Current Semester</span>
+        <span class="sem-badge">7th Semester � 2025�26</span>
       </div>
 
       <div class="sync-badge fade-in delay-1" id="syncBadge">
         <span class="sync-dot"></span>
-        <span id="syncText">Connecting…</span>
+        <span id="syncText">Connecting�</span>
       </div>
 
       <div id="courseGrid" class="course-grid fade-in delay-2">
         <div class="res-loading" style="grid-column:1/-1;">
-          <div class="spin"></div><span>Loading courses…</span>
+          <div class="spin"></div><span>Loading courses�</span>
         </div>
       </div>
     </div>
 
-    <!-- ── Level 2: Materials for selected course ── -->
+    <!-- -- Level 2: Materials for selected course -- -->
     <div class="materials-view" id="materialsView">
       <div style="margin-top: 40px;">
         <div class="back-btn fade-in" id="backBtn" onclick="showCourses()">
@@ -364,7 +364,7 @@
 
         <div class="mat-search">
           <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.85rem;"></i>
-          <input type="text" id="matSearch" placeholder="Search files…" autocomplete="off" oninput="filterFiles(this.value)">
+          <input type="text" id="matSearch" placeholder="Search files�" autocomplete="off" oninput="filterFiles(this.value)">
         </div>
 
         <div class="file-list fade-in" id="fileList"></div>
@@ -372,7 +372,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -380,8 +380,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ?? for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -401,7 +401,7 @@
   </div>
 
   <script>
-    /* ── Preview modal ── */
+    /* -- Preview modal -- */
     function openPreview(name, previewUrl, downloadUrl) {
       document.getElementById('previewTitle').textContent = name;
       document.getElementById('previewFrame').src = previewUrl;
@@ -421,11 +421,11 @@
     const MARKS_SHEET   = 'Marks';
     const DRIVE_API_KEY = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
 
-    /* ── Course icons ── */
+    /* -- Course icons -- */
     const COURSE_ICONS = { CSE:'fa-laptop-code', GED:'fa-book-open', MAT:'fa-square-root-variable', PHY:'fa-atom', EEE:'fa-bolt', default:'fa-graduation-cap' };
     function getCourseIcon(code) { return COURSE_ICONS[code.split('-')[0]] || COURSE_ICONS.default; }
 
-    /* ── File type from Drive mimeType ── */
+    /* -- File type from Drive mimeType -- */
     function mimeToType(m) {
       if (!m) return 'other';
       if (m === 'application/pdf') return 'pdf';
@@ -458,7 +458,7 @@
       return `https://drive.google.com/uc?export=download&id=${id}`;
     }
 
-    /* ── Mark colors ── */
+    /* -- Mark colors -- */
     const MARK_COLORS = [
       { num:'#818cf8', bg:'rgba(99,102,241,0.1)',  border:'rgba(99,102,241,0.22)',  bar:'#818cf8' },
       { num:'#34d399', bg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.22)',  bar:'#34d399' },
@@ -471,12 +471,12 @@
 
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    /* ── State ── */
+    /* -- State -- */
     let grouped      = {};  // { code: { name, colorIdx, folderId, files: null|[] } }
     let marksData    = {};  // { code: [{component, marks}] }
     let activeCourse = null;
 
-    /* ── Drive API: list files in a folder ── */
+    /* -- Drive API: list files in a folder -- */
     async function loadFolderFiles(folderId) {
       const url = `https://www.googleapis.com/drive/v3/files?q=%27${folderId}%27+in+parents+and+trashed%3Dfalse&orderBy=name&fields=files(id%2Cname%2CmimeType)&key=${DRIVE_API_KEY}`;
       const res = await fetch(url);
@@ -485,7 +485,7 @@
       return data.files || [];
     }
 
-    /* ── Level 1: course cards ── */
+    /* -- Level 1: course cards -- */
     function renderCourses() {
       const grid  = document.getElementById('courseGrid');
       const codes = Object.keys(grouped);
@@ -511,7 +511,7 @@
       }).join('');
     }
 
-    /* ── Mark distribution (inside course view) ── */
+    /* -- Mark distribution (inside course view) -- */
     function renderMarks(code) {
       const sec   = document.getElementById('marksSection');
       const items = marksData[code] || [];
@@ -538,7 +538,7 @@
         </div>`;
     }
 
-    /* ── Level 2: open a course ── */
+    /* -- Level 2: open a course -- */
     async function showMaterials(code) {
       activeCourse = code;
       const g  = grouped[code];
@@ -562,7 +562,7 @@
       /* Load files from Drive API if not cached */
       if (g.files === null) {
         document.getElementById('fileList').innerHTML =
-          `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive…</span></div>`;
+          `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive�</span></div>`;
         try {
           g.files = await loadFolderFiles(g.folderId);
         } catch (e) {
@@ -639,7 +639,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── Sheet helpers ── */
+    /* -- Sheet helpers -- */
     function setSyncText(text, ok = true) {
       const el  = document.getElementById('syncText');
       const dot = document.querySelector('.sync-badge .sync-dot');
@@ -707,9 +707,9 @@
         if (!activeCourse) renderCourses();
         else if (grouped[activeCourse]) renderMarks(activeCourse);
 
-        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+        setSyncText(`Live sync � ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
       } catch (err) {
-        setSyncText('Sync failed — retrying…', false);
+        setSyncText('Sync failed � retrying�', false);
         if (!Object.keys(grouped).length) {
           document.getElementById('courseGrid').innerHTML =
             `<div class="res-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i><h3>Could not load</h3><p>Please refresh.</p></div>`;

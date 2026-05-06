@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -350,7 +350,7 @@
       background: rgba(255,255,255,0.12);
     }
 
-    /* ── Result Dashboard Section ── */
+    /* -- Result Dashboard Section -- */
     .result-section {
       background: var(--card);
       border: 1px solid var(--border);
@@ -980,6 +980,7 @@
     .res-sem-modal-course-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .res-sem-modal-course-name{font-weight:600;font-size:0.9rem;color:var(--text);}
     .res-sem-modal-grade{font-weight:700;font-size:0.9rem;color:#a78bfa;}
+    .res-sem-modal-total{font-size:0.82rem;color:var(--text-secondary);font-weight:600;}
     .res-sem-modal-chips{display:flex;gap:8px;flex-wrap:wrap;}
     .res-sem-modal-chip{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:3px 9px;font-size:0.75rem;color:var(--text-secondary);}
     .res-sem-modal-chip strong{color:var(--text);}
@@ -1078,14 +1079,14 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
         <li class="auth-only"><a href="classwork.html">Classwork</a></li>
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
-        <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -1098,13 +1099,13 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">?</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
-      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -1152,7 +1153,7 @@
             <span class="label-title">Password Status</span>
             <span class="label-desc" id="passwordStatus">Password not set</span>
           </div>
-          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">🔓</span>
+          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">??</span>
         </div>
       </div>
 
@@ -1194,7 +1195,7 @@
       </div>
     </div>
 
-    <!-- ── My Academic Results Section ── -->
+    <!-- -- My Academic Results Section -- -->
     <div class="result-section fade-in delay-2" id="resultSection">
       <div class="result-section-title">
         <i class="fa-solid fa-chart-line" style="color: var(--accent-bright);"></i>
@@ -1208,7 +1209,7 @@
         <!-- Saved DOB Display -->
         <div class="dob-saved-display" id="dobSavedDisplay" style="display:none;">
           <div class="dob-saved-info">
-            <span>🎂</span>
+            <span>??</span>
             <div>
               <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:2px;">Saved Date of Birth</div>
               <div id="dobSavedText">--</div>
@@ -1271,7 +1272,7 @@
           </button>
         </div>
 
-        <!-- ── Overview Tab ── -->
+        <!-- -- Overview Tab -- -->
         <div id="rtabOverviewContent">
           <!-- Stats -->
           <div class="result-stats-grid" id="resStatsGrid"></div>
@@ -1284,7 +1285,7 @@
           <div class="result-semesters-grid" id="resSemestersGrid"></div>
         </div>
 
-        <!-- ── Analytics Tab ── -->
+        <!-- -- Analytics Tab -- -->
         <div id="rtabAnalyticsContent" style="display:none;">
           <div class="result-charts-grid">
             <div class="result-chart-card">
@@ -1300,7 +1301,7 @@
           <div class="result-extremes-grid" id="resExtremesGrid"></div>
         </div>
 
-        <!-- ── Compare Tab ── -->
+        <!-- -- Compare Tab -- -->
         <div id="rtabCompareContent" style="display:none;">
           <div class="result-compare-inputs">
             <!-- Student 1 = locked to current user -->
@@ -1353,7 +1354,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B � PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -1361,8 +1362,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with ?? for CSE Batch 62, Section B.<br>
+        � 2026 MD. Almas Ali. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -1440,11 +1441,11 @@
       getPasswordHash(currentUser.id).then(hash => {
         if (hash) {
           document.getElementById('passwordStatus').innerText = 'Password is set';
-          document.getElementById('statusIcon').innerText = '🔐';
+          document.getElementById('statusIcon').innerText = '??';
           document.getElementById('statusIcon').style.color = 'var(--green)';
         } else {
           document.getElementById('passwordStatus').innerText = 'Password not set yet';
-          document.getElementById('statusIcon').innerText = '🔓';
+          document.getElementById('statusIcon').innerText = '??';
         }
       }).catch(() => {});
     }
@@ -1542,7 +1543,7 @@
         await savePasswordHash(currentUser.id, hashedPassword);
 
         document.getElementById('passwordStatus').innerText = 'Password is set';
-        document.getElementById('statusIcon').innerText = '🔐';
+        document.getElementById('statusIcon').innerText = '??';
         document.getElementById('statusIcon').style.color = 'var(--green)';
 
         document.getElementById('successMsg').innerText = 'Password updated successfully!';
@@ -1579,14 +1580,14 @@
     <div class="res-sem-modal" id="resSemModalInner"></div>
   </div>
 
-  <!-- ── Result Dashboard Script ── -->
+  <!-- -- Result Dashboard Script -- -->
   <script>
     const RES_API = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
     // Primary: our own Cloudflare Worker proxy (fast & reliable)
     const CF_WORKER = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const RES_PROXIES = [
-      // Strategy 1: Cloudflare Worker (our own — most reliable)
+      // Strategy 1: Cloudflare Worker (our own � most reliable)
       async (studentId, birthDate) => {
         const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: birthDate });
         const r = await fetch(CF_WORKER, { method: 'POST', body });
@@ -1614,7 +1615,7 @@
     let resGradeChart = null;
     let resGpaChart   = null;
 
-    // ── Init on page load ──────────────────────────────────────────
+    // -- Init on page load ------------------------------------------
     document.addEventListener('DOMContentLoaded', async () => {
       populateResDateDropdowns();
       await initResultSection();
@@ -1678,7 +1679,7 @@
       if (y) y.value = year;
     }
 
-    // ── DOB Management ─────────────────────────────────────────────
+    // -- DOB Management ---------------------------------------------
     function showSavedDob(dobStr) {
       const [y, m, d] = dobStr.split('-');
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1720,7 +1721,7 @@
       showSavedDob(dobStr);
     }
 
-    // ── Load Results ────────────────────────────────────────────────
+    // -- Load Results ------------------------------------------------
     async function loadResults() {
       const day   = document.getElementById('resDobDay').value   || (localStorage.getItem(`lu62b_dob_${currentUser.id}`) || '').split('-')[2];
       const month = document.getElementById('resDobMonth').value || (localStorage.getItem(`lu62b_dob_${currentUser.id}`) || '').split('-')[1];
@@ -1753,14 +1754,14 @@
       }
     }
 
-    /* ── Mark field labels & display order ── */
+    /* -- Mark field labels & display order -- */
     const RES_MARK_SKIP = new Set([
       'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
       'SID','SName','Dept','Department','Program','Teacher',
       'Reference','Serial','InputBy','Batch','Secttion',
       'TPoint','CDate'
     ]);
-    const RES_MARK_ORDER = ['Total','ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
+    const RES_MARK_ORDER = ['ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
     const RES_MARK_LABELS = {
       Total:'Total', ATT:'Attendance', CT:'Class Test', CT1:'CT-1', CT2:'CT-2',
       TUT:'Tutorial', Tutorial:'Tutorial', PR:'Presentation', AS:'Assignment',
@@ -1769,7 +1770,7 @@
     };
     function resMarkLabel(k) { return RES_MARK_LABELS[k] || k; }
 
-    /* ── Normalize LUS API response → flat structure ── */
+    /* -- Normalize LUS API response ? flat structure -- */
     function normalizeResData(raw) {
       const s  = raw.student;
       const rs = raw.row_data?.student || {};
@@ -1825,7 +1826,7 @@
 
       for (let i = 0; i < RES_PROXIES.length; i++) {
         const btn = document.getElementById('btnLoadResults');
-        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching result…`;
+        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching result�`;
 
         try {
           const raw = await RES_PROXIES[i](studentId, birthDate);
@@ -1842,7 +1843,7 @@
           if (data.error) throw new Error(data.error);
           if (!data.success || !data.student) { lastError = new Error('No student data in response'); continue; }
 
-          return normalizeResData(data); // ✅ success
+          return normalizeResData(data); // ? success
 
         } catch (err) {
           if (err.message && /invalid|not found|credential|incorrect/i.test(err.message)) throw err;
@@ -1854,7 +1855,7 @@
       throw new Error('All connection methods failed. Please check your internet connection or try again later.');
     }
 
-    // ── Render Dashboard ────────────────────────────────────────────
+    // -- Render Dashboard --------------------------------------------
     function renderResDashboard() {
       renderResStats();
       renderResLatestSemester();
@@ -1954,7 +1955,10 @@
         return `<div class="res-sem-modal-course">
           <div class="res-sem-modal-course-top">
             <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
-            <div class="res-sem-modal-grade">${c.grade||'—'}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              ${c.mark > 0 ? `<span class="res-sem-modal-total">${c.mark}/100</span>` : ''}
+              <div class="res-sem-modal-grade">${c.grade||'�'}</div>
+            </div>
           </div>
           ${c.teacher ? `<div class="res-sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="res-sem-modal-chips">${chips}</div>
@@ -1964,9 +1968,9 @@
         <div class="res-sem-modal-head">
           <div>
             <div class="res-sem-modal-title">${sem.semester_name||`Semester ${idx+1}`}</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(sem.gpa||0).toFixed(2)}</strong> &nbsp;·&nbsp; Credit: <strong style="color:#a78bfa">${sem.credit||0}</strong></div>
+            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(sem.gpa||0).toFixed(2)}</strong> &nbsp;�&nbsp; Credit: <strong style="color:#a78bfa">${sem.credit||0}</strong></div>
           </div>
-          <button class="res-sem-modal-close" onclick="closeResSemModal()">✕</button>
+          <button class="res-sem-modal-close" onclick="closeResSemModal()">?</button>
         </div>
         ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}
       `;
@@ -1974,7 +1978,7 @@
       document.body.style.overflow = 'hidden';
     }
 
-    // ── Tab Switching ───────────────────────────────────────────────
+    // -- Tab Switching -----------------------------------------------
     function switchResultTab(tab, btn) {
       document.querySelectorAll('.result-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -1991,7 +1995,7 @@
       }
     }
 
-    // ── Analytics ───────────────────────────────────────────────────
+    // -- Analytics ---------------------------------------------------
     function renderResAnalytics() {
       if (!resData) return;
       const semesters = resData.semesters || [];
@@ -2032,7 +2036,7 @@
       const ctx = document.getElementById('resGpaChart').getContext('2d');
       if (resGpaChart) resGpaChart.destroy();
 
-      const chron  = semesters.slice().reverse(); // oldest → newest for trend chart
+      const chron  = semesters.slice().reverse(); // oldest ? newest for trend chart
       const labels = chron.map((s,i) => s.semester_name || `Sem ${i+1}`);
       const gpas   = chron.map(s => parseFloat((s.gpa||0).toFixed(2)));
 
@@ -2076,13 +2080,13 @@
 
       document.getElementById('resExtremesGrid').innerHTML = `
         ${highest ? `<div class="result-extreme-card highest">
-          <div class="result-extreme-header highest"><span>🏆</span> Highest Mark</div>
+          <div class="result-extreme-header highest"><span>??</span> Highest Mark</div>
           <div class="result-extreme-course-name">${highest.course_title||highest.course_code||'N/A'}</div>
           <div class="result-extreme-mark">${highest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${highest.grade||'N/A'}</div>
         </div>` : ''}
         ${lowest ? `<div class="result-extreme-card lowest">
-          <div class="result-extreme-header lowest"><span>📉</span> Lowest Mark</div>
+          <div class="result-extreme-header lowest"><span>??</span> Lowest Mark</div>
           <div class="result-extreme-course-name">${lowest.course_title||lowest.course_code||'N/A'}</div>
           <div class="result-extreme-mark">${lowest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${lowest.grade||'N/A'}</div>
@@ -2090,7 +2094,7 @@
       `;
     }
 
-    // ── Compare ─────────────────────────────────────────────────────
+    // -- Compare -----------------------------------------------------
     async function runCompare() {
       const s1Id  = currentUser.id;
       const s1Day = document.getElementById('cmpS1Day').value;
@@ -2143,7 +2147,7 @@
       el.classList.add('show');
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // -- Helpers ------------------------------------------------------
     function showResError(msg) {
       const el = document.getElementById('resultError');
       el.innerHTML = `
@@ -2151,7 +2155,7 @@
         <br><br>
         <a href="https://lus.ac.bd/result/" target="_blank"
            style="color: var(--accent-bright, #a78bfa); font-weight:600; text-decoration:none;">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal ?
         </a>
       `;
       el.classList.add('show');
