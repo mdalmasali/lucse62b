@@ -163,9 +163,25 @@
       border-radius: 10px; padding: 12px 14px; transition: border-color 0.2s;
     }
     .res-course:hover { border-color: rgba(124,58,237,0.3); }
-    .res-course-name { font-weight: 600; font-size: 0.85rem; color: var(--text); margin-bottom: 6px; }
+    .res-course-name { font-weight: 600; font-size: 0.85rem; color: var(--text); margin-bottom: 4px; }
+    .res-course-teacher { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+    .res-course-teacher i { margin-right: 3px; }
     .res-course-info { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); }
     .res-course-grade { color: #a78bfa; font-weight: 700; }
+    /* Extra info badges */
+    .res-extra-info { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .res-info-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; font-weight: 500; color: var(--text-secondary);
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 5px 12px;
+    }
+    .res-info-badge i { font-size: 0.7rem; opacity: 0.7; }
+    .res-info-badge--red  { color: #f87171; border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.07); }
+    .res-info-badge--green{ color: #4ade80; border-color: rgba(74,222,128,0.25); background: rgba(74,222,128,0.07); }
+    /* Teacher in modal */
+    .sem-modal-teacher { font-size: 0.75rem; color: var(--muted); margin: 3px 0 6px; }
+    .sem-modal-teacher i { margin-right: 4px; }
 
     /* ── All Semesters ── */
     .res-sems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
@@ -376,6 +392,7 @@
         </div>
         <button class="res-logout" onclick="resLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
+      <div class="res-extra-info" id="dExtraInfo"></div>
 
       <!-- Tabs -->
       <div class="res-tabs fade-in">
@@ -585,18 +602,22 @@
 
     /* ── Normalize LUS response → flat structure render functions expect ── */
     function normalizeData(raw) {
-      const s = raw.student;
+      const s  = raw.student;
+      const rs = raw.row_data?.student || {};
 
-      // Capture ALL numeric mark fields dynamically from row_data
-      const markMap = {};
+      // Marks map (numeric fields) + teacher map
+      const markMap    = {};
+      const teacherMap = {};
       for (const r of (raw.row_data?.result || [])) {
+        const key   = `${r.CCode}|${r.CYear}|${r.Semister}`;
         const entry = {};
         for (const [k, v] of Object.entries(r)) {
           if (MARK_SKIP.has(k)) continue;
           const n = parseFloat(v);
           if (!isNaN(n) && n >= 0) entry[k] = n;
         }
-        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = entry;
+        markMap[key]    = entry;
+        teacherMap[key] = r.Teacher || '';
       }
 
       // Flatten year-keyed results → sorted array (newest first)
@@ -606,18 +627,20 @@
         for (const sem of (raw.results[year] || [])) {
           const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
           const courses = (sem.courses || []).map(c => {
-            const m = markMap[`${c.course_code}|${year}|${semType}`] || {};
+            const key = `${c.course_code}|${year}|${semType}`;
+            const m   = markMap[key]    || {};
             return {
               course_title: c.course_title,
               course_code:  c.course_code,
-              grade: c.grade,
-              credit: parseFloat(c.credit) || 0,
-              mark:  m.Total || 0,
-              marks: m.Total || 0,
-              att:   m.ATT   || 0,
-              mid:   m.MTE   || 0,
-              fin:   m.FE    || 0,
+              grade:   c.grade,
+              credit:  parseFloat(c.credit) || 0,
+              mark:    m.Total || 0,
+              marks:   m.Total || 0,
+              att:     m.ATT   || 0,
+              mid:     m.MTE   || 0,
+              fin:     m.FE    || 0,
               extraMarks: m,
+              teacher: teacherMap[key] || '',
             };
           });
           semesters.push({
@@ -637,9 +660,17 @@
         student_name:      s.name,
         student_id:        s.id,
         department:        s.department,
+        degree:            rs.Degree        || s.degree || '',
         cgpa:              parseFloat(s.cgpa)   || 0,
         total_credit:      parseFloat(s.credit) || 0,
         courses_completed: semesters.reduce((acc, sem) => acc + sem.courses.length, 0),
+        blood_group:  rs.Blood_group  || '',
+        waiver:       rs.Waiver       || '',
+        father_name:  rs.Father_Name  || '',
+        mother_name:  rs.Mother_Name  || '',
+        phone:        rs.Student_Tel  || '',
+        address:      rs.Present_Add  || '',
+        add_year:     rs.AddYear      || '',
         semesters
       };
     }
@@ -674,6 +705,18 @@
       document.getElementById('dName').textContent = name;
       document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
 
+      // Extra info badges
+      const badges = [];
+      if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
+      if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
+      if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
+      if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
+      if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
+      if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
+      if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
+      const badgeEl = document.getElementById('dExtraInfo');
+      if (badgeEl) badgeEl.innerHTML = badges.join('');
+
       renderStats(d);
       renderLatest(d);
       renderAllSems(d);
@@ -697,6 +740,7 @@
       const courses = (s.courses||[]).map(c => `
         <div class="res-course">
           <div class="res-course-name">${c.course_title||c.course_code||'N/A'}</div>
+          ${c.teacher ? `<div class="res-course-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="res-course-info">
             <span>${c.credit||0} Cr</span>
             ${c.mark > 0 ? `<span style="color:var(--text-secondary)">${c.mark}/100</span>` : ''}
@@ -889,6 +933,7 @@
             <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div class="sem-modal-grade">${c.grade||'—'}</div>
           </div>
+          ${c.teacher ? `<div class="sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="sem-modal-marks">${chips}</div>
         </div>`;
       }).join('');

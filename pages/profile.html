@@ -659,8 +659,16 @@
       font-weight: 600;
       font-size: 0.88rem;
       color: var(--text);
-      margin-bottom: 6px;
+      margin-bottom: 3px;
     }
+    .result-course-teacher {
+      font-size: 0.72rem; color: var(--muted); margin-bottom: 6px;
+    }
+    .result-course-teacher i { margin-right: 3px; }
+    .res-sem-modal-teacher {
+      font-size: 0.75rem; color: var(--muted); margin: 3px 0 6px;
+    }
+    .res-sem-modal-teacher i { margin-right: 4px; }
 
     .result-course-info {
       display: flex;
@@ -1757,16 +1765,21 @@
 
     /* ── Normalize LUS API response → flat structure ── */
     function normalizeResData(raw) {
-      const s = raw.student;
-      const markMap = {};
+      const s  = raw.student;
+      const rs = raw.row_data?.student || {};
+
+      const markMap    = {};
+      const teacherMap = {};
       for (const r of (raw.row_data?.result || [])) {
+        const key   = `${r.CCode}|${r.CYear}|${r.Semister}`;
         const entry = {};
         for (const [k, v] of Object.entries(r)) {
           if (RES_MARK_SKIP.has(k)) continue;
           const n = parseFloat(v);
           if (!isNaN(n) && n >= 0) entry[k] = n;
         }
-        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = entry;
+        markMap[key]    = entry;
+        teacherMap[key] = r.Teacher || '';
       }
       const semTypeOrder = { Spring: 1, Summer: 2, Fall: 3 };
       const semesters = [];
@@ -1774,8 +1787,9 @@
         for (const sem of (raw.results[year] || [])) {
           const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
           const courses = (sem.courses || []).map(c => {
-            const m = markMap[`${c.course_code}|${year}|${semType}`] || {};
-            return { course_title: c.course_title, course_code: c.course_code, grade: c.grade, credit: parseFloat(c.credit) || 0, mark: m.Total||0, att: m.ATT||0, mid: m.MTE||0, fin: m.FE||0, extraMarks: m };
+            const key = `${c.course_code}|${year}|${semType}`;
+            const m   = markMap[key] || {};
+            return { course_title: c.course_title, course_code: c.course_code, grade: c.grade, credit: parseFloat(c.credit) || 0, mark: m.Total||0, att: m.ATT||0, mid: m.MTE||0, fin: m.FE||0, extraMarks: m, teacher: teacherMap[key] || '' };
           });
           semesters.push({ semester_name: sem.name, year, gpa: parseFloat(sem.gpa) || 0, credit: parseFloat(sem.credit) || 0, grade: sem.grade, courses, _key: parseInt(year) * 10 + (semTypeOrder[semType] || 0) });
         }
@@ -1785,9 +1799,17 @@
         student_name:      s.name,
         student_id:        s.id,
         department:        s.department,
+        degree:            rs.Degree       || s.degree || '',
         cgpa:              parseFloat(s.cgpa)   || 0,
         total_credit:      parseFloat(s.credit) || 0,
         courses_completed: semesters.reduce((a, sem) => a + sem.courses.length, 0),
+        blood_group:  rs.Blood_group  || '',
+        waiver:       rs.Waiver       || '',
+        father_name:  rs.Father_Name  || '',
+        mother_name:  rs.Mother_Name  || '',
+        phone:        rs.Student_Tel  || '',
+        address:      rs.Present_Add  || '',
+        add_year:     rs.AddYear      || '',
         semesters
       };
     }
@@ -1865,6 +1887,7 @@
       const courses = (latest.courses || []).map(c => `
         <div class="result-course-card">
           <div class="result-course-name">${c.course_title || c.course_code || 'N/A'}</div>
+          ${c.teacher ? `<div class="result-course-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="result-course-info">
             <span>${c.credit || 0} Cr</span>
             ${c.mark > 0 ? `<span style="color:var(--text-secondary);font-size:0.8em">${c.mark}/100</span>` : ''}
@@ -1928,6 +1951,7 @@
             <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div class="res-sem-modal-grade">${c.grade||'—'}</div>
           </div>
+          ${c.teacher ? `<div class="res-sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="res-sem-modal-chips">${chips}</div>
         </div>`;
       }).join('');
