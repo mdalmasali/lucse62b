@@ -44,9 +44,14 @@
       border-radius: 12px; color: var(--text);
       font-family: 'Inter', sans-serif; font-size: 0.95rem;
       transition: border-color 0.3s, background 0.3s; box-sizing: border-box;
+      -webkit-appearance: none; appearance: none;
     }
     .rfield input:focus, .rfield select:focus {
       outline: none; border-color: var(--accent); background: rgba(255,255,255,0.05);
+    }
+    .rfield select option, .rdob select option {
+      background: #0d0d1a;
+      color: #f1f5f9;
     }
     .rdob { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 10px; }
 
@@ -434,24 +439,36 @@
     const CF_WORKER  = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const PROXIES = [
+      // Proxy 1: Cloudflare Worker
       async (id, dob) => {
         const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
         const r = await fetch(CF_WORKER, { method:'POST', body });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`CF Worker HTTP ${r.status}`);
         return r.text();
       },
+      // Proxy 2: corsproxy.io (direct URL append)
       async (id, dob) => {
         const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
         const r = await fetch(`https://corsproxy.io/?${RES_API}`, {
-          method:'POST', body, headers:{ 'x-requested-with':'XMLHttpRequest' }
+          method:'POST', body, headers:{ 'x-requested-with':'XMLHttpRequest', 'content-type':'application/x-www-form-urlencoded' }
         });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`corsproxy.io HTTP ${r.status}`);
         return r.text();
       },
+      // Proxy 3: corsproxy.io with encoded URL
+      async (id, dob) => {
+        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
+        const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(RES_API)}`, {
+          method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' }
+        });
+        if (!r.ok) throw new Error(`corsproxy.io[enc] HTTP ${r.status}`);
+        return r.text();
+      },
+      // Proxy 4: allorigins raw (GET fallback — may not work for POST-only endpoints)
       async (id, dob) => {
         const params = `action=get-result&student_id=${encodeURIComponent(id)}&birth_date=${encodeURIComponent(dob)}`;
         const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`${RES_API}?${params}`)}`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`);
         return (await r.json()).contents;
       },
     ];
@@ -499,7 +516,9 @@
         document.getElementById('loginView').style.display = 'none';
         document.getElementById('dashboardView').style.display = 'block';
       } catch (e) {
-        showErr(`${e.message} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →</a>`);
+        const isLocal = location.protocol === 'file:';
+        const localNote = isLocal ? '<br><small style="color:#94a3b8;font-size:0.8em;">You are on a local file. Try from the live site instead.</small>' : '';
+        showErr(`${e.message}${localNote} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →</a>`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Access Results';
@@ -534,7 +553,7 @@
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
-      document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
+      document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.dept || d.department || 'CSE'}`;
 
       renderStats(d);
       renderLatest(d);
@@ -557,7 +576,7 @@
       const s = sems[0];
       const courses = (s.courses||[]).map(c => `
         <div class="res-course">
-          <div class="res-course-name">${c.course_name||c.code||'N/A'}</div>
+          <div class="res-course-name">${c.course_title||c.course_name||c.course_code||c.code||'N/A'}</div>
           <div class="res-course-info"><span>${c.credit||0} Credit</span><span class="res-course-grade">${c.grade||'N/A'}</span></div>
         </div>`).join('');
       el.innerHTML = `
@@ -659,13 +678,13 @@
       document.getElementById('dExtremes').innerHTML = `
         ${hi ? `<div class="res-extreme high">
           <div class="res-extreme-hdr"><span>🏆</span> Highest Mark</div>
-          <div class="res-extreme-course">${hi.course_name||hi.code||'N/A'}</div>
+          <div class="res-extreme-course">${hi.course_title||hi.course_name||hi.course_code||hi.code||'N/A'}</div>
           <div class="res-extreme-mark">${hi.marks}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${hi.grade||'N/A'}</div>
         </div>` : ''}
         ${lo ? `<div class="res-extreme low">
           <div class="res-extreme-hdr"><span>📉</span> Lowest Mark</div>
-          <div class="res-extreme-course">${lo.course_name||lo.code||'N/A'}</div>
+          <div class="res-extreme-course">${lo.course_title||lo.course_name||lo.course_code||lo.code||'N/A'}</div>
           <div class="res-extreme-mark">${lo.marks}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${lo.grade||'N/A'}</div>
         </div>` : ''}
@@ -694,7 +713,7 @@
             <div class="res-cmp-stat"><span>CGPA</span><span>${(d.cgpa||0).toFixed(2)}</span></div>
             <div class="res-cmp-stat"><span>Total Credit</span><span>${d.total_credit||0}</span></div>
             <div class="res-cmp-stat"><span>Courses Done</span><span>${d.courses_completed||0}</span></div>
-            <div class="res-cmp-stat"><span>Department</span><span>${d.department||'N/A'}</span></div>
+            <div class="res-cmp-stat"><span>Department</span><span>${d.dept||d.department||'N/A'}</span></div>
           </div>`;
         const el = document.getElementById('cmpResults');
         el.innerHTML = card(r1) + card(r2);
@@ -719,7 +738,7 @@
     function expandSem(i) {
       const s = (resData.semesters||[])[i];
       if (!s) return;
-      alert(`${s.semester_name||`Semester ${i+1}`}\nGPA: ${(s.gpa||0).toFixed(2)}\n\n${(s.courses||[]).map(c=>`• ${c.course_name||c.code} — ${c.grade||'N/A'}`).join('\n')}`);
+      alert(`${s.semester_name||`Semester ${i+1}`}\nGPA: ${(s.gpa||0).toFixed(2)}\n\n${(s.courses||[]).map(c=>`• ${c.course_title||c.course_name||c.course_code||c.code} — ${c.grade||'N/A'}`).join('\n')}`);
     }
 
     function showErr(msg) {
