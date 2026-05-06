@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <title>Result Dashboard | CSE 62B LU</title>
@@ -40,15 +41,16 @@
     }
     .rfield input, .rfield select {
       width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15);
       border-radius: 12px; color: var(--text);
       font-family: 'Inter', sans-serif; font-size: 0.95rem;
       transition: border-color 0.3s, background 0.3s; box-sizing: border-box;
       -webkit-appearance: none; appearance: none;
     }
     .rfield input:focus, .rfield select:focus {
-      outline: none; border-color: var(--accent); background: rgba(255,255,255,0.05);
+      outline: none; border-color: var(--accent); background: rgba(255,255,255,0.07);
     }
+    .rfield input::placeholder { color: rgba(255,255,255,0.3); }
     .rfield select option, .rdob select option {
       background: #0d0d1a;
       color: #f1f5f9;
@@ -216,6 +218,47 @@
     .res-cmp-stat { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.88rem; }
     .res-cmp-stat span:first-child { color: var(--text-secondary); }
     .res-cmp-stat span:last-child { color: #a78bfa; font-weight: 700; }
+
+    /* ── Semester Modal ── */
+    .sem-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px); z-index: 1000;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      animation: semFadeIn 0.2s ease;
+    }
+    @keyframes semFadeIn { from { opacity:0 } to { opacity:1 } }
+    .sem-modal {
+      background: #13131f; border: 1px solid rgba(124,58,237,0.35);
+      border-radius: 24px; padding: 28px; width: 100%; max-width: 620px;
+      max-height: 85vh; overflow-y: auto; box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+      animation: semSlideUp 0.25s ease;
+    }
+    @keyframes semSlideUp { from { transform: translateY(20px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+    .sem-modal-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .sem-modal-title { font-family:'Space Grotesk',sans-serif; font-size:1.2rem; font-weight:700; }
+    .sem-modal-close {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      color: var(--text-secondary); width:34px; height:34px; border-radius:8px;
+      cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center;
+      transition: all 0.2s; flex-shrink:0;
+    }
+    .sem-modal-close:hover { background:rgba(244,63,94,0.15); color:#f43f5e; border-color:#f43f5e; }
+    .sem-modal-course {
+      background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.18);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    }
+    .sem-modal-course-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .sem-modal-course-name { font-weight:600; font-size:0.9rem; color:var(--text); }
+    .sem-modal-grade { font-weight:700; font-size:0.9rem; color:#a78bfa; }
+    .sem-modal-marks { display:flex; gap:8px; flex-wrap:wrap; }
+    .sem-modal-mark-chip {
+      background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+      border-radius:6px; padding:3px 9px; font-size:0.75rem; color:var(--text-secondary);
+    }
+    .sem-modal-mark-chip strong { color:var(--text); }
 
     /* ── Spinner ── */
     .rspinner {
@@ -414,6 +457,11 @@
 
     </div><!-- /dashboardView -->
 
+    <!-- ── Semester Detail Modal ── -->
+    <div class="sem-modal-backdrop" id="semModal" style="display:none;" onclick="if(event.target===this)closeSemModal()">
+      <div class="sem-modal" id="semModalInner"></div>
+    </div>
+
     <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
@@ -529,10 +577,15 @@
     function normalizeData(raw) {
       const s = raw.student;
 
-      // marks lookup: "CCode|CYear|Semister" → Total (out of 100)
+      // marks lookup: "CCode|CYear|Semister" → {total, att, mid, fin}
       const markMap = {};
       for (const r of (raw.row_data?.result || [])) {
-        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = parseFloat(r.Total) || 0;
+        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = {
+          total: parseFloat(r.Total) || 0,
+          att:   parseFloat(r.ATT)   || 0,
+          mid:   parseFloat(r.MTE)   || 0,
+          fin:   parseFloat(r.FE)    || 0,
+        };
       }
 
       // Flatten year-keyed results → sorted array (newest first)
@@ -542,13 +595,17 @@
         for (const sem of (raw.results[year] || [])) {
           const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
           const courses = (sem.courses || []).map(c => {
-            const mark = markMap[`${c.course_code}|${year}|${semType}`] || 0;
+            const m = markMap[`${c.course_code}|${year}|${semType}`] || {};
             return {
               course_title: c.course_title,
               course_code:  c.course_code,
               grade: c.grade,
               credit: parseFloat(c.credit) || 0,
-              mark, marks: mark
+              mark: m.total || 0,
+              marks: m.total || 0,
+              att: m.att || 0,
+              mid: m.mid || 0,
+              fin: m.fin || 0,
             };
           });
           semesters.push({
@@ -638,7 +695,7 @@
         <div class="res-card-title"><i class="fa-solid fa-star"></i> Latest Semester</div>
         <div class="res-sem-header">
           <div><div class="res-sem-name">${s.semester_name||'Latest'}</div><div class="res-sem-year">${s.year||''}</div></div>
-          <div class="res-gpa-badge">GPA: ${(s.gpa||0).toFixed(2)}</div>
+          <div class="res-gpa-badge">CGPA: ${(s.gpa||0).toFixed(2)}</div>
         </div>
         <div class="res-courses">${courses||'<p style="color:var(--text-secondary);">No courses.</p>'}</div>
       `;
@@ -650,7 +707,7 @@
         <div class="res-sem-mini" onclick="expandSem(${i})">
           <div class="res-sem-mini-name">${s.semester_name||s.semester||`Semester ${i+1}`}</div>
           <div class="res-sem-mini-stats">
-            <div class="res-sem-mini-stat"><span>GPA</span><span>${(s.gpa||0).toFixed(2)}</span></div>
+            <div class="res-sem-mini-stat"><span>CGPA</span><span>${(s.gpa||0).toFixed(2)}</span></div>
             <div class="res-sem-mini-stat"><span>Courses</span><span>${(s.courses||[]).length}</span></div>
           </div>
         </div>`).join('') || '<p style="color:var(--text-secondary);">No data.</p>';
@@ -754,7 +811,8 @@
       const d1 = `${document.getElementById('cmp1Year').value}-${document.getElementById('cmp1Month').value}-${document.getElementById('cmp1Day').value}`;
       const d2 = `${document.getElementById('cmp2Year').value}-${document.getElementById('cmp2Month').value}-${document.getElementById('cmp2Day').value}`;
 
-      if (!s1||!s2||d1.includes('')||d2.includes('')) { alert('Please fill all fields for both students.'); return; }
+      const dobOk = dob => dob.split('-').every(v => v && v !== 'undefined');
+      if (!s1||!s2||!dobOk(d1)||!dobOk(d2)) { alert('Please fill all fields for both students.'); return; }
       if (s1 === s2) { alert('Please enter different Student IDs.'); return; }
 
       const btn = document.getElementById('cmpBtn');
@@ -791,10 +849,42 @@
       document.getElementById('rError').classList.remove('show');
     }
 
+    function closeSemModal() {
+      document.getElementById('semModal').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
     function expandSem(i) {
       const s = (resData.semesters||[])[i];
       if (!s) return;
-      alert(`${s.semester_name||`Semester ${i+1}`}\nGPA: ${(s.gpa||0).toFixed(2)}\n\n${(s.courses||[]).map(c=>`• ${c.course_title||c.course_code} — ${c.mark>0?c.mark+'/100 ':''} ${c.grade||'N/A'}`).join('\n')}`);
+      const courses = (s.courses||[]).map(c => {
+        const chips = [
+          c.mark > 0 ? `<span class="sem-modal-mark-chip">Total <strong>${c.mark}/100</strong></span>` : '',
+          c.att  > 0 ? `<span class="sem-modal-mark-chip">ATT <strong>${c.att}</strong></span>` : '',
+          c.mid  > 0 ? `<span class="sem-modal-mark-chip">Mid <strong>${c.mid}</strong></span>` : '',
+          c.fin  > 0 ? `<span class="sem-modal-mark-chip">Final <strong>${c.fin}</strong></span>` : '',
+          `<span class="sem-modal-mark-chip">${c.credit} Cr</span>`
+        ].filter(Boolean).join('');
+        return `<div class="sem-modal-course">
+          <div class="sem-modal-course-top">
+            <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
+            <div class="sem-modal-grade">${c.grade||'—'}</div>
+          </div>
+          <div class="sem-modal-marks">${chips}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('semModalInner').innerHTML = `
+        <div class="sem-modal-head">
+          <div>
+            <div class="sem-modal-title">${s.semester_name||`Semester ${i+1}`}</div>
+            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(s.gpa||0).toFixed(2)}</strong> &nbsp;·&nbsp; Credit: <strong style="color:#a78bfa">${s.credit||0}</strong></div>
+          </div>
+          <button class="sem-modal-close" onclick="closeSemModal()">✕</button>
+        </div>
+        ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}
+      `;
+      document.getElementById('semModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
     }
 
     function showErr(msg) {

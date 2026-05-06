@@ -951,6 +951,31 @@
       font-weight: 700;
     }
 
+    /* Semester detail modal */
+    .res-sem-modal-backdrop {
+      position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);
+      z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+      animation:rsmFade 0.2s ease;
+    }
+    @keyframes rsmFade{from{opacity:0}to{opacity:1}}
+    .res-sem-modal {
+      background:#13131f;border:1px solid rgba(124,58,237,0.35);border-radius:24px;
+      padding:28px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;
+      box-shadow:0 32px 64px rgba(0,0,0,0.6);animation:rsmSlide 0.25s ease;
+    }
+    @keyframes rsmSlide{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .res-sem-modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+    .res-sem-modal-title{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;}
+    .res-sem-modal-close{background:rgba(255,255,255,0.07);border:1px solid var(--border);color:var(--text-secondary);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+    .res-sem-modal-close:hover{background:rgba(244,63,94,0.15);color:#f43f5e;border-color:#f43f5e;}
+    .res-sem-modal-course{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.18);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+    .res-sem-modal-course-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .res-sem-modal-course-name{font-weight:600;font-size:0.9rem;color:var(--text);}
+    .res-sem-modal-grade{font-weight:700;font-size:0.9rem;color:#a78bfa;}
+    .res-sem-modal-chips{display:flex;gap:8px;flex-wrap:wrap;}
+    .res-sem-modal-chip{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:3px 9px;font-size:0.75rem;color:var(--text-secondary);}
+    .res-sem-modal-chip strong{color:var(--text);}
+
     /* Loading spinner */
     .result-spinner {
       display: inline-block;
@@ -1343,23 +1368,43 @@
     const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
-    async function getPasswordHash(studentId) {
-      const r = await fetch(`${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`, {
+    const SUPA_HEADERS = {
+      'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
+    };
+
+    async function getStudentRow(studentId) {
+      const r = await fetch(`${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash,dob`, {
         headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
       });
       const rows = await r.json();
-      return (rows && rows.length > 0) ? rows[0].password_hash : null;
+      return (rows && rows.length > 0) ? rows[0] : null;
+    }
+
+    async function getPasswordHash(studentId) {
+      const row = await getStudentRow(studentId);
+      return row ? row.password_hash : null;
+    }
+
+    async function getDobFromSupabase(studentId) {
+      try {
+        const row = await getStudentRow(studentId);
+        return row ? row.dob : null;
+      } catch { return null; }
+    }
+
+    async function saveDobToSupabase(studentId, dob) {
+      try {
+        await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
+          method: 'POST', headers: SUPA_HEADERS,
+          body: JSON.stringify({ student_id: studentId, dob })
+        });
+      } catch { /* fallback to localStorage only */ }
     }
 
     async function savePasswordHash(studentId, hash) {
       await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPA_KEY,
-          'Authorization': `Bearer ${SUPA_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
+        method: 'POST', headers: SUPA_HEADERS,
         body: JSON.stringify({ student_id: studentId, password_hash: hash })
       });
     }
@@ -1521,6 +1566,11 @@
       }
     });
   </script>
+  <!-- Semester detail modal -->
+  <div class="res-sem-modal-backdrop" id="resSemModal" style="display:none;" onclick="if(event.target===this)closeResSemModal()">
+    <div class="res-sem-modal" id="resSemModalInner"></div>
+  </div>
+
   <!-- ── Result Dashboard Script ── -->
   <script>
     const RES_API = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
@@ -1557,30 +1607,31 @@
     let resGpaChart   = null;
 
     // ── Init on page load ──────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       populateResDateDropdowns();
-      initResultSection();
+      await initResultSection();
     });
 
-    function initResultSection() {
+    async function initResultSection() {
       if (!currentUser) return;
-
-      const savedDob = localStorage.getItem(`lu62b_dob_${currentUser.id}`);
-      if (savedDob) {
-        showSavedDob(savedDob);
-      } else {
-        document.getElementById('dobInputForm').style.display = 'block';
-        document.getElementById('dobSavedDisplay').style.display = 'none';
-      }
-
-      // Pre-fill compare S1 with current user id
       document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
 
-      // Pre-fill DOB dropdowns if saved
+      let savedDob = localStorage.getItem(`lu62b_dob_${currentUser.id}`);
+
+      // Try Supabase if not in localStorage
+      if (!savedDob) {
+        savedDob = await getDobFromSupabase(currentUser.id);
+        if (savedDob) localStorage.setItem(`lu62b_dob_${currentUser.id}`, savedDob);
+      }
+
       if (savedDob) {
+        showSavedDob(savedDob);
         const [y, m, d] = savedDob.split('-');
         prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
         prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', d, m, y);
+      } else {
+        document.getElementById('dobInputForm').style.display = 'block';
+        document.getElementById('dobSavedDisplay').style.display = 'none';
       }
     }
 
@@ -1656,6 +1707,7 @@
 
       const dobStr = `${year}-${month}-${day}`;
       localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
+      saveDobToSupabase(currentUser.id, dobStr); // sync to Supabase (non-blocking)
       prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', day, month, year);
       showSavedDob(dobStr);
     }
@@ -1693,11 +1745,46 @@
       }
     }
 
+    /* ── Normalize LUS API response → flat structure ── */
+    function normalizeResData(raw) {
+      const s = raw.student;
+      const markMap = {};
+      for (const r of (raw.row_data?.result || [])) {
+        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = {
+          total: parseFloat(r.Total) || 0,
+          att:   parseFloat(r.ATT)   || 0,
+          mid:   parseFloat(r.MTE)   || 0,
+          fin:   parseFloat(r.FE)    || 0,
+        };
+      }
+      const semTypeOrder = { Spring: 1, Summer: 2, Fall: 3 };
+      const semesters = [];
+      for (const year of Object.keys(raw.results || {}).sort()) {
+        for (const sem of (raw.results[year] || [])) {
+          const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
+          const courses = (sem.courses || []).map(c => {
+            const m = markMap[`${c.course_code}|${year}|${semType}`] || {};
+            return { course_title: c.course_title, course_code: c.course_code, grade: c.grade, credit: parseFloat(c.credit) || 0, mark: m.total||0, att: m.att||0, mid: m.mid||0, fin: m.fin||0 };
+          });
+          semesters.push({ semester_name: sem.name, year, gpa: parseFloat(sem.gpa) || 0, credit: parseFloat(sem.credit) || 0, grade: sem.grade, courses, _key: parseInt(year) * 10 + (semTypeOrder[semType] || 0) });
+        }
+      }
+      semesters.sort((a, b) => b._key - a._key);
+      return {
+        student_name:      s.name,
+        student_id:        s.id,
+        department:        s.department,
+        cgpa:              parseFloat(s.cgpa)   || 0,
+        total_credit:      parseFloat(s.credit) || 0,
+        courses_completed: semesters.reduce((a, sem) => a + sem.courses.length, 0),
+        semesters
+      };
+    }
+
     async function fetchResData(studentId, birthDate) {
       let lastError = null;
 
       for (let i = 0; i < RES_PROXIES.length; i++) {
-        // Update button to show progress
         const btn = document.getElementById('btnLoadResults');
         if (btn) btn.innerHTML = `<span class="result-spinner"></span> Trying method ${i+1}/${RES_PROXIES.length}...`;
 
@@ -1713,21 +1800,15 @@
             else { lastError = new Error('Invalid response format'); continue; }
           }
 
-          if (data.error) throw new Error(data.error); // credentials error — stop trying
-          if (!data.data) { lastError = new Error('No data returned'); continue; }
+          if (data.error) throw new Error(data.error);
+          if (!data.success || !data.student) { lastError = new Error('No student data in response'); continue; }
 
-          return data.data; // ✅ success
+          return normalizeResData(data); // ✅ success
 
         } catch (err) {
-          // Credentials/data errors — don't try other proxies
-          if (err.message && (
-            err.message.toLowerCase().includes('invalid') ||
-            err.message.toLowerCase().includes('not found') ||
-            err.message.toLowerCase().includes('credential')
-          )) throw err;
-
+          if (err.message && /invalid|not found|credential|incorrect/i.test(err.message)) throw err;
           lastError = err;
-          await new Promise(r => setTimeout(r, 300)); // small delay before retry
+          await new Promise(r => setTimeout(r, 300));
         }
       }
 
@@ -1743,13 +1824,14 @@
 
     function renderResStats() {
       const d = resData;
+      const cr = d.total_credit || 0;
       document.getElementById('resStatsGrid').innerHTML = `
         <div class="result-stat-card">
           <div class="result-stat-value">${(d.cgpa || 0).toFixed(2)}</div>
           <div class="result-stat-label">CGPA</div>
         </div>
         <div class="result-stat-card">
-          <div class="result-stat-value">${d.total_credit || 0}</div>
+          <div class="result-stat-value">${Number.isInteger(cr) ? cr : cr.toFixed(1)}</div>
           <div class="result-stat-label">Total Credit</div>
         </div>
         <div class="result-stat-card">
@@ -1757,8 +1839,8 @@
           <div class="result-stat-label">Courses Done</div>
         </div>
         <div class="result-stat-card">
-          <div class="result-stat-value">${d.total_marks || 0}</div>
-          <div class="result-stat-label">Total Marks</div>
+          <div class="result-stat-value">${(d.semesters || []).length}</div>
+          <div class="result-stat-label">Semesters</div>
         </div>
       `;
     }
@@ -1771,9 +1853,10 @@
       const latest  = semesters[0];
       const courses = (latest.courses || []).map(c => `
         <div class="result-course-card">
-          <div class="result-course-name">${c.course_name || c.code || 'N/A'}</div>
+          <div class="result-course-name">${c.course_title || c.course_code || 'N/A'}</div>
           <div class="result-course-info">
-            <span>${c.credit || 0} Credit</span>
+            <span>${c.credit || 0} Cr</span>
+            ${c.mark > 0 ? `<span style="color:var(--text-secondary);font-size:0.8em">${c.mark}/100</span>` : ''}
             <span class="result-course-grade">${c.grade || 'N/A'}</span>
           </div>
         </div>
@@ -1785,7 +1868,7 @@
             <div class="result-semester-name">${latest.semester_name || latest.semester || 'Latest Semester'}</div>
             <div class="result-semester-year">${latest.year || ''}</div>
           </div>
-          <div class="result-gpa-badge">GPA: ${(latest.gpa || 0).toFixed(2)}</div>
+          <div class="result-gpa-badge">CGPA: ${(latest.gpa || 0).toFixed(2)}</div>
         </div>
         <div class="result-courses-grid">${courses || '<p style="color:var(--text-secondary);">No courses</p>'}</div>
       `;
@@ -1800,18 +1883,49 @@
         <div class="result-sem-mini" onclick="expandResSemester(${i})">
           <div class="result-sem-mini-title">${sem.semester_name || sem.semester || `Semester ${i+1}`}</div>
           <div class="result-sem-mini-stats">
-            <div class="result-sem-mini-stat"><span>GPA</span><span>${(sem.gpa||0).toFixed(2)}</span></div>
+            <div class="result-sem-mini-stat"><span>CGPA</span><span>${(sem.gpa||0).toFixed(2)}</span></div>
             <div class="result-sem-mini-stat"><span>Courses</span><span>${(sem.courses||[]).length}</span></div>
           </div>
         </div>
       `).join('');
     }
 
+    function closeResSemModal() {
+      document.getElementById('resSemModal').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
     function expandResSemester(idx) {
       const sem = (resData.semesters || [])[idx];
       if (!sem) return;
-      const courses = (sem.courses || []).map(c => `• ${c.course_name || c.code} — ${c.grade || 'N/A'}`).join('\n');
-      alert(`${sem.semester_name || `Semester ${idx+1}`}\nGPA: ${(sem.gpa||0).toFixed(2)}\n\n${courses}`);
+      const courses = (sem.courses || []).map(c => {
+        const chips = [
+          c.mark > 0 ? `<span class="res-sem-modal-chip">Total <strong>${c.mark}/100</strong></span>` : '',
+          c.att  > 0 ? `<span class="res-sem-modal-chip">ATT <strong>${c.att}</strong></span>` : '',
+          c.mid  > 0 ? `<span class="res-sem-modal-chip">Mid <strong>${c.mid}</strong></span>` : '',
+          c.fin  > 0 ? `<span class="res-sem-modal-chip">Final <strong>${c.fin}</strong></span>` : '',
+          `<span class="res-sem-modal-chip">${c.credit} Cr</span>`
+        ].filter(Boolean).join('');
+        return `<div class="res-sem-modal-course">
+          <div class="res-sem-modal-course-top">
+            <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
+            <div class="res-sem-modal-grade">${c.grade||'—'}</div>
+          </div>
+          <div class="res-sem-modal-chips">${chips}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('resSemModalInner').innerHTML = `
+        <div class="res-sem-modal-head">
+          <div>
+            <div class="res-sem-modal-title">${sem.semester_name||`Semester ${idx+1}`}</div>
+            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(sem.gpa||0).toFixed(2)}</strong> &nbsp;·&nbsp; Credit: <strong style="color:#a78bfa">${sem.credit||0}</strong></div>
+          </div>
+          <button class="res-sem-modal-close" onclick="closeResSemModal()">✕</button>
+        </div>
+        ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}
+      `;
+      document.getElementById('resSemModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
     }
 
     // ── Tab Switching ───────────────────────────────────────────────
@@ -1872,8 +1986,9 @@
       const ctx = document.getElementById('resGpaChart').getContext('2d');
       if (resGpaChart) resGpaChart.destroy();
 
-      const labels = semesters.map((s,i) => s.semester_name || `Sem ${i+1}`);
-      const gpas   = semesters.map(s => parseFloat((s.gpa||0).toFixed(2)));
+      const chron  = semesters.slice().reverse(); // oldest → newest for trend chart
+      const labels = chron.map((s,i) => s.semester_name || `Sem ${i+1}`);
+      const gpas   = chron.map(s => parseFloat((s.gpa||0).toFixed(2)));
 
       resGpaChart = new Chart(ctx, {
         type: 'line',
@@ -1906,24 +2021,24 @@
     function renderResExtremes(semesters) {
       let highest = null, lowest = null;
       semesters.forEach(sem => (sem.courses||[]).forEach(c => {
-        const m = c.marks || c.mark || 0;
+        const m = c.mark || 0;
         if (m > 0) {
-          if (!highest || m > highest.marks) highest = { ...c, marks: m };
-          if (!lowest  || m < lowest.marks)  lowest  = { ...c, marks: m };
+          if (!highest || m > highest.mark) highest = { ...c };
+          if (!lowest  || m < lowest.mark)  lowest  = { ...c };
         }
       }));
 
       document.getElementById('resExtremesGrid').innerHTML = `
         ${highest ? `<div class="result-extreme-card highest">
           <div class="result-extreme-header highest"><span>🏆</span> Highest Mark</div>
-          <div class="result-extreme-course-name">${highest.course_name||highest.code||'N/A'}</div>
-          <div class="result-extreme-mark">${highest.marks}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
+          <div class="result-extreme-course-name">${highest.course_title||highest.course_code||'N/A'}</div>
+          <div class="result-extreme-mark">${highest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${highest.grade||'N/A'}</div>
         </div>` : ''}
         ${lowest ? `<div class="result-extreme-card lowest">
           <div class="result-extreme-header lowest"><span>📉</span> Lowest Mark</div>
-          <div class="result-extreme-course-name">${lowest.course_name||lowest.code||'N/A'}</div>
-          <div class="result-extreme-mark">${lowest.marks}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
+          <div class="result-extreme-course-name">${lowest.course_title||lowest.course_code||'N/A'}</div>
+          <div class="result-extreme-mark">${lowest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${lowest.grade||'N/A'}</div>
         </div>` : ''}
       `;
@@ -1941,7 +2056,8 @@
       const s2Mon = document.getElementById('cmpS2Month').value;
       const s2Yr  = document.getElementById('cmpS2Year').value;
 
-      if (!s1Day||!s1Mon||!s1Yr||!s2Id||!s2Day||!s2Mon||!s2Yr) {
+      if (!s1Day||!s1Mon||!s1Yr||!s2Id||!s2Day||!s2Mon||!s2Yr||
+          [s1Day,s1Mon,s1Yr,s2Day,s2Mon,s2Yr].some(v=>!v||v==='undefined')) {
         alert('Please fill in all fields for both students.');
         return;
       }
