@@ -10,19 +10,51 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <meta name="description" content="Official digital portal for CSE Batch 62, Section B at Leading University. Access class materials, schedules, notices and more.">
   <style>
-    .memories-strip {
-      position: relative; width: 100%; height: 280px;
-      border-radius: 20px; overflow: hidden;
-      background: var(--card); border: 1px solid var(--border);
+    .memories-scroll-wrap {
+      position: relative;
+      overflow: hidden;
+      padding: 20px 0;
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
     }
-    .mem-slide {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; opacity: 0;
-      transition: opacity 1.4s ease;
+    .memories-track {
+      display: flex;
+      gap: 14px;
+      animation: memScroll 55s linear infinite;
+      width: max-content;
+      align-items: center;
     }
-    .mem-slide.active { opacity: 1; }
+    .memories-track:hover { animation-play-state: paused; }
+    .mem-photo-card {
+      flex-shrink: 0;
+      width: 175px; height: 215px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.07);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease, border-color 0.3s;
+      cursor: pointer;
+      background: #111;
+      position: relative;
+    }
+    .mem-photo-card:nth-child(4n+1) { transform: rotate(-2deg); }
+    .mem-photo-card:nth-child(4n+2) { transform: rotate(1.2deg); }
+    .mem-photo-card:nth-child(4n+3) { transform: rotate(-0.8deg); }
+    .mem-photo-card:nth-child(4n+4) { transform: rotate(1.8deg); }
+    .mem-photo-card:hover {
+      transform: rotate(0deg) scale(1.1) translateY(-10px) !important;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 2px rgba(139,92,246,0.5), 0 0 30px rgba(139,92,246,0.18);
+      border-color: rgba(139,92,246,0.5);
+      z-index: 20;
+    }
+    .mem-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
+    .mem-photo-card:hover img { transform: scale(1.06); }
+    @keyframes memScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
     @media (max-width: 640px) {
-      .memories-strip { height: 200px; border-radius: 14px; }
+      .mem-photo-card { width: 130px; height: 162px; border-radius: 11px; }
     }
   </style>
 </head>
@@ -179,13 +211,11 @@
         <span class="section-label">📸 Memories</span>
         <div class="section-line"></div>
       </div>
-      <div class="memories-strip" id="memoriesStrip">
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);">
-          <div class="spin"></div>
-        </div>
+      <div class="memories-scroll-wrap">
+        <div class="memories-track" id="memoriesTrack"></div>
       </div>
-      <div style="text-align:right;margin-top:8px;">
-        <a href="pages/gallery.html" style="font-size:0.78rem;color:var(--muted);text-decoration:none;font-weight:600;">
+      <div style="text-align:right;margin-top:6px;">
+        <a href="pages/gallery.html" style="font-size:0.8rem;color:var(--accent-bright);text-decoration:none;font-weight:600;opacity:0.75;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">
           View All Events <i class="fa-solid fa-arrow-right" style="font-size:0.7rem;"></i>
         </a>
       </div>
@@ -446,7 +476,7 @@
     })();
   </script>
   <script>
-    /* ── Memories slideshow ── */
+    /* ── Memories polaroid strip ── */
     (async function initMemories() {
       const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
       const KEY    = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
@@ -459,45 +489,39 @@
         return arr;
       }
 
-      try {
-        /* 1. Get subfolders */
-        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
-        const fData = await fRes.json();
-        const folders = fData.files || [];
+      function makeCard(id) {
+        const card = document.createElement('div');
+        card.className = 'mem-photo-card';
+        const img = document.createElement('img');
+        img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
+        img.alt = '';
+        img.loading = 'lazy';
+        card.appendChild(img);
+        card.addEventListener('click', () => { window.location.href = 'pages/gallery.html'; });
+        return card;
+      }
 
-        /* 2. Get images from each folder in parallel (max 8 per folder) */
+      try {
+        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
+        const folders = (await fRes.json()).files || [];
+
         const batches = await Promise.all(folders.map(f =>
           fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=8&fields=files(id)&key=${KEY}`)
             .then(r => r.json()).then(d => d.files || []).catch(() => [])
         ));
 
-        let images = shuffle(batches.flat());
-        if (!images.length) return;
+        const images = shuffle(batches.flat()).slice(0, 24);
+        if (images.length < 3) return;
 
-        /* 3. Build slideshow */
-        const strip = document.getElementById('memoriesStrip');
-        strip.innerHTML = '';
-        images.forEach((img, i) => {
-          const el = document.createElement('img');
-          el.className = 'mem-slide' + (i === 0 ? ' active' : '');
-          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w1200`;
-          el.alt = '';
-          el.loading = i < 3 ? 'eager' : 'lazy';
-          strip.appendChild(el);
-        });
+        const track = document.getElementById('memoriesTrack');
+        /* Build twice for seamless loop */
+        [...images, ...images].forEach(img => track.appendChild(makeCard(img.id)));
+
+        /* Scale speed to image count */
+        track.style.animationDuration = Math.max(40, images.length * 2.8) + 's';
 
         document.getElementById('memoriesSection').style.display = 'block';
-
-        /* 4. Cycle through */
-        let cur = 0;
-        setInterval(() => {
-          const slides = strip.querySelectorAll('.mem-slide');
-          slides[cur].classList.remove('active');
-          cur = (cur + 1) % slides.length;
-          slides[cur].classList.add('active');
-        }, 4500);
-
-      } catch (e) { /* Silently fail */ }
+      } catch (e) { /* fail silently */ }
     })();
   </script>
 </body>
