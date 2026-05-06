@@ -525,6 +525,56 @@
       }
     }
 
+    /* ── Normalize LUS response → flat structure render functions expect ── */
+    function normalizeData(raw) {
+      const s = raw.student;
+
+      // marks lookup: "CCode|CYear|Semister" → Total (out of 100)
+      const markMap = {};
+      for (const r of (raw.row_data?.result || [])) {
+        markMap[`${r.CCode}|${r.CYear}|${r.Semister}`] = parseFloat(r.Total) || 0;
+      }
+
+      // Flatten year-keyed results → sorted array (newest first)
+      const semTypeOrder = { Spring: 1, Summer: 2, Fall: 3 };
+      const semesters = [];
+      for (const year of Object.keys(raw.results || {}).sort()) {
+        for (const sem of (raw.results[year] || [])) {
+          const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
+          const courses = (sem.courses || []).map(c => {
+            const mark = markMap[`${c.course_code}|${year}|${semType}`] || 0;
+            return {
+              course_title: c.course_title,
+              course_code:  c.course_code,
+              grade: c.grade,
+              credit: parseFloat(c.credit) || 0,
+              mark, marks: mark
+            };
+          });
+          semesters.push({
+            semester_name: sem.name,
+            year,
+            gpa:    parseFloat(sem.gpa)    || 0,
+            credit: parseFloat(sem.credit) || 0,
+            grade:  sem.grade,
+            courses,
+            _key: parseInt(year) * 10 + (semTypeOrder[semType] || 0)
+          });
+        }
+      }
+      semesters.sort((a, b) => b._key - a._key); // newest first
+
+      return {
+        student_name:      s.name,
+        student_id:        s.id,
+        department:        s.department,
+        cgpa:              parseFloat(s.cgpa)   || 0,
+        total_credit:      parseFloat(s.credit) || 0,
+        courses_completed: semesters.reduce((acc, sem) => acc + sem.courses.length, 0),
+        semesters
+      };
+    }
+
     async function callAPI(id, dob) {
       let lastErr = null;
       for (let i = 0; i < PROXIES.length; i++) {
@@ -536,10 +586,10 @@
           try { data = JSON.parse(raw); }
           catch { const m = raw.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); else { lastErr = new Error('Invalid response'); continue; } }
           if (data.error) throw new Error(data.error);
-          if (!data.data) { lastErr = new Error('No data returned'); continue; }
-          return data.data;
+          if (!data.success || !data.student) { lastErr = new Error('No student data in response'); continue; }
+          return normalizeData(data);
         } catch (e) {
-          if (/invalid|not found|credential/i.test(e.message)) throw e;
+          if (/invalid|not found|credential|incorrect/i.test(e.message)) throw e;
           lastErr = e;
           await new Promise(r => setTimeout(r, 300));
         }
@@ -553,7 +603,7 @@
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
-      document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.dept || d.department || 'CSE'}`;
+      document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
 
       renderStats(d);
       renderLatest(d);
@@ -561,9 +611,10 @@
     }
 
     function renderStats(d) {
+      const credit = d.total_credit || 0;
       document.getElementById('dStats').innerHTML = `
         <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
-        <div class="res-stat"><div class="res-stat-val">${d.total_credit||0}</div><div class="res-stat-lbl">Total Credit</div></div>
+        <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
         <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
         <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
       `;
@@ -573,16 +624,20 @@
       const sems = d.semesters || [];
       const el   = document.getElementById('dLatest');
       if (!sems.length) { el.innerHTML = '<p style="color:var(--text-secondary);">No semester data.</p>'; return; }
-      const s = sems[0];
+      const s = sems[0]; // newest first after normalizeData sort
       const courses = (s.courses||[]).map(c => `
         <div class="res-course">
-          <div class="res-course-name">${c.course_title||c.course_name||c.course_code||c.code||'N/A'}</div>
-          <div class="res-course-info"><span>${c.credit||0} Credit</span><span class="res-course-grade">${c.grade||'N/A'}</span></div>
+          <div class="res-course-name">${c.course_title||c.course_code||'N/A'}</div>
+          <div class="res-course-info">
+            <span>${c.credit||0} Cr</span>
+            ${c.mark > 0 ? `<span style="color:var(--text-secondary)">${c.mark}/100</span>` : ''}
+            <span class="res-course-grade">${c.grade||'N/A'}</span>
+          </div>
         </div>`).join('');
       el.innerHTML = `
         <div class="res-card-title"><i class="fa-solid fa-star"></i> Latest Semester</div>
         <div class="res-sem-header">
-          <div><div class="res-sem-name">${s.semester_name||s.semester||'Latest'}</div><div class="res-sem-year">${s.year||''}</div></div>
+          <div><div class="res-sem-name">${s.semester_name||'Latest'}</div><div class="res-sem-year">${s.year||''}</div></div>
           <div class="res-gpa-badge">GPA: ${(s.gpa||0).toFixed(2)}</div>
         </div>
         <div class="res-courses">${courses||'<p style="color:var(--text-secondary);">No courses.</p>'}</div>
@@ -618,7 +673,8 @@
     /* ── Analytics ── */
     function renderAnalytics() {
       if (!resData) return;
-      const sems = resData.semesters || [];
+      const sems     = resData.semesters || [];
+      const chromSems = sems.slice().reverse(); // oldest→newest for chart
 
       const gc = {'A+':0,'A':0,'A-':0,'B+':0,'B':0,'B-':0,'C+':0,'C':0,'D':0,'F':0};
       sems.forEach(s => (s.courses||[]).forEach(c => { if (gc.hasOwnProperty(c.grade)) gc[c.grade]++; }));
@@ -630,7 +686,7 @@
         data: {
           labels: Object.keys(gc),
           datasets: [{ data: Object.values(gc),
-            backgroundColor: Object.keys(gc).map(g => g.includes('A') ? '#a78bfa' : g.includes('B') ? '#7c3aed' : g==='F' ? '#f43f5e' : '#64748b'),
+            backgroundColor: Object.keys(gc).map(g => g.startsWith('A') ? '#a78bfa' : g.startsWith('B') ? '#7c3aed' : g==='F' ? '#f43f5e' : '#64748b'),
             borderRadius: 6, borderWidth: 0 }]
         },
         options: {
@@ -648,9 +704,9 @@
       gpaChart = new Chart(ctx2, {
         type: 'line',
         data: {
-          labels: sems.map((s,i) => s.semester_name||`Sem ${i+1}`),
+          labels: chromSems.map((s,i) => s.semester_name||`Sem ${i+1}`),
           datasets: [{
-            data: sems.map(s => parseFloat((s.gpa||0).toFixed(2))),
+            data: chromSems.map(s => parseFloat((s.gpa||0).toFixed(2))),
             borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.12)',
             borderWidth: 2.5, fill: true,
             pointBackgroundColor: '#a78bfa', pointBorderColor: '#0d0d1a',
@@ -662,30 +718,30 @@
           plugins: { legend: { display: false } },
           scales: {
             y: { beginAtZero: true, max: 4, ticks: { color:'#94a3b8' }, grid: { color:'rgba(255,255,255,0.05)' } },
-            x: { ticks: { color:'#94a3b8' }, grid: { display:false } }
+            x: { ticks: { color:'#94a3b8', maxRotation: 30 }, grid: { display:false } }
           }
         }
       });
 
       let hi = null, lo = null;
       sems.forEach(s => (s.courses||[]).forEach(c => {
-        const m = c.marks||c.mark||0;
+        const m = c.mark || 0;
         if (m > 0) {
-          if (!hi || m > hi.marks) hi = {...c, marks:m};
-          if (!lo || m < lo.marks) lo = {...c, marks:m};
+          if (!hi || m > hi.mark) hi = {...c};
+          if (!lo || m < lo.mark) lo = {...c};
         }
       }));
       document.getElementById('dExtremes').innerHTML = `
         ${hi ? `<div class="res-extreme high">
           <div class="res-extreme-hdr"><span>🏆</span> Highest Mark</div>
-          <div class="res-extreme-course">${hi.course_title||hi.course_name||hi.course_code||hi.code||'N/A'}</div>
-          <div class="res-extreme-mark">${hi.marks}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
+          <div class="res-extreme-course">${hi.course_title||hi.course_code||'N/A'}</div>
+          <div class="res-extreme-mark">${hi.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${hi.grade||'N/A'}</div>
         </div>` : ''}
         ${lo ? `<div class="res-extreme low">
           <div class="res-extreme-hdr"><span>📉</span> Lowest Mark</div>
-          <div class="res-extreme-course">${lo.course_title||lo.course_name||lo.course_code||lo.code||'N/A'}</div>
-          <div class="res-extreme-mark">${lo.marks}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
+          <div class="res-extreme-course">${lo.course_title||lo.course_code||'N/A'}</div>
+          <div class="res-extreme-mark">${lo.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${lo.grade||'N/A'}</div>
         </div>` : ''}
       `;
@@ -738,7 +794,7 @@
     function expandSem(i) {
       const s = (resData.semesters||[])[i];
       if (!s) return;
-      alert(`${s.semester_name||`Semester ${i+1}`}\nGPA: ${(s.gpa||0).toFixed(2)}\n\n${(s.courses||[]).map(c=>`• ${c.course_title||c.course_name||c.course_code||c.code} — ${c.grade||'N/A'}`).join('\n')}`);
+      alert(`${s.semester_name||`Semester ${i+1}`}\nGPA: ${(s.gpa||0).toFixed(2)}\n\n${(s.courses||[]).map(c=>`• ${c.course_title||c.course_code} — ${c.mark>0?c.mark+'/100 ':''} ${c.grade||'N/A'}`).join('\n')}`);
     }
 
     function showErr(msg) {
