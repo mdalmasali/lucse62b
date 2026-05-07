@@ -401,35 +401,59 @@
       const SHEET_NAME = 'Website';
       const cb = `botSheet_ticker_${Date.now()}`;
 
-      const s = document.createElement('script');
+      const rawSession = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      const isAuth = !!rawSession;
+      let firstName = '';
+      if (isAuth) {
+        try {
+          const s = JSON.parse(rawSession);
+          const parts = (s.name || '').trim().split(/\s+/);
+          firstName = (parts.length > 1 && /^(md\.?|mr\.?|ms\.?|dr\.?)$/i.test(parts[0]))
+            ? parts[1] : parts[0];
+        } catch (e) {}
+      }
+
+      function showTicker(text) {
+        if (!text) return;
+        document.getElementById('topNoticeMarquee').innerHTML =
+          text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent-bright);">$1</a>');
+        const wrap = document.getElementById('tickerWrap');
+        wrap.style.display = 'flex';
+        wrap.offsetHeight;
+        wrap.style.animation = 'none';
+        setTimeout(() => { wrap.style.animation = ''; }, 10);
+      }
+
+      const scr = document.createElement('script');
       window[cb] = (data) => {
         delete window[cb];
-        s.remove();
+        scr.remove();
 
-        let noticeText = null;
-        const rows = data.table?.rows || [];
-        rows.forEach(row => {
-          const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
-          if (cells.length >= 2 && cells[0].toLowerCase() === 'top notice') {
-            noticeText = cells[1];
-          }
+        let noticeGlobal = null, noticeMember = null, memberOverview = null;
+        (data.table?.rows || []).forEach(row => {
+          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+          if (cells.length < 2) return;
+          const key = cells[0].toLowerCase();
+          if (key === 'top notice')        noticeGlobal   = cells[1];
+          if (key === 'top notice member') noticeMember   = cells[1];
+          if (key === 'member overview')   memberOverview = cells[1];
         });
 
-        if (noticeText && noticeText !== '') {
-          document.getElementById('topNoticeMarquee').innerHTML = noticeText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent-bright);">$1</a>');
-          const tickerWrap = document.getElementById('tickerWrap');
-          tickerWrap.style.display = 'flex';
-          // Trigger animation
-          tickerWrap.offsetHeight; // Force reflow
-          tickerWrap.style.animation = 'none';
-          setTimeout(() => {
-            tickerWrap.style.animation = '';
-          }, 10);
+        if (isAuth) {
+          if (noticeMember) {
+            showTicker(noticeMember);
+          } else {
+            const greeting = `Welcome back, ${firstName}!`;
+            const overview = memberOverview ? `  ·  ${memberOverview}` : '';
+            showTicker(greeting + overview);
+          }
+        } else {
+          showTicker(noticeGlobal);
         }
       };
 
-      s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
-      document.body.appendChild(s);
+      scr.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+      document.body.appendChild(scr);
     }
 
     // Initialize
@@ -683,6 +707,7 @@
       }
 
       async function init() {
+        if (!localStorage.getItem('lu62b_student') && !sessionStorage.getItem('lu62b_student')) return;
         try {
           const data = await new Promise((res, rej) => {
             const cb = 'dl_' + Date.now() + '_' + Math.random().toString(36).slice(2);
