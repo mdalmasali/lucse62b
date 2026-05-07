@@ -1946,7 +1946,7 @@
       'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
       'SID','SName','Dept','Department','Program','Teacher',
       'Reference','Serial','InputBy','Batch','Secttion',
-      'TPoint','CDate','Total'
+      'TPoint','CDate'
     ]);
     const RES_MARK_ORDER = ['ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
     const RES_MARK_LABELS = {
@@ -2133,7 +2133,7 @@
           .filter(k => em[k] > 0 && !seenKeys.has(resMarkLabel(k)) && seenKeys.add(resMarkLabel(k)))
           .map(k => `<span class="res-sem-modal-chip">${resMarkLabel(k)} <strong>${em[k]}</strong></span>`);
         Object.entries(em).forEach(([k, v]) => {
-          if (v > 0 && !RES_MARK_ORDER.includes(k) && !seenKeys.has(resMarkLabel(k))) {
+          if (v > 0 && k !== 'Total' && !RES_MARK_ORDER.includes(k) && !seenKeys.has(resMarkLabel(k))) {
             seenKeys.add(resMarkLabel(k));
             orderedChips.push(`<span class="res-sem-modal-chip">${resMarkLabel(k)} <strong>${v}</strong></span>`);
           }
@@ -2142,7 +2142,7 @@
         return `<div class="res-sem-modal-course">
           <div class="res-sem-modal-course-top">
             <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
-            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
               ${c.mark > 0 ? `<span class="res-sem-modal-total">${c.mark}/100</span>` : ''}
               <div class="res-sem-modal-grade">${c.grade||'—'}</div>
             </div>
