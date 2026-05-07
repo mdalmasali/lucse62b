@@ -1079,7 +1079,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B � PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -1153,7 +1153,7 @@
             <span class="label-title">Password Status</span>
             <span class="label-desc" id="passwordStatus">Password not set</span>
           </div>
-          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">??</span>
+          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">🔓</span>
         </div>
       </div>
 
@@ -1209,7 +1209,7 @@
         <!-- Saved DOB Display -->
         <div class="dob-saved-display" id="dobSavedDisplay" style="display:none;">
           <div class="dob-saved-info">
-            <span>??</span>
+            <span>🎂</span>
             <div>
               <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:2px;">Saved Date of Birth</div>
               <div id="dobSavedText">--</div>
@@ -1354,7 +1354,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B � PORTAL</div>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -1363,7 +1363,7 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        � 2026 MD. Almas Ali. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -1441,11 +1441,11 @@
       getPasswordHash(currentUser.id).then(hash => {
         if (hash) {
           document.getElementById('passwordStatus').innerText = 'Password is set';
-          document.getElementById('statusIcon').innerText = '??';
+          document.getElementById('statusIcon').innerText = '🔐';
           document.getElementById('statusIcon').style.color = 'var(--green)';
         } else {
           document.getElementById('passwordStatus').innerText = 'Password not set yet';
-          document.getElementById('statusIcon').innerText = '??';
+          document.getElementById('statusIcon').innerText = '🔓';
         }
       }).catch(() => {});
     }
@@ -1543,7 +1543,7 @@
         await savePasswordHash(currentUser.id, hashedPassword);
 
         document.getElementById('passwordStatus').innerText = 'Password is set';
-        document.getElementById('statusIcon').innerText = '??';
+        document.getElementById('statusIcon').innerText = '🔐';
         document.getElementById('statusIcon').style.color = 'var(--green)';
 
         document.getElementById('successMsg').innerText = 'Password updated successfully!';
