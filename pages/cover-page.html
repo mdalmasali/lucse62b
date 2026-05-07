@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+  <title>Cover Page Generator | CSE 62B LU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    .cg-page {
+      max-width: 1380px;
+      margin: 90px auto 60px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ── Form Panel ── */
+    .cg-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 26px 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky;
+      top: 80px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+    }
+    .cg-panel::-webkit-scrollbar { width: 4px; }
+    .cg-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .cg-panel-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem; font-weight: 700; color: var(--text);
+      margin-bottom: 18px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    /* Type selector */
+    .cg-type-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 7px;
+      margin-bottom: 20px;
+    }
+    .cg-type-btn {
+      padding: 10px 8px; text-align: center;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text-secondary); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+      line-height: 1.4; transition: all 0.2s;
+    }
+    .cg-type-btn:hover { border-color: rgba(124,58,237,0.4); color: var(--text); }
+    .cg-type-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+    .cg-type-btn i { display: block; font-size: 1rem; margin-bottom: 4px; }
+
+    /* Section labels */
+    .cg-sec {
+      font-size: 0.65rem; font-weight: 700; color: var(--accent-bright);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin: 16px 0 8px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Fields */
+    .cg-field { margin-bottom: 9px; }
+    .cg-field label {
+      display: block; font-size: 0.76rem; color: var(--text-secondary);
+      margin-bottom: 4px; font-weight: 500;
+    }
+    .cg-field input, .cg-field select, .cg-field textarea {
+      width: 100%; padding: 9px 11px; box-sizing: border-box;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 0.86rem;
+      transition: border-color 0.2s; resize: none;
+    }
+    .cg-field input:focus, .cg-field select:focus, .cg-field textarea:focus {
+      outline: none; border-color: var(--accent);
+      background: rgba(255,255,255,0.06);
+    }
+    .cg-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Select dropdown arrow */
+    .cg-field select {
+      padding-right: 30px;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      cursor: pointer;
+    }
+    .cg-field select option { background: #1a1a2e; color: #e2e8f0; }
+
+    /* Members */
+    .cg-member-row {
+      display: grid; grid-template-columns: 1fr 130px 28px;
+      gap: 6px; margin-bottom: 6px; align-items: center;
+    }
+    .cg-member-row input {
+      padding: 7px 10px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.82rem; box-sizing: border-box;
+    }
+    .cg-member-row input:focus { outline: none; border-color: var(--accent); }
+    .btn-rm {
+      background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3);
+      color: #f43f5e; border-radius: 8px; width: 28px; height: 28px;
+      cursor: pointer; font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .btn-rm:hover { background: #f43f5e; color: #fff; }
+    .btn-rm:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-add-m {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      color: var(--text-secondary); border-radius: 8px;
+      padding: 7px 14px; cursor: pointer;
+      font-size: 0.78rem; font-family: 'Inter', sans-serif; font-weight: 600;
+      transition: all 0.2s; margin-top: 2px;
+    }
+    .btn-add-m:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+    /* Generate button */
+    .btn-gen {
+      width: 100%; padding: 13px; margin-top: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; border-radius: 12px;
+      font-weight: 700; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+      cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+    .btn-gen:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Share buttons */
+    .btn-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .btn-share {
+      padding: 11px 8px; border: none; border-radius: 12px;
+      font-weight: 700; font-family: 'Inter', sans-serif; font-size: 0.82rem;
+      cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-share:hover { transform: translateY(-2px); }
+    .btn-share:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-wa  { background: #25D366; color: #fff; }
+    .btn-wa:hover  { box-shadow: 0 6px 18px rgba(37,211,102,0.4); }
+    .btn-tg  { background: #2AABEE; color: #fff; }
+    .btn-tg:hover  { box-shadow: 0 6px 18px rgba(42,171,238,0.4); }
+
+    /* ── Preview Panel ── */
+    .cg-preview-panel {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .cg-preview-label {
+      font-size: 0.72rem; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cg-preview-outer {
+      width: 100%; display: flex; justify-content: center;
+    }
+    .cg-preview-scaler { transform-origin: top center; }
+
+    /* ── The actual A4 cover page ── */
+    #coverPreview {
+      width: 794px; height: 1123px;
+      background: #fff; color: #000;
+      font-family: 'Times New Roman', Times, serif;
+      padding: 96px 96px 96px; box-sizing: border-box;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+      overflow: hidden;
+    }
+    /* 26pt bold = 35px */
+    .cp-univ-title {
+      font-size: 35px; font-weight: bold; text-align: center;
+      letter-spacing: 1px; margin-bottom: 6px;
+    }
+    /* 16pt bold = 21px */
+    .cp-dept-text {
+      font-size: 21px; font-weight: bold; text-align: center; margin-bottom: 16px;
+    }
+    .cp-logo-img { width: 140px; height: auto; display: block; margin: 0 auto 0; }
+    /* 14pt small-caps = 19px */
+    .cp-lu-below {
+      font-size: 19px; font-weight: bold; font-variant: small-caps;
+      letter-spacing: 0.5px; text-align: center;
+    }
+    .cp-gap-lg { margin-bottom: 38px; }
+    .cp-gap-md { margin-bottom: 28px; }
+    /* 14pt bold = 19px */
+    .cp-sec-title {
+      font-size: 19px; font-weight: bold; text-align: center; margin-bottom: 8px;
+    }
+    /* 14pt regular = 19px */
+    .cp-line {
+      font-size: 19px; text-align: center; line-height: 1.55; display: block;
+    }
+    .cp-group-tbl {
+      width: 100%; border-collapse: collapse; font-size: 19px; margin-top: 4px;
+    }
+    .cp-group-tbl th {
+      border: 1px solid #444; padding: 6px 12px;
+      font-weight: bold; text-align: center; background: #f0f0f0;
+    }
+    .cp-group-tbl td {
+      border: 1px solid #444; padding: 6px 12px; text-align: center;
+    }
+
+    /* Autocomplete dropdown */
+    .ac-dropdown {
+      position: fixed;
+      background: #12122a;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 9999;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.6);
+      animation: acIn 0.12s ease;
+    }
+    @keyframes acIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+    .ac-item {
+      padding: 9px 13px; cursor: pointer;
+      font-size: 0.83rem; color: var(--text);
+      transition: background 0.1s; line-height: 1.45;
+    }
+    .ac-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ac-item:hover, .ac-item.ac-focused { background: rgba(124,58,237,0.22); }
+    .ac-item strong { color: #c4b5fd; }
+    .ac-item small { color: var(--text-secondary); font-size: 0.74rem; }
+
+    /* Preview toggle (mobile only) */
+    .cg-preview-toggle-btn {
+      display: none;
+      width: 100%; margin-top: 10px; padding: 11px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text-secondary);
+      font-family: 'Inter', sans-serif; font-size: 0.86rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .cg-preview-toggle-btn:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .cg-page { grid-template-columns: 1fr; }
+      .cg-panel { position: static; max-height: none; }
+      .cg-preview-panel { overflow: hidden; }
+      .cg-preview-panel.collapsed .cg-preview-outer { display: none; }
+      .cg-preview-panel.collapsed .cg-preview-label { display: none; }
+      .cg-preview-toggle-btn { display: flex; }
+    }
+    @media (max-width: 640px) {
+      .cg-page { padding: 0 10px; margin-top: 70px; gap: 16px; }
+      .cg-panel { padding: 20px 16px; }
+      .cg-type-btn { font-size: 0.74rem; padding: 9px 6px; }
+      .btn-share-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 420px) {
+      .cg-member-row { grid-template-columns: 1fr 100px 24px; gap: 4px; }
+      .btn-rm { width: 24px; height: 24px; font-size: 0.72rem; }
+    }
+
+    /* Spinner */
+    .cg-spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+        <li class="auth-only"><a href="students.html">Students</a></li>
+        <li class="auth-only"><a href="classwork.html">Classwork</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+      </ul>
+      <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a class="auth-only" href="students.html">Students</a>
+      <a class="auth-only" href="classwork.html">Classwork</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a class="auth-only" href="cover-page.html"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    </div>
+
+    <div class="cg-page">
+
+      <!-- ── Left: Form ── -->
+      <div class="cg-panel fade-in">
+        <div class="cg-panel-title">
+          <i class="fa-solid fa-file-pdf" style="color:var(--accent-bright);"></i>
+          Cover Page Generator
+        </div>
+
+        <!-- Type -->
+        <div class="cg-type-grid">
+          <button class="cg-type-btn active" data-type="asgn-single" onclick="setType('asgn-single',this)">
+            <i class="fa-solid fa-pen-to-square"></i>Assignment<br><small>Single</small>
+          </button>
+          <button class="cg-type-btn" data-type="asgn-group" onclick="setType('asgn-group',this)">
+            <i class="fa-solid fa-users"></i>Assignment<br><small>Group</small>
+          </button>
+          <button class="cg-type-btn" data-type="lab-single" onclick="setType('lab-single',this)">
+            <i class="fa-solid fa-flask"></i>Lab Report<br><small>Single</small>
+          </button>
+          <button class="cg-type-btn" data-type="lab-group" onclick="setType('lab-group',this)">
+            <i class="fa-solid fa-flask"></i>Lab Report<br><small>Group</small>
+          </button>
+        </div>
+
+        <!-- Course -->
+        <div class="cg-sec">Course Information</div>
+        <div class="cg-field">
+          <label>Course Title</label>
+          <input id="fCourseTitle" type="text" placeholder="e.g. Computer Network Sessional" oninput="updatePreview()" autocomplete="off">
+        </div>
+        <div class="cg-field">
+          <label>Course Code</label>
+          <input id="fCourseCode" type="text" placeholder="e.g. CSE-3232" oninput="updatePreview()">
+        </div>
+        <div class="cg-field" id="fNoWrap">
+          <label id="fNoLabel">Lab Report No</label>
+          <input id="fNo" type="text" placeholder="e.g. 06" oninput="updatePreview()">
+        </div>
+        <div class="cg-field">
+          <label>Topic</label>
+          <input id="fTopic" type="text" placeholder="e.g. Dynamic Routing" oninput="updatePreview()">
+        </div>
+
+        <!-- Submitted To -->
+        <div class="cg-sec">Submitted To</div>
+        <div class="cg-field">
+          <label>Teacher Name</label>
+          <input id="fTeacher" type="text" placeholder="e.g. Nargish Jahan" oninput="updatePreview()" autocomplete="off">
+        </div>
+        <div class="cg-field">
+          <label>Designation</label>
+          <input id="fDesig" type="text" placeholder="e.g. Adjunct Lecturer" oninput="updatePreview()">
+        </div>
+        <div class="cg-field">
+          <label>Department</label>
+          <input id="fTDept" type="text" placeholder="e.g. Department of CSE" oninput="updatePreview()">
+        </div>
+
+        <!-- Submitted From -->
+        <div class="cg-sec">Submitted From</div>
+
+        <!-- Single -->
+        <div id="singleWrap">
+          <div class="cg-field">
+            <label>Your Name</label>
+            <input id="fName" type="text" placeholder="e.g. MD Almas Ali" oninput="updatePreview()">
+          </div>
+          <div class="cg-field">
+            <label>Student ID</label>
+            <input id="fSID" type="text" placeholder="e.g. 0182320012101068" oninput="updatePreview()">
+          </div>
+          <div class="cg-row2">
+            <div class="cg-field">
+              <label>Batch</label>
+              <select id="fBatch" onchange="updatePreview()">
+                <option>55th</option><option>56th</option><option>57th</option>
+                <option>58th</option><option>59th</option><option>60th</option>
+                <option>61st</option><option selected>62nd</option><option>63rd</option>
+                <option>64th</option><option>65th</option><option>66th</option>
+              </select>
+            </div>
+            <div class="cg-field">
+              <label>Section</label>
+              <select id="fSection" onchange="updatePreview()">
+                <option>A</option><option selected>B</option>
+                <option>C</option><option>D</option><option>E</option><option>F</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group -->
+        <div id="groupWrap" style="display:none;">
+          <div class="cg-row2" style="margin-bottom:10px;">
+            <div class="cg-field">
+              <label>Batch</label>
+              <select id="fGBatch" onchange="updatePreview()">
+                <option>55th</option><option>56th</option><option>57th</option>
+                <option>58th</option><option>59th</option><option>60th</option>
+                <option>61st</option><option selected>62nd</option><option>63rd</option>
+                <option>64th</option><option>65th</option><option>66th</option>
+              </select>
+            </div>
+            <div class="cg-field">
+              <label>Section</label>
+              <select id="fGSection" onchange="updatePreview()">
+                <option>A</option><option selected>B</option>
+                <option>C</option><option>D</option><option>E</option><option>F</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size:0.73rem;color:var(--text-secondary);margin-bottom:8px;font-weight:600;">
+            Group Members
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 140px 28px;gap:6px;margin-bottom:5px;">
+            <span style="font-size:0.68rem;color:var(--text-secondary);opacity:0.7;">Name</span>
+            <span style="font-size:0.68rem;color:var(--text-secondary);opacity:0.7;">Student ID</span>
+            <span></span>
+          </div>
+          <div id="membersWrap"></div>
+          <button class="btn-add-m" onclick="addMember()">
+            <i class="fa-solid fa-plus"></i> Add Member
+          </button>
+        </div>
+
+        <!-- Date -->
+        <div class="cg-sec">Submission</div>
+        <div class="cg-field">
+          <label>Date of Submission</label>
+          <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()">
+        </div>
+
+        <button class="btn-gen" id="btnGen" onclick="generatePDF()">
+          <i class="fa-solid fa-file-arrow-down"></i> Generate PDF
+        </button>
+        <div class="btn-share-row">
+          <button class="btn-share btn-wa" id="btnShareWA" onclick="shareCover('whatsapp')">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+          </button>
+          <button class="btn-share btn-tg" id="btnShareTG" onclick="shareCover('telegram')">
+            <i class="fa-brands fa-telegram"></i> Telegram <span style="font-size:0.65rem;opacity:0.85;background:rgba(0,0,0,0.18);border-radius:4px;padding:1px 5px;">Recommended</span>
+          </button>
+        </div>
+        <button class="cg-preview-toggle-btn" id="previewToggleBtn" onclick="toggleMobilePreview()">
+          <i class="fa-solid fa-eye" id="previewToggleIcon"></i>
+          <span id="previewToggleText">Show Live Preview</span>
+        </button>
+      </div>
+
+      <!-- ── Right: Preview ── -->
+      <div class="cg-preview-panel collapsed fade-in delay-1" id="previewPanel">
+        <div class="cg-preview-label">
+          <i class="fa-solid fa-eye"></i> Live Preview
+        </div>
+        <div class="cg-preview-outer" id="previewOuter">
+          <div class="cg-preview-scaler" id="previewScaler">
+            <div id="coverPreview"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .cg-page -->
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="notices.html">Notices</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 MD. Almas Ali. All Rights Reserved.
+      </div>
+    </footer>
+  </div>
+
+  <script src="../assets/js/auth.js"></script>
+  <script>
+    let currentType = 'asgn-single';
+    let members = [];
+    let memberIdCtr = 0;
+
+    /* ── Auto-fill from logged-in user ── */
+    const _ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+    if (_ud) {
+      const u = JSON.parse(_ud);
+      document.getElementById('fName').value  = u.name || '';
+      document.getElementById('fSID').value   = u.id   || '';
+    }
+    document.getElementById('fTDept').value   = 'Department of Computer Science & Engineering';
+    document.getElementById('fDate').value    = formatDateNice(new Date());
+
+    /* ── Date helper ── */
+    function formatDateNice(d) {
+      const day = d.getDate();
+      const m10 = day % 10, m100 = day % 100;
+      const suf = (m100 >= 11 && m100 <= 13) ? 'th'
+                : m10 === 1 ? 'st'
+                : m10 === 2 ? 'nd'
+                : m10 === 3 ? 'rd'
+                : 'th';
+      const mo = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+      return `${day}${suf} ${mo[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    /* ── Type switcher ── */
+    function setType(type, btn) {
+      currentType = type;
+      document.querySelectorAll('.cg-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const isGroup  = type.includes('group');
+      const isLab    = type.includes('lab');
+      const showNo   = isLab || type === 'asgn-single';
+      document.getElementById('singleWrap').style.display  = isGroup  ? 'none'  : 'block';
+      document.getElementById('groupWrap').style.display   = isGroup  ? 'block' : 'none';
+      document.getElementById('fNoWrap').style.display     = showNo   ? 'block' : 'none';
+      document.getElementById('fNoLabel').textContent      = isLab    ? 'Lab Report No' : 'Assignment No';
+      updatePreview();
+    }
+
+    /* ── Group members ── */
+    function addMember(name = '', sid = '') {
+      const id = ++memberIdCtr;
+      members.push({ id, name, sid });
+      renderMembers();
+    }
+
+    function removeMember(id) {
+      if (members.length <= 1) return;
+      members = members.filter(m => m.id !== id);
+      renderMembers();
+      updatePreview();
+    }
+
+    function updateMemberField(id, field, val) {
+      const m = members.find(x => x.id === id);
+      if (m) m[field] = val;
+      updatePreview();
+    }
+
+    function renderMembers() {
+      document.getElementById('membersWrap').innerHTML = members.map(m => `
+        <div class="cg-member-row">
+          <input type="text" placeholder="Full name" value="${escH(m.name)}"
+            oninput="updateMemberField(${m.id},'name',this.value)">
+          <input type="text" placeholder="Student ID" value="${escH(m.sid)}"
+            oninput="updateMemberField(${m.id},'sid',this.value)">
+          <button class="btn-rm" onclick="removeMember(${m.id})"
+            ${members.length <= 1 ? 'disabled' : ''}>✕</button>
+        </div>
+      `).join('');
+    }
+
+    /* ── Escape HTML helper ── */
+    function escH(s) {
+      return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+    /* ── Build preview HTML ── */
+    function buildCoverHTML() {
+      const isGroup = currentType.includes('group');
+      const isLab   = currentType.includes('lab');
+
+      const heading  = isLab ? 'Lab Report On' : 'Assignment on';
+      const title    = v('fCourseTitle');
+      const code     = v('fCourseCode');
+      const hasNo    = isLab || currentType === 'asgn-single';
+      const no       = hasNo ? v('fNo') : '';
+      const noLabel  = isLab ? 'Lab Report No' : 'Assignment No';
+      const topic    = v('fTopic');
+      const teacher = v('fTeacher');
+      const desig   = v('fDesig');
+      const tDept   = v('fTDept');
+      const date    = v('fDate');
+
+      /* Course info lines */
+      let courseLines = '';
+      if (title) courseLines += `<span class="cp-line">Course Title: ${escH(title)}</span>`;
+      if (code)  courseLines += `<span class="cp-line">Course Code: ${escH(code)}</span>`;
+      if (no)    courseLines += `<span class="cp-line">${noLabel}: ${escH(no)}</span>`;
+      if (topic) courseLines += `<span class="cp-line">Topic: ${escH(topic)}</span>`;
+
+      /* Teacher lines */
+      let teacherLines = '';
+      if (teacher) teacherLines += `<span class="cp-line">${escH(teacher)}</span>`;
+      if (desig)   teacherLines += `<span class="cp-line">${escH(desig)}</span>`;
+      if (tDept)   teacherLines += `<span class="cp-line">${escH(tDept)}</span>`;
+
+      /* Submitted From */
+      let fromHTML = '';
+      if (isGroup) {
+        const batch   = v('fGBatch');
+        const section = v('fGSection');
+        const rows    = members.filter(m => m.name || m.sid);
+        if (rows.length) {
+          const n = rows.length;
+          fromHTML = `
+            <table class="cp-group-tbl">
+              <thead><tr><th>Name</th><th>ID</th><th>Batch</th><th>Section</th></tr></thead>
+              <tbody>
+                ${rows.map((m, i) => i === 0 ? `
+                  <tr>
+                    <td>${escH(m.name)}</td>
+                    <td>${escH(m.sid)}</td>
+                    <td rowspan="${n}" style="vertical-align:middle;">${escH(batch)}</td>
+                    <td rowspan="${n}" style="vertical-align:middle;">${escH(section)}</td>
+                  </tr>` : `
+                  <tr>
+                    <td>${escH(m.name)}</td>
+                    <td>${escH(m.sid)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>`;
+        }
+      } else {
+        const name    = v('fName');
+        const sid     = v('fSID');
+        const batch   = v('fBatch');
+        const section = v('fSection');
+        const bsLine  = [batch, section ? `(${section})` : ''].filter(Boolean).join(' ');
+        if (name)   fromHTML += `<span class="cp-line">${escH(name)}</span>`;
+        if (sid)    fromHTML += `<span class="cp-line">${escH(sid)}</span>`;
+        if (bsLine) fromHTML += `<span class="cp-line">${escH(bsLine)}</span>`;
+      }
+
+      const logoSrc = logoDataUrl || '../assets/images/lu logo.png';
+
+      return `
+        <div class="cp-univ-title">LEADING UNIVERSITY</div>
+        <div class="cp-dept-text">Department of Computer Science &amp; Engineering</div>
+        <img src="${logoSrc}" class="cp-logo-img" alt="LU Logo">
+
+        <div class="cp-gap-lg"></div>
+
+        <div class="cp-sec-title">${heading}</div>
+        ${courseLines}
+
+        <div class="cp-gap-md"></div>
+
+        <div class="cp-sec-title">Submitted To</div>
+        ${teacherLines}
+
+        <div class="cp-gap-md"></div>
+
+        <div class="cp-sec-title">Submitted From</div>
+        ${fromHTML}
+
+        <div class="cp-gap-md"></div>
+
+        <div class="cp-sec-title">Date of Submission</div>
+        <span class="cp-line">${escH(date)}</span>
+      `;
+    }
+
+    function updatePreview() {
+      document.getElementById('coverPreview').innerHTML = buildCoverHTML();
+      scalePreview();
+      saveFormState();
+    }
+
+    const CPG_KEY = 'lu62b_cpg';
+
+    function saveFormState() {
+      try {
+        localStorage.setItem(CPG_KEY, JSON.stringify({
+          type:        currentType,
+          courseTitle: v('fCourseTitle'),
+          courseCode:  v('fCourseCode'),
+          no:          v('fNo'),
+          topic:       v('fTopic'),
+          teacher:     v('fTeacher'),
+          desig:       v('fDesig'),
+          tdept:       v('fTDept'),
+          batch:       v('fBatch'),
+          section:     v('fSection'),
+          gbatch:      v('fGBatch'),
+          gsection:    v('fGSection'),
+          members:     members.map(m => ({ name: m.name, sid: m.sid }))
+        }));
+      } catch(e) {}
+    }
+
+    function loadFormState() {
+      try {
+        const raw = localStorage.getItem(CPG_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        const set = (id, val) => { if (val) document.getElementById(id).value = val; };
+        set('fCourseTitle', s.courseTitle);
+        set('fCourseCode',  s.courseCode);
+        set('fNo',          s.no);
+        set('fTopic',       s.topic);
+        set('fTeacher',     s.teacher);
+        set('fDesig',       s.desig);
+        set('fTDept',       s.tdept);
+        set('fBatch',       s.batch);
+        set('fSection',     s.section);
+        set('fGBatch',      s.gbatch);
+        set('fGSection',    s.gsection);
+        if (s.members && s.members.length) {
+          members = []; memberIdCtr = 0;
+          const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+          const u  = ud ? JSON.parse(ud) : {};
+          s.members.forEach((m, i) => {
+            const id = ++memberIdCtr;
+            members.push({
+              id,
+              name: (i === 0 && u.name) ? u.name : m.name,
+              sid:  (i === 0 && u.id)   ? u.id   : m.sid
+            });
+          });
+          renderMembers();
+        }
+        return s.type || null;
+      } catch(e) { return null; }
+    }
+
+    function scalePreview() {
+      const outer  = document.getElementById('previewOuter');
+      const scaler = document.getElementById('previewScaler');
+      if (!outer || !scaler) return;
+      const avail  = outer.offsetWidth - 8;
+      if (avail <= 0) return;
+      const scale  = Math.min(1, avail / 794);
+      scaler.style.transform = `scale(${scale})`;
+      scaler.style.height    = `${Math.round(1123 * scale)}px`;
+      scaler.style.width     = `${Math.round(794 * scale)}px`;
+    }
+
+    function toggleMobilePreview() {
+      const panel = document.getElementById('previewPanel');
+      const icon  = document.getElementById('previewToggleIcon');
+      const text  = document.getElementById('previewToggleText');
+      const isCollapsed = panel.classList.toggle('collapsed');
+      if (isCollapsed) {
+        icon.className = 'fa-solid fa-eye';
+        text.textContent = 'Show Live Preview';
+      } else {
+        icon.className = 'fa-solid fa-eye-slash';
+        text.textContent = 'Hide Preview';
+        setTimeout(() => {
+          scalePreview();
+          panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 1100) {
+        const panel = document.getElementById('previewPanel');
+        const icon  = document.getElementById('previewToggleIcon');
+        const text  = document.getElementById('previewToggleText');
+        panel.classList.remove('collapsed');
+        icon.className = 'fa-solid fa-eye-slash';
+        text.textContent = 'Hide Preview';
+      }
+      scalePreview();
+    });
+
+    /* ── Autocomplete data — loaded from Google Sheet ── */
+    const CPG_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+    let TEACHERS = [];
+    let COURSES  = [];
+
+    function loadCPGSheet(sheetName) {
+      return new Promise((resolve, reject) => {
+        const cb = `cpg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(); }, 10000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = d => { cleanup(); resolve(d); };
+        s.src = `https://docs.google.com/spreadsheets/d/${CPG_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
+        s.onerror = () => { cleanup(); reject(); };
+        document.body.appendChild(s);
+      });
+    }
+
+    async function loadAutocompleteData() {
+      try {
+        const [tData, cData] = await Promise.all([
+          loadCPGSheet('CPG_Teachers'),
+          loadCPGSheet('CPG_Courses')
+        ]);
+
+        const cells = row => (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+
+        TEACHERS = (tData.table?.rows || [])
+          .map(r => cells(r))
+          .filter(c => c[0] && !['name','teacher'].includes(c[0].toLowerCase()))
+          .map(c => ({
+            name:  c[0],
+            desig: c[1] || '',
+            dept:  c[2] || 'Department of Computer Science & Engineering'
+          }));
+
+        COURSES = (cData.table?.rows || [])
+          .map(r => cells(r))
+          .filter(c => c[0] && !['title','course'].includes(c[0].toLowerCase()))
+          .map(c => ({ title: c[0], code: c[1] || '' }));
+
+      } catch(e) { /* fail silently — user can still type manually */ }
+    }
+
+    /* ── Generic autocomplete engine ── */
+    let _acEl = null, _acFocused = -1;
+
+    function _acClose() {
+      if (_acEl) { _acEl.remove(); _acEl = null; _acFocused = -1; }
+    }
+
+    function _acPos(input) {
+      if (!_acEl) return;
+      const r = input.getBoundingClientRect();
+      _acEl.style.top   = (r.bottom + 2) + 'px';
+      _acEl.style.left  = r.left + 'px';
+      _acEl.style.width = r.width + 'px';
+    }
+
+    /* data is a function so it's always read fresh from the live arrays */
+    function setupAutocomplete(inputId, getDataFn, renderFn, selectFn) {
+      const inp = document.getElementById(inputId);
+
+      inp.addEventListener('input', () => {
+        const q = inp.value.toLowerCase().trim();
+        _acClose();
+        if (!q) return;
+        const hits = getDataFn().filter(d => d._key.toLowerCase().includes(q)).slice(0, 8);
+        if (!hits.length) return;
+
+        _acEl = document.createElement('div');
+        _acEl.className = 'ac-dropdown';
+        _acFocused = -1;
+
+        hits.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'ac-item';
+          div.innerHTML = renderFn(item);
+          div.addEventListener('mousedown', e => {
+            e.preventDefault();
+            selectFn(item);
+            _acClose();
+          });
+          _acEl.appendChild(div);
+        });
+        document.body.appendChild(_acEl);
+        _acPos(inp);
+      });
+
+      inp.addEventListener('keydown', e => {
+        if (!_acEl) return;
+        const els = _acEl.querySelectorAll('.ac-item');
+        if      (e.key === 'ArrowDown') { e.preventDefault(); _acFocused = Math.min(_acFocused + 1, els.length - 1); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); _acFocused = Math.max(_acFocused - 1, 0); }
+        else if (e.key === 'Enter' && _acFocused >= 0) { e.preventDefault(); els[_acFocused].dispatchEvent(new MouseEvent('mousedown')); }
+        else if (e.key === 'Escape')    { _acClose(); return; }
+        els.forEach((el, i) => el.classList.toggle('ac-focused', i === _acFocused));
+      });
+
+      inp.addEventListener('blur', () => setTimeout(_acClose, 160));
+      window.addEventListener('scroll', () => _acPos(inp), true);
+      window.addEventListener('resize', () => _acPos(inp));
+    }
+
+    /* ── Wire autocomplete ── */
+    setupAutocomplete(
+      'fTeacher',
+      () => TEACHERS.map(t => ({ ...t, _key: t.name })),
+      t => `<strong>${escH(t.name)}</strong><br><small>${escH(t.desig)}</small>`,
+      t => {
+        document.getElementById('fTeacher').value = t.name;
+        document.getElementById('fDesig').value   = t.desig;
+        document.getElementById('fTDept').value   = t.dept;
+        updatePreview();
+      }
+    );
+
+    setupAutocomplete(
+      'fCourseTitle',
+      () => COURSES.map(c => ({ ...c, _key: c.title })),
+      c => `<strong>${escH(c.title)}</strong> <small>· ${escH(c.code)}</small>`,
+      c => {
+        document.getElementById('fCourseTitle').value = c.title;
+        document.getElementById('fCourseCode').value  = c.code;
+        updatePreview();
+      }
+    );
+
+    loadAutocompleteData();
+
+    /* ── PDF Generation ── */
+    async function generatePDF() {
+      const btn = document.getElementById('btnGen');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
+
+      try {
+        updatePreview();
+        await new Promise(r => setTimeout(r, 200));
+
+        const el = document.getElementById('coverPreview');
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 5000
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.97);
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
+        const fname = (v('fCourseCode') || 'CoverPage').replace(/[^a-zA-Z0-9\-]/g, '_');
+        pdf.save(`${fname}_CoverPage.pdf`);
+      } catch (err) {
+        alert('PDF generation failed. Please try again.\n' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i> Generate PDF';
+      }
+    }
+
+    /* ── Share via WhatsApp / Telegram ── */
+    const WA_LINK = 'https://wa.me/8801781782704?text=Sir%2C+I+need+print!';
+    const TG_LINK = 'https://t.me/mdalmasalihimu';
+
+    async function shareCover(platform) {
+      const btn  = document.getElementById(platform === 'whatsapp' ? 'btnShareWA' : 'btnShareTG');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
+
+      try {
+        updatePreview();
+        await new Promise(r => setTimeout(r, 200));
+
+        const el     = document.getElementById('coverPreview');
+        const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false });
+        const fname  = (v('fCourseCode') || 'CoverPage').replace(/[^a-zA-Z0-9\-]/g, '_') + '_CoverPage';
+
+        /* Step 1: download PDF */
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 210, 297);
+        pdf.save(`${fname}.pdf`);
+
+        /* Step 2: open inbox after short delay so download triggers first */
+        await new Promise(r => setTimeout(r, 500));
+        window.open(platform === 'whatsapp' ? WA_LINK : TG_LINK, '_blank');
+
+      } catch(err) {
+        alert('Failed. Please use Generate PDF instead.\n' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    /* ── Logo embedded as base64 — no CORS/fetch issues on file:// ── */
+    const logoDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAFACAMAAAD6TlWYAAAC6FBMVEVHcEwAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBwUAAAAAAAAAAAAAAAAAAAAAAACfc2S/vr6/vr6tlY2fc2Sjb2G7urq/vr6/vr6/vr6/vr7Av7/Cv8CYtaMZmE0QlkcSl0gPlkYOlUVbt4Ch1raIy6PE5dJ1wpQ0pmLm9OxAq2yV0K1ovYu94sw5qGbd8OUooVnN6dgjnlXU7N4vo15+xpy03sUUmEtnqoS6vbs/oWmSsp9Zp3tzrYyruLAonFqJspoXmE8LlUYNlkh9r5KetagxnmCzvLalua0cm1FQpXRGo245oGUXlEeoSzToKywMlEMVGBgQExNgYmIEBweLjYz+///Hrqb08/LCp56nfnDbzcirhXjj2dWxjoLp4uC2lInu6ee7nZLx7uz8/f36/Pv9/v7////v+PNMsHX2+PbMtq/4+vnUwbujeGqfc2SgdGWfcmOpiX+/vby/vr6/vr6/vr6/v77Av7/Av7/kLS3lLCzhMC+vY1ivYlbvf3+r2r7tcXHzoqLymprmNDT2t7fqVVXkKSnlLS3kKyvlMDD1sLDsamr4x8frYmLueXnvhIT86OjwiYn0qannQED3v7/oSEj3wsLqW1vxkpLmOTn2urrpT0/61taWtaLlLS3lLS3NOS/lLS2JZj8Sl0gSl0gRlkcRlkcSl0gSl0gWmEsA//+/vr6/vr6/vr6/vr6xn5mfc2Shdmifc2SobmGfc2ShcmOgdGUAAAAAAAAAAAAAAAAAAACgio6yAAAA+HRSTlMABbYMvhDCE8U7OPP/9lRX/N0g4iPKJswq6uYuyB4b2RfUfJeBm553b0IsWUlLR/nuNM6GkouO0DE/PAezXGGwZa1oqgKlAaFzbJqTeJsRqCACRvdZ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////hMzWGtrc2///////////////////////////////////////////////3vxYiaABoKGXP+kqKgE36im1C8fa7jZOZnA2TlG5CZ/fYewAACt9SURBVHja7NnXdurYGQfw/1b3FIh9kCAxECGKwG25qFBUKBsBc5XcJg+U8j6ZF5i8RHq9TjOg2whxfNymGaeYpf2jF7Vv129tMAzDMAzDMAzDMAzDMAzDMAzDvF5JBPMaYw3MK5DZGZhXkN05mFe4/XhKwezOPCxWwOyMX7e5AMzOzsvVtseD2VE8aqBSXoHZka8eAXNBBrMTrRgAkNc3FMy30NPxiBx+FiNxUPPx2EEVzDNyeaLjAX3q6Uid1nIR7kWrdwswzwRFjuvigxPPO8IWDWptHnfitjuSdDBPVJRAdFyzilS17Vp6+iYGEJ2VR70YG4PepHwmr01kGF8ieGZgjXiQJadafqfjW+X1Kv2TOPGxUbGvQ3PZO5+H1/YRcFbr4zm9gEygY6cU4TFiFk/S4F7YniR5zpmI1OJ7RQ0bVFtMBUmYtjW6+WSUj/EEn2uVkA3y+p19NXj0zc11D+8NRPHDbz03X/d0bFFe5im2eKfcoXhAP+UuA2TF7bvD4mh8wkfYiPRTgbvClzhWzUgPpzKei+eucxUjRfQLWyl+XB8gM9rqWdsrCk1jeBqYLUVqy/gSV4oTAxVuUsFz0W3rmrMXvr+wR2Wlft5QjpAd/LROBlrOaI68cGZcyED0bPGD5K5veCSqU6lDn/5Y4pNHYE28cOqM+zqu3CWypHTtY4MMSIQNXfE6A9yLNMsdEqREo2ZrEe7RknN4tn03GKSxlbms5Xv+9QkeoIZkX09OKwQbkdh3rmfd+18PJkWnI1NskOqyed1qcjLuRY21jmwh9QmPD+J2rQfNENTQno8XjZakfvaoPiLu1MvKxDbbphOqkv0Rkb1ZFRsREhe1XgYzjzYSvH/WvfJHatoixduhPZtM6+Z5heIJqnfaTmvWvBkeyBGAwkSZ94/7Qw1AVTKRPefuR0gEl4fK2jjCnYhSfCuiP1Hcj5s8QKyRiOyhN2sZAHHU4xg7IXpdqQDIu11kkbxu0HQAtQl2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';
+
+    /* ── Init ── */
+    addMember(
+      (_ud ? JSON.parse(_ud).name : '') || '',
+      (_ud ? JSON.parse(_ud).id   : '') || ''
+    );
+    addMember();
+    addMember();
+
+    const savedType = loadFormState();
+    const initType  = savedType || 'asgn-single';
+    setType(initType, document.querySelector(`[data-type="${initType}"]`));
+
+    /* On desktop (>1100px), always show preview */
+    if (window.innerWidth > 1100) {
+      document.getElementById('previewPanel').classList.remove('collapsed');
+    }
+    setTimeout(scalePreview, 150);
+  </script>
+</body>
+</html>
