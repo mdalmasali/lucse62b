@@ -45,11 +45,10 @@
       flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
-      padding: 14px 20px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      margin-bottom: 20px;
+      padding: 14px 0;
+      border-top: 1px solid var(--border);
+      margin: 20px -40px -40px;
+      background: rgba(0,0,0,0.12);
     }
     .pab-chip {
       display: inline-flex;
@@ -58,7 +57,7 @@
       padding: 5px 12px;
       border-radius: 20px;
       background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.08);
       font-size: 0.78rem;
       color: var(--text-secondary);
       font-weight: 500;
@@ -1066,6 +1065,12 @@
         padding: 13px 20px;
         font-size: 0.95rem;
       }
+      .profile-academic-bar {
+        margin: 16px -18px -28px;
+        padding: 12px 8px;
+        gap: 6px;
+      }
+      .pab-chip { font-size: 0.72rem; padding: 4px 10px; }
       .settings-section {
         padding: 20px 18px;
         border-radius: 18px;
@@ -1166,13 +1171,13 @@
             <i class="fa-solid fa-right-from-bracket"></i> Logout
           </button>
         </div>
+
+        <!-- Academic Info Bar (merged into card) -->
+        <div class="profile-academic-bar" id="profileAcademicBar" style="display:none;"></div>
       </div>
 
-      <!-- Academic Info Bar (auto-filled from LUS result) -->
-      <div class="profile-academic-bar" id="profileAcademicBar" style="display:none;"></div>
-
-      <!-- Settings Section -->
-      <div class="settings-section" id="settingsSection" style="display: none;">
+      <!-- Settings Section (hidden) -->
+      <div class="settings-section" id="settingsSection" style="display: none !important;">
         <div class="settings-title">
           <i class="fa-solid fa-gear"></i> Account Settings
         </div>
@@ -1493,7 +1498,7 @@
       }
       document.getElementById('userPhone').innerText = phone;
 
-      document.getElementById('settingsSection').style.display = 'block';
+      // settingsSection hidden by design
 
       // Check password status from Supabase
       getPasswordHash(currentUser.id).then(hash => {
@@ -1739,10 +1744,10 @@
       if (!bar || !data) return;
       const chips = [];
       if (data.degree)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-graduation-cap" style="color:var(--accent-bright);"></i> ${data.degree}</span>`);
-      if (data.blood_group) chips.push(`<span class="pab-chip"><i class="fa-solid fa-droplet" style="color:#f87171;"></i> ${data.blood_group}</span>`);
+      if (data.blood_group) chips.push(`<span class="pab-chip"><i class="fa-solid fa-droplet" style="color:#f87171;"></i> Blood: ${data.blood_group}</span>`);
       if (data.waiver)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-percent" style="color:var(--green);"></i> Waiver: ${data.waiver}</span>`);
-      if (data.father_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person" style="color:#a78bfa;"></i> ${data.father_name}</span>`);
-      if (data.mother_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person-dress" style="color:#f472b6;"></i> ${data.mother_name}</span>`);
+      if (data.father_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person" style="color:#a78bfa;"></i> Father: ${data.father_name}</span>`);
+      if (data.mother_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person-dress" style="color:#f472b6;"></i> Mother: ${data.mother_name}</span>`);
       if (data.address)     chips.push(`<span class="pab-chip"><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${data.address}</span>`);
       if (!chips.length) return;
       bar.innerHTML = chips.join('');
