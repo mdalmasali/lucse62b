@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -62,7 +62,7 @@
     </div>
 
     <div class="info-search-bar fade-in delay-2">
-      <span class="search-icon">??</span>
+      <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
       <input type="text" id="searchInput" placeholder="Search assignment, lab report, viva�" autocomplete="off"/>
     </div>
 
@@ -102,13 +102,13 @@
     const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
     const CAT_META = {
-      'assignment':   { icon: '??', color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
-      'tutorial':    { icon: '??', color: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
-      'lab report':  { icon: '??', color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', tag: '#34d399', label: 'Lab Report' },
-      'viva':        { icon: '??', color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
-      'lab final':   { icon: '??', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
-      'project':     { icon: '??', color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
-      'presentation':{ icon: '???', color: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)', tag: '#818cf8', label: 'Presentation' },
+      'assignment':   { icon: '<i class="fa-solid fa-pencil" style="color:#a78bfa;"></i>', color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
+      'tutorial':    { icon: '<i class="fa-solid fa-book-open" style="color:#38bdf8;"></i>', color: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
+      'lab report':  { icon: '<i class="fa-solid fa-flask" style="color:#34d399;"></i>', color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', tag: '#34d399', label: 'Lab Report' },
+      'viva':        { icon: '<i class="fa-solid fa-microphone" style="color:#fbbf24;"></i>', color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
+      'lab final':   { icon: '<i class="fa-solid fa-fire-flame-curved" style="color:#f87171;"></i>', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
+      'project':     { icon: '<i class="fa-solid fa-diagram-project" style="color:#f472b6;"></i>', color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
+      'presentation':{ icon: '<i class="fa-solid fa-chalkboard-user" style="color:#818cf8;"></i>', color: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)', tag: '#818cf8', label: 'Presentation' },
     };
 
     const ALLOWED_CATS = new Set(['assignment', 'tutorial', 'lab report', 'viva', 'lab final', 'project', 'presentation']);

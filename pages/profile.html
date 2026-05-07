@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -2270,13 +2270,13 @@
 
       document.getElementById('resExtremesGrid').innerHTML = `
         ${highest ? `<div class="result-extreme-card highest">
-          <div class="result-extreme-header highest"><span>??</span> Highest Mark</div>
+          <div class="result-extreme-header highest"><i class="fa-solid fa-trophy"></i> Highest Mark</div>
           <div class="result-extreme-course-name">${highest.course_title||highest.course_code||'N/A'}</div>
           <div class="result-extreme-mark">${highest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${highest.grade||'N/A'}</div>
         </div>` : ''}
         ${lowest ? `<div class="result-extreme-card lowest">
-          <div class="result-extreme-header lowest"><span>??</span> Lowest Mark</div>
+          <div class="result-extreme-header lowest"><i class="fa-solid fa-arrow-trend-down"></i> Lowest Mark</div>
           <div class="result-extreme-course-name">${lowest.course_title||lowest.course_code||'N/A'}</div>
           <div class="result-extreme-mark">${lowest.mark}<small style="font-size:.6em;font-weight:500;color:var(--text-secondary);"> / 100</small></div>
           <div class="result-extreme-grade">Grade: ${lowest.grade||'N/A'}</div>
