@@ -40,30 +40,44 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .profile-academic-bar {
+    .pac-divider {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      padding: 14px 0;
-      border-top: 1px solid var(--border);
-      margin: 20px -40px -40px;
-      background: rgba(0,0,0,0.12);
-    }
-    .pab-chip {
-      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      font-size: 0.78rem;
+      gap: 10px;
+      margin: 20px 0 14px;
       color: var(--text-secondary);
-      font-weight: 500;
-      white-space: nowrap;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
-    .pab-chip i { font-size: 0.7rem; }
+    .pac-divider::before, .pac-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .pac-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .pac-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 13px;
+    }
+    .pac-item.full { grid-column: 1 / -1; }
+    .pac-icon { width: 16px; text-align: center; flex-shrink: 0; font-size: 0.8rem; }
+    .pac-text { flex: 1; min-width: 0; }
+    .pac-label { font-size: 0.63rem; color: var(--text-secondary); opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pac-value { font-size: 0.8rem; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .avatar {
       width: 100px;
@@ -1065,12 +1079,10 @@
         padding: 13px 20px;
         font-size: 0.95rem;
       }
-      .profile-academic-bar {
-        margin: 16px -18px -28px;
-        padding: 12px 8px;
-        gap: 6px;
-      }
-      .pab-chip { font-size: 0.72rem; padding: 4px 10px; }
+      .pac-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .pac-item { padding: 7px 10px; gap: 8px; }
+      .pac-value { font-size: 0.74rem; }
+      .pac-label { font-size: 0.6rem; }
       .settings-section {
         padding: 20px 18px;
         border-radius: 18px;
@@ -1163,6 +1175,9 @@
           </div>
         </div>
 
+        <!-- Academic Info (shown when LUS data loaded) -->
+        <div id="profileAcademicBar" style="display:none;"></div>
+
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
           <button class="btn-change-password" onclick="openChangePasswordModal()">
             <i class="fa-solid fa-key"></i> Change Password
@@ -1171,9 +1186,6 @@
             <i class="fa-solid fa-right-from-bracket"></i> Logout
           </button>
         </div>
-
-        <!-- Academic Info Bar (merged into card) -->
-        <div class="profile-academic-bar" id="profileAcademicBar" style="display:none;"></div>
       </div>
 
       <!-- Settings Section (hidden) -->
@@ -1742,16 +1754,35 @@
     function renderProfileAcademicBar(data) {
       const bar = document.getElementById('profileAcademicBar');
       if (!bar || !data) return;
-      const chips = [];
-      if (data.degree)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-graduation-cap" style="color:var(--accent-bright);"></i> ${data.degree}</span>`);
-      if (data.blood_group) chips.push(`<span class="pab-chip"><i class="fa-solid fa-droplet" style="color:#f87171;"></i> Blood: ${data.blood_group}</span>`);
-      if (data.waiver)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-percent" style="color:var(--green);"></i> Waiver: ${data.waiver}</span>`);
-      if (data.father_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person" style="color:#a78bfa;"></i> Father: ${data.father_name}</span>`);
-      if (data.mother_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person-dress" style="color:#f472b6;"></i> Mother: ${data.mother_name}</span>`);
-      if (data.address)     chips.push(`<span class="pab-chip"><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${data.address}</span>`);
-      if (!chips.length) return;
-      bar.innerHTML = chips.join('');
-      bar.style.display = 'flex';
+
+      function item(icon, color, label, value, full) {
+        return `<div class="pac-item${full ? ' full' : ''}">
+          <i class="pac-icon fa-solid ${icon}" style="color:${color};"></i>
+          <div class="pac-text">
+            <div class="pac-label">${label}</div>
+            <div class="pac-value">${value}</div>
+          </div>
+        </div>`;
+      }
+
+      const rows = [];
+      if (data.degree)      rows.push(item('fa-graduation-cap', 'var(--accent-bright)', 'Programme', data.degree, true));
+      if (data.blood_group && data.waiver) {
+        rows.push(item('fa-droplet', '#f87171', 'Blood Group', data.blood_group, false));
+        rows.push(item('fa-percent', 'var(--green)', 'Waiver', data.waiver, false));
+      } else {
+        if (data.blood_group) rows.push(item('fa-droplet', '#f87171', 'Blood Group', data.blood_group, true));
+        if (data.waiver)      rows.push(item('fa-percent', 'var(--green)', 'Waiver', data.waiver, true));
+      }
+      if (data.father_name) rows.push(item('fa-person', '#a78bfa', "Father's Name", data.father_name, true));
+      if (data.mother_name) rows.push(item('fa-person-dress', '#f472b6', "Mother's Name", data.mother_name, true));
+      if (data.address)     rows.push(item('fa-location-dot', '#38bdf8', 'Address', data.address, true));
+
+      if (!rows.length) return;
+      bar.innerHTML = `
+        <div class="pac-divider"><span>Academic Information</span></div>
+        <div class="pac-grid">${rows.join('')}</div>`;
+      bar.style.display = 'block';
     }
 
     async function autoLoadResults(dob) {
