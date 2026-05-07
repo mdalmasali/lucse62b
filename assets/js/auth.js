@@ -1,32 +1,124 @@
 /**
  * Shared Authentication State Checker
- * Include this script on EVERY page to keep the header login/profile button in sync.
- * It detects whether the page is in /pages/ or at root to fix relative paths.
+ * - Keeps header login/profile button in sync
+ * - Option A: Force re-login after 7 days
+ * - Option B: Background sheet re-validation every 1 hour
  */
 (function () {
   if (window.lu62b_auth_initialized) return;
   window.lu62b_auth_initialized = true;
 
-  const userData  = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
-  const isInPages = window.location.pathname.includes('/pages/');
-  const isLoggedIn = !!userData;
+  const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+  const SHEET_NAME = 'Student Info';
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const ONE_HOUR   = 60 * 60 * 1000;
 
+  const rawData    = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+  const isInPages  = window.location.pathname.includes('/pages/');
+  const isLoggedIn = !!rawData;
+
+  // ── Force logout helper ──────────────────────────────────────────────
+  function forceLogout(reason) {
+    localStorage.removeItem('lu62b_student');
+    sessionStorage.removeItem('lu62b_student');
+    localStorage.removeItem('lu62b_last_validation');
+    const loginPath = isInPages ? 'login.html' : 'pages/login.html';
+    window.location.replace(loginPath + '?lo=' + reason);
+  }
+
+  // ── Sheet validation (JSONP, background) ────────────────────────────
+  function checkStudentInSheet(studentId) {
+    return new Promise(function (resolve) {
+      const cb    = 'lu62b_val_' + Date.now();
+      const s     = document.createElement('script');
+      const timer = setTimeout(function () {
+        delete window[cb];
+        if (s.parentNode) s.parentNode.removeChild(s);
+        resolve(true); // timeout → assume valid, don't kick out on bad network
+      }, 8000);
+
+      window[cb] = function (data) {
+        clearTimeout(timer);
+        delete window[cb];
+        if (s.parentNode) s.parentNode.removeChild(s);
+        const rows  = (data.table && data.table.rows) || [];
+        const found = rows.some(function (row) {
+          return (row.c || []).some(function (cell) {
+            return cell && cell.v != null && String(cell.v).trim() === studentId;
+          });
+        });
+        resolve(found);
+      };
+
+      s.onerror = function () {
+        clearTimeout(timer);
+        delete window[cb];
+        if (s.parentNode) s.parentNode.removeChild(s);
+        resolve(true); // network error → assume valid
+      };
+
+      s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
+              '/gviz/tq?tqx=out:json;responseHandler=' + cb +
+              '&sheet=' + encodeURIComponent(SHEET_NAME);
+      document.body.appendChild(s);
+    });
+  }
+
+  function runBackgroundValidation(session) {
+    // Skip on login/password-setup pages — no point checking there
+    const page = window.location.pathname.split('/').pop();
+    if (page === 'login.html' || page === 'password-setup.html') return;
+
+    checkStudentInSheet(session.id).then(function (found) {
+      if (found) {
+        localStorage.setItem('lu62b_last_validation', JSON.stringify({ t: Date.now() }));
+      } else {
+        forceLogout('removed');
+      }
+    });
+  }
+
+  // ── Session checks (A + B) ───────────────────────────────────────────
   if (isLoggedIn) {
+    var session = null;
+    try { session = JSON.parse(rawData); } catch (e) {}
+
+    if (session && session.id) {
+      // A — 7-day expiry
+      if (session.loginTime && Date.now() - session.loginTime > SEVEN_DAYS) {
+        forceLogout('expired');
+        return;
+      }
+
+      // B — background sheet re-validation (once per hour)
+      var lastVal = null;
+      try { lastVal = JSON.parse(localStorage.getItem('lu62b_last_validation')); } catch (e) {}
+      var shouldValidate = !lastVal || !lastVal.t || (Date.now() - lastVal.t > ONE_HOUR);
+
+      if (shouldValidate) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function () { runBackgroundValidation(session); });
+        } else {
+          runBackgroundValidation(session);
+        }
+      }
+    }
+
     document.documentElement.classList.add('lu62b-logged-in');
 
-    const profilePath = isInPages ? 'profile.html' : 'pages/profile.html';
+    var profilePath = isInPages ? 'profile.html' : 'pages/profile.html';
 
     function updateNavButtons() {
-      const navBtn = document.getElementById('navLoginBtn');
+      var navBtn = document.getElementById('navLoginBtn');
       if (navBtn) {
-        navBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
-        navBtn.href = profilePath;
+        navBtn.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        navBtn.href      = profilePath;
         navBtn.style.color = 'var(--green)';
       }
-      const mobileBtn = document.getElementById('mobileLoginBtn');
+      var mobileBtn = document.getElementById('mobileLoginBtn');
       if (mobileBtn) {
-        mobileBtn.innerHTML = `<i class="fa-solid fa-user"></i> Profile`;
-        mobileBtn.href = profilePath;
+        mobileBtn.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        mobileBtn.href      = profilePath;
         mobileBtn.style.color = 'var(--green)';
       }
     }
@@ -38,28 +130,30 @@
     }
   }
 
-  // ── Hamburger menu ──────────────────────────────────────────────────
+  // ── Hamburger menu ───────────────────────────────────────────────────
   function initHamburger() {
-    const ham   = document.getElementById('hamburger');
-    const mNav  = document.getElementById('mobileNav');
-    const mClose = document.getElementById('mobileNavClose');
+    var ham   = document.getElementById('hamburger');
+    var mNav  = document.getElementById('mobileNav');
+    var mClose = document.getElementById('mobileNavClose');
     if (!ham || !mNav || !mClose) return;
 
-    ham.addEventListener('click', (e) => {
+    ham.addEventListener('click', function (e) {
       e.stopPropagation();
       ham.classList.toggle('open');
       mNav.classList.toggle('open');
     });
-    mClose.addEventListener('click', (e) => {
+    mClose.addEventListener('click', function (e) {
       e.stopPropagation();
       ham.classList.remove('open');
       mNav.classList.remove('open');
     });
-    mNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-      ham.classList.remove('open');
-      mNav.classList.remove('open');
-    }));
-    document.addEventListener('click', (e) => {
+    mNav.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        ham.classList.remove('open');
+        mNav.classList.remove('open');
+      });
+    });
+    document.addEventListener('click', function (e) {
       if (!ham.contains(e.target) && !mNav.contains(e.target) && mNav.classList.contains('open')) {
         ham.classList.remove('open');
         mNav.classList.remove('open');
@@ -67,37 +161,37 @@
     });
   }
 
-  // ── Mobile Bottom Navigation Bar ────────────────────────────────────
+  // ── Mobile Bottom Navigation Bar ─────────────────────────────────────
   function injectBottomNav() {
     if (document.getElementById('mobileBottomNav')) return;
 
-    const path  = window.location.pathname;
-    const page  = path.split('/').pop().replace('.html', '') || 'index';
-    const root  = isInPages ? '../' : '';
-    const sub   = isInPages ? '' : 'pages/';
+    var path = window.location.pathname;
+    var page = path.split('/').pop().replace('.html', '') || 'index';
+    var root = isInPages ? '../' : '';
+    var sub  = isInPages ? '' : 'pages/';
 
-    const items = [
-      { href: root + 'index.html',             icon: 'fa-house',              label: 'Home',      id: 'index',    show: true },
-      { href: sub + 'resources.html',           icon: 'fa-book-open',          label: 'Materials', id: 'resources', show: isLoggedIn },
-      { href: sub + 'notices.html',             icon: 'fa-bell',               label: 'Notices',   id: 'notices',  show: isLoggedIn },
-      { href: sub + 'gallery.html',             icon: 'fa-images',             label: 'Gallery',   id: 'gallery',  show: true },
+    var items = [
+      { href: root + 'index.html',    icon: 'fa-house',            label: 'Home',      id: 'index',     show: true },
+      { href: sub + 'resources.html', icon: 'fa-book-open',        label: 'Materials', id: 'resources', show: isLoggedIn },
+      { href: sub + 'notices.html',   icon: 'fa-bell',             label: 'Notices',   id: 'notices',   show: isLoggedIn },
+      { href: sub + 'gallery.html',   icon: 'fa-images',           label: 'Gallery',   id: 'gallery',   show: true },
       isLoggedIn
-        ? { href: sub + 'profile.html',         icon: 'fa-user',               label: 'Profile',   id: 'profile',  show: true }
-        : { href: sub + 'login.html',           icon: 'fa-right-to-bracket',   label: 'Login',     id: 'login',    show: true },
+        ? { href: sub + 'profile.html', icon: 'fa-user',               label: 'Profile', id: 'profile', show: true }
+        : { href: sub + 'login.html',   icon: 'fa-right-to-bracket',   label: 'Login',   id: 'login',   show: true },
     ];
 
-    const nav = document.createElement('nav');
+    var nav = document.createElement('nav');
     nav.id        = 'mobileBottomNav';
     nav.className = 'mobile-bottom-nav';
     nav.setAttribute('aria-label', 'Mobile navigation');
 
-    items.filter(i => i.show).forEach(item => {
-      const isActive = page === item.id || (page === '' && item.id === 'index');
-      const a = document.createElement('a');
+    items.filter(function (i) { return i.show; }).forEach(function (item) {
+      var isActive = page === item.id || (page === '' && item.id === 'index');
+      var a = document.createElement('a');
       a.href      = item.href;
       a.className = 'mbn-item' + (isActive ? ' active' : '');
       a.setAttribute('aria-label', item.label);
-      a.innerHTML = `<i class="fa-solid ${item.icon}"></i><span>${item.label}</span>`;
+      a.innerHTML = '<i class="fa-solid ' + item.icon + '"></i><span>' + item.label + '</span>';
       nav.appendChild(a);
     });
 
@@ -105,7 +199,7 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { initHamburger(); injectBottomNav(); });
+    document.addEventListener('DOMContentLoaded', function () { initHamburger(); injectBottomNav(); });
   } else {
     initHamburger();
     injectBottomNav();
