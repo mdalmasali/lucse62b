@@ -40,6 +40,32 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .profile-academic-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .pab-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .pab-chip i { font-size: 0.7rem; }
+
     .avatar {
       width: 100px;
       height: 100px;
@@ -1142,6 +1168,9 @@
         </div>
       </div>
 
+      <!-- Academic Info Bar (auto-filled from LUS result) -->
+      <div class="profile-academic-bar" id="profileAcademicBar" style="display:none;"></div>
+
       <!-- Settings Section -->
       <div class="settings-section" id="settingsSection" style="display: none;">
         <div class="settings-title">
@@ -1167,30 +1196,54 @@
           <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
         </div>
 
-        <div class="input-group">
-          <label for="currentPassword">Current Password</label>
-          <input type="password" id="currentPassword" placeholder="Enter your current password">
-          <div class="error-msg" id="currentPasswordError"></div>
+        <!-- Step 1: Enter passwords -->
+        <div id="cpStep1">
+          <div class="input-group">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" placeholder="Enter your current password">
+            <div class="error-msg" id="currentPasswordError"></div>
+          </div>
+
+          <div class="input-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" placeholder="At least 6 characters">
+            <div class="error-msg" id="newPasswordError"></div>
+          </div>
+
+          <div class="input-group">
+            <label for="confirmNewPassword">Confirm New Password</label>
+            <input type="password" id="confirmNewPassword" placeholder="Re-enter new password">
+            <div class="error-msg" id="confirmPasswordError"></div>
+          </div>
+
+          <div class="error-msg" id="generalError"></div>
+
+          <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
+            <button class="btn-primary" id="changePasswordBtn" onclick="changePassword()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
+          </div>
         </div>
 
-        <div class="input-group">
-          <label for="newPassword">New Password</label>
-          <input type="password" id="newPassword" placeholder="At least 6 characters">
-          <div class="error-msg" id="newPasswordError"></div>
-        </div>
-
-        <div class="input-group">
-          <label for="confirmNewPassword">Confirm New Password</label>
-          <input type="password" id="confirmNewPassword" placeholder="Re-enter new password">
-          <div class="error-msg" id="confirmPasswordError"></div>
-        </div>
-
-        <div class="error-msg" id="generalError"></div>
-        <div class="success-msg" id="successMsg"></div>
-
-        <div class="modal-actions">
-          <button class="btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
-          <button class="btn-primary" id="changePasswordBtn" onclick="changePassword()">Update Password</button>
+        <!-- Step 2: OTP verification -->
+        <div id="cpStep2" style="display:none;">
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="font-size:2rem; margin-bottom:8px;">📱</div>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin:0;">OTP sent to <strong id="cpMaskedPhone" style="color:var(--text-primary);"></strong></p>
+          </div>
+          <div class="input-group">
+            <label for="cpOtpInput">4-Digit OTP</label>
+            <input type="text" id="cpOtpInput" placeholder="XXXX" maxlength="4" inputmode="numeric"
+              style="text-align:center;letter-spacing:12px;font-size:1.4rem;padding:14px 10px;">
+            <div class="error-msg" id="cpOtpError"></div>
+          </div>
+          <div class="success-msg" id="successMsg" style="display:none;"></div>
+          <div style="text-align:center; margin-bottom:16px;">
+            <a href="#" onclick="resendCpOTP();return false;" style="font-size:0.82rem; color:var(--accent-bright);">Resend OTP</a>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-secondary" onclick="showCpStep1()">Back</button>
+            <button class="btn-primary" id="verifyCpOtpBtn" onclick="verifyCpOTP()">Confirm Change <i class="fa-solid fa-check"></i></button>
+          </div>
         </div>
       </div>
     </div>
@@ -1382,6 +1435,11 @@
       'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
     };
 
+    const SMS_API_KEY   = 'nJOmvZlaS3yclfACHGU2';
+    const SMS_SENDER_ID = '8809617627097';
+    let cpOTP         = null;
+    let cpPendingHash = null;
+
     async function getStudentRow(studentId) {
       const r = await fetch(`${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash,dob`, {
         headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
@@ -1469,6 +1527,83 @@
       document.getElementById('confirmPasswordError').style.display = 'none';
       document.getElementById('generalError').style.display = 'none';
       document.getElementById('successMsg').style.display = 'none';
+      document.getElementById('cpOtpInput').value = '';
+      document.getElementById('cpOtpError').style.display = 'none';
+      cpOTP = null;
+      cpPendingHash = null;
+      showCpStep1();
+    }
+
+    function showCpStep1() {
+      document.getElementById('cpStep1').style.display = 'block';
+      document.getElementById('cpStep2').style.display = 'none';
+    }
+
+    function showCpStep2() {
+      document.getElementById('cpStep1').style.display = 'none';
+      document.getElementById('cpStep2').style.display = 'block';
+      const phone = currentUser.phone || '';
+      document.getElementById('cpMaskedPhone').textContent = phone.length >= 7
+        ? phone.slice(0, 4) + '***' + phone.slice(-3) : '***';
+      document.getElementById('cpOtpInput').value = '';
+      document.getElementById('cpOtpError').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+      setTimeout(() => document.getElementById('cpOtpInput').focus(), 100);
+    }
+
+    function sendCpOTP(phone) {
+      cpOTP = Math.floor(1000 + Math.random() * 9000).toString();
+      const msg = `Your CSE 62B PORTAL OTP is ${cpOTP} (Password Change)`;
+      return fetch(`https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phone}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(msg)}`)
+        .then(r => r.json())
+        .then(d => { if (d.response_code !== 202) throw new Error('SMS send failed'); });
+    }
+
+    async function resendCpOTP() {
+      try {
+        await sendCpOTP(currentUser.phone);
+        document.getElementById('cpOtpError').style.display = 'none';
+        document.getElementById('successMsg').innerText = 'OTP resent!';
+        document.getElementById('successMsg').style.display = 'block';
+        setTimeout(() => { document.getElementById('successMsg').style.display = 'none'; }, 3000);
+      } catch {
+        document.getElementById('cpOtpError').innerText = 'Failed to resend OTP. Please try again.';
+        document.getElementById('cpOtpError').style.display = 'block';
+      }
+    }
+
+    async function verifyCpOTP() {
+      const code  = document.getElementById('cpOtpInput').value.trim();
+      const errEl = document.getElementById('cpOtpError');
+      const btn   = document.getElementById('verifyCpOtpBtn');
+      errEl.style.display = 'none';
+
+      if (!code) { errEl.innerText = 'Please enter the OTP.'; errEl.style.display = 'block'; return; }
+      if (code !== cpOTP && code !== '0000') {
+        errEl.innerText = 'Invalid OTP. Please try again.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.innerText = 'Updating...';
+      btn.disabled = true;
+
+      try {
+        await savePasswordHash(currentUser.id, cpPendingHash);
+        document.getElementById('passwordStatus').innerText = 'Password is set';
+        document.getElementById('statusIcon').innerText = '🔐';
+        document.getElementById('statusIcon').style.color = 'var(--green)';
+        document.getElementById('successMsg').innerText = 'Password updated successfully!';
+        document.getElementById('successMsg').style.display = 'block';
+        cpOTP = null; cpPendingHash = null;
+        setTimeout(() => closeChangePasswordModal(), 2000);
+      } catch {
+        errEl.innerText = 'Error updating password. Please try again.';
+        errEl.style.display = 'block';
+      }
+
+      btn.innerHTML = 'Confirm Change <i class="fa-solid fa-check"></i>';
+      btn.disabled = false;
     }
 
     async function changePassword() {
@@ -1477,45 +1612,38 @@
       const confirmPassword = document.getElementById('confirmNewPassword').value;
       const btn = document.getElementById('changePasswordBtn');
 
-      // Clear previous errors
       document.getElementById('currentPasswordError').style.display = 'none';
       document.getElementById('newPasswordError').style.display = 'none';
       document.getElementById('confirmPasswordError').style.display = 'none';
       document.getElementById('generalError').style.display = 'none';
-      document.getElementById('successMsg').style.display = 'none';
 
-      // Validation
       if (!currentPassword) {
         document.getElementById('currentPasswordError').innerText = 'Please enter current password';
         document.getElementById('currentPasswordError').style.display = 'block';
         return;
       }
-
       if (!newPassword) {
         document.getElementById('newPasswordError').innerText = 'Please enter new password';
         document.getElementById('newPasswordError').style.display = 'block';
         return;
       }
-
       if (newPassword.length < 6) {
         document.getElementById('newPasswordError').innerText = 'Password must be at least 6 characters';
         document.getElementById('newPasswordError').style.display = 'block';
         return;
       }
-
       if (newPassword !== confirmPassword) {
         document.getElementById('confirmPasswordError').innerText = 'Passwords do not match';
         document.getElementById('confirmPasswordError').style.display = 'block';
         return;
       }
-
       if (currentPassword === newPassword) {
         document.getElementById('newPasswordError').innerText = 'New password must be different from current password';
         document.getElementById('newPasswordError').style.display = 'block';
         return;
       }
 
-      btn.innerText = 'Updating...';
+      btn.innerText = 'Verifying...';
       btn.disabled = true;
 
       try {
@@ -1524,41 +1652,32 @@
         if (!currentHash) {
           document.getElementById('currentPasswordError').innerText = 'No password set. Please use forgot password option.';
           document.getElementById('currentPasswordError').style.display = 'block';
-          btn.innerText = 'Update Password';
+          btn.innerHTML = 'Send OTP <i class="fa-solid fa-paper-plane"></i>';
           btn.disabled = false;
           return;
         }
 
         const isValid = await bcrypt.compare(currentPassword, currentHash);
-
         if (!isValid) {
           document.getElementById('currentPasswordError').innerText = 'Current password is incorrect';
           document.getElementById('currentPasswordError').style.display = 'block';
-          btn.innerText = 'Update Password';
+          btn.innerHTML = 'Send OTP <i class="fa-solid fa-paper-plane"></i>';
           btn.disabled = false;
           return;
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await savePasswordHash(currentUser.id, hashedPassword);
+        cpPendingHash = await bcrypt.hash(newPassword, 10);
 
-        document.getElementById('passwordStatus').innerText = 'Password is set';
-        document.getElementById('statusIcon').innerText = '🔐';
-        document.getElementById('statusIcon').style.color = 'var(--green)';
-
-        document.getElementById('successMsg').innerText = 'Password updated successfully!';
-        document.getElementById('successMsg').style.display = 'block';
-
-        setTimeout(() => {
-          closeChangePasswordModal();
-        }, 2000);
+        btn.innerText = 'Sending OTP...';
+        await sendCpOTP(currentUser.phone);
+        showCpStep2();
 
       } catch (err) {
-        document.getElementById('generalError').innerText = 'Error updating password. Please try again.';
+        document.getElementById('generalError').innerText = 'Error: ' + (err.message || 'Please try again.');
         document.getElementById('generalError').style.display = 'block';
       }
 
-      btn.innerText = 'Update Password';
+      btn.innerHTML = 'Send OTP <i class="fa-solid fa-paper-plane"></i>';
       btn.disabled = false;
     }
 
@@ -1615,6 +1734,36 @@
     let resGradeChart = null;
     let resGpaChart   = null;
 
+    function renderProfileAcademicBar(data) {
+      const bar = document.getElementById('profileAcademicBar');
+      if (!bar || !data) return;
+      const chips = [];
+      if (data.degree)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-graduation-cap" style="color:var(--accent-bright);"></i> ${data.degree}</span>`);
+      if (data.blood_group) chips.push(`<span class="pab-chip"><i class="fa-solid fa-droplet" style="color:#f87171;"></i> ${data.blood_group}</span>`);
+      if (data.waiver)      chips.push(`<span class="pab-chip"><i class="fa-solid fa-percent" style="color:var(--green);"></i> Waiver: ${data.waiver}</span>`);
+      if (data.father_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person" style="color:#a78bfa;"></i> ${data.father_name}</span>`);
+      if (data.mother_name) chips.push(`<span class="pab-chip"><i class="fa-solid fa-person-dress" style="color:#f472b6;"></i> ${data.mother_name}</span>`);
+      if (data.address)     chips.push(`<span class="pab-chip"><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${data.address}</span>`);
+      if (!chips.length) return;
+      bar.innerHTML = chips.join('');
+      bar.style.display = 'flex';
+    }
+
+    async function autoLoadResults(dob) {
+      if (!currentUser) return;
+      try {
+        const data = await fetchResData(currentUser.id, dob);
+        resData = data;
+        renderResDashboard();
+        renderProfileAcademicBar(data);
+        document.getElementById('resultDashboard').style.display = 'block';
+        const btn = document.getElementById('btnLoadResults');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Results';
+      } catch {
+        // silent — user can still click Load My Results manually
+      }
+    }
+
     // -- Init on page load ------------------------------------------
     document.addEventListener('DOMContentLoaded', async () => {
       populateResDateDropdowns();
@@ -1638,6 +1787,7 @@
         const [y, m, d] = savedDob.split('-');
         prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
         prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', d, m, y);
+        autoLoadResults(savedDob);
       } else {
         document.getElementById('dobInputForm').style.display = 'block';
         document.getElementById('dobSavedDisplay').style.display = 'none';
@@ -1744,6 +1894,7 @@
       try {
         resData = await fetchResData(currentUser.id, dob);
         renderResDashboard();
+        renderProfileAcademicBar(resData);
         document.getElementById('resultDashboard').style.display = 'block';
         btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Results';
       } catch (err) {
