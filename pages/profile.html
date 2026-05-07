@@ -1119,6 +1119,97 @@
       .modal-actions { flex-direction: column-reverse; }
       .btn-primary, .btn-secondary { padding: 13px 20px; }
     }
+
+    /* ---- DOB Gate ---- */
+    .dob-gate-wrap {
+      position: fixed; inset: 0;
+      background: var(--background);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .dob-gate-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 48px 40px 36px;
+      max-width: 460px; width: 100%;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      position: relative; overflow: hidden;
+    }
+    .dob-gate-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 150px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(236,72,153,0.14));
+      border-bottom: 1px solid var(--border);
+    }
+    .dob-gate-icon {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 20px;
+      margin: 8px auto 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: #fff;
+      position: relative; z-index: 1;
+      box-shadow: 0 12px 28px rgba(124,58,237,0.4);
+    }
+    .dob-gate-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; color: var(--accent-bright);
+      font-size: 0.78rem; letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 6px;
+      position: relative; z-index: 1;
+    }
+    .dob-gate-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 1.7rem; color: var(--text);
+      margin-bottom: 10px; position: relative; z-index: 1;
+    }
+    .dob-gate-desc {
+      color: var(--text-secondary); font-size: 0.88rem;
+      line-height: 1.7; margin-bottom: 28px;
+      position: relative; z-index: 1;
+    }
+    .dob-gate-selects {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .dob-gate-selects select {
+      width: 100%; padding: 12px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; cursor: pointer; transition: border-color 0.3s;
+    }
+    .dob-gate-selects select:focus { outline: none; border-color: var(--accent); }
+    .dob-gate-selects select option { background: #1a1a2e; }
+    .dob-gate-error {
+      color: #f43f5e; font-size: 0.82rem; font-weight: 500;
+      margin-bottom: 12px; display: none;
+    }
+    .dob-gate-btn {
+      width: 100%; padding: 14px 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; border-radius: 12px;
+      font-weight: 700; font-family: 'Inter', sans-serif;
+      font-size: 1rem; cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .dob-gate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+    .dob-gate-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+    .dob-gate-note {
+      color: var(--text-secondary); font-size: 0.76rem;
+      margin-top: 16px; opacity: 0.65;
+    }
+    @media (max-width: 480px) {
+      .dob-gate-card { padding: 36px 20px 28px; border-radius: 22px; }
+      .dob-gate-title { font-size: 1.4rem; }
+    }
 </style>
 </head>
 <body>
@@ -1161,8 +1252,45 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <div class="profile-container fade-in delay-1">
-      
+    <!-- DOB Gate — shown until DOB is confirmed -->
+    <div class="dob-gate-wrap" id="dobGate" style="display:none;">
+      <div class="dob-gate-card fade-in">
+        <div class="dob-gate-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="dob-gate-brand">CSE 62B · PORTAL</div>
+        <h2 class="dob-gate-title">One-Time Setup</h2>
+        <p class="dob-gate-desc">
+          Enter your <strong>Date of Birth</strong> exactly as written on your certificate.<br>
+          This is used to fetch your academic results from the LU portal.
+        </p>
+        <div class="dob-gate-selects">
+          <select id="gDobDay"><option value="">Day</option></select>
+          <select id="gDobMonth">
+            <option value="">Month</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+          <select id="gDobYear"><option value="">Year</option></select>
+        </div>
+        <div class="dob-gate-error" id="dobGateError"></div>
+        <button class="dob-gate-btn" id="dobGateBtn" onclick="submitDobGate()">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Profile
+        </button>
+        <p class="dob-gate-note"><i class="fa-solid fa-lock" style="font-size:0.7rem;"></i> Stored securely · Used only for result lookup</p>
+      </div>
+    </div>
+
+    <div class="profile-container fade-in delay-1" id="profileContent" style="display:none;">
+
       <!-- Profile Header -->
       <div class="profile-header">
         <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
@@ -1831,28 +1959,57 @@
       document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
 
       let savedDob = localStorage.getItem(`lu62b_dob_${currentUser.id}`);
-
-      // Try Supabase if not in localStorage
       if (!savedDob) {
         savedDob = await getDobFromSupabase(currentUser.id);
         if (savedDob) localStorage.setItem(`lu62b_dob_${currentUser.id}`, savedDob);
       }
 
       if (savedDob) {
-        showSavedDob(savedDob);
-        const [y, m, d] = savedDob.split('-');
-        prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
-        prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', d, m, y);
-        autoLoadResults(savedDob);
+        showProfile(savedDob);
       } else {
-        document.getElementById('dobInputForm').style.display = 'block';
-        document.getElementById('dobSavedDisplay').style.display = 'none';
+        // No DOB yet — show gate, keep profile hidden
+        document.getElementById('dobGate').style.display = 'flex';
+        document.getElementById('profileContent').style.display = 'none';
       }
     }
 
+    function showProfile(dob) {
+      document.getElementById('dobGate').style.display = 'none';
+      document.getElementById('profileContent').style.display = 'block';
+      showSavedDob(dob);
+      const [y, m, d] = dob.split('-');
+      prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
+      prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', d, m, y);
+      autoLoadResults(dob);
+    }
+
+    async function submitDobGate() {
+      const day   = document.getElementById('gDobDay').value;
+      const month = document.getElementById('gDobMonth').value;
+      const year  = document.getElementById('gDobYear').value;
+      const errEl = document.getElementById('dobGateError');
+
+      if (!day || !month || !year) {
+        errEl.textContent = 'Please select your complete Date of Birth.';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+
+      const btn = document.getElementById('dobGateBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="result-spinner"></span> Saving...';
+
+      const dobStr = `${year}-${month}-${day}`;
+      localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
+      await saveDobToSupabase(currentUser.id, dobStr);
+
+      showProfile(dobStr);
+    }
+
     function populateResDateDropdowns() {
-      const dayIds  = ['resDobDay', 'cmpS1Day', 'cmpS2Day'];
-      const yearIds = ['resDobYear', 'cmpS1Year', 'cmpS2Year'];
+      const dayIds  = ['gDobDay', 'resDobDay', 'cmpS1Day', 'cmpS2Day'];
+      const yearIds = ['gDobYear', 'resDobYear', 'cmpS1Year', 'cmpS2Year'];
       const curYear = new Date().getFullYear();
 
       dayIds.forEach(id => {
