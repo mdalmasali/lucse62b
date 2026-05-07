@@ -1041,12 +1041,21 @@
     /* Responsive for result section */
     @media (max-width: 640px) {
       .result-stats-grid { grid-template-columns: 1fr 1fr; }
+      .result-stat-value { font-size: 1.5rem; }
       .result-charts-grid { grid-template-columns: 1fr; }
       .result-extremes-grid { grid-template-columns: 1fr; }
       .result-compare-inputs { grid-template-columns: 1fr; }
       .result-compare-results { grid-template-columns: 1fr; }
       .result-courses-grid { grid-template-columns: 1fr; }
       .result-semesters-grid { grid-template-columns: 1fr 1fr; }
+      .result-section { padding: 20px 16px; border-radius: 18px; }
+      .result-section-title { font-size: 1rem; margin-bottom: 14px; }
+      .result-latest-semester { padding: 14px; border-radius: 12px; }
+      .dob-setup-card { padding: 16px 14px; border-radius: 12px; }
+      .result-sem-mini { padding: 11px 12px; }
+      .result-sem-mini-stats { gap: 5px; font-size: 0.74rem; }
+      .result-sem-mini-stat { padding: 5px 7px; }
+      .res-sem-modal { padding: 20px 16px; }
     }
 
     @media (max-width: 640px) {
@@ -1454,33 +1463,47 @@
     let cpOTP         = null;
     let cpPendingHash = null;
 
-    async function getStudentRow(studentId) {
-      const r = await fetch(`${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash,dob`, {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
-      });
-      const rows = await r.json();
-      return (rows && rows.length > 0) ? rows[0] : null;
-    }
-
     async function getPasswordHash(studentId) {
-      const row = await getStudentRow(studentId);
-      return row ? row.password_hash : null;
+      try {
+        const r = await fetch(
+          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`,
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+        );
+        const rows = await r.json();
+        return (Array.isArray(rows) && rows.length > 0) ? rows[0].password_hash : null;
+      } catch { return null; }
     }
 
     async function getDobFromSupabase(studentId) {
       try {
-        const row = await getStudentRow(studentId);
-        return row ? row.dob : null;
+        const r = await fetch(
+          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=dob`,
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+        );
+        if (!r.ok) return null;
+        const rows = await r.json();
+        return (Array.isArray(rows) && rows.length > 0) ? rows[0].dob : null;
       } catch { return null; }
     }
 
     async function saveDobToSupabase(studentId, dob) {
       try {
-        await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
-          method: 'POST', headers: SUPA_HEADERS,
-          body: JSON.stringify({ student_id: studentId, dob })
-        });
-      } catch { /* fallback to localStorage only */ }
+        const authHdr = { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+        // PATCH updates the existing row; if nothing was updated, INSERT a new one
+        const pr = await fetch(
+          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}`,
+          { method: 'PATCH', headers: authHdr, body: JSON.stringify({ dob }) }
+        );
+        const updated = pr.ok ? await pr.json() : [];
+        if (!Array.isArray(updated) || !updated.length) {
+          await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
+            method: 'POST',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ student_id: studentId, dob })
+          });
+        }
+      } catch {}
     }
 
     async function savePasswordHash(studentId, hash) {
@@ -2151,10 +2174,15 @@
       document.getElementById('resSemModalInner').innerHTML = `
         <div class="res-sem-modal-head">
           <div class="res-sem-modal-title">${sem.semester_name||`Semester ${idx+1}`}</div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="text-align:right;">
-              <div style="font-size:0.62rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;">CGPA · Credit</div>
-              <div style="font-weight:700;font-size:1rem;color:#a78bfa;">${(sem.gpa||0).toFixed(2)} <span style="color:var(--text-secondary);font-size:0.8rem;font-weight:400;">/ ${sem.credit||0}</span></div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="text-align:center;min-width:46px;">
+              <div style="font-size:0.58rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">CGPA</div>
+              <div style="font-weight:700;font-size:1rem;color:#a78bfa;">${(sem.gpa||0).toFixed(2)}<span style="color:var(--text-secondary);font-size:0.7rem;font-weight:400;">/4</span></div>
+            </div>
+            <div style="width:1px;height:30px;background:var(--border);opacity:0.5;flex-shrink:0;"></div>
+            <div style="text-align:center;min-width:46px;">
+              <div style="font-size:0.58rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Credit</div>
+              <div style="font-weight:700;font-size:1rem;color:#a78bfa;">${sem.credit||0}</div>
             </div>
             <button class="res-sem-modal-close" onclick="closeResSemModal()">✕</button>
           </div>
