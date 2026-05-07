@@ -395,17 +395,21 @@
             <div class="cg-field">
               <label>Batch</label>
               <select id="fBatch" onchange="updatePreview()">
-                <option>55th</option><option>56th</option><option>57th</option>
-                <option>58th</option><option>59th</option><option>60th</option>
-                <option>61st</option><option selected>62nd</option><option>63rd</option>
-                <option>64th</option><option>65th</option><option>66th</option>
+                <option>40th</option><option>41st</option><option>42nd</option><option>43rd</option><option>44th</option>
+                <option>45th</option><option>46th</option><option>47th</option><option>48th</option><option>49th</option>
+                <option>50th</option><option>51st</option><option>52nd</option><option>53rd</option><option>54th</option>
+                <option>55th</option><option>56th</option><option>57th</option><option>58th</option><option>59th</option>
+                <option>60th</option><option>61st</option><option selected>62nd</option><option>63rd</option><option>64th</option>
+                <option>65th</option><option>66th</option><option>67th</option><option>68th</option><option>69th</option>
+                <option>70th</option><option>71st</option><option>72nd</option><option>73rd</option><option>74th</option><option>75th</option>
               </select>
             </div>
             <div class="cg-field">
               <label>Section</label>
               <select id="fSection" onchange="updatePreview()">
-                <option>A</option><option selected>B</option>
-                <option>C</option><option>D</option><option>E</option><option>F</option>
+                <option>A</option><option selected>B</option><option>C</option><option>D</option>
+                <option>E</option><option>F</option><option>G</option><option>H</option>
+                <option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option>
               </select>
             </div>
           </div>
@@ -417,17 +421,21 @@
             <div class="cg-field">
               <label>Batch</label>
               <select id="fGBatch" onchange="updatePreview()">
-                <option>55th</option><option>56th</option><option>57th</option>
-                <option>58th</option><option>59th</option><option>60th</option>
-                <option>61st</option><option selected>62nd</option><option>63rd</option>
-                <option>64th</option><option>65th</option><option>66th</option>
+                <option>40th</option><option>41st</option><option>42nd</option><option>43rd</option><option>44th</option>
+                <option>45th</option><option>46th</option><option>47th</option><option>48th</option><option>49th</option>
+                <option>50th</option><option>51st</option><option>52nd</option><option>53rd</option><option>54th</option>
+                <option>55th</option><option>56th</option><option>57th</option><option>58th</option><option>59th</option>
+                <option>60th</option><option>61st</option><option selected>62nd</option><option>63rd</option><option>64th</option>
+                <option>65th</option><option>66th</option><option>67th</option><option>68th</option><option>69th</option>
+                <option>70th</option><option>71st</option><option>72nd</option><option>73rd</option><option>74th</option><option>75th</option>
               </select>
             </div>
             <div class="cg-field">
               <label>Section</label>
               <select id="fGSection" onchange="updatePreview()">
-                <option>A</option><option selected>B</option>
-                <option>C</option><option>D</option><option>E</option><option>F</option>
+                <option>A</option><option selected>B</option><option>C</option><option>D</option>
+                <option>E</option><option>F</option><option>G</option><option>H</option>
+                <option>I</option><option>J</option><option>K</option><option>L</option><option>M</option><option>N</option>
               </select>
             </div>
           </div>
@@ -823,7 +831,13 @@
         COURSES = (cData.table?.rows || [])
           .map(r => cells(r))
           .filter(c => c[0] && !['title','course'].includes(c[0].toLowerCase()))
-          .map(c => ({ title: c[0], code: c[1] || '' }));
+          .map(c => ({
+            title:    c[0],
+            code:     c[1] || '',
+            teacher:  c[2] || '',
+            desig:    c[3] || '',
+            dept:     c[4] || ''
+          }));
 
       } catch(e) { /* fail silently — user can still type manually */ }
     }
@@ -904,10 +918,13 @@
     setupAutocomplete(
       'fCourseTitle',
       () => COURSES.map(c => ({ ...c, _key: c.title })),
-      c => `<strong>${escH(c.title)}</strong> <small>· ${escH(c.code)}</small>`,
+      c => `<strong>${escH(c.title)}</strong> <small>· ${escH(c.code)}</small>${c.teacher ? `<br><small style="opacity:0.55;"><i class="fa-solid fa-chalkboard-user" style="font-size:0.7em;"></i> ${escH(c.teacher)}</small>` : ''}`,
       c => {
         document.getElementById('fCourseTitle').value = c.title;
         document.getElementById('fCourseCode').value  = c.code;
+        if (c.teacher) document.getElementById('fTeacher').value = c.teacher;
+        if (c.desig)   document.getElementById('fDesig').value   = c.desig;
+        if (c.dept)    document.getElementById('fTDept').value   = c.dept;
         updatePreview();
       }
     );
