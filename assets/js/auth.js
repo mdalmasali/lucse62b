@@ -16,6 +16,14 @@
   const rawData    = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
   const isInPages  = window.location.pathname.includes('/pages/');
   const isLoggedIn = !!rawData;
+  var session      = null;
+
+  try { session = rawData ? JSON.parse(rawData) : null; } catch (e) {}
+
+  const isDemoSession = !!(
+    session &&
+    (session.isDemo || String(session.id || '').toUpperCase() === 'DEMO')
+  );
 
   // ── Force logout helper ──────────────────────────────────────────────
   function forceLogout(reason) {
@@ -65,6 +73,7 @@
   }
 
   function runBackgroundValidation(session) {
+    if (!session || !session.id || isDemoSession) return;
     // Skip on login/password-setup pages — no point checking there
     const page = window.location.pathname.split('/').pop();
     if (page === 'login.html' || page === 'password-setup.html') return;
@@ -80,9 +89,6 @@
 
   // ── Session checks (A + B) ───────────────────────────────────────────
   if (isLoggedIn) {
-    var session = null;
-    try { session = JSON.parse(rawData); } catch (e) {}
-
     if (session && session.id) {
       // A — 7-day expiry
       if (session.loginTime && Date.now() - session.loginTime > SEVEN_DAYS) {
@@ -91,35 +97,47 @@
       }
 
       // B — background sheet re-validation (once per hour)
-      var lastVal = null;
-      try { lastVal = JSON.parse(localStorage.getItem('lu62b_last_validation')); } catch (e) {}
-      var shouldValidate = !lastVal || !lastVal.t || (Date.now() - lastVal.t > ONE_HOUR);
+      if (!isDemoSession) {
+        var lastVal = null;
+        try { lastVal = JSON.parse(localStorage.getItem('lu62b_last_validation')); } catch (e) {}
+        var shouldValidate = !lastVal || !lastVal.t || (Date.now() - lastVal.t > ONE_HOUR);
 
-      if (shouldValidate) {
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function () { runBackgroundValidation(session); });
-        } else {
-          runBackgroundValidation(session);
+        if (shouldValidate) {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { runBackgroundValidation(session); });
+          } else {
+            runBackgroundValidation(session);
+          }
         }
       }
     }
 
     document.documentElement.classList.add('lu62b-logged-in');
+    if (isDemoSession) document.documentElement.classList.add('lu62b-demo-session');
 
     var profilePath = isInPages ? 'profile.html' : 'pages/profile.html';
 
     function updateNavButtons() {
+      var profileLabel = '<i class="fa-solid fa-user"></i> Profile';
+      if (isDemoSession) {
+        profileLabel += ' <span class="lu62b-demo-badge">Demo</span>';
+      }
+
       var navBtn = document.getElementById('navLoginBtn');
       if (navBtn) {
-        navBtn.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        navBtn.innerHTML = profileLabel;
         navBtn.href      = profilePath;
         navBtn.style.color = 'var(--green)';
       }
       var mobileBtn = document.getElementById('mobileLoginBtn');
       if (mobileBtn) {
-        mobileBtn.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        mobileBtn.innerHTML = profileLabel;
         mobileBtn.href      = profilePath;
         mobileBtn.style.color = 'var(--green)';
+      }
+      var statusPill = document.querySelector('.topbar-status');
+      if (statusPill && isDemoSession) {
+        statusPill.innerHTML = '<div class="status-dot"></div>Portal Active <span class="lu62b-demo-badge">Demo</span>';
       }
     }
 

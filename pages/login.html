@@ -41,6 +41,7 @@
     .btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
     .error-msg { color: #f43f5e; font-size: 0.85rem; margin-top: 10px; margin-bottom: 14px; display: none; font-weight: 500; }
     .success-msg { color: #10b981; font-size: 0.85rem; margin-top: 10px; display: none; font-weight: 500; }
+    .demo-session-note { margin-top: -8px; margin-bottom: 14px; text-align: left; }
     .otp-sent-badge {
       background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
       border-radius: 10px; padding: 10px 14px; color: var(--green);
@@ -114,7 +115,7 @@
         <p class="login-desc">Enter your Student ID to continue.</p>
         <div class="input-group">
           <label for="studentIdInput">Student ID</label>
-          <input type="text" id="studentIdInput" placeholder="e.g. 0182320012101001" inputmode="numeric">
+          <input type="text" id="studentIdInput" placeholder="e.g. 0182320012101001 or DEMO" inputmode="text">
         </div>
         <div class="error-msg" id="idError"></div>
         <button class="btn" id="continueBtn" onclick="checkStudentId()">Continue <i class="fa-solid fa-arrow-right"></i></button>
@@ -139,6 +140,7 @@
             Keep me logged in
           </label>
         </div>
+        <div class="success-msg demo-session-note" id="demoSessionNote">Demo mode uses a temporary browser session and will clear when the browser closes.</div>
         <div class="error-msg" id="passwordError"></div>
         <button class="btn" id="loginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
         <div class="link-row">
@@ -240,6 +242,7 @@
     const SMS_SENDER_ID = '8809617627097';
     const SUPABASE_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
     const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+    const DEMO_STUDENT_ID = 'DEMO';
 
     if (localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student')) {
       window.location.href = '../index.html';
@@ -260,11 +263,45 @@
       studentData = null;
       generatedOTP = null;
       document.getElementById('studentIdInput').value = '';
+      resetPasswordStepState();
       showOnly('stepId');
     }
 
     function initials(name) {
       return name.trim().split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase()||'').join('');
+    }
+
+    function normalizeStudentId(value) {
+      return String(value || '').trim().toUpperCase();
+    }
+
+    function resetPasswordStepState() {
+      const keepLoggedIn = document.getElementById('keepLoggedIn');
+      keepLoggedIn.disabled = false;
+      keepLoggedIn.checked = true;
+      document.getElementById('demoSessionNote').style.display = 'none';
+      document.querySelector('#stepPassword .welcome-badge-sub').textContent = 'Returning student';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordError').style.display = 'none';
+    }
+
+    function applyPasswordStepState(student) {
+      const isDemo = !!student?.isDemo;
+      const keepLoggedIn = document.getElementById('keepLoggedIn');
+      keepLoggedIn.disabled = isDemo;
+      if (isDemo) keepLoggedIn.checked = false;
+      document.getElementById('demoSessionNote').style.display = isDemo ? 'block' : 'none';
+      document.querySelector('#stepPassword .welcome-badge-sub').textContent = isDemo ? 'Guest demo session' : 'Returning student';
+    }
+
+    function buildStudentSession(student) {
+      return {
+        id: student.id,
+        name: student.name,
+        phone: student.phone,
+        loginTime: Date.now(),
+        isDemo: !!student.isDemo
+      };
     }
 
     /* -- Supabase helpers -- */
@@ -341,19 +378,26 @@
 
     /* -- Step 1: Check Student ID -- */
     async function checkStudentId() {
-      const sid    = document.getElementById('studentIdInput').value.trim();
+      const sid    = normalizeStudentId(document.getElementById('studentIdInput').value);
       const errEl  = document.getElementById('idError');
       const btn    = document.getElementById('continueBtn');
+      document.getElementById('studentIdInput').value = sid;
       errEl.style.display = 'none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
       btn.innerText='Checking...'; btn.disabled=true;
       try {
-        studentData = await fetchStudentData(sid);
+        if (sid === DEMO_STUDENT_ID) {
+          studentData = { id: DEMO_STUDENT_ID, name: 'Demo Student', phone: null, isDemo: true };
+        } else {
+          studentData = await fetchStudentData(sid);
+        }
         const hash  = await getPasswordHash(sid);
+        if (sid === DEMO_STUDENT_ID && !hash) throw new Error('Demo login unavailable');
         const inits = initials(studentData.name);
         if (hash) {
           document.getElementById('pwdAvatar').textContent = inits;
           document.getElementById('pwdName').textContent   = studentData.name;
+          applyPasswordStepState(studentData);
           showOnly('stepPassword');
         } else {
           document.getElementById('otpAvatar').textContent = inits;
@@ -361,9 +405,12 @@
           showOnly('stepOtp');
         }
       } catch(e) {
-        errEl.innerHTML = e==='Student not found'
+        const message = e && e.message ? e.message : e;
+        errEl.innerHTML = message==='Student not found'
           ? '🚫 Student ID not found in our section.<br><small style="opacity:0.8;font-size:0.8em;">This portal is only for CSE Batch 62, Section B students.</small>'
-          : 'Connection error. Please try again.';
+          : message==='Demo login unavailable'
+            ? 'Demo login is not configured right now. Please add a password hash for <code>DEMO</code> in Supabase.'
+            : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
     }
@@ -381,9 +428,15 @@
         const valid = await bcrypt.compare(pwd, hash);
         if (valid) {
           const keep = document.getElementById('keepLoggedIn').checked;
-          const u = { id:studentData.id, name:studentData.name, phone:studentData.phone, loginTime:Date.now() };
-          keep ? localStorage.setItem('lu62b_student',JSON.stringify(u))
-               : sessionStorage.setItem('lu62b_student',JSON.stringify(u));
+          const u = buildStudentSession(studentData);
+          localStorage.removeItem('lu62b_student');
+          sessionStorage.removeItem('lu62b_student');
+          if (studentData.isDemo) {
+            sessionStorage.setItem('lu62b_student',JSON.stringify(u));
+          } else {
+            keep ? localStorage.setItem('lu62b_student',JSON.stringify(u))
+                 : sessionStorage.setItem('lu62b_student',JSON.stringify(u));
+          }
           window.location.href='../index.html';
         } else {
           errEl.innerText='Incorrect password. Try again or use Forgot Password.';
@@ -434,7 +487,7 @@
         try {
           const hash = await getPasswordHash(studentData.id);
           if (hash) {
-            const u={id:studentData.id,name:studentData.name,phone:studentData.phone,loginTime:Date.now()};
+            const u = buildStudentSession(studentData);
             localStorage.setItem('lu62b_student',JSON.stringify(u));
             window.location.href='../index.html';
           } else {
@@ -454,16 +507,24 @@
 
     /* -- Forgot password -- */
     function showForgotPassword() {
+      if (studentData?.isDemo) {
+        const errEl = document.getElementById('passwordError');
+        errEl.innerText = 'Demo password reset is disabled.';
+        errEl.style.display = 'block';
+        return;
+      }
       document.getElementById('forgotStudentId').value = studentData?.id || '';
       showOnly('stepForgot');
     }
 
     async function requestPasswordResetOTP() {
-      const sid   = document.getElementById('forgotStudentId').value.trim();
+      const sid   = normalizeStudentId(document.getElementById('forgotStudentId').value);
       const errEl = document.getElementById('forgotError');
       const btn   = document.getElementById('sendResetOtpBtn');
+      document.getElementById('forgotStudentId').value = sid;
       errEl.style.display='none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
+      if (sid === DEMO_STUDENT_ID) { errEl.innerText='Demo password reset is disabled.'; errEl.style.display='block'; return; }
       if (!checkOTPLimit()) { errEl.innerText='Daily OTP limit reached.'; errEl.style.display='block'; return; }
       btn.innerText='Sending...'; btn.disabled=true;
       try {
@@ -495,7 +556,7 @@
       try {
         const hash = await bcrypt.hash(npwd, 10);
         await savePasswordHash(studentData.id, hash);
-        const u={id:studentData.id,name:studentData.name,phone:studentData.phone,loginTime:Date.now()};
+        const u = buildStudentSession(studentData);
         localStorage.setItem('lu62b_student',JSON.stringify(u));
         window.location.href='../index.html';
       } catch(e) {

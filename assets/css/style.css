@@ -134,6 +134,22 @@ body {
   border: 1px solid rgba(16,185,129,0.2);
   border-radius: 100px; padding: 6px 14px;
 }
+.lu62b-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fef3c7;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  vertical-align: middle;
+}
 .status-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--green);

@@ -1319,12 +1319,15 @@
         <div id="profileAcademicBar" style="display:none;"></div>
 
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn-change-password" onclick="openChangePasswordModal()">
+          <button class="btn-change-password" id="btnChangePassword" onclick="openChangePasswordModal()">
             <i class="fa-solid fa-key"></i> Change Password
           </button>
           <button class="btn-logout" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
           </button>
+        </div>
+        <div id="profileDemoHint" style="display:none;margin-top:14px;color:#fbbf24;font-size:0.85rem;line-height:1.5;text-align:center;">
+          Demo mode can browse the portal, but password changes and personal result tools are unavailable.
         </div>
       </div>
 
@@ -1425,7 +1428,7 @@
               <div id="dobSavedText">--</div>
             </div>
           </div>
-          <button class="btn-change-dob" onclick="showDobEditForm()"><i class="fa-solid fa-pen-to-square"></i> Change</button>
+          <button class="btn-change-dob" id="btnShowDobEdit" onclick="showDobEditForm()"><i class="fa-solid fa-pen-to-square"></i> Change</button>
         </div>
 
         <!-- DOB Input Form -->
@@ -1454,7 +1457,7 @@
             </select>
           </div>
           <div class="dob-actions">
-            <button class="btn-save-dob" onclick="saveDob()"><i class="fa-solid fa-floppy-disk"></i> Save DOB</button>
+            <button class="btn-save-dob" id="btnSaveDob" onclick="saveDob()"><i class="fa-solid fa-floppy-disk"></i> Save DOB</button>
             <button class="btn-save-dob" style="background:rgba(255,255,255,0.07); border:1px solid var(--border);" onclick="cancelDobEdit()" id="cancelDobBtn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
           </div>
         </div>
@@ -1645,12 +1648,46 @@
     }
 
     let currentUser = null;
+    let isDemoUser = false;
+
+    function showProfileDemoHint(message) {
+      const el = document.getElementById('profileDemoHint');
+      if (!el) return;
+      el.textContent = message || 'Demo mode can browse the portal, but password changes and personal result tools are unavailable.';
+      el.style.display = 'block';
+    }
+
+    function setDemoControlDisabled(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled = true;
+    }
+
+    function enableDemoProfileMode() {
+      document.getElementById('dobGate').style.display = 'none';
+      document.getElementById('profileContent').style.display = 'block';
+      document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
+
+      [
+        'btnChangePassword',
+        'gDobDay', 'gDobMonth', 'gDobYear', 'dobGateBtn',
+        'btnShowDobEdit', 'btnSaveDob', 'cancelDobBtn',
+        'resDobDay', 'resDobMonth', 'resDobYear',
+        'cmpS1Day', 'cmpS1Month', 'cmpS1Year',
+        'cmpS2Id', 'cmpS2Day', 'cmpS2Month', 'cmpS2Year',
+        'btnLoadResults', 'btnCompare'
+      ].forEach(setDemoControlDisabled);
+
+      showProfileDemoHint();
+      showResError('Personal results, DOB setup, and comparison tools are unavailable in demo mode.', false);
+    }
 
     const userData = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
     if (!userData) {
       window.location.href = 'login.html';
     } else {
       currentUser = JSON.parse(userData);
+      isDemoUser = !!(currentUser.isDemo || String(currentUser.id || '').toUpperCase() === 'DEMO');
 
       document.getElementById('userName').innerText = currentUser.name || 'Student';
       document.getElementById('userId').innerText = 'ID: ' + currentUser.id;
@@ -1677,6 +1714,10 @@
     }
 
     function openChangePasswordModal() {
+      if (isDemoUser) {
+        showProfileDemoHint('Password change is unavailable in demo mode.');
+        return;
+      }
       document.getElementById('changePasswordModal').classList.add('open');
       clearModalFields();
     }
@@ -1728,6 +1769,10 @@
     }
 
     async function resendCpOTP() {
+      if (isDemoUser) {
+        showProfileDemoHint('Password change is unavailable in demo mode.');
+        return;
+      }
       try {
         await sendCpOTP(currentUser.phone);
         document.getElementById('cpOtpError').style.display = 'none';
@@ -1741,6 +1786,10 @@
     }
 
     async function verifyCpOTP() {
+      if (isDemoUser) {
+        showProfileDemoHint('Password change is unavailable in demo mode.');
+        return;
+      }
       const code  = document.getElementById('cpOtpInput').value.trim();
       const errEl = document.getElementById('cpOtpError');
       const btn   = document.getElementById('verifyCpOtpBtn');
@@ -1775,6 +1824,10 @@
     }
 
     async function changePassword() {
+      if (isDemoUser) {
+        showProfileDemoHint('Password change is unavailable in demo mode.');
+        return;
+      }
       const currentPassword = document.getElementById('currentPassword').value;
       const newPassword = document.getElementById('newPassword').value;
       const confirmPassword = document.getElementById('confirmNewPassword').value;
@@ -1937,7 +1990,7 @@
     }
 
     async function autoLoadResults(dob) {
-      if (!currentUser) return;
+      if (!currentUser || isDemoUser) return;
       const btn = document.getElementById('btnLoadResults');
       try {
         const data = await fetchResData(currentUser.id, dob);
@@ -1964,6 +2017,11 @@
     async function initResultSection() {
       if (!currentUser) return;
       document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
+
+      if (isDemoUser) {
+        enableDemoProfileMode();
+        return;
+      }
 
       let savedDob = localStorage.getItem(`lu62b_dob_${currentUser.id}`);
       if (!savedDob) {
@@ -2000,6 +2058,11 @@
     }
 
     async function submitDobGate() {
+      if (isDemoUser) {
+        showProfileDemoHint();
+        showResError('DOB setup is unavailable in demo mode.', false);
+        return;
+      }
       const day   = document.getElementById('gDobDay').value;
       const month = document.getElementById('gDobMonth').value;
       const year  = document.getElementById('gDobYear').value;
@@ -2081,6 +2144,11 @@
     }
 
     function showDobEditForm() {
+      if (isDemoUser) {
+        showProfileDemoHint();
+        showResError('DOB changes are unavailable in demo mode.', false);
+        return;
+      }
       document.getElementById('dobInputForm').style.display = 'block';
       document.getElementById('dobSavedDisplay').style.display = 'none';
       document.getElementById('cancelDobBtn').style.display = 'inline-flex';
@@ -2096,6 +2164,11 @@
     }
 
     function saveDob() {
+      if (isDemoUser) {
+        showProfileDemoHint();
+        showResError('DOB save is unavailable in demo mode.', false);
+        return;
+      }
       const day   = document.getElementById('resDobDay').value;
       const month = document.getElementById('resDobMonth').value;
       const year  = document.getElementById('resDobYear').value;
@@ -2114,6 +2187,11 @@
 
     // -- Load Results ------------------------------------------------
     async function loadResults() {
+      if (isDemoUser) {
+        showProfileDemoHint();
+        showResError('Personal results are unavailable in demo mode.', false);
+        return;
+      }
       const day   = document.getElementById('resDobDay').value   || (localStorage.getItem(`lu62b_dob_${currentUser.id}`) || '').split('-')[2];
       const month = document.getElementById('resDobMonth').value || (localStorage.getItem(`lu62b_dob_${currentUser.id}`) || '').split('-')[1];
       const year  = document.getElementById('resDobYear').value  || (localStorage.getItem(`lu62b_dob_${currentUser.id}`) || '').split('-')[0];
@@ -2496,6 +2574,11 @@
 
     // -- Compare -----------------------------------------------------
     async function runCompare() {
+      if (isDemoUser) {
+        showProfileDemoHint();
+        showResError('Student comparison is unavailable in demo mode.', false);
+        return;
+      }
       const s1Id  = currentUser.id;
       const s1Day = document.getElementById('cmpS1Day').value;
       const s1Mon = document.getElementById('cmpS1Month').value;
@@ -2548,16 +2631,18 @@
     }
 
     // -- Helpers ------------------------------------------------------
-    function showResError(msg) {
+    function showResError(msg, includePortalLink = true) {
       const el = document.getElementById('resultError');
-      el.innerHTML = `
+      el.innerHTML = includePortalLink
+        ? `
         <i class="fa-solid fa-circle-exclamation"></i> ${msg}
         <br><br>
         <a href="https://lus.ac.bd/result/" target="_blank"
            style="color: var(--accent-bright, #a78bfa); font-weight:600; text-decoration:none;">
           <i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal ?
         </a>
-      `;
+      `
+        : `<i class="fa-solid fa-circle-exclamation"></i> ${msg}`;
       el.classList.add('show');
     }
 
