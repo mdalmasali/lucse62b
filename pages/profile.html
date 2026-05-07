@@ -1871,7 +1871,7 @@
     const CF_WORKER = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const RES_PROXIES = [
-      // Strategy 1: Cloudflare Worker (our own � most reliable)
+      // Strategy 1: Cloudflare Worker (our own — most reliable)
       async (studentId, birthDate) => {
         const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: birthDate });
         const r = await fetch(CF_WORKER, { method: 'POST', body });
@@ -2190,7 +2190,7 @@
 
       for (let i = 0; i < RES_PROXIES.length; i++) {
         const btn = document.getElementById('btnLoadResults');
-        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching result�`;
+        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching results…`;
 
         try {
           const raw = await RES_PROXIES[i](studentId, birthDate);
