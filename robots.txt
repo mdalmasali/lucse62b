@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /pages/login.html
+Disallow: /pages/password-setup.html
+
+Sitemap: https://lucse62b.xyz/sitemap.xml
