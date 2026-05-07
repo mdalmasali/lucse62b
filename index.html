@@ -600,13 +600,13 @@
       const DL_SHEET_NAME = 'Deadlines';
 
       const DL_META = {
-        'assignment':   { icon:'fa-pencil',            color:'#a78bfa', bg:'rgba(139,92,246,0.12)',  border:'rgba(139,92,246,0.25)'  },
-        'tutorial':     { icon:'fa-book-open',         color:'#38bdf8', bg:'rgba(14,165,233,0.12)',  border:'rgba(14,165,233,0.25)'  },
-        'lab report':   { icon:'fa-flask',             color:'#34d399', bg:'rgba(16,185,129,0.12)',  border:'rgba(16,185,129,0.25)'  },
-        'viva':         { icon:'fa-microphone',        color:'#fbbf24', bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.25)'  },
-        'lab final':    { icon:'fa-fire-flame-curved', color:'#f87171', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.25)'   },
-        'project':      { icon:'fa-diagram-project',  color:'#f472b6', bg:'rgba(236,72,153,0.12)',  border:'rgba(236,72,153,0.25)'  },
-        'presentation': { icon:'fa-chalkboard-user',  color:'#818cf8', bg:'rgba(99,102,241,0.12)',  border:'rgba(99,102,241,0.25)'  },
+        'assignment':   { icon:'fa-pencil',            label:'Assignment',   color:'#a78bfa', bg:'rgba(139,92,246,0.12)',  border:'rgba(139,92,246,0.25)'  },
+        'tutorial':     { icon:'fa-book-open',         label:'Tutorial',     color:'#38bdf8', bg:'rgba(14,165,233,0.12)',  border:'rgba(14,165,233,0.25)'  },
+        'lab report':   { icon:'fa-flask',             label:'Lab Report',   color:'#34d399', bg:'rgba(16,185,129,0.12)',  border:'rgba(16,185,129,0.25)'  },
+        'viva':         { icon:'fa-microphone',        label:'Viva',         color:'#fbbf24', bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.25)'  },
+        'lab final':    { icon:'fa-fire-flame-curved', label:'Lab Final',    color:'#f87171', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.25)'   },
+        'project':      { icon:'fa-diagram-project',  label:'Project',      color:'#f472b6', bg:'rgba(236,72,153,0.12)',  border:'rgba(236,72,153,0.25)'  },
+        'presentation': { icon:'fa-chalkboard-user',  label:'Presentation', color:'#818cf8', bg:'rgba(99,102,241,0.12)',  border:'rgba(99,102,241,0.25)'  },
       };
 
       function urgency(ms) {
@@ -644,7 +644,10 @@
           <div class="deadline-card" style="border-color:${u.border};background:${u.bg};" data-ts="${i.ts}">
             <div class="dl-icon" style="background:${m.bg};border:1px solid ${m.border};color:${m.color};"><i class="fa-solid ${m.icon}"></i></div>
             <div class="dl-info">
-              <span class="dl-course-badge" style="color:${m.color};background:${m.bg};border:1px solid ${m.border};">${i.course}</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:5px;">
+                <span class="dl-course-badge" style="color:${m.color};background:${m.bg};border:1px solid ${m.border};margin-bottom:0;">${i.course}</span>
+                <span class="dl-course-badge" style="color:${u.color};background:${u.bg};border:1px solid ${u.border};margin-bottom:0;">${m.label}</span>
+              </div>
               <div class="dl-title">${i.title}</div>
               <div class="dl-due">Due: ${due}</div>
             </div>
