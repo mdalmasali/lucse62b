@@ -1946,7 +1946,7 @@
       'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
       'SID','SName','Dept','Department','Program','Teacher',
       'Reference','Serial','InputBy','Batch','Secttion',
-      'TPoint','CDate'
+      'TPoint','CDate','Total'
     ]);
     const RES_MARK_ORDER = ['ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
     const RES_MARK_LABELS = {
@@ -2144,20 +2144,23 @@
             <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
               ${c.mark > 0 ? `<span class="res-sem-modal-total">${c.mark}/100</span>` : ''}
-              <div class="res-sem-modal-grade">${c.grade||'�'}</div>
+              <div class="res-sem-modal-grade">${c.grade||'—'}</div>
             </div>
           </div>
           ${c.teacher ? `<div class="res-sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
-          <div class="res-sem-modal-chips">${chips}</div>
+          ${chips ? `<div class="res-sem-modal-chips">${chips}</div>` : ''}
         </div>`;
       }).join('');
       document.getElementById('resSemModalInner').innerHTML = `
         <div class="res-sem-modal-head">
-          <div>
-            <div class="res-sem-modal-title">${sem.semester_name||`Semester ${idx+1}`}</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(sem.gpa||0).toFixed(2)}</strong> &nbsp;�&nbsp; Credit: <strong style="color:#a78bfa">${sem.credit||0}</strong></div>
+          <div class="res-sem-modal-title">${sem.semester_name||`Semester ${idx+1}`}</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="text-align:right;">
+              <div style="font-size:0.62rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;">CGPA · Credit</div>
+              <div style="font-weight:700;font-size:1rem;color:#a78bfa;">${(sem.gpa||0).toFixed(2)} <span style="color:var(--text-secondary);font-size:0.8rem;font-weight:400;">/ ${sem.credit||0}</span></div>
+            </div>
+            <button class="res-sem-modal-close" onclick="closeResSemModal()">✕</button>
           </div>
-          <button class="res-sem-modal-close" onclick="closeResSemModal()">?</button>
         </div>
         ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}
       `;
