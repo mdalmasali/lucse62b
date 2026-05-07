@@ -58,7 +58,7 @@
 
     <div class="sync-badge fade-in delay-1" id="syncBadge">
       <span class="sync-dot"></span>
-      <span id="syncText">Connecting to Google Sheet�</span>
+      <span id="syncText">Connecting to Google Sheet...</span>
     </div>
 
     <div class="info-search-bar fade-in delay-2">
@@ -73,7 +73,7 @@
     <div class="info-cards fade-in delay-3" id="infoCards">
       <div class="info-loading">
         <div class="spin"></div>
-        <div>Loading classwork�</div>
+        <div>Loading classwork...</div>
       </div>
     </div>
 
@@ -244,9 +244,9 @@
         allItems = items;
         buildTabs(items);
         renderCards();
-        setSyncText(`Live sync � Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        setSyncText(`Live sync · Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        setSyncText('Sync failed � retrying shortly�', false);
+        setSyncText('Sync failed · retrying shortly...', false);
         if (!allItems.length) {
           document.getElementById('infoCards').innerHTML =
             '<div class="info-empty">⚠️ Could not load data from Google Sheet. Please refresh. Please refresh.</div>';

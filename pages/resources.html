@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -340,12 +340,12 @@
 
       <div class="sync-badge fade-in delay-1" id="syncBadge">
         <span class="sync-dot"></span>
-        <span id="syncText">Connecting�</span>
+        <span id="syncText">Connecting...</span>
       </div>
 
       <div id="courseGrid" class="course-grid fade-in delay-2">
         <div class="res-loading" style="grid-column:1/-1;">
-          <div class="spin"></div><span>Loading courses�</span>
+          <div class="spin"></div><span>Loading courses...</span>
         </div>
       </div>
     </div>
@@ -364,7 +364,7 @@
 
         <div class="mat-search">
           <i class="fa-solid fa-magnifying-glass" style="color:var(--muted);font-size:0.85rem;"></i>
-          <input type="text" id="matSearch" placeholder="Search files�" autocomplete="off" oninput="filterFiles(this.value)">
+          <input type="text" id="matSearch" placeholder="Search files..." autocomplete="off" oninput="filterFiles(this.value)">
         </div>
 
         <div class="file-list fade-in" id="fileList"></div>
@@ -562,7 +562,7 @@
       /* Load files from Drive API if not cached */
       if (g.files === null) {
         document.getElementById('fileList').innerHTML =
-          `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive�</span></div>`;
+          `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive...</span></div>`;
         try {
           g.files = await loadFolderFiles(g.folderId);
         } catch (e) {
@@ -707,9 +707,9 @@
         if (!activeCourse) renderCourses();
         else if (grouped[activeCourse]) renderMarks(activeCourse);
 
-        setSyncText(`Live sync � ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
       } catch (err) {
-        setSyncText('Sync failed � retrying�', false);
+        setSyncText('Sync failed · retrying...', false);
         if (!Object.keys(grouped).length) {
           document.getElementById('courseGrid').innerHTML =
             `<div class="res-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i><h3>Could not load</h3><p>Please refresh.</p></div>`;

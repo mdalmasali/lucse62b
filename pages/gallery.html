@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -198,7 +198,7 @@
         <div class="section-line"></div>
       </div>
       <div class="event-grid fade-in delay-2" id="eventGrid">
-        <div class="gal-loading"><div class="spin"></div><span>Loading events�</span></div>
+        <div class="gal-loading"><div class="spin"></div><span>Loading events...</span></div>
       </div>
     </div>
 
@@ -347,7 +347,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       const grid = document.getElementById('photoGrid');
-      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photos�</span></div>';
+      grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photos...</span></div>';
 
       try {
         const photos = await driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);

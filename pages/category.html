@@ -5,7 +5,7 @@
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
-  <title>Loading� | CSE 62B LU</title>
+  <title>Loading... | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -47,24 +47,24 @@
     </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label" id="pageLabel">? Loading�</span>
+      <span class="section-label" id="pageLabel">Loading...</span>
       <div class="section-line"></div>
     </div>
 
     <div class="sync-badge fade-in delay-1" id="syncBadge">
       <span class="sync-dot"></span>
-      <span id="syncText">Connecting to Google Sheet�</span>
+      <span id="syncText">Connecting to Google Sheet...</span>
     </div>
 
     <div class="info-search-bar fade-in delay-2">
       <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-      <input type="text" id="searchInput" placeholder="Search�" autocomplete="off"/>
+      <input type="text" id="searchInput" placeholder="Search..." autocomplete="off"/>
     </div>
 
     <div class="info-cards fade-in delay-3" id="infoCards">
       <div class="info-loading">
         <div class="spin"></div>
-        <div>Loading�</div>
+        <div>Loading...</div>
       </div>
     </div>
 
@@ -114,13 +114,13 @@
 
     if (!meta) {
       document.title = 'Not Found | CSE 62B LU';
-      document.getElementById('pageLabel').textContent = '? Unknown category';
+      document.getElementById('pageLabel').textContent = 'Unknown category';
       document.getElementById('infoCards').innerHTML =
         '<div class="info-empty">Unknown category. <a href="../index.html">Go Home</a></div>';
     } else {
       document.title = meta.label + ' | CSE 62B LU';
       document.getElementById('pageLabel').innerHTML = meta.icon + ' ' + meta.label;
-      document.getElementById('searchInput').placeholder = 'Search ' + meta.label + '�';
+      document.getElementById('searchInput').placeholder = 'Search ' + meta.label + '...';
     }
 
     function resolveCategory(keyword) {
@@ -209,9 +209,9 @@
         });
         allItems = items;
         renderCards();
-        setSyncText(`Live sync � ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        setSyncText('Sync failed � retrying shortly�', false);
+        setSyncText('Sync failed · retrying shortly...', false);
         if (!allItems.length)
           document.getElementById('infoCards').innerHTML =
             '<div class="info-empty">⚠️ Could not load data. Please refresh.</div>';
