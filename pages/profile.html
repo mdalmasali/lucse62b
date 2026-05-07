@@ -1935,16 +1935,20 @@
 
     async function autoLoadResults(dob) {
       if (!currentUser) return;
+      const btn = document.getElementById('btnLoadResults');
       try {
         const data = await fetchResData(currentUser.id, dob);
         resData = data;
         renderResDashboard();
         renderProfileAcademicBar(data);
         document.getElementById('resultDashboard').style.display = 'block';
-        const btn = document.getElementById('btnLoadResults');
         if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Results';
-      } catch {
-        // silent — user can still click Load My Results manually
+      } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Load My Results'; }
+        const isDobWrong = err.isApiError || /not found|invalid|incorrect|credential/i.test(err.message);
+        showResError(isDobWrong
+          ? '<i class="fa-solid fa-calendar-xmark"></i> Date of Birth is incorrect. Use the <strong>Change</strong> button below to re-enter your DOB as written on your certificate.'
+          : `Could not load results. Please try again. (${err.message})`);
       }
     }
 
@@ -1973,14 +1977,23 @@
       }
     }
 
-    function showProfile(dob) {
+    function showProfile(dob, prefetchedData = null) {
       document.getElementById('dobGate').style.display = 'none';
       document.getElementById('profileContent').style.display = 'block';
       showSavedDob(dob);
       const [y, m, d] = dob.split('-');
       prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
       prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', d, m, y);
-      autoLoadResults(dob);
+      if (prefetchedData) {
+        resData = prefetchedData;
+        renderResDashboard();
+        renderProfileAcademicBar(resData);
+        document.getElementById('resultDashboard').style.display = 'block';
+        const btn = document.getElementById('btnLoadResults');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh Results';
+      } else {
+        autoLoadResults(dob);
+      }
     }
 
     async function submitDobGate() {
@@ -1998,13 +2011,25 @@
 
       const btn = document.getElementById('dobGateBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="result-spinner"></span> Saving...';
+      btn.innerHTML = '<span class="result-spinner"></span> Verifying…';
 
       const dobStr = `${year}-${month}-${day}`;
-      localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
-      await saveDobToSupabase(currentUser.id, dobStr);
 
-      showProfile(dobStr);
+      try {
+        const data = await fetchResData(currentUser.id, dobStr);
+        // DOB verified — save then enter profile with already-fetched data
+        localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
+        await saveDobToSupabase(currentUser.id, dobStr);
+        showProfile(dobStr, data);
+      } catch (err) {
+        const isDobWrong = err.isApiError || /not found|invalid|incorrect|credential/i.test(err.message);
+        errEl.textContent = isDobWrong
+          ? 'Date of Birth is incorrect. Please check your certificate and try again.'
+          : 'Connection failed. Please check your internet and try again.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Profile';
+      }
     }
 
     function populateResDateDropdowns() {
@@ -2204,13 +2229,13 @@
             else { lastError = new Error('Invalid response format'); continue; }
           }
 
-          if (data.error) throw new Error(data.error);
-          if (!data.success || !data.student) { lastError = new Error('No student data in response'); continue; }
+          if (data.error) { const e = new Error(data.error); e.isApiError = true; throw e; }
+          if (!data.success || !data.student) { const e = new Error('Student not found. Please check your Date of Birth.'); e.isApiError = true; throw e; }
 
-          return normalizeResData(data); // ? success
+          return normalizeResData(data);
 
         } catch (err) {
-          if (err.message && /invalid|not found|credential|incorrect/i.test(err.message)) throw err;
+          if (err.isApiError || /invalid|not found|credential|incorrect/i.test(err.message)) throw err;
           lastError = err;
           await new Promise(r => setTimeout(r, 300));
         }

@@ -689,11 +689,11 @@
           let data;
           try { data = JSON.parse(raw); }
           catch { const m = raw.match(/\{[\s\S]*\}/); if (m) data = JSON.parse(m[0]); else { lastErr = new Error('Invalid response'); continue; } }
-          if (data.error) throw new Error(data.error);
-          if (!data.success || !data.student) { lastErr = new Error('No student data in response'); continue; }
+          if (data.error) { const e = new Error(data.error); e.isApiError = true; throw e; }
+          if (!data.success || !data.student) { const e = new Error('Student not found. Please check your Student ID and Date of Birth.'); e.isApiError = true; throw e; }
           return normalizeData(data);
         } catch (e) {
-          if (/invalid|not found|credential|incorrect/i.test(e.message)) throw e;
+          if (e.isApiError || /invalid|not found|credential|incorrect/i.test(e.message)) throw e;
           lastErr = e;
           await new Promise(r => setTimeout(r, 300));
         }
