@@ -224,6 +224,15 @@
       </div>
     </div>
 
+    <!-- Upcoming Deadlines -->
+    <div class="deadlines-wrap fade-in delay-2" id="deadlinesWrap" style="display:none;margin-bottom:44px;">
+      <div class="section-header" style="margin-bottom:16px;">
+        <span class="section-label"><i class="fa-solid fa-hourglass-half" style="color:var(--accent-bright);margin-right:6px;"></i>Upcoming Deadlines</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="deadline-list" id="deadlineList"></div>
+    </div>
+
     <!-- Memories Slideshow -->
     <div class="memories-section fade-in delay-2" id="memoriesSection" style="margin-bottom:44px;display:none;">
       <div class="section-header" style="margin-bottom:16px;">
@@ -583,6 +592,118 @@
       document.getElementById('memLb').classList.remove('open');
     }
     document.addEventListener('keydown', e => { if(e.key==='Escape') closememLb(); });
+  </script>
+  <script>
+    /* -- Deadline Countdown -- */
+    (function () {
+      const DL_SHEET_ID   = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+      const DL_SHEET_NAME = 'Deadlines';
+
+      const DL_META = {
+        'assignment':   { icon:'fa-pencil',            color:'#a78bfa', bg:'rgba(139,92,246,0.12)',  border:'rgba(139,92,246,0.25)'  },
+        'tutorial':     { icon:'fa-book-open',         color:'#38bdf8', bg:'rgba(14,165,233,0.12)',  border:'rgba(14,165,233,0.25)'  },
+        'lab report':   { icon:'fa-flask',             color:'#34d399', bg:'rgba(16,185,129,0.12)',  border:'rgba(16,185,129,0.25)'  },
+        'viva':         { icon:'fa-microphone',        color:'#fbbf24', bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.25)'  },
+        'lab final':    { icon:'fa-fire-flame-curved', color:'#f87171', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.25)'   },
+        'project':      { icon:'fa-diagram-project',  color:'#f472b6', bg:'rgba(236,72,153,0.12)',  border:'rgba(236,72,153,0.25)'  },
+        'presentation': { icon:'fa-chalkboard-user',  color:'#818cf8', bg:'rgba(99,102,241,0.12)',  border:'rgba(99,102,241,0.25)'  },
+      };
+
+      function urgency(ms) {
+        if (ms < 86400000)  return { color:'#f87171', bg:'rgba(239,68,68,0.07)',   border:'rgba(239,68,68,0.3)'   };
+        if (ms < 259200000) return { color:'#fbbf24', bg:'rgba(245,158,11,0.07)', border:'rgba(245,158,11,0.3)'  };
+        return                     { color:'#34d399', bg:'rgba(16,185,129,0.05)', border:'rgba(16,185,129,0.2)'  };
+      }
+
+      function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
+
+      function parseDate(s) {
+        return new Date(s.trim().replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})$/, '$1T$2:00'));
+      }
+
+      let items = [];
+
+      function render() {
+        const now  = Date.now();
+        const live = items.filter(i => i.ts > now);
+        const wrap = document.getElementById('deadlinesWrap');
+        const list = document.getElementById('deadlineList');
+        if (!wrap || !list) return;
+        if (!live.length) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        list.innerHTML = live.map(i => {
+          const diff = i.ts - now;
+          const m = DL_META[i.type] || DL_META['assignment'];
+          const u = urgency(diff);
+          const due = new Date(i.ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+          return `
+          <div class="deadline-card" style="border-color:${u.border};background:${u.bg};" data-ts="${i.ts}">
+            <div class="dl-icon" style="background:${m.bg};border:1px solid ${m.border};color:${m.color};"><i class="fa-solid ${m.icon}"></i></div>
+            <div class="dl-info">
+              <span class="dl-course-badge" style="color:${m.color};background:${m.bg};border:1px solid ${m.border};">${i.course}</span>
+              <div class="dl-title">${i.title}</div>
+              <div class="dl-due">Due: ${due}</div>
+            </div>
+            <div class="dl-timer" style="color:${u.color};">
+              <div class="dl-nums">
+                <div class="dl-seg"><span class="dl-n" id="dl-d-${i.id}">${pad(diff/86400000)}</span><span class="dl-l">DAY</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="dl-h-${i.id}">${pad((diff%86400000)/3600000)}</span><span class="dl-l">HR</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="dl-m-${i.id}">${pad((diff%3600000)/60000)}</span><span class="dl-l">MIN</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="dl-s-${i.id}">${pad((diff%60000)/1000)}</span><span class="dl-l">SEC</span></div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      function tick() {
+        const now = Date.now();
+        let anyExpired = false;
+        items.forEach(i => {
+          if (i.ts <= now) { anyExpired = true; return; }
+          const diff = i.ts - now;
+          const dEl  = document.getElementById('dl-d-' + i.id);
+          if (!dEl) return;
+          dEl.textContent = pad(diff / 86400000);
+          document.getElementById('dl-h-' + i.id).textContent = pad((diff % 86400000) / 3600000);
+          document.getElementById('dl-m-' + i.id).textContent = pad((diff % 3600000)  / 60000);
+          document.getElementById('dl-s-' + i.id).textContent = pad((diff % 60000)    / 1000);
+        });
+        if (anyExpired) { items = items.filter(i => i.ts > now); render(); }
+      }
+
+      async function init() {
+        try {
+          const data = await new Promise((res, rej) => {
+            const cb = 'dl_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const s  = document.createElement('script');
+            const t  = setTimeout(() => { delete window[cb]; s.remove(); rej(); }, 12000);
+            window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); res(d); };
+            s.src = 'https://docs.google.com/spreadsheets/d/' + DL_SHEET_ID +
+                    '/gviz/tq?tqx=out:json;responseHandler:' + cb +
+                    '&sheet=' + encodeURIComponent(DL_SHEET_NAME);
+            s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); rej(); };
+            document.body.appendChild(s);
+          });
+          let id = 0;
+          (data.table?.rows || []).forEach(row => {
+            const c = (row.c || []).map(x => (x && x.v != null) ? String(x.v).trim() : '');
+            if (c.length < 4 || !c[0] || !c[2] || !c[3]) return;
+            if (['course','type','title','deadline'].includes(c[0].toLowerCase())) return;
+            const ts = parseDate(c[3]).getTime();
+            if (isNaN(ts) || ts <= Date.now()) return;
+            items.push({ id: id++, course: c[0], type: c[1].toLowerCase().trim(), title: c[2], ts });
+          });
+          items.sort((a, b) => a.ts - b.ts);
+          if (items.length) { render(); setInterval(tick, 1000); }
+        } catch (e) {}
+      }
+
+      init();
+    })();
   </script>
 </body>
 </html>

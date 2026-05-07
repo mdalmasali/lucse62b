@@ -61,6 +61,14 @@
       <input type="text" id="searchInput" placeholder="Search..." autocomplete="off"/>
     </div>
 
+    <!-- Category Deadlines -->
+    <div id="catDlWrap" style="display:none;margin-bottom:20px;">
+      <div class="dl-section-label">
+        <i class="fa-solid fa-hourglass-half" style="color:var(--accent-bright);"></i> Deadlines
+      </div>
+      <div class="deadline-list" id="catDlList"></div>
+    </div>
+
     <div class="info-cards fade-in delay-3" id="infoCards">
       <div class="info-loading">
         <div class="spin"></div>
@@ -226,6 +234,119 @@
     syncData();
     setInterval(syncData, 5 * 60 * 1000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) syncData(); });
+  </script>
+  <script>
+    /* -- Category Deadline Countdown -- */
+    (function () {
+      const DL_SHEET_ID   = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
+      const DL_SHEET_NAME = 'Deadlines';
+
+      const DL_META = {
+        'assignment':   { icon:'fa-pencil',            color:'#34d399', bg:'rgba(16,185,129,0.12)',  border:'rgba(16,185,129,0.35)'  },
+        'tutorial':     { icon:'fa-book-open',         color:'#818cf8', bg:'rgba(99,102,241,0.12)',  border:'rgba(99,102,241,0.35)'  },
+        'lab report':   { icon:'fa-flask',             color:'#2dd4bf', bg:'rgba(20,184,166,0.12)',  border:'rgba(20,184,166,0.35)'  },
+        'viva':         { icon:'fa-microphone',        color:'#fb7185', bg:'rgba(244,63,94,0.1)',    border:'rgba(244,63,94,0.35)'   },
+        'lab final':    { icon:'fa-fire-flame-curved', color:'#fbbf24', bg:'rgba(234,179,8,0.1)',    border:'rgba(234,179,8,0.35)'   },
+        'project':      { icon:'fa-diagram-project',  color:'#c4b5fd', bg:'rgba(167,139,250,0.12)', border:'rgba(167,139,250,0.35)' },
+        'presentation': { icon:'fa-chalkboard-user',  color:'#fb923c', bg:'rgba(249,115,22,0.1)',   border:'rgba(249,115,22,0.35)'  },
+      };
+
+      function urgency(ms) {
+        if (ms < 86400000)  return { color:'#f87171', bg:'rgba(239,68,68,0.07)',   border:'rgba(239,68,68,0.3)'  };
+        if (ms < 259200000) return { color:'#fbbf24', bg:'rgba(245,158,11,0.07)', border:'rgba(245,158,11,0.3)' };
+        return                     { color:'#34d399', bg:'rgba(16,185,129,0.05)', border:'rgba(16,185,129,0.2)' };
+      }
+
+      function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
+
+      function parseDate(s) {
+        return new Date(s.trim().replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})$/, '$1T$2:00'));
+      }
+
+      let dlItems = [];
+
+      function renderCatDl() {
+        const now  = Date.now();
+        const live = dlItems.filter(i => i.ts > now);
+        const wrap = document.getElementById('catDlWrap');
+        const list = document.getElementById('catDlList');
+        if (!wrap || !list || !live.length) { if (wrap) wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        const m = DL_META[activeCat] || DL_META['assignment'];
+        list.innerHTML = live.map(i => {
+          const diff = i.ts - now;
+          const u    = urgency(diff);
+          const due  = new Date(i.ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+          return `
+          <div class="deadline-card" style="border-color:${u.border};background:${u.bg};">
+            <div class="dl-icon" style="background:${m.bg};border:1px solid ${m.border};color:${m.color};"><i class="fa-solid ${m.icon}"></i></div>
+            <div class="dl-info">
+              <span class="dl-course-badge" style="color:${m.color};background:${m.bg};border:1px solid ${m.border};">${i.course}</span>
+              <div class="dl-title">${i.title}</div>
+              <div class="dl-due">Due: ${due}</div>
+            </div>
+            <div class="dl-timer" style="color:${u.color};">
+              <div class="dl-nums">
+                <div class="dl-seg"><span class="dl-n" id="cdl-d-${i.id}">${pad(diff/86400000)}</span><span class="dl-l">DAY</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="cdl-h-${i.id}">${pad((diff%86400000)/3600000)}</span><span class="dl-l">HR</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="cdl-m-${i.id}">${pad((diff%3600000)/60000)}</span><span class="dl-l">MIN</span></div>
+                <span class="dl-colon">:</span>
+                <div class="dl-seg"><span class="dl-n" id="cdl-s-${i.id}">${pad((diff%60000)/1000)}</span><span class="dl-l">SEC</span></div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      function tickCatDl() {
+        const now = Date.now();
+        let anyExp = false;
+        dlItems.forEach(i => {
+          if (i.ts <= now) { anyExp = true; return; }
+          const diff = i.ts - now;
+          const dEl = document.getElementById('cdl-d-' + i.id);
+          if (!dEl) return;
+          dEl.textContent = pad(diff / 86400000);
+          document.getElementById('cdl-h-' + i.id).textContent = pad((diff % 86400000) / 3600000);
+          document.getElementById('cdl-m-' + i.id).textContent = pad((diff % 3600000)  / 60000);
+          document.getElementById('cdl-s-' + i.id).textContent = pad((diff % 60000)    / 1000);
+        });
+        if (anyExp) { dlItems = dlItems.filter(i => i.ts > now); renderCatDl(); }
+      }
+
+      async function initCatDl() {
+        if (!meta) return; // unknown category page
+        try {
+          const data = await new Promise((res, rej) => {
+            const cb = 'cdl_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const s  = document.createElement('script');
+            const t  = setTimeout(() => { delete window[cb]; s.remove(); rej(); }, 12000);
+            window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); res(d); };
+            s.src = 'https://docs.google.com/spreadsheets/d/' + DL_SHEET_ID +
+                    '/gviz/tq?tqx=out:json;responseHandler:' + cb +
+                    '&sheet=' + encodeURIComponent(DL_SHEET_NAME);
+            s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); rej(); };
+            document.body.appendChild(s);
+          });
+          let id = 0;
+          (data.table?.rows || []).forEach(row => {
+            const c = (row.c || []).map(x => (x && x.v != null) ? String(x.v).trim() : '');
+            if (c.length < 4 || !c[0] || !c[2] || !c[3]) return;
+            if (['course','type','title','deadline'].includes(c[0].toLowerCase())) return;
+            if (c[1].toLowerCase().trim() !== activeCat) return;
+            const ts = parseDate(c[3]).getTime();
+            if (isNaN(ts) || ts <= Date.now()) return;
+            dlItems.push({ id: id++, course: c[0], title: c[2], ts });
+          });
+          dlItems.sort((a, b) => a.ts - b.ts);
+          if (dlItems.length) { renderCatDl(); setInterval(tickCatDl, 1000); }
+        } catch (e) {}
+      }
+
+      initCatDl();
+    })();
   </script>
   <script src="../assets/js/auth.js"></script>
 </body>

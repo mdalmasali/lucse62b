@@ -1603,3 +1603,47 @@ footer {
   color: var(--text-secondary);
   line-height: 1.6;
 }
+
+/* ── Deadline Countdown Cards ─────────────────────────────── */
+.deadline-list { display: flex; flex-direction: column; gap: 10px; }
+.deadline-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 20px;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+.deadline-card:hover { transform: translateY(-2px); }
+.dl-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.dl-info { flex: 1; min-width: 0; }
+.dl-course-badge {
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px; display: inline-block; margin-bottom: 5px;
+}
+.dl-title {
+  font-size: 0.9rem; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dl-due { font-size: 0.71rem; color: var(--muted); margin-top: 3px; }
+.dl-timer { flex-shrink: 0; text-align: right; }
+.dl-nums {
+  display: flex; align-items: flex-end; gap: 2px;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+}
+.dl-seg { display: flex; flex-direction: column; align-items: center; }
+.dl-n { font-size: 1.25rem; line-height: 1; min-width: 28px; text-align: center; }
+.dl-l { font-size: 0.55rem; color: var(--muted); margin-top: 3px; letter-spacing: 0.3px; }
+.dl-colon { font-size: 1rem; padding-bottom: 14px; color: var(--muted); margin: 0 1px; }
+.dl-section-label {
+  font-size: 0.72rem; color: var(--muted); font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+@media (max-width: 500px) {
+  .deadline-card { flex-wrap: wrap; }
+  .dl-timer { width: 100%; text-align: left; margin-left: 58px; }
+  .dl-n { font-size: 1.1rem; min-width: 24px; }
+}
