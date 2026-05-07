@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"e:\\\\Website\" -Recurse -Directory)",
+      "Bash(Select-Object -First 50)",
+      "Bash(Format-Table FullName)",
+      "PowerShell(Get-Content \"e:\\\\Website\\\\pages\\\\login.html\" | Select-String -Pattern \"OTP|Successfully|Forgot\" -AllMatches | ForEach-Object { $_.LineNumber; $_ })"
+    ]
+  }
+}
