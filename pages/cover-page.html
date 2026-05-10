@@ -491,6 +491,18 @@
           <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()">
         </div>
 
+        <!-- PDF Stats widget -->
+        <div id="pdfStatsBar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;">
+          <span style="font-size:0.73rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-file-pdf" style="color:#f87171;"></i>
+            <span id="statTotalPdfs" style="color:var(--text);font-weight:600;">…</span> PDFs generated
+          </span>
+          <span id="statGenerating" style="font-size:0.71rem;color:#22c55e;display:none;align-items:center;gap:5px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;animation:lu-pulse 1.5s infinite;"></span>
+            <span id="statGeneratingCount">1</span> generating now
+          </span>
+        </div>
+
         <button class="btn-gen" id="btnGen" onclick="generatePDF()">
           <i class="fa-solid fa-file-arrow-down"></i> Generate PDF
         </button>
@@ -1076,11 +1088,13 @@
 
         const fname = buildFilename();
         pdf.save(`${fname}_CoverPage.pdf`);
+        if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackPDF();
       } catch (err) {
         alert('PDF generation failed. Please try again.\n' + err.message);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i> Generate PDF';
+        if (typeof LU_ANALYTICS !== 'undefined') loadCoverStats();
       }
     }
 
@@ -1105,6 +1119,7 @@
         pdf.save(`${fname}.pdf`);
 
         /* Step 2: open inbox after short delay so download triggers first */
+        if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackShare(platform);
         await new Promise(r => setTimeout(r, 500));
         window.open(platform === 'whatsapp' ? WA_LINK : TG_LINK, '_blank');
 
@@ -1141,6 +1156,24 @@
     if (_ud) {
       document.getElementById('shareSection').style.display = 'block';
     }
+
+    /* Load cover page stats */
+    async function loadCoverStats() {
+      if (typeof LU_ANALYTICS === 'undefined') return;
+      try {
+        const { totalPdfs, generatingNow } = await LU_ANALYTICS.getCoverStats();
+        const el = document.getElementById('statTotalPdfs');
+        if (el) el.textContent = totalPdfs.toLocaleString();
+        const genEl = document.getElementById('statGenerating');
+        const genCount = document.getElementById('statGeneratingCount');
+        if (genEl && genCount) {
+          genCount.textContent = generatingNow;
+          genEl.style.display = generatingNow > 0 ? 'flex' : 'none';
+        }
+      } catch(e) {}
+    }
+    setTimeout(loadCoverStats, 1000);
   </script>
+  <script src="../assets/js/analytics.js"></script>
 </body>
 </html>
