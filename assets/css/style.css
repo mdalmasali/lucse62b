@@ -33,6 +33,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 /* ── Animated Background ── */
@@ -99,6 +100,7 @@ body {
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px;
+  height: 72px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 0;
   background: rgba(3, 3, 5, 0.7);
