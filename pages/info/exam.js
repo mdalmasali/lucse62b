@@ -5,16 +5,10 @@
 let _examCache = null;
 
 function fetchExamTab(sheetId) {
-  return new Promise((resolve, reject) => {
-    const cb = `ex_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const s  = document.createElement('script');
-    const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
-    function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-    window[cb] = d => { cleanup(); resolve(d); };
-    s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&headers=0`;
-    s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-    document.body.appendChild(s);
-  });
+  return fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&customSheetId=${encodeURIComponent(sheetId)}&sheetName=${encodeURIComponent(sheetName)}`)
+        .then(res => { if (!res.ok) throw new Error('Network error'); return res.json(); })
+        .then(data => data)
+        .catch(err => { throw err; });
 }
 
 function normExamDate(raw) {

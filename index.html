@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta name="google-site-verification" content="PZzqaT1hIQYaMWDIyxtITBeS0TBtzptS7UsWUaRSGD8" />
@@ -433,36 +433,34 @@
         setTimeout(() => { wrap.style.animation = ''; }, 10);
       }
 
-      const scr = document.createElement('script');
-      window[cb] = (data) => {
-        delete window[cb];
-        scr.remove();
+      fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&customSheetId=${encodeURIComponent(SHEET_ID)}&sheetName=${encodeURIComponent(SHEET_NAME)}`)
+        .then(r => r.json())
+        .then(data => {
+          let noticeGlobal = null, noticeMember = null, memberOverview = null;
+          (data.table?.rows || []).forEach(row => {
+            const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
+            if (cells.length < 2) return;
+            const key = cells[0].toLowerCase();
+            if (key === 'top notice')        noticeGlobal   = cells[1];
+            if (key === 'top notice member') noticeMember   = cells[1];
+            if (key === 'member overview')   memberOverview = cells[1];
+          });
 
-        let noticeGlobal = null, noticeMember = null, memberOverview = null;
-        (data.table?.rows || []).forEach(row => {
-          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
-          if (cells.length < 2) return;
-          const key = cells[0].toLowerCase();
-          if (key === 'top notice')        noticeGlobal   = cells[1];
-          if (key === 'top notice member') noticeMember   = cells[1];
-          if (key === 'member overview')   memberOverview = cells[1];
-        });
-
-        if (isAuth) {
-          if (noticeMember) {
-            showTicker(noticeMember);
+          if (isAuth) {
+            if (noticeMember) {
+              showTicker(noticeMember);
+            } else {
+              const greeting = `Welcome back, ${firstName}!`;
+              const overview = memberOverview ? `  ·  ${memberOverview}` : '';
+              showTicker(greeting + overview);
+            }
           } else {
-            const greeting = `Welcome back, ${firstName}!`;
-            const overview = memberOverview ? `  ·  ${memberOverview}` : '';
-            showTicker(greeting + overview);
+            showTicker(noticeGlobal);
           }
-        } else {
-          showTicker(noticeGlobal);
-        }
-      };
-
-      scr.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
-      document.body.appendChild(scr);
+        })
+        .catch(err => {
+          console.error("Top notice fetch error", err);
+        });
     }
 
     // Initialize
@@ -718,17 +716,7 @@
       async function init() {
         if (!localStorage.getItem('lu62b_student') && !sessionStorage.getItem('lu62b_student')) return;
         try {
-          const data = await new Promise((res, rej) => {
-            const cb = 'dl_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-            const s  = document.createElement('script');
-            const t  = setTimeout(() => { delete window[cb]; s.remove(); rej(); }, 12000);
-            window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); res(d); };
-            s.src = 'https://docs.google.com/spreadsheets/d/' + DL_SHEET_ID +
-                    '/gviz/tq?tqx=out:json;responseHandler:' + cb +
-                    '&sheet=' + encodeURIComponent(DL_SHEET_NAME);
-            s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); rej(); };
-            document.body.appendChild(s);
-          });
+          const data = await fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&customSheetId=${encodeURIComponent(DL_SHEET_ID)}&sheetName=${encodeURIComponent(DL_SHEET_NAME)}`).then(r => { if (!r.ok) throw new Error(); return r.json(); });
           let id = 0;
           (data.table?.rows || []).forEach(row => {
             const c = (row.c || []).map(x => (x && x.v != null) ? String(x.v).trim() : '');

@@ -23,7 +23,9 @@ serve(async (req: Request) => {
       if (!sheetName) throw new Error('Missing sheetName parameter');
       
       // @ts-ignore: Deno global object
-      const SHEET_ID = Deno.env.get('GOOGLE_SHEET_ID');
+      const customSheetId = url.searchParams.get('customSheetId');
+      // @ts-ignore: Deno global object
+      const SHEET_ID = customSheetId || Deno.env.get('GOOGLE_SHEET_ID');
       if (!SHEET_ID) throw new Error('Server missing GOOGLE_SHEET_ID configuration');
 
       const gUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;

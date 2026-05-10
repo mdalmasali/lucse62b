@@ -36,40 +36,22 @@
 
   // ── Sheet validation (JSONP, background) ────────────────────────────
   function checkStudentInSheet(studentId) {
-    return new Promise(function (resolve) {
-      const cb    = 'lu62b_val_' + Date.now();
-      const s     = document.createElement('script');
-      const timer = setTimeout(function () {
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        resolve(true); // timeout → assume valid, don't kick out on bad network
-      }, 8000);
-
-      window[cb] = function (data) {
-        clearTimeout(timer);
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        const rows  = (data.table && data.table.rows) || [];
-        const found = rows.some(function (row) {
+    return fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&customSheetId=${encodeURIComponent(SHEET_ID)}&sheetName=${encodeURIComponent(SHEET_NAME)}`)
+      .then(function(r) {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(function(data) {
+        const rows = (data.table && data.table.rows) || [];
+        return rows.some(function (row) {
           return (row.c || []).some(function (cell) {
             return cell && cell.v != null && String(cell.v).trim() === studentId;
           });
         });
-        resolve(found);
-      };
-
-      s.onerror = function () {
-        clearTimeout(timer);
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        resolve(true); // network error → assume valid
-      };
-
-      s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
-              '/gviz/tq?tqx=out:json;responseHandler=' + cb +
-              '&sheet=' + encodeURIComponent(SHEET_NAME);
-      document.body.appendChild(s);
-    });
+      })
+      .catch(function() {
+        return true; // network error → assume valid, don't kick out
+      });
   }
 
   function runBackgroundValidation(session) {
