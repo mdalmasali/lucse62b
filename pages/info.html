@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -424,6 +424,15 @@
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/script.js"></script>
   <script>
+    function isDemoMode() {
+      try {
+        const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (!ud) return false;
+        const u = JSON.parse(ud);
+        return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO');
+      } catch { return false; }
+    }
+
     const MENU = [
       { id: 'routine',         label: 'Class Routine',          icon: 'fa-solid fa-calendar-week',         color: '#a78bfa' },
       { id: 'teacher-routine',label: 'Teacher Class Routine',  icon: 'fa-solid fa-chalkboard-user',       color: '#34d399' },
@@ -593,6 +602,23 @@
 
     async function loadContent(item) {
       const body = document.getElementById('contentBody');
+
+      /* Demo mode: block all content */
+      if (isDemoMode()) {
+        body.innerHTML = `
+          <div class="info-placeholder" style="padding:70px 20px;">
+            <i class="fa-solid fa-lock" style="color:#fbbf24;opacity:0.5;"></i>
+            <p style="font-weight:700;color:var(--text);margin-bottom:8px;">Demo Mode Restriction</p>
+            <p>Class information is only available to registered students.</p>
+            <p style="margin-top:16px;">
+              <a href="login.html" style="color:#a78bfa;font-weight:600;text-decoration:none;">
+                <i class="fa-solid fa-right-to-bracket"></i> Login to access full content
+              </a>
+            </p>
+          </div>`;
+        return;
+      }
+
       if (SECTION_SCRIPTS[item.id]) {
         try { await loadScript(SECTION_SCRIPTS[item.id]); } catch(_) {}
       }

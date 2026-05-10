@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -544,6 +544,15 @@
 
     let resData = null, gradeChart = null, gpaChart = null;
 
+    function isDemoMode() {
+      try {
+        const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (!ud) return false;
+        const u = JSON.parse(ud);
+        return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO');
+      } catch { return false; }
+    }
+
     /* ── Init ── */
     (function init() {
       const cur = new Date().getFullYear();
@@ -710,41 +719,70 @@
     /* ── Render ── */
     function renderDashboard() {
       const d = resData;
+      const demoMode = isDemoMode();
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
       document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
 
-      // Extra info badges
-      const badges = [];
-      if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
-      if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
-      if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
-      if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
-      if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
-      if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
-      if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
+      // Extra info badges — hidden in demo mode
       const badgeEl = document.getElementById('dExtraInfo');
-      if (badgeEl) badgeEl.innerHTML = badges.join('');
+      if (demoMode) {
+        badgeEl.innerHTML = `<span class="res-info-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);"><i class="fa-solid fa-lock"></i> Demo mode — personal info hidden</span>`;
+      } else {
+        const badges = [];
+        if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
+        if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
+        if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
+        if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
+        if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
+        if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
+        if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
+        if (badgeEl) badgeEl.innerHTML = badges.join('');
+      }
 
-      renderStats(d);
-      renderLatest(d);
-      renderAllSems(d);
+      // Hide Analytics & Compare tabs in demo mode
+      ['tabAnalytics','tabCompare'].forEach(id =>
+        document.getElementById(id).style.display = demoMode ? 'none' : ''
+      );
+
+      renderStats(d, demoMode);
+      renderLatest(d, demoMode);
+      renderAllSems(d, demoMode);
     }
 
-    function renderStats(d) {
+    function renderStats(d, demoMode) {
       const credit = d.total_credit || 0;
-      document.getElementById('dStats').innerHTML = `
-        <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
-        <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
-        <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
-        <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
-      `;
+      if (demoMode) {
+        document.getElementById('dStats').innerHTML = `
+          <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
+          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Total Credit</div></div>
+          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Courses Done</div></div>
+          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Semesters</div></div>
+        `;
+      } else {
+        document.getElementById('dStats').innerHTML = `
+          <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
+          <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
+          <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
+          <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
+        `;
+      }
     }
 
-    function renderLatest(d) {
+    function renderLatest(d, demoMode) {
       const sems = d.semesters || [];
       const el   = document.getElementById('dLatest');
+      if (demoMode) {
+        el.innerHTML = `
+          <div class="res-card-title"><i class="fa-solid fa-star"></i> Latest Semester</div>
+          <div style="text-align:center;padding:30px 20px;">
+            <div style="font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${sems.length ? (sems[0].gpa||0).toFixed(2) : '—'}</div>
+            <div style="color:var(--text-secondary);font-size:0.8rem;margin-top:6px;">Semester CGPA</div>
+            <div style="margin-top:16px;font-size:0.78rem;color:#fbbf24;opacity:0.8;"><i class="fa-solid fa-lock"></i> Course details hidden in demo mode</div>
+          </div>`;
+        return;
+      }
       if (!sems.length) { el.innerHTML = '<p style="color:var(--text-secondary);">No semester data.</p>'; return; }
       const s = sems[0]; // newest first after normalizeData sort
       const courses = (s.courses||[]).map(c => `
@@ -767,14 +805,14 @@
       `;
     }
 
-    function renderAllSems(d) {
+    function renderAllSems(d, demoMode) {
       const sems = d.semesters || [];
       document.getElementById('dSems').innerHTML = sems.map((s,i) => `
-        <div class="res-sem-mini" onclick="expandSem(${i})">
+        <div class="res-sem-mini" ${demoMode ? '' : `onclick="expandSem(${i})"`} style="${demoMode ? 'cursor:default;' : ''}">
           <div class="res-sem-mini-name">${s.semester_name||s.semester||`Semester ${i+1}`}</div>
           <div class="res-sem-mini-stats">
             <div class="res-sem-mini-stat"><span>CGPA</span><span>${(s.gpa||0).toFixed(2)}</span></div>
-            <div class="res-sem-mini-stat"><span>Courses</span><span>${(s.courses||[]).length}</span></div>
+            <div class="res-sem-mini-stat" style="${demoMode ? 'filter:blur(3px);opacity:0.3;' : ''}"><span>Courses</span><span>${demoMode ? '--' : (s.courses||[]).length}</span></div>
           </div>
         </div>`).join('') || '<p style="color:var(--text-secondary);">No data.</p>';
     }
