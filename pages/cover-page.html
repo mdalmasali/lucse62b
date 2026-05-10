@@ -997,44 +997,47 @@
     }
 
     /* ── Safe canvas capture — works even when preview is hidden/scaled ── */
-    /* On mobile the preview panel is collapsed (parent has display:none),
-       so html2canvas can't see #coverPreview at all.  We clone it, attach
-       the clone directly to <body> off-screen at full A4 size, capture
-       the clone, then remove it.  This bypasses any parent visibility. */
+    /* On mobile the preview panel is collapsed (parent has display:none).
+       Instead of cloning (which loses computed CSS), we temporarily reveal
+       the parent chain, reset the scale transform, and move it off-screen.
+       After capture we restore everything exactly as it was. */
     async function captureCanvas() {
       updatePreview();
 
-      const src   = document.getElementById('coverPreview');
-      const clone = src.cloneNode(true);
+      const panel  = document.getElementById('previewPanel');
+      const scaler = document.getElementById('previewScaler');
+      const wrap   = document.getElementById('previewScalerWrap');
+      const outer  = document.getElementById('previewOuter');
+      const el     = document.getElementById('coverPreview');
 
-      /* Style the clone: off-screen, full A4 size, directly on <body> */
-      Object.assign(clone.style, {
-        position:   'fixed',
-        left:       '-9999px',
-        top:        '0px',
-        width:      '794px',
-        height:     '1123px',
-        visibility: 'visible',
-        display:    'block',
-        zIndex:     '-1',
-        transform:  'none',
-        opacity:    '1',
-        overflow:   'hidden',
-        background: '#ffffff',
-        color:      '#000000',
-        fontFamily: "'Times New Roman', Times, serif",
-        padding:    '96px',
-        boxSizing:  'border-box'
-      });
-      clone.id = 'coverPreviewClone';
-      document.body.appendChild(clone);
+      /* ── Save current states ── */
+      const wasCollapsed       = panel.classList.contains('collapsed');
+      const savedScalerStyle   = scaler.style.cssText;
+      const savedWrapStyle     = wrap.style.cssText;
+      const savedOuterStyle    = outer.style.cssText;
 
-      /* Give the browser a frame to lay out the clone */
-      await new Promise(r => setTimeout(r, 120));
+      /* ── Temporarily reveal at full A4 size, off-screen ── */
+      if (wasCollapsed) panel.classList.remove('collapsed');
+
+      scaler.style.transform = 'none';
+      scaler.style.width     = '794px';
+      scaler.style.height    = '1123px';
+
+      wrap.style.width    = '794px';
+      wrap.style.height   = '1123px';
+      wrap.style.overflow = 'hidden';
+
+      outer.style.position = 'fixed';
+      outer.style.left     = '-9999px';
+      outer.style.top      = '0px';
+      outer.style.zIndex   = '-1';
+
+      /* Give the browser a frame to reflow */
+      await new Promise(r => setTimeout(r, 150));
 
       let canvas;
       try {
-        canvas = await html2canvas(clone, {
+        canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
           allowTaint: true,
@@ -1045,7 +1048,11 @@
           height: 1123
         });
       } finally {
-        clone.remove();
+        /* ── Restore everything ── */
+        if (wasCollapsed) panel.classList.add('collapsed');
+        scaler.style.cssText = savedScalerStyle;
+        wrap.style.cssText   = savedWrapStyle;
+        outer.style.cssText  = savedOuterStyle;
       }
 
       return canvas;
