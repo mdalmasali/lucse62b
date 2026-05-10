@@ -996,6 +996,63 @@
       return `${code}_${type}_${name}`;
     }
 
+    /* ── Safe canvas capture — works even when preview is hidden/scaled ── */
+    async function captureCanvas() {
+      updatePreview();
+
+      const el = document.getElementById('coverPreview');
+
+      /* Save current inline styles so we can restore them */
+      const savedPos        = el.style.position;
+      const savedLeft       = el.style.left;
+      const savedTop        = el.style.top;
+      const savedWidth      = el.style.width;
+      const savedHeight     = el.style.height;
+      const savedVisibility = el.style.visibility;
+      const savedZIndex     = el.style.zIndex;
+      const savedTransform  = el.style.transform;
+
+      /* Move element off-screen at its natural 794×1123 size so html2canvas
+         can read it regardless of the collapsed / scaled preview state */
+      el.style.position   = 'fixed';
+      el.style.left       = '-9999px';
+      el.style.top        = '0px';
+      el.style.width      = '794px';
+      el.style.height     = '1123px';
+      el.style.visibility = 'visible';
+      el.style.zIndex     = '-1';
+      el.style.transform  = 'none';
+
+      /* Give the browser one frame to reflow */
+      await new Promise(r => setTimeout(r, 80));
+
+      let canvas;
+      try {
+        canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 8000,
+          width: 794,
+          height: 1123
+        });
+      } finally {
+        /* Always restore original styles */
+        el.style.position   = savedPos;
+        el.style.left       = savedLeft;
+        el.style.top        = savedTop;
+        el.style.width      = savedWidth;
+        el.style.height     = savedHeight;
+        el.style.visibility = savedVisibility;
+        el.style.zIndex     = savedZIndex;
+        el.style.transform  = savedTransform;
+      }
+
+      return canvas;
+    }
+
     /* ── PDF Generation ── */
     async function generatePDF() {
       const btn = document.getElementById('btnGen');
@@ -1003,21 +1060,10 @@
       btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
 
       try {
-        updatePreview();
-        await new Promise(r => setTimeout(r, 200));
-
-        const el = document.getElementById('coverPreview');
-        const canvas = await html2canvas(el, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          imageTimeout: 5000
-        });
+        const canvas = await captureCanvas();
 
         const { jsPDF } = window.jspdf;
-        const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const imgData = canvas.toDataURL('image/jpeg', 0.97);
         pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
@@ -1042,11 +1088,7 @@
       btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
 
       try {
-        updatePreview();
-        await new Promise(r => setTimeout(r, 200));
-
-        const el     = document.getElementById('coverPreview');
-        const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false });
+        const canvas = await captureCanvas();
         const fname  = buildFilename();
 
         /* Step 1: download PDF */

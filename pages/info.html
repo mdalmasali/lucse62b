@@ -6,9 +6,343 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <title>Info | CSE 62B LU</title>
+  <meta name="description" content="Class routines, course offers, bus schedule, teacher contacts and more for CSE 62B."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .info-layout {
+      max-width: 1300px;
+      margin: 90px auto 60px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .info-sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px 10px;
+      position: sticky;
+      top: 80px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .info-sidebar-title {
+      font-size: 0.62rem; font-weight: 700;
+      color: var(--accent-bright);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 4px 10px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .info-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 12px;
+      cursor: pointer; transition: all 0.18s;
+      color: var(--text-secondary);
+      font-size: 0.84rem; font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .info-menu-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+    }
+    .info-menu-item.active {
+      background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(99,102,241,0.12));
+      border-color: rgba(124,58,237,0.3);
+      color: #c4b5fd;
+      font-weight: 600;
+    }
+    .info-menu-item .mi-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; flex-shrink: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      transition: all 0.18s;
+    }
+    .info-menu-item.active .mi-icon {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+    .info-menu-item .mi-num {
+      margin-left: auto;
+      font-size: 0.65rem; color: var(--text-secondary);
+      opacity: 0.5;
+    }
+
+    /* ── Mobile chips ── */
+    .info-chips {
+      display: none;
+      overflow-x: auto; gap: 8px;
+      padding: 0 4px 2px;
+      scrollbar-width: none;
+      margin-bottom: 16px;
+    }
+    .info-chips::-webkit-scrollbar { display: none; }
+    .info-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 50px; flex-shrink: 0;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.18s;
+      font-family: 'Inter', sans-serif; white-space: nowrap;
+    }
+    .info-chip.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+
+    /* ── Content panel ── */
+    .info-content {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      min-height: 500px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+    .info-content-header {
+      padding: 22px 26px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .info-content-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; flex-shrink: 0;
+    }
+    .info-content-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--text);
+    }
+    .info-content-sub {
+      font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;
+    }
+    .info-content-body {
+      padding: 26px;
+    }
+
+    /* placeholder / loading */
+    .info-placeholder {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .info-placeholder i { font-size: 2.5rem; opacity: 0.15; display: block; margin-bottom: 16px; }
+    .info-placeholder p { font-size: 0.9rem; }
+
+    .info-loading-spin {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 60px 20px; color: var(--text-secondary);
+    }
+    .spin-sm {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* image viewer */
+    .info-img-wrap {
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .info-img-wrap img {
+      width: 100%; display: block;
+    }
+
+    /* embed (pdf/iframe) */
+    .info-embed {
+      width: 100%; height: 70vh; min-height: 400px;
+      border: none; border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* card grid for links/contacts */
+    .info-card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .info-item-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px; transition: all 0.2s;
+    }
+    .info-item-card:hover { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.06); }
+    .info-item-card a { color: var(--accent-bright); text-decoration: none; word-break: break-all; font-size: 0.85rem; }
+    .info-item-card a:hover { text-decoration: underline; }
+    .info-item-card .ic-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
+    .info-item-card .ic-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+
+    /* ── Routine: Sync badge ── */
+    .rt-sync {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .rt-sync-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+    }
+
+    /* ── Routine: Grid Table ── */
+    .rt-grid-wrap {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      border-radius: 12px; border: 1px solid var(--border);
+    }
+    .rt-grid {
+      border-collapse: collapse; width: 100%; min-width: 680px;
+    }
+    .rt-grid th, .rt-grid td {
+      border: 1px solid rgba(255,255,255,0.06);
+      text-align: center; vertical-align: middle;
+    }
+    .rt-grid thead th {
+      padding: 10px 10px; font-size: 0.68rem; font-weight: 700;
+      color: var(--text-secondary); white-space: nowrap;
+      background: rgba(255,255,255,0.04); line-height: 1.35;
+    }
+    .rt-grid thead th.rt-th-day {
+      text-align: left; min-width: 95px;
+      color: var(--accent-bright); position: sticky; left: 0;
+      background: rgba(18,18,28,0.95); z-index: 2;
+    }
+    .rt-grid thead th.rt-th-break {
+      background: rgba(251,191,36,0.07); color: #fbbf24; min-width: 70px;
+    }
+    .rt-grid tbody td { padding: 8px 8px; min-width: 115px; }
+    .rt-grid-day-cell {
+      font-size: 0.8rem; font-weight: 700; text-align: left;
+      padding: 10px 14px !important; white-space: nowrap;
+      background: rgba(18,18,28,0.9); position: sticky; left: 0; z-index: 1;
+      color: var(--text-secondary);
+    }
+    .rt-grid tr.has-class .rt-grid-day-cell { color: #c4b5fd; }
+    .rt-grid tr.no-class { opacity: 0.35; }
+    .rt-grid-free { color: var(--text-secondary); font-size: 0.75rem; opacity: 0.5; }
+    .rt-grid-break-cell {
+      background: rgba(251,191,36,0.05);
+      font-size: 0.6rem; font-weight: 700; color: #fbbf24;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .rt-gc {
+      display: flex; flex-direction: column; gap: 2px; align-items: center;
+      padding: 4px 2px; border-radius: 8px; border: 1px solid transparent;
+      transition: transform 0.15s;
+    }
+    .rt-gc:hover { transform: scale(1.03); }
+    .rt-gc-code {
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 0.03em;
+    }
+    .rt-gc-teacher {
+      font-size: 0.62rem; color: var(--text-secondary); font-weight: 600;
+    }
+    .rt-gc-room {
+      font-size: 0.6rem; color: var(--text-secondary); opacity: 0.65;
+    }
+    .rt-grid-empty-msg {
+      text-align: center; padding: 50px 20px;
+      color: var(--text-secondary); font-size: 0.85rem;
+    }
+    .rt-capture-area { padding: 16px 0 10px; }
+    .rt-capture-title {
+      font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);
+      padding: 0 2px 12px; letter-spacing: 0.03em;
+    }
+    .rt-dl-bar {
+      display: flex; gap: 10px; margin-top: 18px;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .rt-dl-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 22px; border-radius: 50px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 0.82rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all 0.18s;
+      font-family: 'Inter', sans-serif;
+    }
+    .rt-dl-btn:hover { opacity: 0.87; transform: translateY(-1px); }
+    .rt-dl-btn:active { transform: translateY(0); }
+    .rt-dl-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .rt-dl-btn-pdf { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+    /* ── Exam Routine: card list ── */
+    .exam-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .exam-count-badge {
+      font-size: 0.72rem; font-weight: 700; background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border); padding: 4px 14px; border-radius: 20px;
+      color: var(--text-secondary);
+    }
+    .exam-cards { display: flex; flex-direction: column; gap: 10px; }
+    .exam-card {
+      display: grid; grid-template-columns: 90px 1fr;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-left-width: 3px; border-radius: 14px; overflow: hidden; transition: all 0.18s;
+    }
+    .exam-card:hover { background: rgba(255,255,255,0.055); }
+    .exam-card.is-past { opacity: 0.35; }
+    .exam-card.is-today { background: rgba(124,58,237,0.09) !important; border-color: rgba(124,58,237,0.55) !important; }
+    .exam-card-left {
+      padding: 14px 10px; text-align: center; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    }
+    .exam-card-daynum { font-size: 0.62rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.08em; text-transform: uppercase; }
+    .exam-card-wday   { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .exam-card-date   { font-size: 0.68rem; color: var(--text-secondary); margin-top: 1px; }
+    .exam-card-right  { padding: 14px 18px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+    .exam-card-code   { font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; }
+    .exam-card-name   { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; }
+    .exam-card-time   { font-size: 0.72rem; color: var(--accent-bright); font-weight: 600; margin-top: 4px; }
+    .exam-today-tag   { display: inline-block; font-size: 0.58rem; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; vertical-align: middle; }
+
+    /* ── Teacher Routine: search form ── */
+    .rt-tf-wrap { margin-bottom: 22px; }
+    .rt-tf-heading { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .rt-tf-row { display: flex; gap: 10px; align-items: stretch; }
+    .rt-tf-input {
+      flex: 1; max-width: 220px; padding: 10px 16px;
+      border-radius: 12px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); color: var(--text);
+      font-size: 0.92rem; font-weight: 600; font-family: 'Inter',sans-serif;
+      outline: none; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .rt-tf-input:focus { border-color: rgba(124,58,237,0.55); background: rgba(124,58,237,0.06); }
+    .rt-tf-input::placeholder { text-transform: none; font-weight: 400; letter-spacing: 0; opacity: 0.5; }
+    .rt-tf-btn {
+      padding: 10px 20px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 0.82rem; font-weight: 700;
+      border: none; cursor: pointer; white-space: nowrap;
+      font-family: 'Inter',sans-serif; transition: opacity 0.18s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .rt-tf-btn:hover { opacity: 0.87; }
+    .rt-tf-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .rt-tf-hint { font-size: 0.72rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.6; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .info-layout { grid-template-columns: 1fr; margin-top: 70px; }
+      .info-sidebar { display: none; }
+      .info-chips { display: flex; }
+    }
+    @media (max-width: 640px) {
+      .info-layout { padding: 0 12px; gap: 14px; }
+      .info-content-body { padding: 18px; }
+      .info-content-header { padding: 16px 18px 14px; }
+    }
+  </style>
 </head>
 <body>
   <div class="bg-canvas">
@@ -31,10 +365,7 @@
         <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
-      <div class="topbar-status">
-        <div class="status-dot"></div>
-        Portal Active
-      </div>
+      <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
       <button class="hamburger" id="hamburger" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
@@ -51,14 +382,28 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">ℹ️ Info</span>
-      <div class="section-line"></div>
-    </div>
+    <div class="info-layout">
 
-    <div class="fade-in delay-2" style="text-align:center; padding: 80px 20px; color: var(--text-secondary);">
-      <i class="fa-solid fa-circle-info" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 20px;"></i>
-      <p style="font-size: 0.95rem;">Coming soon.</p>
+      <!-- ── Left Sidebar ── -->
+      <aside class="info-sidebar fade-in">
+        <div class="info-sidebar-title"><i class="fa-solid fa-list-ul" style="margin-right:6px;"></i>Info Menu</div>
+        <div id="sidebarMenu"></div>
+      </aside>
+
+      <!-- ── Right Content ── -->
+      <div style="min-width:0;">
+        <!-- Mobile chips -->
+        <div class="info-chips fade-in" id="mobileChips"></div>
+
+        <!-- Content panel -->
+        <div class="info-content fade-in delay-1" id="infoContent">
+          <div class="info-placeholder">
+            <i class="fa-solid fa-circle-info"></i>
+            <p>Select a category from the menu.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <footer>
@@ -77,5 +422,436 @@
   </div>
 
   <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/script.js"></script>
+  <script>
+    const MENU = [
+      { id: 'routine',         label: 'Class Routine',          icon: 'fa-solid fa-calendar-week',         color: '#a78bfa' },
+      { id: 'teacher-routine',label: 'Teacher Class Routine',  icon: 'fa-solid fa-chalkboard-user',       color: '#34d399' },
+      { id: 'course-offer',   label: 'Course Offer',           icon: 'fa-solid fa-book-open',             color: '#38bdf8' },
+      { id: 'all-course',     label: 'All Batch Course Offer', icon: 'fa-solid fa-layer-group',           color: '#34d399' },
+      { id: 'bus',            label: 'Bus Schedule',           icon: 'fa-solid fa-bus',                   color: '#fbbf24' },
+      { id: 'semester',       label: 'Semester Info',          icon: 'fa-solid fa-graduation-cap',        color: '#f472b6' },
+      { id: 'group-links',    label: 'All Course Group Link',  icon: 'fa-solid fa-link',                  color: '#818cf8' },
+      { id: 'teachers',       label: 'Teacher Contact List',   icon: 'fa-solid fa-address-book',          color: '#fb923c' },
+      { id: 'bkash',          label: 'bKash Payment / Fees',   icon: 'fa-solid fa-mobile-screen-button',  color: '#e879f9' },
+      { id: 'mid-routine',    label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
+      { id: 'final-routine',  label: 'Final Term Routine',     icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
+    ];
+
+    let activeId = null;
+
+    /* ── Build sidebar & chips ── */
+    function buildMenu() {
+      const sidebar = document.getElementById('sidebarMenu');
+      const chips   = document.getElementById('mobileChips');
+      MENU.forEach((item, i) => {
+        /* sidebar item */
+        const div = document.createElement('div');
+        div.className = 'info-menu-item';
+        div.dataset.id = item.id;
+        div.innerHTML = `
+          <div class="mi-icon"><i class="${item.icon}" style="color:${item.color};"></i></div>
+          <span>${item.label}</span>
+          <span class="mi-num">${String(i+1).padStart(2,'0')}</span>`;
+        div.addEventListener('click', () => selectItem(item.id));
+        sidebar.appendChild(div);
+
+        /* mobile chip */
+        const chip = document.createElement('div');
+        chip.className = 'info-chip';
+        chip.dataset.id = item.id;
+        chip.innerHTML = `<i class="${item.icon}"></i> ${item.label}`;
+        chip.addEventListener('click', () => selectItem(item.id));
+        chips.appendChild(chip);
+      });
+    }
+
+    /* ── Select item ── */
+    function selectItem(id) {
+      if (activeId === id) return;
+      activeId = id;
+
+      document.querySelectorAll('.info-menu-item').forEach(el =>
+        el.classList.toggle('active', el.dataset.id === id));
+      document.querySelectorAll('.info-chip').forEach(el =>
+        el.classList.toggle('active', el.dataset.id === id));
+
+      const item = MENU.find(m => m.id === id);
+      renderContent(item);
+
+      /* mobile: scroll chip into view */
+      const chip = document.querySelector(`.info-chip[data-id="${id}"]`);
+      if (chip) chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    /* ── Render content ── */
+    function renderContent(item) {
+      const panel = document.getElementById('infoContent');
+      panel.innerHTML = `
+        <div class="info-content-header">
+          <div class="info-content-icon" style="background:linear-gradient(135deg,${item.color}cc,${item.color}66);">
+            <i class="${item.icon}"></i>
+          </div>
+          <div>
+            <div class="info-content-title">${item.label}</div>
+            <div class="info-content-sub">CSE 62B · Leading University</div>
+          </div>
+        </div>
+        <div class="info-content-body" id="contentBody">
+          <div class="info-loading-spin"><div class="spin-sm"></div> Loading...</div>
+        </div>`;
+
+      loadContent(item);
+    }
+
+    /* ── Sheet fetch (JSONP) ── */
+    const INFO_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+
+    function fetchSheet(sheetName) {
+      return new Promise((resolve, reject) => {
+        const cb = `inf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 12000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = d => { cleanup(); resolve(d); };
+        s.src = `https://docs.google.com/spreadsheets/d/${INFO_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
+        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function sheetRows(data) {
+      return (data.table?.rows || []).map(r =>
+        (r.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '')
+      );
+    }
+
+    /* ── Course color palette ── */
+    const COLORS = ['#a78bfa','#38bdf8','#34d399','#fb923c','#f472b6','#818cf8','#4ade80','#f87171','#fbbf24','#22d3ee'];
+    const _colorCache = {};
+    function courseColor(code) {
+      if (!code) return '#6b7280';
+      if (_colorCache[code]) return _colorCache[code];
+      let h = 0;
+      for (const c of code) h = ((h << 5) - h) + c.charCodeAt(0);
+      return (_colorCache[code] = COLORS[Math.abs(h) % COLORS.length]);
+    }
+
+    /* ── Day ordering ── */
+    const DAY_ORDER = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+    function daySort(d) { const i = DAY_ORDER.findIndex(x => x.toLowerCase() === d.toLowerCase()); return i < 0 ? 99 : i; }
+
+    /* ── Time slot sort (handles 01:xx as afternoon) ── */
+    function timeToMin(t) {
+      const m = (t || '').match(/(\d{1,2}):(\d{2})/);
+      if (!m) return 9999;
+      let h = parseInt(m[1]), min = parseInt(m[2]);
+      if (h < 8) h += 12;
+      return h * 60 + min;
+    }
+
+    /* ── Routine: day tab names (fetch by name, sheet ID comes from user's Routine tab) ── */
+    /* Tab names are UPPERCASE in LU sheet (confirmed from lazmart network tab) */
+    const ROUTINE_DAY_NAMES = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
+    const DAY_DISPLAY = { SATURDAY:'Saturday', SUNDAY:'Sunday', MONDAY:'Monday', TUESDAY:'Tuesday', WEDNESDAY:'Wednesday', THURSDAY:'Thursday', FRIDAY:'Friday' };
+
+    function fetchDayTab(sheetId, dayName) {
+      return new Promise((resolve, reject) => {
+        const cb = `rt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = d => { cleanup(); resolve(d); };
+        s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(dayName)}`;
+        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    /* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */
+    function parseClassCell(cell) {
+      if (!cell) return null;
+      cell = cell.trim();
+      if (!cell || cell === '--' || cell === '–') return null;
+      const parts = cell.split(/\s+/).filter(Boolean);
+      if (parts.length >= 3) return { code: parts[0], initials: parts[1], room: parts.slice(2).join(' ') };
+      if (parts.length === 2) return { code: parts[0], initials: '', room: parts[1] };
+      return parts.length ? { code: parts[0], initials: '', room: '' } : null;
+    }
+
+    function escH(s) {
+      return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* ── Section scripts: loaded lazily on first click ── */
+    const SECTION_SCRIPTS = {
+      'routine':         'info/routine.js',
+      'teacher-routine': 'info/teacher-routine.js',
+      'mid-routine':     'info/exam.js',
+      'final-routine':   'info/exam.js',
+    };
+
+    async function loadContent(item) {
+      const body = document.getElementById('contentBody');
+      if (SECTION_SCRIPTS[item.id]) {
+        try { await loadScript(SECTION_SCRIPTS[item.id]); } catch(_) {}
+      }
+      if (item.id === 'routine')         { loadRoutine(body);               return; }
+      if (item.id === 'teacher-routine') { loadTeacherRoutine(body);        return; }
+      if (item.id === 'mid-routine')     { loadExamRoutine(body, 'mid');    return; }
+      if (item.id === 'final-routine')   { loadExamRoutine(body, 'final');  return; }
+
+      const COMING = {
+        'course-offer':  'Current semester course offer will be shown here.',
+        'all-course':    'All batch course offer list will be shown here.',
+        'bus':           'Bus schedule and routes will be shown here.',
+        'semester':      'Semester dates, registration deadlines and info will be shown here.',
+        'group-links':   'All course WhatsApp / Telegram group links will be shown here.',
+        'teachers':      'Teacher contact numbers and emails will be shown here.',
+        'bkash':         'bKash payment number and fees codes will be shown here.',
+      };
+      setTimeout(() => {
+        body.innerHTML = `
+          <div class="info-placeholder">
+            <i class="${item.icon}" style="color:${item.color};opacity:0.25;"></i>
+            <p style="font-weight:600;color:var(--text);margin-bottom:6px;">${item.label}</p>
+            <p>${COMING[item.id] || ''}</p>
+            <p style="margin-top:16px;font-size:0.78rem;opacity:0.5;">Content will be added soon.</p>
+          </div>`;
+      }, 300);
+    }
+
+    /* ── Lazy-load external script ── */
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    /* ── Shared: find a sheet ID from the Routine tab by keyword in col A ── */
+    async function getSheetIdFromRoutineTab(keyword) {
+      try {
+        const d = await fetchSheet('Routine');
+        for (const row of sheetRows(d)) {
+          if (row[0]?.toLowerCase().includes(keyword.toLowerCase()) && row[1]) {
+            const m = row[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+            if (m) return m[1];
+          }
+        }
+      } catch(_) {}
+      return null;
+    }
+
+    async function getRoutineSheetId() {
+      return (await getSheetIdFromRoutineTab('class routine'))
+          || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+    }
+
+    /* ── Shared: time deduplication for any schedule ── */
+    function deduplicateTimes(schedule) {
+      const keyMap    = new Map();
+      const breakKeys = new Set();
+      Object.values(schedule).forEach(slots => slots.forEach(s => {
+        const k = timeToMin(s.time);
+        if (!keyMap.has(k)) keyMap.set(k, s.time);
+        if (s.isBreak) breakKeys.add(k);
+      }));
+      const sorted    = [...keyMap.keys()].sort((a, b) => a - b);
+      const allTimes  = sorted.map(k => keyMap.get(k));
+      const breakSet  = new Set(sorted.filter(k => breakKeys.has(k)).map(k => keyMap.get(k)));
+      ROUTINE_DAY_NAMES.forEach(day =>
+        (schedule[day] || []).forEach(s => { s.time = keyMap.get(timeToMin(s.time)) || s.time; })
+      );
+      return { allTimes, breakTimesSet: breakSet };
+    }
+
+    /* ── Shared: parse all day tabs into a schedule ── */
+    function parseDayResults(dayResults, rowFilter) {
+      // rowFilter(cells) → object to merge into slot, or null to skip row
+      const schedule = {};
+      ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
+        const data = dayResults[idx];
+        if (!data?.table) return;
+        const rows = data.table.rows || [];
+        const cols = data.table.cols || [];
+        if (!rows.length) return;
+
+        let timeSlots = cols.slice(3).map(c => (c.label||'').trim());
+        let dataStart = 0;
+        if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+          for (let r = 0; r < Math.min(rows.length, 3); r++) {
+            const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+            if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
+              timeSlots = cells.slice(3); dataStart = r + 1; break;
+            }
+          }
+        }
+
+        const breakCounts = {}; // slotIndex → how many rows have BREAK there
+        const slotData    = {}; // slotIndex → [extra]
+
+        for (let r = dataStart; r < rows.length; r++) {
+          const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+          cells.slice(3).forEach((cell, i) => {
+            if (cell.toUpperCase() === 'BREAK') {
+              breakCounts[i] = (breakCounts[i] || 0) + 1;
+              return;
+            }
+            const extra = rowFilter(cells, cell, i);
+            if (extra) {
+              if (!slotData[i]) slotData[i] = [];
+              slotData[i].push({ ...parseClassCell(cell), ...extra });
+            }
+          });
+        }
+
+        // Pick the slot with the most BREAK votes — real break beats any one-off outlier
+        let breakSlotIdx = -1, maxBreakCount = 0;
+        Object.entries(breakCounts).forEach(([k, cnt]) => {
+          if (cnt > maxBreakCount) { maxBreakCount = cnt; breakSlotIdx = parseInt(k); }
+        });
+
+        const daySchedule = [];
+        timeSlots.forEach((time, i) => {
+          if (!time) return;
+          if (i === breakSlotIdx) { daySchedule.push({ isBreak: true, time }); return; }
+          (slotData[i] || []).forEach(entry => daySchedule.push({ time, ...entry }));
+        });
+
+        if (daySchedule.some(s => !s.isBreak)) schedule[dayName] = daySchedule;
+      });
+      return schedule;
+    }
+
+    /* ─────────────────────────────────────────────
+       PRINT TEMPLATE (shared, generic)
+    ───────────────────────────────────────────── */
+    /* title: heading; subtitle: second line; cache: {allTimes,schedule,courseInfo,breakTimesSet}
+       getCellLine2(slot, info) → string for middle line of cell */
+    function buildPrintTemplate(title, subtitle, cache, getCellLine2) {
+      if (!cache) return '';
+      const { allTimes, schedule, courseInfo, breakTimesSet } = cache;
+      getCellLine2 = getCellLine2 || ((s, info) => info.teacher || s.initials || '');
+
+      const TOTAL_W = 1280, PADDING = 36, DAY_W = 130;
+      const colW    = Math.floor((TOTAL_W - PADDING * 2 - DAY_W) / allTimes.length);
+
+      const lookup = {};
+      ROUTINE_DAY_NAMES.forEach(day => {
+        lookup[day] = {};
+        (schedule[day] || []).forEach(s => { if (!lookup[day][s.time]) lookup[day][s.time] = s; });
+      });
+
+      let tbl = `<table style="width:100%;border-collapse:collapse;table-layout:fixed;"><thead><tr>
+        <th style="width:${DAY_W}px;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">DAY / TIME</th>`;
+      allTimes.forEach(time => {
+        const isBreak = breakTimesSet.has(time);
+        tbl += `<th style="width:${colW}px;padding:9px 4px;text-align:center;font-size:10px;font-weight:700;color:${isBreak?'#fbbf24':'#94a3b8'};background:${isBreak?'rgba(251,191,36,0.09)':'rgba(255,255,255,0.03)'};border:1px solid rgba(255,255,255,0.07);white-space:nowrap;">${escH(time)}</th>`;
+      });
+      tbl += `</tr></thead><tbody>`;
+
+      ROUTINE_DAY_NAMES.forEach((day, ri) => {
+        const daySlots = lookup[day];
+        const hasClass = schedule[day]?.some(s => !s.isBreak);
+        const rowBg    = ri % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent';
+        tbl += `<tr><td style="padding:10px 14px;font-size:13px;font-weight:${hasClass?'700':'400'};color:${hasClass?'#c4b5fd':'#374151'};background:#0f0f1acc;border:1px solid rgba(255,255,255,0.06);white-space:nowrap;">${escH(DAY_DISPLAY[day]||day)}</td>`;
+        allTimes.forEach(time => {
+          const isBreak = breakTimesSet.has(time);
+          const slot    = daySlots[time];
+          if (isBreak) {
+            tbl += `<td style="padding:6px 4px;text-align:center;background:rgba(251,191,36,0.07);border:1px solid rgba(255,255,255,0.06);font-size:9px;font-weight:700;color:${slot?.isBreak?'#fbbf24':'transparent'};letter-spacing:0.07em;">${slot?.isBreak?'&#9749; BREAK':''}</td>`;
+          } else if (slot && !slot.isBreak) {
+            const color = courseColor(slot.code);
+            const info  = courseInfo[slot.code?.toUpperCase()] || {};
+            const line2 = getCellLine2(slot, info);
+            tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);">
+              <div style="background:${color}1a;border:1.5px solid ${color}55;border-radius:8px;padding:7px 5px;margin:0 auto;max-width:98%;">
+                <div style="font-size:11.5px;font-weight:800;color:${color};letter-spacing:0.02em;">${escH(slot.code)}</div>
+                ${line2?`<div style="font-size:10px;color:#cbd5e1;font-weight:600;margin-top:3px;">${escH(line2)}</div>`:''}
+                ${slot.room?`<div style="font-size:9.5px;color:#64748b;margin-top:2px;">${escH(slot.room)}</div>`:''}
+              </div></td>`;
+          } else {
+            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">—</td>`;
+          }
+        });
+        tbl += `</tr>`;
+      });
+      tbl += `</tbody></table>`;
+
+      const dateStr = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+      return `<div style="width:${TOTAL_W}px;background:#0d0d1b;padding:${PADDING}px;font-family:'Inter',system-ui,sans-serif;color:#e2e8f0;box-sizing:border-box;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:20px;border-bottom:1.5px solid rgba(124,58,237,0.4);">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="white" stroke-width="2"/><path d="M16 2V6M8 2V6M3 10H21" stroke="white" stroke-width="2" stroke-linecap="round"/><rect x="7" y="14" width="4" height="4" rx="1" fill="white"/></svg>
+            </div>
+            <div>
+              <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em;">${escH(title||'Class Routine')}</div>
+              <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">${escH(subtitle||'Spring 2026')}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:700;color:#94a3b8;">Leading University, Sylhet</div>
+            <div style="font-size:11.5px;color:#4b5563;margin-top:4px;">Department of Computer Science &amp; Engineering</div>
+          </div>
+        </div>
+        ${tbl}
+        <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; cse62b.vercel.app</div>
+          <div style="font-size:10.5px;color:#374151;">Generated: ${dateStr}</div>
+        </div>
+      </div>`;
+    }
+
+    /* ── Render off-screen template → canvas ── */
+    async function captureTemplate(title, subtitle, cache, getCellLine2) {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';
+      wrapper.innerHTML = buildPrintTemplate(title, subtitle, cache, getCellLine2);
+      document.body.appendChild(wrapper);
+      const canvas = await html2canvas(wrapper.firstElementChild, {
+        backgroundColor: '#0d0d1b', scale: 3, useCORS: true, logging: false, allowTaint: true
+      });
+      document.body.removeChild(wrapper);
+      return canvas;
+    }
+
+    async function _doDownloadImg(filename, title, subtitle, cache, getCellLine2, btn) {
+      const orig = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing...';
+      try {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        const canvas = await captureTemplate(title, subtitle, cache, getCellLine2);
+        const a = document.createElement('a'); a.download = filename; a.href = canvas.toDataURL('image/png'); a.click();
+      } catch(e) { alert('Image download failed: ' + e.message); }
+      finally { btn.disabled = false; btn.innerHTML = orig; }
+    }
+
+    async function _doDownloadPDF(filename, title, subtitle, cache, getCellLine2, btn) {
+      const orig = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing...';
+      try {
+        await Promise.all([
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+        ]);
+        const canvas = await captureTemplate(title, subtitle, cache, getCellLine2);
+        const { jsPDF } = window.jspdf;
+        const w = canvas.width/3, h = canvas.height/3;
+        const pdf = new jsPDF({ orientation:'landscape', unit:'px', format:[w+20, h+20] });
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, w, h);
+        pdf.save(filename);
+      } catch(e) { alert('PDF download failed: ' + e.message); }
+      finally { btn.disabled = false; btn.innerHTML = orig; }
+    }
+
+    buildMenu();
+
+    /* auto-select first item */
+    selectItem(MENU[0].id);
+  </script>
 </body>
 </html>
