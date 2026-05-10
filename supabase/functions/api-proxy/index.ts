@@ -1,3 +1,4 @@
+// @ts-ignore: Deno import resolution when Deno extension is not active
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 
 const corsHeaders = {
@@ -21,6 +22,7 @@ serve(async (req: Request) => {
       const sheetName = url.searchParams.get('sheetName');
       if (!sheetName) throw new Error('Missing sheetName parameter');
       
+      // @ts-ignore: Deno global object
       const SHEET_ID = Deno.env.get('GOOGLE_SHEET_ID');
       if (!SHEET_ID) throw new Error('Server missing GOOGLE_SHEET_ID configuration');
 
@@ -45,6 +47,7 @@ serve(async (req: Request) => {
 
     // POST /?type=lu-result -> Proxy LU API
     if (req.method === 'POST' && actionType === 'lu-result') {
+      // @ts-ignore: Deno global object
       const LU_API_URL = Deno.env.get('LU_RESULT_API_URL');
       if (!LU_API_URL) throw new Error('Server missing LU_RESULT_API_URL configuration');
 
@@ -65,8 +68,8 @@ serve(async (req: Request) => {
     }
 
     throw new Error('Invalid request type or method');
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error?.message || 'Unknown error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
