@@ -134,36 +134,11 @@ function initStudentDirectory() {
   });
 }
 
-function loadGoogleSheet(sheetName) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `codexSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Google Sheet request timed out.'));
-    }, 15000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      delete window[callbackName];
-      script.remove();
-    }
-
-    window[callbackName] = (payload) => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.src =
-      `https://docs.google.com/spreadsheets/d/${STUDENT_SHEET_ID}/gviz/tq?` +
-      `tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}`;
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Failed to load the Google Sheet script.'));
-    };
-
-    document.body.appendChild(script);
-  });
+async function loadGoogleSheet(sheetName) {
+  const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&sheetName=' + encodeURIComponent(sheetName);
+  const response = await fetch(SUPABASE_FUNC);
+  if (!response.ok) throw new Error('Failed to load data from server.');
+  return await response.json();
 }
 
 function parseStudentSheet(rows) {

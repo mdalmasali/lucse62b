@@ -516,17 +516,11 @@
     /* ── Sheet fetch (JSONP) ── */
     const INFO_SHEET_ID = 'REDACTED_SHEET_ID_FOR_SECURITY';
 
-    function fetchSheet(sheetName) {
-      return new Promise((resolve, reject) => {
-        const cb = `inf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 12000);
-        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-        window[cb] = d => { cleanup(); resolve(d); };
-        s.src = `https://docs.google.com/spreadsheets/d/${INFO_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
-        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-        document.body.appendChild(s);
-      });
+    async function fetchSheet(sheetName) {
+      const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&sheetName=' + encodeURIComponent(sheetName);
+      const res = await fetch(SUPABASE_FUNC);
+      if (!res.ok) throw new Error('Failed to load data from server.');
+      return await res.json();
     }
 
     function sheetRows(data) {
@@ -564,17 +558,15 @@
     const ROUTINE_DAY_NAMES = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
     const DAY_DISPLAY = { SATURDAY:'Saturday', SUNDAY:'Sunday', MONDAY:'Monday', TUESDAY:'Tuesday', WEDNESDAY:'Wednesday', THURSDAY:'Thursday', FRIDAY:'Friday' };
 
-    function fetchDayTab(sheetId, dayName) {
-      return new Promise((resolve, reject) => {
-        const cb = `rt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
-        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-        window[cb] = d => { cleanup(); resolve(d); };
-        s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(dayName)}`;
-        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-        document.body.appendChild(s);
-      });
+    async function fetchDayTab(sheetId, dayName) {
+      // NOTE: sheetId is fetched dynamically from the user's Routine tab, so it must be passed securely 
+      // via the Edge Function if we wanted to hide it, but this is a secondary sheet.
+      // For now, we fetch it directly or via proxy. Since the edge function relies on GOOGLE_SHEET_ID env, 
+      // we can add a custom sheetId param to the edge function. 
+      const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&customSheetId=' + encodeURIComponent(sheetId) + '&sheetName=' + encodeURIComponent(dayName);
+      const res = await fetch(SUPABASE_FUNC);
+      if (!res.ok) throw new Error('Failed to load data from server.');
+      return await res.json();
     }
 
     /* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */
