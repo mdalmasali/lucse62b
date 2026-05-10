@@ -8,7 +8,7 @@
   if (window.lu62b_auth_initialized) return;
   window.lu62b_auth_initialized = true;
 
-  const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+  const SHEET_ID   = 'REDACTED_SHEET_ID_FOR_SECURITY';
   const SHEET_NAME = 'Student Info';
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   const ONE_HOUR   = 60 * 60 * 1000;
