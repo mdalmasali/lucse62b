@@ -720,15 +720,26 @@
     function renderDashboard() {
       const d = resData;
       const demoMode = isDemoMode();
+      let isOwnProfile = false;
+      try {
+        const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (ud) {
+          const u = JSON.parse(ud);
+          isOwnProfile = String(u.id) === String(d.student_id);
+        }
+      } catch (e) {}
+
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
       document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
 
-      // Extra info badges — hidden in demo mode
+      // Extra info badges — hidden in demo mode OR if viewing someone else's result
       const badgeEl = document.getElementById('dExtraInfo');
       if (demoMode) {
         badgeEl.innerHTML = `<span class="res-info-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);"><i class="fa-solid fa-lock"></i> Demo mode — personal info hidden</span>`;
+      } else if (!isOwnProfile) {
+        badgeEl.innerHTML = `<span class="res-info-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);"><i class="fa-solid fa-lock"></i> Personal info is only visible to the owner</span>`;
       } else {
         const badges = [];
         if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
