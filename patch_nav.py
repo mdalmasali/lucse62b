@@ -21,21 +21,23 @@ def get_rel_path(filepath, target):
 def generate_header(filepath):
     home = get_rel_path(filepath, 'index.html')
     students = get_rel_path(filepath, 'pages/students.html')
+    classwork = get_rel_path(filepath, 'pages/classwork.html')
     info = get_rel_path(filepath, 'pages/info.html')
     resources = get_rel_path(filepath, 'pages/resources.html')
-    notices = get_rel_path(filepath, 'pages/notices.html')
-    gallery = get_rel_path(filepath, 'pages/gallery.html')
+    results = get_rel_path(filepath, 'pages/result-dashboard.html')
+    cover_page = get_rel_path(filepath, 'pages/cover-page.html')
     login = get_rel_path(filepath, 'pages/login.html')
 
     nav = f"""    <nav class="topbar fade-in">
       <a href="{home}" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="{home}">Home</a></li>
-        <li><a href="{students}">Students</a></li>
-        <li><a href="{info}">Info</a></li>
-        <li><a href="{resources}">Resources</a></li>
-        <li><a href="{notices}">Notices</a></li>
-        <li><a href="{gallery}">Gallery</a></li>
+        <li class="auth-only"><a href="{students}">Students</a></li>
+        <li class="auth-only"><a href="{classwork}">Classwork</a></li>
+        <li class="auth-only"><a href="{info}">Info</a></li>
+        <li class="auth-only"><a href="{resources}">Resources</a></li>
+        <li class="auth-only"><a href="{results}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li class="auth-only"><a href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="{login}" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -50,11 +52,12 @@ def generate_header(filepath):
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="{home}">Home</a>
-      <a href="{students}">Students</a>
-      <a href="{info}">Info</a>
-      <a href="{resources}">Resources</a>
-      <a href="{notices}">Notices</a>
-      <a href="{gallery}">Gallery</a>
+      <a class="auth-only" href="{students}">Students</a>
+      <a class="auth-only" href="{classwork}">Classwork</a>
+      <a class="auth-only" href="{info}">Info</a>
+      <a class="auth-only" href="{resources}">Resources</a>
+      <a class="auth-only" href="{results}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a class="auth-only" href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="{login}" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>"""
     return nav
