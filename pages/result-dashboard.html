@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -29,7 +29,7 @@
       font-family: 'Space Grotesk', sans-serif;
       font-size: 1.8rem; font-weight: 700; margin-bottom: 8px;
       background: linear-gradient(to right, #fff, var(--accent-bright));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .res-login-sub { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 28px; }
 
@@ -717,13 +717,7 @@
 
       // Extra info badges
       const badges = [];
-      if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
-      if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
-      if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
-      if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
-      if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
-      if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
-      if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
+      if (d.degree) badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
       const badgeEl = document.getElementById('dExtraInfo');
       if (badgeEl) badgeEl.innerHTML = badges.join('');
 
