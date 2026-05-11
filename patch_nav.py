@@ -78,7 +78,7 @@ def generate_footer(filepath):
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali & MD. Shahriar Khan. All Rights Reserved.
+        © 2026 CSE 62 B. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="{admin}" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
