@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+  <link rel="icon" type="image/png" href="../assets/images/lu%20logo.png">
   <title>Info | CSE 62B LU</title>
   <meta name="description" content="Class routines, course offers, bus schedule, teacher contacts and more for CSE 62B."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -21,7 +21,7 @@
       align-items: start;
     }
 
-    /* ── Sidebar ── */
+    /* â”€â”€ Sidebar â”€â”€ */
     .info-sidebar {
       background: var(--card);
       border: 1px solid var(--border);
@@ -78,7 +78,7 @@
       opacity: 0.5;
     }
 
-    /* ── Mobile chips ── */
+    /* â”€â”€ Mobile chips â”€â”€ */
     .info-chips {
       display: none;
       overflow-x: auto; gap: 8px;
@@ -100,7 +100,7 @@
       border-color: transparent; color: #fff;
     }
 
-    /* ── Content panel ── */
+    /* â”€â”€ Content panel â”€â”€ */
     .info-content {
       background: var(--card);
       border: 1px solid var(--border);
@@ -185,7 +185,7 @@
     .info-item-card .ic-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
     .info-item-card .ic-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
 
-    /* ── Routine: Sync badge ── */
+    /* â”€â”€ Routine: Sync badge â”€â”€ */
     .rt-sync {
       display: flex; align-items: center; gap: 6px;
       font-size: 0.72rem; color: var(--text-secondary);
@@ -196,7 +196,7 @@
       background: var(--green); flex-shrink: 0;
     }
 
-    /* ── Routine: Grid Table ── */
+    /* â”€â”€ Routine: Grid Table â”€â”€ */
     .rt-grid-wrap {
       overflow-x: auto; -webkit-overflow-scrolling: touch;
       border-radius: 12px; border: 1px solid var(--border);
@@ -277,7 +277,7 @@
     .rt-dl-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .rt-dl-btn-pdf { background: linear-gradient(135deg, #ef4444, #b91c1c); }
 
-    /* ── Exam Routine: card list ── */
+    /* â”€â”€ Exam Routine: card list â”€â”€ */
     .exam-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
     .exam-count-badge {
       font-size: 0.72rem; font-weight: 700; background: rgba(255,255,255,0.06);
@@ -306,7 +306,7 @@
     .exam-card-time   { font-size: 0.72rem; color: var(--accent-bright); font-weight: 600; margin-top: 4px; }
     .exam-today-tag   { display: inline-block; font-size: 0.58rem; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; vertical-align: middle; }
 
-    /* ── Teacher Routine: search form ── */
+    /* â”€â”€ Teacher Routine: search form â”€â”€ */
     .rt-tf-wrap { margin-bottom: 22px; }
     .rt-tf-heading { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
     .rt-tf-row { display: flex; gap: 10px; align-items: stretch; }
@@ -354,7 +354,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -375,7 +375,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -387,7 +387,7 @@
     </div>
     
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -400,13 +400,13 @@
 
     <div class="info-layout">
 
-      <!-- ── Left Sidebar ── -->
+      <!-- â”€â”€ Left Sidebar â”€â”€ -->
       <aside class="info-sidebar fade-in">
         <div class="info-sidebar-title"><i class="fa-solid fa-list-ul" style="margin-right:6px;"></i>Info Menu</div>
         <div id="sidebarMenu"></div>
       </aside>
 
-      <!-- ── Right Content ── -->
+      <!-- â”€â”€ Right Content â”€â”€ -->
       <div style="min-width:0;">
         <!-- Mobile chips -->
         <div class="info-chips fade-in" id="mobileChips"></div>
@@ -424,7 +424,7 @@
 
     
       <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B Â· PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -432,8 +432,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62 B. All Rights Reserved.
+        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
+        Â© 2026 CSE 62 B. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -458,7 +458,7 @@
 
     let activeId = null;
 
-    /* ── Build sidebar & chips ── */
+    /* â”€â”€ Build sidebar & chips â”€â”€ */
     function buildMenu() {
       const sidebar = document.getElementById('sidebarMenu');
       const chips   = document.getElementById('mobileChips');
@@ -484,7 +484,7 @@
       });
     }
 
-    /* ── Select item ── */
+    /* â”€â”€ Select item â”€â”€ */
     function selectItem(id) {
       if (activeId === id) return;
       activeId = id;
@@ -502,7 +502,7 @@
       if (chip) chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
-    /* ── Render content ── */
+    /* â”€â”€ Render content â”€â”€ */
     function renderContent(item) {
       const panel = document.getElementById('infoContent');
       panel.innerHTML = `
@@ -512,7 +512,7 @@
           </div>
           <div>
             <div class="info-content-title">${item.label}</div>
-            <div class="info-content-sub">CSE 62B · Leading University</div>
+            <div class="info-content-sub">CSE 62B Â· Leading University</div>
           </div>
         </div>
         <div class="info-content-body" id="contentBody">
@@ -522,7 +522,7 @@
       loadContent(item);
     }
 
-    /* ── Sheet fetch (JSONP) ── */
+    /* â”€â”€ Sheet fetch (JSONP) â”€â”€ */
     const INFO_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
 
     function fetchSheet(sheetName) {
@@ -544,7 +544,7 @@
       );
     }
 
-    /* ── Course color palette ── */
+    /* â”€â”€ Course color palette â”€â”€ */
     const COLORS = ['#a78bfa','#38bdf8','#34d399','#fb923c','#f472b6','#818cf8','#4ade80','#f87171','#fbbf24','#22d3ee'];
     const _colorCache = {};
     function courseColor(code) {
@@ -555,11 +555,11 @@
       return (_colorCache[code] = COLORS[Math.abs(h) % COLORS.length]);
     }
 
-    /* ── Day ordering ── */
+    /* â”€â”€ Day ordering â”€â”€ */
     const DAY_ORDER = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
     function daySort(d) { const i = DAY_ORDER.findIndex(x => x.toLowerCase() === d.toLowerCase()); return i < 0 ? 99 : i; }
 
-    /* ── Time slot sort (handles 01:xx as afternoon) ── */
+    /* â”€â”€ Time slot sort (handles 01:xx as afternoon) â”€â”€ */
     function timeToMin(t) {
       const m = (t || '').match(/(\d{1,2}):(\d{2})/);
       if (!m) return 9999;
@@ -568,7 +568,7 @@
       return h * 60 + min;
     }
 
-    /* ── Routine: day tab names (fetch by name, sheet ID comes from user's Routine tab) ── */
+    /* â”€â”€ Routine: day tab names (fetch by name, sheet ID comes from user's Routine tab) â”€â”€ */
     /* Tab names are UPPERCASE in LU sheet (confirmed from lazmart network tab) */
     const ROUTINE_DAY_NAMES = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
     const DAY_DISPLAY = { SATURDAY:'Saturday', SUNDAY:'Sunday', MONDAY:'Monday', TUESDAY:'Tuesday', WEDNESDAY:'Wednesday', THURSDAY:'Thursday', FRIDAY:'Friday' };
@@ -586,11 +586,11 @@
       });
     }
 
-    /* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */
+    /* Parse "CSE-3214 MSR ACL-3" â†’ { code, initials, room } */
     function parseClassCell(cell) {
       if (!cell) return null;
       cell = cell.trim();
-      if (!cell || cell === '--' || cell === '–') return null;
+      if (!cell || cell === '--' || cell === 'â€“') return null;
       const parts = cell.split(/\s+/).filter(Boolean);
       if (parts.length >= 3) return { code: parts[0], initials: parts[1], room: parts.slice(2).join(' ') };
       if (parts.length === 2) return { code: parts[0], initials: '', room: parts[1] };
@@ -647,7 +647,7 @@
       }, 300);
     }
 
-    /* ── Lazy-load external script ── */
+    /* â”€â”€ Lazy-load external script â”€â”€ */
     function loadScript(src) {
       return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -657,7 +657,7 @@
       });
     }
 
-    /* ── Shared: find a sheet ID from the Routine tab by keyword in col A ── */
+    /* â”€â”€ Shared: find a sheet ID from the Routine tab by keyword in col A â”€â”€ */
     async function getSheetIdFromRoutineTab(keyword) {
       try {
         const d = await fetchSheet('Routine');
@@ -676,7 +676,7 @@
           || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
     }
 
-    /* ── Shared: time deduplication for any schedule ── */
+    /* â”€â”€ Shared: time deduplication for any schedule â”€â”€ */
     function deduplicateTimes(schedule) {
       const keyMap    = new Map();
       const breakKeys = new Set();
@@ -694,9 +694,9 @@
       return { allTimes, breakTimesSet: breakSet };
     }
 
-    /* ── Shared: parse all day tabs into a schedule ── */
+    /* â”€â”€ Shared: parse all day tabs into a schedule â”€â”€ */
     function parseDayResults(dayResults, rowFilter) {
-      // rowFilter(cells) → object to merge into slot, or null to skip row
+      // rowFilter(cells) â†’ object to merge into slot, or null to skip row
       const schedule = {};
       ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
         const data = dayResults[idx];
@@ -716,8 +716,8 @@
           }
         }
 
-        const breakCounts = {}; // slotIndex → how many rows have BREAK there
-        const slotData    = {}; // slotIndex → [extra]
+        const breakCounts = {}; // slotIndex â†’ how many rows have BREAK there
+        const slotData    = {}; // slotIndex â†’ [extra]
 
         for (let r = dataStart; r < rows.length; r++) {
           const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
@@ -734,7 +734,7 @@
           });
         }
 
-        // Pick the slot with the most BREAK votes — real break beats any one-off outlier
+        // Pick the slot with the most BREAK votes â€” real break beats any one-off outlier
         let breakSlotIdx = -1, maxBreakCount = 0;
         Object.entries(breakCounts).forEach(([k, cnt]) => {
           if (cnt > maxBreakCount) { maxBreakCount = cnt; breakSlotIdx = parseInt(k); }
@@ -752,11 +752,11 @@
       return schedule;
     }
 
-    /* ─────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        PRINT TEMPLATE (shared, generic)
-    ───────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     /* title: heading; subtitle: second line; cache: {allTimes,schedule,courseInfo,breakTimesSet}
-       getCellLine2(slot, info) → string for middle line of cell */
+       getCellLine2(slot, info) â†’ string for middle line of cell */
     function buildPrintTemplate(title, subtitle, cache, getCellLine2) {
       if (!cache) return '';
       const { allTimes, schedule, courseInfo, breakTimesSet } = cache;
@@ -800,7 +800,7 @@
                 ${slot.room?`<div style="font-size:9.5px;color:#64748b;margin-top:2px;">${escH(slot.room)}</div>`:''}
               </div></td>`;
           } else {
-            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">—</td>`;
+            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">â€”</td>`;
           }
         });
         tbl += `</tr>`;
@@ -826,13 +826,13 @@
         </div>
         ${tbl}
         <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; cse62b.vercel.app</div>
+          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;Â·&nbsp; cse62b.vercel.app</div>
           <div style="font-size:10.5px;color:#374151;">Generated: ${dateStr}</div>
         </div>
       </div>`;
     }
 
-    /* ── Render off-screen template → canvas ── */
+    /* â”€â”€ Render off-screen template â†’ canvas â”€â”€ */
     async function captureTemplate(title, subtitle, cache, getCellLine2) {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';

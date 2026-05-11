@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+  <link rel="icon" type="image/png" href="../assets/images/lu%20logo.png">
   <title>My Profile | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1223,7 +1223,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -1244,7 +1244,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -1255,11 +1255,11 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <!-- DOB Gate — shown until DOB is confirmed -->
+    <!-- DOB Gate â€” shown until DOB is confirmed -->
     <div class="dob-gate-wrap" id="dobGate" style="display:none;">
       <div class="dob-gate-card fade-in">
         <div class="dob-gate-icon"><i class="fa-solid fa-calendar-days"></i></div>
-        <div class="dob-gate-brand">CSE 62B · PORTAL</div>
+        <div class="dob-gate-brand">CSE 62B Â· PORTAL</div>
         <h2 class="dob-gate-title">One-Time Setup</h2>
         <p class="dob-gate-desc">
           Enter your <strong>Date of Birth</strong> exactly as written on your certificate.<br>
@@ -1288,7 +1288,7 @@
         <button class="dob-gate-btn" id="dobGateBtn" onclick="submitDobGate()">
           <i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Profile
         </button>
-        <p class="dob-gate-note"><i class="fa-solid fa-lock" style="font-size:0.7rem;"></i> Stored securely · Used only for result lookup</p>
+        <p class="dob-gate-note"><i class="fa-solid fa-lock" style="font-size:0.7rem;"></i> Stored securely Â· Used only for result lookup</p>
       </div>
     </div>
 
@@ -1342,7 +1342,7 @@
             <span class="label-title">Password Status</span>
             <span class="label-desc" id="passwordStatus">Password not set</span>
           </div>
-          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">🔓</span>
+          <span id="statusIcon" style="font-size: 1.2rem; color: var(--text-secondary);">ðŸ”“</span>
         </div>
       </div>
 
@@ -1387,7 +1387,7 @@
         <!-- Step 2: OTP verification -->
         <div id="cpStep2" style="display:none;">
           <div style="text-align:center; margin-bottom:16px;">
-            <div style="font-size:2rem; margin-bottom:8px;">📱</div>
+            <div style="font-size:2rem; margin-bottom:8px;">ðŸ“±</div>
             <p style="color:var(--text-secondary); font-size:0.9rem; margin:0;">OTP sent to <strong id="cpMaskedPhone" style="color:var(--text-primary);"></strong></p>
           </div>
           <div class="input-group">
@@ -1422,7 +1422,7 @@
         <!-- Saved DOB Display -->
         <div class="dob-saved-display" id="dobSavedDisplay" style="display:none;">
           <div class="dob-saved-info">
-            <span>🎂</span>
+            <span>ðŸŽ‚</span>
             <div>
               <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:2px;">Saved Date of Birth</div>
               <div id="dobSavedText">--</div>
@@ -1567,7 +1567,7 @@
     </div>
 
     <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B Â· PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -1575,8 +1575,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 MD. Almas Ali. All Rights Reserved.
+        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
+        Â© 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -1704,11 +1704,11 @@
       getPasswordHash(currentUser.id).then(hash => {
         if (hash) {
           document.getElementById('passwordStatus').innerText = 'Password is set';
-          document.getElementById('statusIcon').innerText = '🔐';
+          document.getElementById('statusIcon').innerText = 'ðŸ”';
           document.getElementById('statusIcon').style.color = 'var(--green)';
         } else {
           document.getElementById('passwordStatus').innerText = 'Password not set yet';
-          document.getElementById('statusIcon').innerText = '🔓';
+          document.getElementById('statusIcon').innerText = 'ðŸ”“';
         }
       }).catch(() => {});
     }
@@ -1808,7 +1808,7 @@
       try {
         await savePasswordHash(currentUser.id, cpPendingHash);
         document.getElementById('passwordStatus').innerText = 'Password is set';
-        document.getElementById('statusIcon').innerText = '🔐';
+        document.getElementById('statusIcon').innerText = 'ðŸ”';
         document.getElementById('statusIcon').style.color = 'var(--green)';
         document.getElementById('successMsg').innerText = 'Password updated successfully!';
         document.getElementById('successMsg').style.display = 'block';
@@ -1927,7 +1927,7 @@
     const CF_WORKER = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const RES_PROXIES = [
-      // Strategy 1: Cloudflare Worker (our own — most reliable)
+      // Strategy 1: Cloudflare Worker (our own â€” most reliable)
       async (studentId, birthDate) => {
         const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: birthDate });
         const r = await fetch(CF_WORKER, { method: 'POST', body });
@@ -2032,7 +2032,7 @@
       if (savedDob) {
         showProfile(savedDob);
       } else {
-        // No DOB yet — show gate, keep profile hidden
+        // No DOB yet â€” show gate, keep profile hidden
         document.getElementById('dobGate').style.display = 'flex';
         document.getElementById('profileContent').style.display = 'none';
       }
@@ -2077,13 +2077,13 @@
 
       const btn = document.getElementById('dobGateBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="result-spinner"></span> Verifying…';
+      btn.innerHTML = '<span class="result-spinner"></span> Verifyingâ€¦';
 
       const dobStr = `${year}-${month}-${day}`;
 
       try {
         const data = await fetchResData(currentUser.id, dobStr);
-        // DOB verified — save then enter profile with already-fetched data
+        // DOB verified â€” save then enter profile with already-fetched data
         localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
         await saveDobToSupabase(currentUser.id, dobStr);
         showProfile(dobStr, data);
@@ -2311,7 +2311,7 @@
 
       for (let i = 0; i < RES_PROXIES.length; i++) {
         const btn = document.getElementById('btnLoadResults');
-        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching results…`;
+        if (btn) btn.innerHTML = `<span class="result-spinner"></span> Fetching resultsâ€¦`;
 
         try {
           const raw = await RES_PROXIES[i](studentId, birthDate);
@@ -2442,7 +2442,7 @@
             <div class="res-sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
               ${c.mark > 0 ? `<span class="res-sem-modal-total">${c.mark}/100</span>` : ''}
-              <div class="res-sem-modal-grade">${c.grade||'—'}</div>
+              <div class="res-sem-modal-grade">${c.grade||'â€”'}</div>
             </div>
           </div>
           ${c.teacher ? `<div class="res-sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
@@ -2462,7 +2462,7 @@
               <div style="font-size:0.58rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Credit</div>
               <div style="font-weight:700;font-size:1rem;color:#a78bfa;">${sem.credit||0}</div>
             </div>
-            <button class="res-sem-modal-close" onclick="closeResSemModal()">✕</button>
+            <button class="res-sem-modal-close" onclick="closeResSemModal()">âœ•</button>
           </div>
         </div>
         ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}

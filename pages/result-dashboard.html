@@ -1,17 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
+  <link rel="icon" type="image/png" href="../assets/images/lu%20logo.png">
   <title>Result Dashboard | CSE 62B LU</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <style>
-    /* ── Login Box ── */
+    /* â”€â”€ Login Box â”€â”€ */
     .res-login-box {
       max-width: 420px;
       margin: 60px auto 40px;
@@ -33,7 +33,7 @@
     }
     .res-login-sub { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 28px; }
 
-    /* ── Form fields ── */
+    /* â”€â”€ Form fields â”€â”€ */
     .rfield { margin-bottom: 18px; text-align: left; }
     .rfield label {
       display: block; font-size: 0.82rem; color: var(--text-secondary);
@@ -75,7 +75,7 @@
     }
     .rerror.show { display: block; }
 
-    /* ── Dashboard ── */
+    /* â”€â”€ Dashboard â”€â”€ */
     .res-profile-strip {
       display: flex; align-items: center; gap: 16px;
       background: var(--card); border: 1px solid var(--border);
@@ -97,7 +97,7 @@
     }
     .res-logout:hover { background: #f43f5e; color: #fff; }
 
-    /* ── Tabs ── */
+    /* â”€â”€ Tabs â”€â”€ */
     .res-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
     .res-tab {
       padding: 9px 18px; background: rgba(255,255,255,0.04);
@@ -111,7 +111,7 @@
       border-color: transparent; color: #fff;
     }
 
-    /* ── Stats ── */
+    /* â”€â”€ Stats â”€â”€ */
     .res-stats {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
     }
@@ -131,7 +131,7 @@
       text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
     }
 
-    /* ── Cards ── */
+    /* â”€â”€ Cards â”€â”€ */
     .res-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 20px; padding: 24px; backdrop-filter: blur(16px);
@@ -144,7 +144,7 @@
       padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
 
-    /* ── Semester ── */
+    /* â”€â”€ Semester â”€â”€ */
     .res-sem-header {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
@@ -183,7 +183,7 @@
     .sem-modal-teacher { font-size: 0.75rem; color: var(--muted); margin: 3px 0 6px; }
     .sem-modal-teacher i { margin-right: 4px; }
 
-    /* ── All Semesters ── */
+    /* â”€â”€ All Semesters â”€â”€ */
     .res-sems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
     .res-sem-mini {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -198,7 +198,7 @@
     }
     .res-sem-mini-stat span:last-child { color: #a78bfa; font-weight: 700; }
 
-    /* ── Charts ── */
+    /* â”€â”€ Charts â”€â”€ */
     .res-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
     .res-chart-card {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -207,7 +207,7 @@
     .res-chart-title { font-weight: 700; font-size: 0.88rem; color: var(--text); margin-bottom: 14px; }
     .res-chart-wrap { position: relative; height: 220px; }
 
-    /* ── Extremes ── */
+    /* â”€â”€ Extremes â”€â”€ */
     .res-extremes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .res-extreme { border-radius: 14px; padding: 18px; }
     .res-extreme.high { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); }
@@ -221,7 +221,7 @@
     .res-extreme.low  .res-extreme-mark { color: #f43f5e; }
     .res-extreme-grade { font-size: 0.78rem; color: var(--text-secondary); }
 
-    /* ── Compare ── */
+    /* â”€â”€ Compare â”€â”€ */
     .res-cmp-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px; }
     .res-cmp-label { font-weight: 700; font-size: 0.85rem; color: #a78bfa; margin-bottom: 10px; }
     .res-cmp-results { display: none; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
@@ -235,7 +235,7 @@
     .res-cmp-stat span:first-child { color: var(--text-secondary); }
     .res-cmp-stat span:last-child { color: #a78bfa; font-weight: 700; }
 
-    /* ── Semester Modal ── */
+    /* â”€â”€ Semester Modal â”€â”€ */
     .sem-modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.7);
       backdrop-filter: blur(6px); z-index: 1000;
@@ -277,7 +277,7 @@
     }
     .sem-modal-mark-chip strong { color:var(--text); }
 
-    /* ── Spinner ── */
+    /* â”€â”€ Spinner â”€â”€ */
     .rspinner {
       display: inline-block; width: 16px; height: 16px;
       border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
@@ -285,7 +285,7 @@
     }
     @keyframes rspin { to { transform: rotate(360deg); } }
 
-    /* ── Responsive ── */
+    /* â”€â”€ Responsive â”€â”€ */
     @media (max-width: 768px) {
       .res-stats { grid-template-columns: 1fr 1fr; }
       .res-charts { grid-template-columns: 1fr; }
@@ -315,7 +315,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -336,7 +336,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -348,7 +348,7 @@
     </div>
     
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -359,7 +359,7 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <!-- ── Login View ── -->
+    <!-- â”€â”€ Login View â”€â”€ -->
     <div id="loginView">
       <div class="res-login-box fade-in delay-1">
         <i class="fa-solid fa-chart-bar res-login-icon"></i>
@@ -398,11 +398,11 @@
       </div>
     </div>
 
-    <!-- ── Dashboard View ── -->
+    <!-- â”€â”€ Dashboard View â”€â”€ -->
     <div id="dashboardView" style="display:none;">
 
       <div class="section-header fade-in" style="margin-top:40px; margin-bottom:20px;">
-        <span class="section-label">📊 Academic Result</span>
+        <span class="section-label">ðŸ“Š Academic Result</span>
         <div class="section-line"></div>
       </div>
 
@@ -411,7 +411,7 @@
         <div class="res-avatar" id="dAvatar">S</div>
         <div>
           <div class="res-profile-name" id="dName">Student</div>
-          <div class="res-profile-meta" id="dMeta">—</div>
+          <div class="res-profile-meta" id="dMeta">â€”</div>
         </div>
         <button class="res-logout" onclick="resLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
@@ -424,7 +424,7 @@
         <button class="res-tab"        id="tabCompare"   onclick="switchTab('compare',this)"><i class="fa-solid fa-scale-balanced"></i> Compare</button>
       </div>
 
-      <!-- ── Overview ── -->
+      <!-- â”€â”€ Overview â”€â”€ -->
       <div id="tabOverviewContent">
         <div class="res-stats fade-in" id="dStats"></div>
         <div class="res-card fade-in" id="dLatest"></div>
@@ -434,7 +434,7 @@
         </div>
       </div>
 
-      <!-- ── Analytics ── -->
+      <!-- â”€â”€ Analytics â”€â”€ -->
       <div id="tabAnalyticsContent" style="display:none;">
         <div class="res-charts fade-in">
           <div class="res-chart-card">
@@ -452,7 +452,7 @@
         </div>
       </div>
 
-      <!-- ── Compare ── -->
+      <!-- â”€â”€ Compare â”€â”€ -->
       <div id="tabCompareContent" style="display:none;">
         <div class="res-card fade-in">
           <div class="res-card-title"><i class="fa-solid fa-scale-balanced"></i> Compare Two Students</div>
@@ -497,14 +497,14 @@
 
     </div><!-- /dashboardView -->
 
-    <!-- ── Semester Detail Modal ── -->
+    <!-- â”€â”€ Semester Detail Modal â”€â”€ -->
     <div class="sem-modal-backdrop" id="semModal" style="display:none;" onclick="if(event.target===this)closeSemModal()">
       <div class="sem-modal" id="semModalInner"></div>
     </div>
 
     
       <footer>
-      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-brand">CSE 62B Â· PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -512,8 +512,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62 B. All Rights Reserved.
+        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
+        Â© 2026 CSE 62 B. All Rights Reserved.
       </div>
       <div style="margin-top: 10px;">
         <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
@@ -523,7 +523,7 @@
 
   <script src="../assets/js/auth.js"></script>
   <script>
-    /* ── Config ── */
+    /* â”€â”€ Config â”€â”€ */
     const RES_API    = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
     const CF_WORKER  = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
@@ -553,7 +553,7 @@
         if (!r.ok) throw new Error(`corsproxy.io[enc] HTTP ${r.status}`);
         return r.text();
       },
-      // Proxy 4: allorigins raw (GET fallback — may not work for POST-only endpoints)
+      // Proxy 4: allorigins raw (GET fallback â€” may not work for POST-only endpoints)
       async (id, dob) => {
         const params = `action=get-result&student_id=${encodeURIComponent(id)}&birth_date=${encodeURIComponent(dob)}`;
         const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`${RES_API}?${params}`)}`);
@@ -564,7 +564,7 @@
 
     let resData = null, gradeChart = null, gpaChart = null;
 
-    /* ── Init ── */
+    /* â”€â”€ Init â”€â”€ */
     (function init() {
       const cur = new Date().getFullYear();
       ['rDay','cmp1Day','cmp2Day'].forEach(id => {
@@ -584,7 +584,7 @@
       });
     })();
 
-    /* ── Fetch ── */
+    /* â”€â”€ Fetch â”€â”€ */
     async function fetchResults() {
       const id    = document.getElementById('rStudentId').value.trim();
       const day   = document.getElementById('rDay').value;
@@ -607,14 +607,14 @@
       } catch (e) {
         const isLocal = location.protocol === 'file:';
         const localNote = isLocal ? '<br><small style="color:#94a3b8;font-size:0.8em;">You are on a local file. Try from the live site instead.</small>' : '';
-        showErr(`${e.message}${localNote} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →</a>`);
+        showErr(`${e.message}${localNote} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal â†’</a>`);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Access Results';
       }
     }
 
-    /* ── Mark field labels & display order ── */
+    /* â”€â”€ Mark field labels & display order â”€â”€ */
     const MARK_SKIP = new Set([
       'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
       'SID','SName','Dept','Department','Program','Teacher',
@@ -630,7 +630,7 @@
     };
     function markLabel(k) { return MARK_LABELS[k] || k; }
 
-    /* ── Normalize LUS response → flat structure render functions expect ── */
+    /* â”€â”€ Normalize LUS response â†’ flat structure render functions expect â”€â”€ */
     function normalizeData(raw) {
       const s  = raw.student;
       const rs = raw.row_data?.student || {};
@@ -650,7 +650,7 @@
         teacherMap[key] = r.Teacher || '';
       }
 
-      // Flatten year-keyed results → sorted array (newest first)
+      // Flatten year-keyed results â†’ sorted array (newest first)
       const semTypeOrder = { Spring: 1, Summer: 2, Fall: 3 };
       const semesters = [];
       for (const year of Object.keys(raw.results || {}).sort()) {
@@ -725,7 +725,7 @@
       let lastErr = null;
       for (let i = 0; i < PROXIES.length; i++) {
         const btn = document.getElementById('rLoginBtn');
-        if (btn) btn.innerHTML = `<span class="rspinner"></span> Fetching result…`;
+        if (btn) btn.innerHTML = `<span class="rspinner"></span> Fetching resultâ€¦`;
         try {
           const raw = await PROXIES[i](id, dob);
           let data;
@@ -743,13 +743,13 @@
       throw new Error('Could not connect to LU result server. Please try again later.');
     }
 
-    /* ── Render ── */
+    /* â”€â”€ Render â”€â”€ */
     function renderDashboard() {
       const d = resData;
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
-      document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
+      document.getElementById('dMeta').textContent = `${d.student_id || ''}  Â·  ${d.department || 'CSE'}`;
 
       // Extra info badges
       const badges = [];
@@ -809,7 +809,7 @@
         </div>`).join('') || '<p style="color:var(--text-secondary);">No data.</p>';
     }
 
-    /* ── Tab ── */
+    /* â”€â”€ Tab â”€â”€ */
     function switchTab(tab, btn) {
       document.querySelectorAll('.res-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -823,11 +823,11 @@
       }
     }
 
-    /* ── Analytics ── */
+    /* â”€â”€ Analytics â”€â”€ */
     function renderAnalytics() {
       if (!resData) return;
       const sems     = resData.semesters || [];
-      const chromSems = sems.slice().reverse(); // oldest→newest for chart
+      const chromSems = sems.slice().reverse(); // oldestâ†’newest for chart
 
       const gc = {'A+':0,'A':0,'A-':0,'B+':0,'B':0,'B-':0,'C+':0,'C':0,'D':0,'F':0};
       sems.forEach(s => (s.courses||[]).forEach(c => { if (gc.hasOwnProperty(c.grade)) gc[c.grade]++; }));
@@ -886,13 +886,13 @@
       }));
       document.getElementById('dExtremes').innerHTML = `
         ${hi ? `<div class="res-extreme high">
-          <div class="res-extreme-hdr"><span>🏆</span> Highest Mark</div>
+          <div class="res-extreme-hdr"><span>ðŸ†</span> Highest Mark</div>
           <div class="res-extreme-course">${hi.course_title||hi.course_code||'N/A'}</div>
           <div class="res-extreme-mark">${hi.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${hi.grade||'N/A'}</div>
         </div>` : ''}
         ${lo ? `<div class="res-extreme low">
-          <div class="res-extreme-hdr"><span>📉</span> Lowest Mark</div>
+          <div class="res-extreme-hdr"><span>ðŸ“‰</span> Lowest Mark</div>
           <div class="res-extreme-course">${lo.course_title||lo.course_code||'N/A'}</div>
           <div class="res-extreme-mark">${lo.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
           <div class="res-extreme-grade">Grade: ${lo.grade||'N/A'}</div>
@@ -900,7 +900,7 @@
       `;
     }
 
-    /* ── Compare ── */
+    /* â”€â”€ Compare â”€â”€ */
     async function runCompare() {
       const s1 = document.getElementById('cmp1Id').value.trim();
       const s2 = document.getElementById('cmp2Id').value.trim();
@@ -936,7 +936,7 @@
       }
     }
 
-    /* ── Helpers ── */
+    /* â”€â”€ Helpers â”€â”€ */
     function resLogout() {
       resData = null;
       document.getElementById('dashboardView').style.display = 'none';
@@ -972,7 +972,7 @@
             <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
               ${c.mark > 0 ? `<span class="sem-modal-total">${c.mark}/100</span>` : ''}
-              <div class="sem-modal-grade">${c.grade||'—'}</div>
+              <div class="sem-modal-grade">${c.grade||'â€”'}</div>
             </div>
           </div>
           ${c.teacher ? `<div class="sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
@@ -983,9 +983,9 @@
         <div class="sem-modal-head">
           <div>
             <div class="sem-modal-title">${s.semester_name||`Semester ${i+1}`}</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(s.gpa||0).toFixed(2)}</strong> &nbsp;·&nbsp; Credit: <strong style="color:#a78bfa">${s.credit||0}</strong></div>
+            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:4px;">CGPA: <strong style="color:#a78bfa">${(s.gpa||0).toFixed(2)}</strong> &nbsp;Â·&nbsp; Credit: <strong style="color:#a78bfa">${s.credit||0}</strong></div>
           </div>
-          <button class="sem-modal-close" onclick="closeSemModal()">✕</button>
+          <button class="sem-modal-close" onclick="closeSemModal()">âœ•</button>
         </div>
         ${courses||'<p style="color:var(--text-secondary);">No course data.</p>'}
       `;
