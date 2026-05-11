@@ -191,8 +191,8 @@
     var items = [
       { href: root + 'index.html',    icon: 'fa-house',            label: 'Home',      id: 'index',     show: true },
       { href: sub + 'resources.html', icon: 'fa-book-open',        label: 'Materials', id: 'resources', show: isLoggedIn },
-      { href: sub + 'notices.html',   icon: 'fa-bell',             label: 'Notices',   id: 'notices',   show: isLoggedIn },
-      { href: sub + 'gallery.html',   icon: 'fa-images',           label: 'Gallery',   id: 'gallery',   show: true },
+      { href: sub + 'cover-page.html', icon: 'fa-file-pdf',        label: 'Cover Page', id: 'cover-page', show: isLoggedIn },
+      { href: sub + 'result-dashboard.html', icon: 'fa-chart-line', label: 'Results', id: 'result-dashboard', show: isLoggedIn },
       isLoggedIn
         ? { href: sub + 'profile.html', icon: 'fa-user',               label: 'Profile', id: 'profile', show: true }
         : { href: sub + 'login.html',   icon: 'fa-right-to-bracket',   label: 'Login',   id: 'login',   show: true },
