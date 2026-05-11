@@ -173,6 +173,17 @@ function parseStudentSheet(rows) {
 function renderStudentGroups(container, groups) {
   container.innerHTML = '';
 
+  const demoMode = (() => {
+    try {
+      const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      if (raw) {
+        const u = JSON.parse(raw);
+        return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO');
+      }
+    } catch(e) {}
+    return false;
+  })();
+
   groups.forEach((group) => {
     const section = document.createElement('section');
     section.className = 'student-group';
@@ -209,12 +220,35 @@ function renderStudentGroups(container, groups) {
     thead.appendChild(headRow);
 
     const tbody = document.createElement('tbody');
-    group.rows.forEach((rowValues) => {
+    group.rows.forEach((rowValues, rowIndex) => {
       const tr = document.createElement('tr');
 
       rowValues.forEach((value, index) => {
         const td = document.createElement('td');
-        td.textContent = normalizeWhitespace(value);
+        let displayValue = normalizeWhitespace(value);
+
+        if (demoMode) {
+          const headerText = String(group.headers[index] || '').toLowerCase().trim();
+          if (headerText === '#' || headerText === 'sl' || headerText === 'sl.' || headerText.includes('serial')) {
+            // Keep the original serial number
+          } else if (headerText.includes('name')) {
+            displayValue = `Student ${rowIndex + 1}`;
+          } else if (headerText.includes('id')) {
+            displayValue = `018232001210${String(1000 + rowIndex + 1).slice(1)}`;
+          } else if (headerText.includes('phone') || headerText.includes('mobile') || headerText.includes('number') || headerText.includes('contact')) {
+            displayValue = `01700000${String(100 + rowIndex).slice(1)}`;
+          } else if (headerText.includes('email')) {
+            displayValue = `student${rowIndex + 1}@lus.ac.bd`;
+          } else if (headerText.includes('blood')) {
+            displayValue = ['A+', 'B+', 'O+', 'AB+', 'O-'][rowIndex % 5];
+          } else if (headerText.includes('address') || headerText.includes('location')) {
+            displayValue = 'Sylhet, Bangladesh';
+          } else {
+            displayValue = 'Restricted';
+          }
+        }
+
+        td.textContent = displayValue;
         if (/course/i.test(group.headers[index] || '')) {
           td.classList.add('wide-column');
         }

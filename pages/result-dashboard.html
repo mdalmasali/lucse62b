@@ -686,7 +686,8 @@
       }
       semesters.sort((a, b) => b._key - a._key); // newest first
 
-      return {
+      const isDemoUser = (() => { try { const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student'); if (raw) { const u = JSON.parse(raw); return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO'); } } catch(e) {} return false; })();
+      const normalized = {
         student_name:      s.name,
         student_id:        s.id,
         department:        s.department,
@@ -703,6 +704,21 @@
         add_year:     rs.AddYear      || '',
         semesters
       };
+
+      if (isDemoUser) {
+        normalized.student_name = 'Hidden for Privacy';
+        normalized.blood_group = '';
+        normalized.waiver = '';
+        normalized.father_name = '';
+        normalized.mother_name = '';
+        normalized.phone = '';
+        normalized.address = '';
+        normalized.semesters.forEach(sem => {
+          sem.courses = [];
+        });
+      }
+
+      return normalized;
     }
 
     async function callAPI(id, dob) {

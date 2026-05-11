@@ -1231,7 +1231,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -1251,13 +1251,9 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
-    
-    
-    
-    
 
     <!-- DOB Gate — shown until DOB is confirmed -->
     <div class="dob-gate-wrap" id="dobGate" style="display:none;">
@@ -1570,22 +1566,17 @@
       </div><!-- /resultDashboard -->
     </div>
 
-    
-      
-      <footer>
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
-        <a href="info.html">Class Info</a>
+        <a href="classwork.html">Classwork</a>
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62 B. All Rights Reserved.
-      </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -2281,7 +2272,7 @@
         }
       }
       semesters.sort((a, b) => b._key - a._key);
-      return {
+      const normalized = {
         student_name:      s.name,
         student_id:        s.id,
         department:        s.department,
@@ -2298,6 +2289,21 @@
         add_year:     rs.AddYear      || '',
         semesters
       };
+
+      if (typeof isDemoUser !== 'undefined' && isDemoUser) {
+        normalized.student_name = 'Hidden for Privacy';
+        normalized.blood_group = '';
+        normalized.waiver = '';
+        normalized.father_name = '';
+        normalized.mother_name = '';
+        normalized.phone = '';
+        normalized.address = '';
+        normalized.semesters.forEach(sem => {
+          sem.courses = [];
+        });
+      }
+
+      return normalized;
     }
 
     async function fetchResData(studentId, birthDate) {
@@ -2583,11 +2589,6 @@
 
     // -- Compare -----------------------------------------------------
     async function runCompare() {
-      if (isDemoUser) {
-        showProfileDemoHint();
-        showResError('Student comparison is unavailable in demo mode.', false);
-        return;
-      }
       const s1Id  = currentUser.id;
       const s1Day = document.getElementById('cmpS1Day').value;
       const s1Mon = document.getElementById('cmpS1Month').value;
@@ -2598,9 +2599,12 @@
       const s2Mon = document.getElementById('cmpS2Month').value;
       const s2Yr  = document.getElementById('cmpS2Year').value;
 
-      if (!s1Day||!s1Mon||!s1Yr||!s2Id||!s2Day||!s2Mon||!s2Yr||
-          [s1Day,s1Mon,s1Yr,s2Day,s2Mon,s2Yr].some(v=>!v||v==='undefined')) {
-        alert('Please fill in all fields for both students.');
+      if (!isDemoUser && (!s1Day||!s1Mon||!s1Yr)) {
+        alert('Please fill in all fields for Student 1.');
+        return;
+      }
+      if (!s2Id||!s2Day||!s2Mon||!s2Yr||[s2Day,s2Mon,s2Yr].some(v=>!v||v==='undefined')) {
+        alert('Please fill in all fields for Student 2.');
         return;
       }
       if (s1Id === s2Id) { alert('Please enter a different Student ID for Student 2.'); return; }
@@ -2613,7 +2617,15 @@
       btn.innerHTML = '<span class="result-spinner"></span> Comparing...';
 
       try {
-        const [d1, d2] = await Promise.all([fetchResData(s1Id, dob1), fetchResData(s2Id, dob2)]);
+        const d1 = isDemoUser ? {
+          student_name: 'Demo User',
+          student_id: 'DEMO',
+          cgpa: 3.85,
+          total_credit: 125,
+          courses_completed: 42,
+          department: 'CSE'
+        } : await fetchResData(s1Id, dob1);
+        const d2 = await fetchResData(s2Id, dob2);
         renderResComparison(d1, d2);
       } catch (err) {
         alert(`Error: ${err.message}`);
