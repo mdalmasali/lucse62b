@@ -1231,7 +1231,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -1251,7 +1251,7 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -1576,7 +1576,7 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62B. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -1922,15 +1922,33 @@
 
   <!-- -- Result Dashboard Script -- -->
   <script>
-    const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=lu-result';
+    const RES_API = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
+    // Primary: our own Cloudflare Worker proxy (fast & reliable)
+    const CF_WORKER = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const RES_PROXIES = [
+      // Strategy 1: Cloudflare Worker (our own — most reliable)
       async (studentId, birthDate) => {
         const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: birthDate });
-        const r = await fetch(SUPABASE_FUNC, { method: 'POST', body });
-        if (!r.ok) throw new Error(`Supabase Edge HTTP ${r.status}`);
+        const r = await fetch(CF_WORKER, { method: 'POST', body });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
-      }
+      },
+      // Strategy 2: corsproxy.io (no encoding)
+      async (studentId, birthDate) => {
+        const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: birthDate });
+        const r = await fetch(`https://corsproxy.io/?${RES_API}`, { method:'POST', body, headers:{ 'x-requested-with':'XMLHttpRequest' } });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      },
+      // Strategy 3: allorigins GET workaround
+      async (studentId, birthDate) => {
+        const params = `action=get-result&student_id=${encodeURIComponent(studentId)}&birth_date=${encodeURIComponent(birthDate)}`;
+        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`${RES_API}?${params}`)}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const json = await r.json();
+        return json.contents;
+      },
     ];
 
     let resData     = null;
@@ -2632,6 +2650,5 @@
       document.getElementById('resultError').classList.remove('show');
     }
   </script>
-<script src="../assets/js/analytics.js"></script>
 </body>
 </html>

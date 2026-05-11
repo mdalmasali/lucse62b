@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -309,7 +309,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -328,7 +328,7 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -387,7 +387,7 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62B. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -422,7 +422,7 @@
     }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
 
-    const SHEET_ID      = 'REDACTED_SHEET_ID_FOR_SECURITY';
+    const SHEET_ID      = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     const SHEET_NAME    = 'Materials';
     const MARKS_SHEET   = 'Marks';
     const DRIVE_API_KEY = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
@@ -654,10 +654,16 @@
     }
 
     function fetchSheet(sheetName) {
-      return fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&sheetName=${encodeURIComponent(sheetName)}`)
-        .then(res => { if (!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(data => data)
-        .catch(err => { throw err; });
+      return new Promise((resolve, reject) => {
+        const cb = `res_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = data => { cleanup(); resolve(data); };
+        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
+        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
+        document.body.appendChild(s);
+      });
     }
 
     const COLORS = 6;
@@ -722,6 +728,5 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) syncData(); });
   </script>
   <script src="../assets/js/auth.js"></script>
-<script src="../assets/js/analytics.js"></script>
 </body>
 </html>

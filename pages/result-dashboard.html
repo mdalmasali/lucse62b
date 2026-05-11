@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -323,7 +323,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
@@ -339,7 +339,7 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -496,7 +496,7 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62B. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -504,29 +504,45 @@
   <script src="../assets/js/auth.js"></script>
   <script>
     /* ── Config ── */
-    const RES_API    = 'https://REDACTED_API_URL_FOR_SECURITY/api';
-    const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=lu-result';
+    const RES_API    = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
+    const CF_WORKER  = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
 
     const PROXIES = [
-      // Primary Proxy: Supabase Edge Function
+      // Proxy 1: Cloudflare Worker
       async (id, dob) => {
         const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
-        const r = await fetch(SUPABASE_FUNC, { method:'POST', body });
-        if (!r.ok) throw new Error(`Supabase Edge HTTP ${r.status}`);
+        const r = await fetch(CF_WORKER, { method:'POST', body });
+        if (!r.ok) throw new Error(`CF Worker HTTP ${r.status}`);
         return r.text();
-      }
+      },
+      // Proxy 2: corsproxy.io (direct URL append)
+      async (id, dob) => {
+        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
+        const r = await fetch(`https://corsproxy.io/?${RES_API}`, {
+          method:'POST', body, headers:{ 'x-requested-with':'XMLHttpRequest', 'content-type':'application/x-www-form-urlencoded' }
+        });
+        if (!r.ok) throw new Error(`corsproxy.io HTTP ${r.status}`);
+        return r.text();
+      },
+      // Proxy 3: corsproxy.io with encoded URL
+      async (id, dob) => {
+        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
+        const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(RES_API)}`, {
+          method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' }
+        });
+        if (!r.ok) throw new Error(`corsproxy.io[enc] HTTP ${r.status}`);
+        return r.text();
+      },
+      // Proxy 4: allorigins raw (GET fallback — may not work for POST-only endpoints)
+      async (id, dob) => {
+        const params = `action=get-result&student_id=${encodeURIComponent(id)}&birth_date=${encodeURIComponent(dob)}`;
+        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`${RES_API}?${params}`)}`);
+        if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`);
+        return (await r.json()).contents;
+      },
     ];
 
     let resData = null, gradeChart = null, gpaChart = null;
-
-    function isDemoMode() {
-      try {
-        const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
-        if (!ud) return false;
-        const u = JSON.parse(ud);
-        return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO');
-      } catch { return false; }
-    }
 
     /* ── Init ── */
     (function init() {
@@ -694,81 +710,41 @@
     /* ── Render ── */
     function renderDashboard() {
       const d = resData;
-      const demoMode = isDemoMode();
-      let isOwnProfile = false;
-      try {
-        const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
-        if (ud) {
-          const u = JSON.parse(ud);
-          isOwnProfile = String(u.id) === String(d.student_id);
-        }
-      } catch (e) {}
-
       const name = d.student_name || 'Student';
       document.getElementById('dAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('dName').textContent = name;
       document.getElementById('dMeta').textContent = `${d.student_id || ''}  ·  ${d.department || 'CSE'}`;
 
-      // Extra info badges — hidden in demo mode OR if viewing someone else's result
+      // Extra info badges
+      const badges = [];
+      if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
+      if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
+      if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
+      if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
+      if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
+      if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
+      if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
       const badgeEl = document.getElementById('dExtraInfo');
-      if (demoMode) {
-        badgeEl.innerHTML = `<span class="res-info-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);"><i class="fa-solid fa-lock"></i> Demo mode — personal info hidden</span>`;
-      } else if (!isOwnProfile) {
-        badgeEl.innerHTML = `<span class="res-info-badge" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.07);"><i class="fa-solid fa-lock"></i> Personal info is only visible to the owner</span>`;
-      } else {
-        const badges = [];
-        if (d.degree)       badges.push(`<span class="res-info-badge"><i class="fa-solid fa-graduation-cap"></i> ${d.degree}</span>`);
-        if (d.blood_group)  badges.push(`<span class="res-info-badge res-info-badge--red"><i class="fa-solid fa-droplet"></i> ${d.blood_group}</span>`);
-        if (d.waiver)       badges.push(`<span class="res-info-badge res-info-badge--green"><i class="fa-solid fa-award"></i> Waiver: ${d.waiver}</span>`);
-        if (d.father_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Father: ${d.father_name}</span>`);
-        if (d.mother_name)  badges.push(`<span class="res-info-badge"><i class="fa-solid fa-user"></i> Mother: ${d.mother_name}</span>`);
-        if (d.phone)        badges.push(`<span class="res-info-badge"><i class="fa-solid fa-phone"></i> ${d.phone}</span>`);
-        if (d.address)      badges.push(`<span class="res-info-badge"><i class="fa-solid fa-location-dot"></i> ${d.address}</span>`);
-        if (badgeEl) badgeEl.innerHTML = badges.join('');
-      }
+      if (badgeEl) badgeEl.innerHTML = badges.join('');
 
-      // Hide Analytics & Compare tabs in demo mode
-      ['tabAnalytics','tabCompare'].forEach(id =>
-        document.getElementById(id).style.display = demoMode ? 'none' : ''
-      );
-
-      renderStats(d, demoMode);
-      renderLatest(d, demoMode);
-      renderAllSems(d, demoMode);
+      renderStats(d);
+      renderLatest(d);
+      renderAllSems(d);
     }
 
-    function renderStats(d, demoMode) {
+    function renderStats(d) {
       const credit = d.total_credit || 0;
-      if (demoMode) {
-        document.getElementById('dStats').innerHTML = `
-          <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
-          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Total Credit</div></div>
-          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Courses Done</div></div>
-          <div class="res-stat" style="opacity:0.25;filter:blur(4px);pointer-events:none;"><div class="res-stat-val">--</div><div class="res-stat-lbl">Semesters</div></div>
-        `;
-      } else {
-        document.getElementById('dStats').innerHTML = `
-          <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
-          <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
-          <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
-          <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
-        `;
-      }
+      document.getElementById('dStats').innerHTML = `
+        <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
+        <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
+        <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
+        <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
+      `;
     }
 
-    function renderLatest(d, demoMode) {
+    function renderLatest(d) {
       const sems = d.semesters || [];
       const el   = document.getElementById('dLatest');
-      if (demoMode) {
-        el.innerHTML = `
-          <div class="res-card-title"><i class="fa-solid fa-star"></i> Latest Semester</div>
-          <div style="text-align:center;padding:30px 20px;">
-            <div style="font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${sems.length ? (sems[0].gpa||0).toFixed(2) : '—'}</div>
-            <div style="color:var(--text-secondary);font-size:0.8rem;margin-top:6px;">Semester CGPA</div>
-            <div style="margin-top:16px;font-size:0.78rem;color:#fbbf24;opacity:0.8;"><i class="fa-solid fa-lock"></i> Course details hidden in demo mode</div>
-          </div>`;
-        return;
-      }
       if (!sems.length) { el.innerHTML = '<p style="color:var(--text-secondary);">No semester data.</p>'; return; }
       const s = sems[0]; // newest first after normalizeData sort
       const courses = (s.courses||[]).map(c => `
@@ -791,14 +767,14 @@
       `;
     }
 
-    function renderAllSems(d, demoMode) {
+    function renderAllSems(d) {
       const sems = d.semesters || [];
       document.getElementById('dSems').innerHTML = sems.map((s,i) => `
-        <div class="res-sem-mini" ${demoMode ? '' : `onclick="expandSem(${i})"`} style="${demoMode ? 'cursor:default;' : ''}">
+        <div class="res-sem-mini" onclick="expandSem(${i})">
           <div class="res-sem-mini-name">${s.semester_name||s.semester||`Semester ${i+1}`}</div>
           <div class="res-sem-mini-stats">
             <div class="res-sem-mini-stat"><span>CGPA</span><span>${(s.gpa||0).toFixed(2)}</span></div>
-            <div class="res-sem-mini-stat" style="${demoMode ? 'filter:blur(3px);opacity:0.3;' : ''}"><span>Courses</span><span>${demoMode ? '--' : (s.courses||[]).length}</span></div>
+            <div class="res-sem-mini-stat"><span>Courses</span><span>${(s.courses||[]).length}</span></div>
           </div>
         </div>`).join('') || '<p style="color:var(--text-secondary);">No data.</p>';
     }
@@ -995,6 +971,5 @@
 
     function hideErr() { document.getElementById('rError').classList.remove('show'); }
   </script>
-<script src="../assets/js/analytics.js"></script>
 </body>
 </html>

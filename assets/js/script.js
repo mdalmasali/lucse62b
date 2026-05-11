@@ -1,38 +1,6 @@
-const STUDENT_SHEET_ID = 'REDACTED_SHEET_ID_FOR_SECURITY';
+const STUDENT_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
 const STUDENT_SHEET_NAME = 'Student Info';
 const STUDENT_SYNC_INTERVAL = 60000;
-
-function isDemoMode() {
-  try {
-    const ud = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
-    if (!ud) return false;
-    const u = JSON.parse(ud);
-    return !!(u.isDemo || String(u.id || '').toUpperCase() === 'DEMO');
-  } catch { return false; }
-}
-
-function renderDemoStudents(container) {
-  const firstNames = ['Abdur','Fatema','Mohammad','Nusrat','Rifat','Sumaiya','Shakib','Mim',
-    'Mahfuz','Sadia','Nahid','Tania','Arif','Nasrin','Rasel','Kohinur',
-    'Zahidul','Moonmoon','Mehedi','Lopa','Imran','Anika','Tanvir','Jannatul',
-    'Sabbir','Riya','Mizan','Shila','Rakib','Setu','Liton','Dipa','Fahim','Mitu','Rony'];
-  const lastNames = ['Rahman','Akter','Hossain','Jahan','Ahmed','Khanam','Islam','Begum',
-    'Mia','Sultana','Billah','Nahar','Hassan','Khan','Chowdhury','Roy','Das','Paul'];
-  const rows = [];
-  for (let i = 0; i < 35; i++) {
-    const fn = firstNames[i % firstNames.length];
-    const ln = lastNames[(i * 3 + 7) % lastNames.length];
-    const id = '018232001210' + String(1001 + i).slice(1);
-    rows.push([`${fn} ${ln}`, id, 'CSE', '62nd', 'B']);
-  }
-  // Shuffle deterministically
-  for (let i = rows.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [rows[i], rows[j]] = [rows[j], rows[i]];
-  }
-  const groups = [{ title: 'CSE - 62B', headers: ['Name', 'Student ID', 'Dept', 'Batch', 'Section'], rows }];
-  renderStudentGroups(container, groups);
-}
 
 document.addEventListener('DOMContentLoaded', () => {
   createParticles();
@@ -78,13 +46,6 @@ function initStudentDirectory() {
   const note = document.getElementById('student-sheet-note');
 
   if (!container || !note) {
-    return;
-  }
-
-  /* Demo mode: show randomised placeholder data */
-  if (isDemoMode()) {
-    updateStudentNote(note, '⚠️ Demo mode: Showing sample data only. Real student list is restricted.');
-    renderDemoStudents(container);
     return;
   }
 
@@ -134,11 +95,36 @@ function initStudentDirectory() {
   });
 }
 
-async function loadGoogleSheet(sheetName) {
-  const SUPABASE_FUNC = 'https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&sheetName=' + encodeURIComponent(sheetName);
-  const response = await fetch(SUPABASE_FUNC);
-  if (!response.ok) throw new Error('Failed to load data from server.');
-  return await response.json();
+function loadGoogleSheet(sheetName) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `codexSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Google Sheet request timed out.'));
+    }, 15000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.src =
+      `https://docs.google.com/spreadsheets/d/${STUDENT_SHEET_ID}/gviz/tq?` +
+      `tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}`;
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Failed to load the Google Sheet script.'));
+    };
+
+    document.body.appendChild(script);
+  });
 }
 
 function parseStudentSheet(rows) {

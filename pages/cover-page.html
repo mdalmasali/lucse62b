@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <!-- Cover Page is open to all users — no login required -->
+  <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <title>Cover Page Generator | CSE 62B LU</title>
@@ -330,7 +330,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
@@ -346,7 +346,7 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -395,7 +395,7 @@
         </div>
 
         <!-- Submitted To -->
-        <div class="cg-sec">Submitted to</div>
+        <div class="cg-sec">Submitted To</div>
         <div class="cg-field">
           <label>Teacher Name</label>
           <input id="fTeacher" type="text" placeholder="e.g. Nargish Jahan" oninput="updatePreview()" autocomplete="off">
@@ -491,36 +491,22 @@
           <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()">
         </div>
 
-        <!-- PDF Stats widget -->
-        <div id="pdfStatsBar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;">
-          <span style="font-size:0.73rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
-            <i class="fa-solid fa-file-pdf" style="color:#f87171;"></i>
-            <span id="statTotalPdfs" style="color:var(--text);font-weight:600;">…</span> PDFs generated
-          </span>
-          <span id="statGenerating" style="font-size:0.71rem;color:#22c55e;display:none;align-items:center;gap:5px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;animation:lu-pulse 1.5s infinite;"></span>
-            <span id="statGeneratingCount">1</span> generating now
-          </span>
-        </div>
-
         <button class="btn-gen" id="btnGen" onclick="generatePDF()">
           <i class="fa-solid fa-file-arrow-down"></i> Generate PDF
         </button>
-        <div id="shareSection" style="display:none;">
-          <div class="btn-share-row">
-            <button class="btn-share btn-wa" id="btnShareWA" onclick="shareCover('whatsapp')">
-              <i class="fa-brands fa-whatsapp"></i> WhatsApp
-            </button>
-            <button class="btn-share btn-tg" id="btnShareTG" onclick="shareCover('telegram')">
-              <i class="fa-brands fa-telegram"></i> Telegram <span style="font-size:0.65rem;opacity:0.85;background:rgba(0,0,0,0.18);border-radius:4px;padding:1px 5px;">Recommended</span>
-            </button>
-          </div>
-          <div class="share-hint">
-            <i class="fa-solid fa-print share-hint-icon"></i>
-            <div>
-              <span class="share-hint-title">Need a print? Tap a button above!</span>
-              <span class="share-hint-sub">PDF saves automatically → Almas's inbox opens → Attach &amp; send</span>
-            </div>
+        <div class="btn-share-row">
+          <button class="btn-share btn-wa" id="btnShareWA" onclick="shareCover('whatsapp')">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+          </button>
+          <button class="btn-share btn-tg" id="btnShareTG" onclick="shareCover('telegram')">
+            <i class="fa-brands fa-telegram"></i> Telegram <span style="font-size:0.65rem;opacity:0.85;background:rgba(0,0,0,0.18);border-radius:4px;padding:1px 5px;">Recommended</span>
+          </button>
+        </div>
+        <div class="share-hint">
+          <i class="fa-solid fa-print share-hint-icon"></i>
+          <div>
+            <span class="share-hint-title">Need a print? Tap a button above!</span>
+            <span class="share-hint-sub">PDF saves automatically → Almas's inbox opens → Attach &amp; send</span>
           </div>
         </div>
         <button class="cg-preview-toggle-btn" id="previewToggleBtn" onclick="toggleMobilePreview()">
@@ -555,7 +541,7 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62B. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -650,7 +636,7 @@
       const isGroup = currentType.includes('group');
       const isLab   = currentType.includes('lab');
 
-      const heading  = isLab ? 'Lab Report on' : 'Assignment on';
+      const heading  = isLab ? 'Lab Report On' : 'Assignment on';
       const title    = v('fCourseTitle');
       const code     = v('fCourseCode');
       const hasNo    = isLab || currentType === 'asgn-single';
@@ -726,7 +712,7 @@
 
         <div class="cp-gap-md"></div>
 
-        <div class="cp-sec-title">Submitted to</div>
+        <div class="cp-sec-title">Submitted To</div>
         ${teacherLines}
 
         <div class="cp-gap-md"></div>
@@ -857,15 +843,21 @@
     });
 
     /* ── Autocomplete data — loaded from Google Sheet ── */
-    const CPG_SHEET_ID = 'REDACTED_SHEET_ID_FOR_SECURITY';
+    const CPG_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     let TEACHERS = [];
     let COURSES  = [];
 
     function loadCPGSheet(sheetName) {
-      return fetch(`https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/api-proxy?type=sheet&sheetName=${encodeURIComponent(sheetName)}`)
-        .then(res => { if (!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(data => data)
-        .catch(err => { throw err; });
+      return new Promise((resolve, reject) => {
+        const cb = `cpg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { cleanup(); reject(); }, 10000);
+        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+        window[cb] = d => { cleanup(); resolve(d); };
+        s.src = `https://docs.google.com/spreadsheets/d/${CPG_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
+        s.onerror = () => { cleanup(); reject(); };
+        document.body.appendChild(s);
+      });
     }
 
     async function loadAutocompleteData() {
@@ -1004,68 +996,6 @@
       return `${code}_${type}_${name}`;
     }
 
-    /* ── Safe canvas capture — works even when preview is hidden/scaled ── */
-    /* On mobile the preview panel is collapsed (parent has display:none).
-       Instead of cloning (which loses computed CSS), we temporarily reveal
-       the parent chain, reset the scale transform, and move it off-screen.
-       After capture we restore everything exactly as it was. */
-    async function captureCanvas() {
-      updatePreview();
-
-      const panel  = document.getElementById('previewPanel');
-      const scaler = document.getElementById('previewScaler');
-      const wrap   = document.getElementById('previewScalerWrap');
-      const outer  = document.getElementById('previewOuter');
-      const el     = document.getElementById('coverPreview');
-
-      /* ── Save current states ── */
-      const wasCollapsed       = panel.classList.contains('collapsed');
-      const savedScalerStyle   = scaler.style.cssText;
-      const savedWrapStyle     = wrap.style.cssText;
-      const savedOuterStyle    = outer.style.cssText;
-
-      /* ── Temporarily reveal at full A4 size, off-screen ── */
-      if (wasCollapsed) panel.classList.remove('collapsed');
-
-      scaler.style.transform = 'none';
-      scaler.style.width     = '794px';
-      scaler.style.height    = '1123px';
-
-      wrap.style.width    = '794px';
-      wrap.style.height   = '1123px';
-      wrap.style.overflow = 'hidden';
-
-      outer.style.position = 'fixed';
-      outer.style.left     = '-9999px';
-      outer.style.top      = '0px';
-      outer.style.zIndex   = '-1';
-
-      /* Give the browser a frame to reflow */
-      await new Promise(r => setTimeout(r, 150));
-
-      let canvas;
-      try {
-        canvas = await html2canvas(el, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          imageTimeout: 8000,
-          width: 794,
-          height: 1123
-        });
-      } finally {
-        /* ── Restore everything ── */
-        if (wasCollapsed) panel.classList.add('collapsed');
-        scaler.style.cssText = savedScalerStyle;
-        wrap.style.cssText   = savedWrapStyle;
-        outer.style.cssText  = savedOuterStyle;
-      }
-
-      return canvas;
-    }
-
     /* ── PDF Generation ── */
     async function generatePDF() {
       const btn = document.getElementById('btnGen');
@@ -1073,22 +1003,31 @@
       btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
 
       try {
-        const canvas = await captureCanvas();
+        updatePreview();
+        await new Promise(r => setTimeout(r, 200));
+
+        const el = document.getElementById('coverPreview');
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 5000
+        });
 
         const { jsPDF } = window.jspdf;
-        const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const imgData = canvas.toDataURL('image/jpeg', 0.97);
         pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
         const fname = buildFilename();
         pdf.save(`${fname}_CoverPage.pdf`);
-        if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackPDF();
       } catch (err) {
         alert('PDF generation failed. Please try again.\n' + err.message);
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-file-arrow-down"></i> Generate PDF';
-        if (typeof LU_ANALYTICS !== 'undefined') loadCoverStats();
       }
     }
 
@@ -1103,7 +1042,11 @@
       btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
 
       try {
-        const canvas = await captureCanvas();
+        updatePreview();
+        await new Promise(r => setTimeout(r, 200));
+
+        const el     = document.getElementById('coverPreview');
+        const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false });
         const fname  = buildFilename();
 
         /* Step 1: download PDF */
@@ -1113,7 +1056,6 @@
         pdf.save(`${fname}.pdf`);
 
         /* Step 2: open inbox after short delay so download triggers first */
-        if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackShare(platform);
         await new Promise(r => setTimeout(r, 500));
         window.open(platform === 'whatsapp' ? WA_LINK : TG_LINK, '_blank');
 
@@ -1145,29 +1087,6 @@
       document.getElementById('previewPanel').classList.remove('collapsed');
     }
     setTimeout(scalePreview, 150);
-
-    /* Show share buttons & print hint only for logged-in users */
-    if (_ud) {
-      document.getElementById('shareSection').style.display = 'block';
-    }
-
-    /* Load cover page stats */
-    async function loadCoverStats() {
-      if (typeof LU_ANALYTICS === 'undefined') return;
-      try {
-        const { totalPdfs, generatingNow } = await LU_ANALYTICS.getCoverStats();
-        const el = document.getElementById('statTotalPdfs');
-        if (el) el.textContent = totalPdfs.toLocaleString();
-        const genEl = document.getElementById('statGenerating');
-        const genCount = document.getElementById('statGeneratingCount');
-        if (genEl && genCount) {
-          genCount.textContent = generatingNow;
-          genEl.style.display = generatingNow > 0 ? 'flex' : 'none';
-        }
-      } catch(e) {}
-    }
-    setTimeout(loadCoverStats, 1000);
   </script>
-  <script src="../assets/js/analytics.js"></script>
 </body>
 </html>

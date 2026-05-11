@@ -88,7 +88,7 @@
         <li class="auth-only"><a href="info.html">Info</a></li>
         <li class="auth-only"><a href="resources.html">Resources</a></li>
         <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li class="auth-only"><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status"><div class="status-dot"></div>Portal Active</div>
@@ -102,7 +102,7 @@
       <a class="auth-only" href="info.html">Info</a>
       <a class="auth-only" href="resources.html">Resources</a>
       <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
@@ -229,14 +229,14 @@
       </div>
       <div class="footer-note">
         Built with ❤️ for CSE Batch 62, Section B.<br>
-        © 2026 CSE 62B. All Rights Reserved.
+        © 2026 MD. Almas Ali. All Rights Reserved.
       </div>
     </footer>
   </div>
 
   <script src="../assets/js/bcrypt.min.js"></script>
   <script>
-    const SHEET_ID   = 'REDACTED_SHEET_ID_FOR_SECURITY';
+    const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
     const SHEET_NAME = 'Student Info';
     const SMS_API_KEY   = 'nJOmvZlaS3yclfACHGU2';
     const SMS_SENDER_ID = '8809617627097';
@@ -328,29 +328,32 @@
     }
 
     /* -- Fetch student from sheet -- */
-    async function fetchStudentData(studentId) {
-      try {
-        const url = `${SUPABASE_URL}/functions/v1/api-proxy?type=sheet&sheetName=${encodeURIComponent(SHEET_NAME)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Network error');
-        const data = await res.json();
-        const rows = data.table?.rows || [];
-        for (const row of rows) {
-          const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
-          let sid = cells[1]||'';
-          if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
-            let raw = (cells[3]||'').replace(/\s+/g,'');
-            if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
-            if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
-            if (raw.startsWith('+88')) raw=raw.substring(3);
-            else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
-            return { id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null };
+    function fetchStudentData(studentId) {
+      return new Promise((resolve, reject) => {
+        const cb = `s_${Date.now()}`;
+        const s  = document.createElement('script');
+        const t  = setTimeout(() => { if(window[cb]){delete window[cb];s.remove();reject('Network error');} }, 8000);
+        window[cb] = (data) => {
+          clearTimeout(t); delete window[cb]; s.remove();
+          const rows = data.table?.rows || [];
+          for (const row of rows) {
+            const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
+            let sid = cells[1]||'';
+            if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
+              let raw = (cells[3]||'').replace(/\s+/g,'');
+              if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
+              if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
+              if (raw.startsWith('+88')) raw=raw.substring(3);
+              else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
+              resolve({ id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null });
+              return;
+            }
           }
-        }
-        throw new Error('Student not found');
-      } catch (err) {
-        throw new Error(err.message === 'Student not found' ? err.message : 'Network error');
-      }
+          reject('Student not found');
+        };
+        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
+        document.body.appendChild(s);
+      });
     }
 
     /* -- OTP helpers -- */
@@ -434,7 +437,6 @@
             keep ? localStorage.setItem('lu62b_student',JSON.stringify(u))
                  : sessionStorage.setItem('lu62b_student',JSON.stringify(u));
           }
-          if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackLogin();
           window.location.href='../index.html';
         } else {
           errEl.innerText='Incorrect password. Try again or use Forgot Password.';
@@ -487,7 +489,6 @@
           if (hash) {
             const u = buildStudentSession(studentData);
             localStorage.setItem('lu62b_student',JSON.stringify(u));
-            if (typeof LU_ANALYTICS !== 'undefined') LU_ANALYTICS.trackLogin();
             window.location.href='../index.html';
           } else {
             sessionStorage.setItem('lu62b_firstTimeSetup',JSON.stringify(studentData));
@@ -571,6 +572,5 @@
     document.getElementById('otpCode').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOTP();});
   </script>
   <script src="../assets/js/auth.js"></script>
-<script src="../assets/js/analytics.js"></script>
 </body>
 </html>
