@@ -893,25 +893,40 @@
 
         const cells = row => (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
 
-        TEACHERS = (tData.table?.rows || [])
-          .map(r => cells(r))
-          .filter(c => c[0] && !['name','teacher'].includes(c[0].toLowerCase()))
-          .map(c => ({
-            name:  c[0],
-            desig: c[1] || '',
-            dept:  c[2] || 'Department of Computer Science & Engineering'
-          }));
+        const getHeaders = (rows) => {
+          if (!rows || !rows.length) return {};
+          const headers = {};
+          cells(rows[0]).forEach((h, i) => {
+            if (h) headers[h.toLowerCase().trim()] = i;
+          });
+          return headers;
+        };
 
-        COURSES = (cData.table?.rows || [])
+        const tRows = tData.table?.rows || [];
+        const tHeaders = getHeaders(tRows);
+
+        TEACHERS = tRows
           .map(r => cells(r))
-          .filter(c => c[0] && !['title','course'].includes(c[0].toLowerCase()))
+          .filter((c, i) => i > 0 && c.some(val => val)) // Skip header row
           .map(c => ({
-            title:    c[0],
-            code:     c[1] || '',
-            teacher:  c[2] || '',
-            desig:    c[3] || '',
-            dept:     c[4] || ''
-          }));
+            name:  c[tHeaders['name'] ?? tHeaders['teacher'] ?? 0] || '',
+            desig: c[tHeaders['designation'] ?? tHeaders['desig'] ?? 1] || '',
+            dept:  c[tHeaders['department'] ?? tHeaders['dept'] ?? 2] || 'Department of Computer Science & Engineering'
+          })).filter(t => t.name);
+
+        const cRows = cData.table?.rows || [];
+        const cHeaders = getHeaders(cRows);
+
+        COURSES = cRows
+          .map(r => cells(r))
+          .filter((c, i) => i > 0 && c.some(val => val)) // Skip header row
+          .map(c => ({
+            title:    c[cHeaders['title'] ?? cHeaders['course title'] ?? cHeaders['course'] ?? 0] || '',
+            code:     c[cHeaders['code'] ?? cHeaders['course code'] ?? 1] || '',
+            teacher:  c[cHeaders['teacher'] ?? cHeaders['course teacher'] ?? 2] || '',
+            desig:    c[cHeaders['designation'] ?? cHeaders['desig'] ?? 3] || '',
+            dept:     c[cHeaders['department'] ?? cHeaders['dept'] ?? 4] || ''
+          })).filter(c => c.title);
 
       } catch(e) { /* fail silently â€” user can still type manually */ }
     }
