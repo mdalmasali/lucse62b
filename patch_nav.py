@@ -37,7 +37,7 @@ def generate_header(filepath):
         <li class="auth-only"><a href="{info}">Info</a></li>
         <li class="auth-only"><a href="{resources}">Resources</a></li>
         <li class="auth-only"><a href="{results}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
-        <li class="auth-only"><a href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li><a href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
         <li><a href="{login}" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
       </ul>
       <div class="topbar-status">
@@ -57,7 +57,7 @@ def generate_header(filepath):
       <a class="auth-only" href="{info}">Info</a>
       <a class="auth-only" href="{resources}">Resources</a>
       <a class="auth-only" href="{results}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a class="auth-only" href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a href="{cover_page}" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="{login}" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>"""
     return nav
