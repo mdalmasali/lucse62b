@@ -112,6 +112,7 @@ const LU_ANALYTICS = (() => {
         box-shadow:0 4px 20px rgba(0,0,0,.35);user-select:none;
         transition:opacity .3s;cursor:default;}
       #lu-online-badge:hover{opacity:.7;}
+      @media (max-width:768px) { #lu-online-badge { bottom:90px; right:20px; } }
       .lu-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;
         box-shadow:0 0 6px #22c55e;flex-shrink:0;
         animation:lu-pulse 2s ease-in-out infinite;}
