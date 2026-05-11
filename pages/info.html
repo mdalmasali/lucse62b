@@ -435,9 +435,6 @@
         Built with ❤️ for CSE Batch 62, Section B.<br>
         © 2026 CSE 62 B. All Rights Reserved.
       </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
-      </div>
     </footer>
   </div>
 
@@ -604,12 +601,15 @@
       return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    /* ── Section scripts: loaded lazily on first click ── */
     const SECTION_SCRIPTS = {
       'routine':         'info/routine.js',
       'teacher-routine': 'info/teacher-routine.js',
       'mid-routine':     'info/exam.js',
       'final-routine':   'info/exam.js',
+      'teachers':        'info/teachers.js',
+      'group-links':     'info/group-links.js',
+      'bkash':           'info/bkash.js',
+      'course-offer':   'info/course-offer.js',
     };
 
     async function loadContent(item) {
@@ -617,17 +617,22 @@
       if (SECTION_SCRIPTS[item.id]) {
         try { await loadScript(SECTION_SCRIPTS[item.id]); } catch(_) {}
       }
+      
       if (item.id === 'routine')         { loadRoutine(body);               return; }
       if (item.id === 'teacher-routine') { loadTeacherRoutine(body);        return; }
       if (item.id === 'mid-routine')     { loadExamRoutine(body, 'mid');    return; }
       if (item.id === 'final-routine')   { loadExamRoutine(body, 'final');  return; }
+      if (item.id === 'teachers')        { loadTeachers(body);              return; }
+      if (item.id === 'group-links')     { loadGroupLinks(body);            return; }
+      if (item.id === 'bkash')           { loadBkash(body);                 return; }
+      if (item.id === 'course-offer')   { loadCourseOffer(body);           return; }
+      
 
       const COMING = {
         'course-offer':  'Current semester course offer will be shown here.',
         'all-course':    'All batch course offer list will be shown here.',
         'bus':           'Bus schedule and routes will be shown here.',
         'semester':      'Semester dates, registration deadlines and info will be shown here.',
-        'group-links':   'All course WhatsApp / Telegram group links will be shown here.',
         'teachers':      'Teacher contact numbers and emails will be shown here.',
         'bkash':         'bKash payment number and fees codes will be shown here.',
       };
