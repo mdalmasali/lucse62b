@@ -1,6 +1,4 @@
-/* ─── Exam Routine (Mid Term & Final Term) ─── */
-/* Globals from info.html: getSheetIdFromRoutineTab, fetchSheet, sheetRows,
-   courseColor, escH, loadScript */
+/* ─── Exam Routine (Fixed) ─── */
 
 let _examCache = null;
 
@@ -19,11 +17,22 @@ function fetchExamTab(sheetId) {
 
 function normExamDate(raw) {
   if (!raw) return '';
+
+  // Excel serial number (e.g. 46026, 46057...)
+  const num = parseFloat(String(raw).trim());
+  if (!isNaN(num) && num > 40000 && num < 60000) {
+    const d = new Date(Math.round((num - 25569) * 86400 * 1000));
+    const utc = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    return `${String(utc.getDate()).padStart(2,'0')}-${String(utc.getMonth()+1).padStart(2,'0')}-${utc.getFullYear()}`;
+  }
+
+  // Google Sheets Date(...) format
   const dm = String(raw).match(/^Date\((\d+),(\d+),(\d+)/);
   if (dm) {
     const d = new Date(+dm[1], +dm[2], +dm[3]);
     return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
   }
+
   return String(raw).trim();
 }
 
@@ -51,68 +60,192 @@ function parseExamRoutine(data, targetBatch, targetSection) {
     })
   );
 
-  let dayHeaderIdx = -1, dayStartCol = -1;
-  for (let r = 0; r < Math.min(allRows.length, 15); r++) {
+  // ── Step 1: Find ALL "Day" header rows ──
+  const blockStarts = [];
+  for (let r = 0; r < allRows.length; r++) {
     for (let c = 0; c < allRows[r].length; c++) {
-      if (/^day[-\s]?1$/i.test(allRows[r][c])) {
-        dayHeaderIdx = r; dayStartCol = c; break;
+      if (/^\s*day[\s\-]*\d+\s*$/i.test(allRows[r][c])) {
+        blockStarts.push({ rowIdx: r, colIdx: c });
+        break;
       }
     }
-    if (dayHeaderIdx >= 0) break;
   }
-  if (dayHeaderIdx < 0) return null;
+  if (blockStarts.length === 0) return null;
 
-  const dayRow  = allRows[dayHeaderIdx];
-  const dayCols = dayRow.reduce((a, cell, i) => {
-    if (/^day[-\s]?\d+$/i.test(cell)) a.push(i);
-    return a;
-  }, []);
-
-  const dateRow    = allRows[dayHeaderIdx + 1] || [];
-  const timeRow    = allRows[dayHeaderIdx + 2] || [];
-  const weekdayRow = allRows[dayHeaderIdx + 3] || [];
-
-  let batchCol = dayStartCol - 2, sectionCol = dayStartCol - 1;
-  for (let r = Math.max(0, dayHeaderIdx - 1); r <= dayHeaderIdx + 4; r++) {
-    (allRows[r] || []).forEach((cell, i) => {
-      if (/^batch$/i.test(cell))   batchCol   = i;
-      if (/^section$/i.test(cell)) sectionCol = i;
+  // ── Step 2: Find Batch and Section columns globally ──
+  let batchCol = 0;
+  let sectionCol = 1;
+  for (let r = 0; r < Math.min(allRows.length, 15); r++) {
+    const row = allRows[r] || [];
+    row.forEach((cell, i) => {
+      if (/^\s*batch\s*$/i.test(cell))   batchCol = i;
+      if (/^\s*section\s*$/i.test(cell)) sectionCol = i;
     });
   }
 
-  const examDays = dayCols.map(col => ({
-    col, label: dayRow[col] || '',
-    date: dateRow[col] || '', time: timeRow[col] || '', weekday: weekdayRow[col] || ''
-  }));
+  const tbNum = String(targetBatch).replace(/[^0-9]/g, '');
+  const tsStr = String(targetSection).trim().toUpperCase();
+  const allExams = [];
 
-  const dataStart = dayHeaderIdx + 4;
-  let currentBatch = '';
+  // ── Step 3: Parse each block independently ──
+  blockStarts.forEach((block, blockIdx) => {
+    const dayHeaderIdx = block.rowIdx;
 
-  for (let r = dataStart; r < allRows.length; r++) {
-    const row = allRows[r];
-    if (row[batchCol]) currentBatch = row[batchCol];
-    const section = row[sectionCol] || '';
-    if (currentBatch === String(targetBatch) && section === targetSection) {
-      const exams = examDays.map(day => ({
-        ...day,
-        course: (row[day.col] || '').replace(/\s*\(\d+\)\s*/g, '').trim()
-      })).filter(e => e.course);
-      return exams;
+    const nextBlockRow = blockStarts[blockIdx + 1]
+      ? blockStarts[blockIdx + 1].rowIdx
+      : allRows.length;
+
+    // ── Per-block batch pre-fill (শুধু numeric value track করো) ──
+    const rowBatches = {};
+    let lastBatch = '';
+    for (let r = dayHeaderIdx; r < nextBlockRow; r++) {
+      const batchCell = String(allRows[r][batchCol] || '').trim();
+      if (batchCell && /\d/.test(batchCell) && !/^(date|time|day|section)/i.test(batchCell)) {
+        lastBatch = batchCell;
+      }
+      rowBatches[r] = lastBatch;
     }
-  }
-  return null;
+
+    const dayRow = allRows[dayHeaderIdx] || [];
+    const dayCols = dayRow.reduce((a, cell, i) => {
+      if (/^\s*day[\s\-]*\d+\s*$/i.test(cell)) a.push(i);
+      return a;
+    }, []);
+
+    let dateRowIdx    = dayHeaderIdx + 1;
+    let timeRowIdx    = dayHeaderIdx + 2;
+    let weekdayRowIdx = dayHeaderIdx + 3;
+
+    if (dayCols.length > 0) {
+      const sampleCol = dayCols[0];
+      for (let i = 1; i <= 5; i++) {
+        const rIdx = dayHeaderIdx + i;
+        if (rIdx >= allRows.length || rIdx >= nextBlockRow) break;
+        const cell = String(allRows[rIdx][sampleCol]).trim();
+        if (/Date\(/i.test(cell) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell)) {
+          dateRowIdx = rIdx;
+        } else if (/\d{1,2}:\d{2}/.test(cell) || /am|pm/i.test(cell)) {
+          timeRowIdx = rIdx;
+        } else if (/^(sun|mon|tue|wed|thu|fri|sat)/i.test(cell)) {
+          weekdayRowIdx = rIdx;
+        }
+      }
+    }
+
+    const dataStartRow = Math.max(dayHeaderIdx, dateRowIdx, timeRowIdx, weekdayRowIdx) + 1;
+
+    const dateRow    = allRows[dateRowIdx]    || [];
+    const timeRow    = allRows[timeRowIdx]    || [];
+    const weekdayRow = allRows[weekdayRowIdx] || [];
+
+    const examDays = dayCols.map(col => ({
+      col,
+      label:   dayRow[col]    || '',
+      date:    dateRow[col]   || '',
+      time:    timeRow[col]   || '',
+      weekday: weekdayRow[col] || ''
+    }));
+
+    for (let r = dataStartRow; r < nextBlockRow; r++) {
+      const row = allRows[r];
+      if (!row) continue;
+
+      const section = (row[sectionCol] || '').trim();
+      if (!section || /^(section|day|date|time)$/i.test(section)) continue;
+
+      const currentBatch = rowBatches[r];
+      const cbNum = String(currentBatch).replace(/[^0-9]/g, '');
+      const csStr = section.toUpperCase();
+
+      const batchMatch   = cbNum && cbNum === tbNum;
+      const sectionMatch = csStr === tsStr ||
+        csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr);
+
+      if (batchMatch && sectionMatch) {
+        examDays.forEach(day => {
+          const raw    = row[day.col] || '';
+          const course = raw.replace(/\s*\(\d+\)\s*/g, '').trim();
+          if (course && course !== '--' && course !== '–') {
+            allExams.push({ ...day, course });
+          }
+        });
+      }
+    }
+  });
+
+  if (!allExams.length) return null;
+
+  // ── Sort by date → time ──
+  allExams.sort((a, b) => {
+    const da = examDateObj(a.date);
+    const db = examDateObj(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    if (da.getTime() !== db.getTime()) return da - db;
+
+    const parseTime = (t) => {
+      const m = String(t).match(/(\d+):(\d+)\s*([AP]M)?/i);
+      if (!m) return 0;
+      let h = parseInt(m[1]), min = parseInt(m[2]), ampm = (m[3]||'').toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      if (!ampm && h < 7) h += 12;
+      return h * 60 + min;
+    };
+    return parseTime(a.time) - parseTime(b.time);
+  });
+
+  return allExams;
 }
 
-async function loadExamRoutine(body, type) {
+/* ─── UI / Display ─── */
+
+function loadExamRoutine(body, type) {
+  const label = type === 'mid' ? 'Mid Term' : 'Final Term';
+  const icon  = type === 'mid' ? 'fa-solid fa-calendar-check' : 'fa-solid fa-calendar-xmark';
+  const color = type === 'mid' ? '#4ade80' : '#f87171';
+
+  body.innerHTML = `
+    <div class="rt-tf-wrap">
+      <div class="rt-tf-heading"><i class="fa-solid ${icon}" style="margin-right:6px;color:${color};"></i>Search ${label} Routine</div>
+      <div class="rt-tf-row">
+        <input type="text" id="examBatchInput" class="rt-tf-input" value="62" placeholder="Batch" style="max-width:120px;" />
+        <input type="text" id="examSectionInput" class="rt-tf-input" value="B" placeholder="Section" style="max-width:120px;" />
+        <button class="rt-tf-btn" id="examSearchBtn" onclick="doExamSearch('${type}')">
+          <i class="fa-solid fa-magnifying-glass"></i> Search
+        </button>
+      </div>
+    </div>
+    <div id="examRoutineResult"><div class="info-loading-spin"><div class="spin-sm"></div> Loading default routine...</div></div>`;
+
+  document.getElementById('examBatchInput').addEventListener('keydown',  e => { if (e.key === 'Enter') doExamSearch(type); });
+  document.getElementById('examSectionInput').addEventListener('keydown', e => { if (e.key === 'Enter') doExamSearch(type); });
+
+  setTimeout(() => doExamSearch(type), 50);
+}
+
+async function doExamSearch(type) {
   const label   = type === 'mid' ? 'Mid Term' : 'Final Term';
   const keyword = type === 'mid' ? 'mid term' : 'final term';
+  const resultDiv = document.getElementById('examRoutineResult');
+  const btn = document.getElementById('examSearchBtn');
 
-  body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading...</div>';
+  const targetBatch   = document.getElementById('examBatchInput').value.trim();
+  const targetSection = document.getElementById('examSectionInput').value.trim().toUpperCase();
+
+  if (!targetBatch || !targetSection) {
+    resultDiv.innerHTML = `<div class="info-placeholder"><p>Please enter both Batch and Section.</p></div>`;
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Searching...'; }
+  resultDiv.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Fetching routine...</div>';
 
   try {
     const sheetId = await getSheetIdFromRoutineTab(keyword);
     if (!sheetId) {
-      body.innerHTML = `<div class="info-placeholder">
+      resultDiv.innerHTML = `<div class="info-placeholder">
         <i class="fa-solid fa-link-slash" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
         <p style="font-weight:600;">No ${label} Routine linked yet.</p>
         <p style="font-size:0.78rem;margin-top:8px;opacity:0.65;">In your Routine tab, add a row with<br>
@@ -133,16 +266,17 @@ async function loadExamRoutine(body, type) {
         .forEach(r => { courseInfo[r[1].trim().toUpperCase()] = { name: r[0].trim() }; });
     }
 
-    const exams = parseExamRoutine(examData, '62', 'B');
+    const exams = parseExamRoutine(examData, targetBatch, targetSection);
     if (!exams || !exams.length) {
-      body.innerHTML = `<div class="info-placeholder">
+      resultDiv.innerHTML = `<div class="info-placeholder">
         <i class="fa-solid fa-calendar-xmark" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
-        <p>No exams found for Batch 62, Section B.</p>
+        <p>No exams found for Batch <strong style="color:var(--text);">${escH(targetBatch)}</strong>, Section <strong style="color:var(--text);">${escH(targetSection)}</strong>.</p>
+        <p style="font-size:0.75rem;margin-top:6px;opacity:0.65;">Make sure your sheet has "Day 1", "Batch", and "Section" columns matching LU standard format.</p>
       </div>`;
       return;
     }
 
-    _examCache = { type, label, exams, courseInfo };
+    _examCache = { type, label, exams, courseInfo, targetBatch, targetSection };
 
     const today = new Date(); today.setHours(0,0,0,0);
     let cards = '';
@@ -169,10 +303,10 @@ async function loadExamRoutine(body, type) {
       </div>`;
     });
 
-    body.innerHTML = `
+    resultDiv.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
-        <span>${label} Exam Routine &nbsp;·&nbsp; Batch 62, Section B &nbsp;·&nbsp; Spring 2026</span>
+        <span>${label} Exam Routine &nbsp;·&nbsp; Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; Spring 2026</span>
       </div>
       <div class="exam-meta">
         <span class="exam-count-badge">${exams.length} Exam${exams.length !== 1 ? 's' : ''}</span>
@@ -188,17 +322,21 @@ async function loadExamRoutine(body, type) {
       </div>`;
 
   } catch(e) {
-    body.innerHTML = `<div class="info-placeholder">
+    resultDiv.innerHTML = `<div class="info-placeholder">
       <i class="fa-solid fa-triangle-exclamation" style="color:#f87171;opacity:0.4;"></i>
       <p style="color:#f87171;font-weight:600;">Could not load ${label} routine.</p>
       <p style="font-size:0.78rem;margin-top:6px;">${e.message}</p>
     </div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Search'; }
   }
 }
 
+/* ─── Print / Download ─── */
+
 function buildExamPrintTemplate() {
   if (!_examCache) return '';
-  const { label, exams, courseInfo } = _examCache;
+  const { label, exams, courseInfo, targetBatch, targetSection } = _examCache;
   const today = new Date(); today.setHours(0,0,0,0);
 
   let rows = '';
@@ -208,7 +346,7 @@ function buildExamPrintTemplate() {
     const dObj   = examDateObj(exam.date);
     const isPast = dObj && dObj < today;
     const rowBg  = ri % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
-    rows += `<tr style="opacity:${isPast?0.4:1};">
+    rows += `<tr style="opacity:${isPast?0.85:1};">
       <td style="padding:11px 16px;text-align:center;font-size:11px;font-weight:700;color:#a78bfa;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.label)}</td>
       <td style="padding:11px 16px;font-size:12px;color:#e2e8f0;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.weekday)}, ${escH(fmtExamDate(exam.date))}</td>
       <td style="padding:11px 16px;font-size:12px;color:#38bdf8;font-weight:600;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.time)}</td>
@@ -228,7 +366,7 @@ function buildExamPrintTemplate() {
         </div>
         <div>
           <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em;">${escH(label)} Exam Routine</div>
-          <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">Batch 62, Section B &nbsp;·&nbsp; Spring 2026</div>
+          <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; Spring 2026</div>
         </div>
       </div>
       <div style="text-align:right;">
