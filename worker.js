@@ -16,8 +16,8 @@
 //   GET  /drive?folder=FOLDER_ID          → Google Drive folder listing
 
 const ALLOWED_ORIGINS = [
-  'https://lucse62.xyz',
-  'https://www.lucse62.xyz',
+  'https://lucse62b.xyz',
+  'https://www.lucse62b.xyz',
   'https://mdalmasali.github.io',
   'http://127.0.0.1:5500',
   'http://localhost:5500',
