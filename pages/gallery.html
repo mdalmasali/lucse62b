@@ -311,19 +311,14 @@
                     dotsEl.appendChild(dot);
                   });
                   wrap.appendChild(dotsEl);
-                  let ssIdx = 0, ssTimer = null;
+                  let ssIdx = 0;
                   const dots = dotsEl.querySelectorAll('.event-ss-dot');
                   function ssNext() {
                     ssIdx = (ssIdx + 1) % covers.length;
                     img.src = thumb(covers[ssIdx].id, 600);
                     dots.forEach((d, i) => d.classList.toggle('active', i === ssIdx));
                   }
-                  card.addEventListener('mouseenter', () => { ssTimer = setInterval(ssNext, 1500); });
-                  card.addEventListener('mouseleave', () => {
-                    clearInterval(ssTimer); ssIdx = 0;
-                    img.src = thumb(covers[0].id, 600);
-                    dots.forEach((d, i) => d.classList.toggle('active', i === 0));
-                  });
+                  setInterval(ssNext, 2500);
                 }
               }).catch(() => {});
           });
