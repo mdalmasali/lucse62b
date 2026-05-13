@@ -334,28 +334,22 @@
       if (!res.ok) throw new Error('Save failed');
     }
 
-    /* -- Fetch student from sheet (via Worker proxy) -- */
+    /* -- Fetch student via Worker lookup (server-side, never exposes full sheet) -- */
     async function fetchStudentData(studentId) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
       try {
-        const r    = await fetch(WORKER_URL + '/sheet?name=' + encodeURIComponent(SHEET_NAME), { signal: controller.signal });
-        const data = await r.json();
+        const r    = await fetch(WORKER_URL + '/lookup?id=' + encodeURIComponent(studentId), { signal: controller.signal });
         clearTimeout(timer);
-        const rows = data.table?.rows || [];
-        for (const row of rows) {
-          const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
-          let sid = cells[1]||'';
-          if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
-            let raw = (cells[3]||'').replace(/\s+/g,'');
-            if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
-            if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
-            if (raw.startsWith('+88')) raw=raw.substring(3);
-            else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
-            return { id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null };
-          }
-        }
-        throw new Error('Student not found');
+        if (!r.ok) throw new Error('Lookup failed');
+        const data = await r.json();
+        if (!data.found) throw new Error('Student not found');
+        let raw = (data.phone || '').replace(/\s+/g, '');
+        if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
+        if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
+        if (raw.startsWith('+88')) raw=raw.substring(3);
+        else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
+        return { id: studentId, name: data.name||'Student', phone: /^01\d{9}$/.test(raw)?raw:null };
       } catch (e) {
         clearTimeout(timer);
         throw e.name === 'AbortError' ? new Error('Network error') : e;

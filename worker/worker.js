@@ -40,6 +40,26 @@ export default {
     try {
       const p = url.pathname;
 
+      // ── GET /lookup?id=STUDENT_ID — single student lookup, never exposes full sheet ──
+      if (p === '/lookup') {
+        const sid = url.searchParams.get('id');
+        if (!sid) return errResp(cors, 400, 'Missing id');
+        if (!/^\d{8,16}$/.test(sid)) return errResp(cors, 400, 'Invalid ID');
+        const id = env.MAIN_SHEET_ID;
+        if (!id) return errResp(cors, 500, 'Not configured');
+        const tq = `select * where B='${sid}'`;
+        const u  = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=Student%20Info&tq=${encodeURIComponent(tq)}`;
+        const r  = await fetch(u);
+        const text = await r.text();
+        const m = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+        if (!m) return errResp(cors, 502, 'Bad upstream');
+        const parsed = JSON.parse(m[1]);
+        const rows   = parsed.table?.rows || [];
+        if (!rows.length) return jsonResp(cors, { found: false });
+        const cells  = (rows[0].c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
+        return jsonResp(cors, { found: true, id: cells[1] || sid, name: cells[2] || 'Student', phone: cells[3] || '' });
+      }
+
       // ── GET /sheet?name=TabName[&type=bot] ───────────────────────────
       if (p === '/sheet') {
         const name = url.searchParams.get('name');
