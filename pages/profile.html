@@ -1978,7 +1978,9 @@
           body: JSON.stringify({ student_id: studentId, birth_date: birthDate }),
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.text();
+        const text = await r.text();
+        if (text.trimStart().startsWith('<')) throw new Error('LUS blocked');
+        return text;
       },
       async (studentId, birthDate) => {
         const r = await fetch('https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/get-result', {

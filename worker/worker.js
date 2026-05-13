@@ -129,13 +129,9 @@ export default {
           headers: {
             'content-type': 'application/x-www-form-urlencoded',
             'x-requested-with': 'XMLHttpRequest',
-            'origin': 'https://lus.ac.bd',
-            'referer': 'https://lus.ac.bd/result/',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           },
         });
         const text = await r.text();
-        // If LUS returns HTML (bot challenge/block), signal client to use fallback
         if (text.trimStart().startsWith('<')) return errResp(cors, 503, 'LUS temporarily unavailable');
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
       }
