@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -21,7 +21,7 @@
       align-items: start;
     }
 
-    /* â”€â”€ Sidebar â”€â”€ */
+    /* ── Sidebar ── */
     .info-sidebar {
       background: var(--card);
       border: 1px solid var(--border);
@@ -78,7 +78,7 @@
       opacity: 0.5;
     }
 
-    /* â”€â”€ Mobile chips â”€â”€ */
+    /* ── Mobile chips ── */
     .info-chips {
       display: none;
       overflow-x: auto; gap: 8px;
@@ -100,7 +100,7 @@
       border-color: transparent; color: #fff;
     }
 
-    /* â”€â”€ Content panel â”€â”€ */
+    /* ── Content panel ── */
     .info-content {
       background: var(--card);
       border: 1px solid var(--border);
@@ -185,7 +185,7 @@
     .info-item-card .ic-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
     .info-item-card .ic-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
 
-    /* â”€â”€ Routine: Sync badge â”€â”€ */
+    /* ── Routine: Sync badge ── */
     .rt-sync {
       display: flex; align-items: center; gap: 6px;
       font-size: 0.72rem; color: var(--text-secondary);
@@ -196,7 +196,7 @@
       background: var(--green); flex-shrink: 0;
     }
 
-    /* â”€â”€ Routine: Grid Table â”€â”€ */
+    /* ── Routine: Grid Table ── */
     .rt-grid-wrap {
       overflow-x: auto; -webkit-overflow-scrolling: touch;
       border-radius: 12px; border: 1px solid var(--border);
@@ -277,7 +277,7 @@
     .rt-dl-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .rt-dl-btn-pdf { background: linear-gradient(135deg, #ef4444, #b91c1c); }
 
-    /* â”€â”€ Exam Routine: card list â”€â”€ */
+    /* ── Exam Routine: card list ── */
     .exam-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
     .exam-count-badge {
       font-size: 0.72rem; font-weight: 700; background: rgba(255,255,255,0.06);
@@ -306,7 +306,7 @@
     .exam-card-time   { font-size: 0.72rem; color: var(--accent-bright); font-weight: 600; margin-top: 4px; }
     .exam-today-tag   { display: inline-block; font-size: 0.58rem; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; vertical-align: middle; }
 
-    /* â”€â”€ Teacher Routine: search form â”€â”€ */
+    /* ── Teacher Routine: search form ── */
     .rt-tf-wrap { margin-bottom: 22px; }
     .rt-tf-heading { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
     .rt-tf-row { display: flex; gap: 10px; align-items: stretch; }
@@ -331,6 +331,101 @@
     .rt-tf-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .rt-tf-hint { font-size: 0.72rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.6; }
 
+    /* ── Course Offer ── */
+    .co-summary-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(99,102,241,0.04));
+      border: 1px solid rgba(124,58,237,0.18); border-radius: 14px;
+      padding: 14px 20px; margin-bottom: 18px;
+    }
+    .co-stats { display: flex; align-items: center; gap: 16px; }
+    .co-stat { display: flex; flex-direction: column; align-items: flex-end; }
+    .co-stat-num { font-size: 1.35rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .co-stat-label { font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; margin-top: 2px; }
+    .co-stat-divider { width: 1px; height: 32px; background: var(--border); }
+    .co-card {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: all 0.2s;
+    }
+    .co-card:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    .co-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .co-code-pill { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 6px; }
+    .co-credit-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; border: 1px solid; white-space: nowrap; }
+    .co-card-title { font-size: 0.93rem; font-weight: 700; color: var(--text); line-height: 1.45; }
+    .co-prereq { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+    .co-prereq i { flex-shrink: 0; }
+
+    /* ── Group Links ── */
+    .gl-card {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: all 0.2s;
+    }
+    .gl-card:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    .gl-course-code { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 6px; display: inline-block; margin-bottom: 6px; }
+    .gl-course-title { font-size: 0.93rem; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
+    .gl-teacher { font-size: 0.76rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+    .gl-teacher i { opacity: 0.5; font-size: 0.7rem; }
+    .gl-code-btn {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 10px; padding: 9px 12px; cursor: pointer; color: var(--text);
+      transition: all 0.18s; text-align: left; font-family: 'Inter', sans-serif;
+    }
+    .gl-code-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.2); }
+    .gl-code-val { font-size: 0.88rem; font-weight: 700; color: #b388ff; letter-spacing: 1.5px; font-family: monospace; }
+    .gl-btn-row { display: flex; gap: 7px; margin-top: auto; }
+    .gl-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 9px 10px; border-radius: 10px; text-decoration: none;
+      font-weight: 700; font-size: 0.78rem; transition: opacity 0.18s, transform 0.18s;
+    }
+    .gl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .gl-btn-wa { background: rgba(37,211,102,0.15); color: #25D366; border: 1px solid rgba(37,211,102,0.3); }
+    .gl-btn-gc { background: rgba(26,115,232,0.12); color: #5a9fe8; border: 1px solid rgba(26,115,232,0.25); }
+
+    /* ── All Batch Course Offer ── */
+    .ac-chip-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .ac-chip {
+      padding: 6px 16px; border-radius: 50px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04); color: var(--text-secondary);
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all 0.18s;
+    }
+    .ac-chip:hover { border-color: var(--accent-bright); color: var(--accent-bright); }
+    .ac-chip-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .ac-summary-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px; font-size: 0.8rem; color: var(--text-secondary);
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px; margin-bottom: 14px;
+    }
+    .ac-table-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+    .ac-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .ac-table thead th {
+      text-align: left; padding: 10px 14px; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-secondary); background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+    .ac-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    .ac-table tbody tr:last-child { border-bottom: none; }
+    .ac-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .ac-table td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
+    .ac-td-num { color: var(--text-secondary); font-size: 0.72rem; width: 36px; }
+    .ac-td-title { min-width: 200px; }
+    .ac-td-cr, .ac-td-sec { text-align: center; font-weight: 700; }
+    .ac-td-pre { font-size: 0.75rem; color: var(--text-secondary); min-width: 100px; }
+    .ac-code {
+      font-size: 0.75rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 5px; background: rgba(167,139,250,0.12);
+      color: var(--accent-bright); white-space: nowrap;
+    }
+
     /* Responsive */
     @media (max-width: 900px) {
       .info-layout { grid-template-columns: 1fr; margin-top: 70px; }
@@ -354,7 +449,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -375,7 +470,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -385,28 +480,16 @@
       <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
-    
-    <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
-      <a href="../index.html">Home</a>
-      <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="classwork.html">Classwork</a>
-      <a class="auth-only" href="info.html">Info</a>
-      <a class="auth-only" href="resources.html">Resources</a>
-      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
-      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-    </div>
 
     <div class="info-layout">
 
-      <!-- â”€â”€ Left Sidebar â”€â”€ -->
+      <!-- ── Left Sidebar ── -->
       <aside class="info-sidebar fade-in">
         <div class="info-sidebar-title"><i class="fa-solid fa-list-ul" style="margin-right:6px;"></i>Info Menu</div>
         <div id="sidebarMenu"></div>
       </aside>
 
-      <!-- â”€â”€ Right Content â”€â”€ -->
+      <!-- ── Right Content ── -->
       <div style="min-width:0;">
         <!-- Mobile chips -->
         <div class="info-chips fade-in" id="mobileChips"></div>
@@ -424,7 +507,7 @@
 
     
       <footer>
-      <div class="footer-brand">CSE 62B Â· PORTAL</div>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -432,8 +515,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
-        Â© 2026 CSE 62 B. All Rights Reserved.
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 CSE 62 B. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -458,7 +541,7 @@
 
     let activeId = null;
 
-    /* â”€â”€ Build sidebar & chips â”€â”€ */
+    /* ── Build sidebar & chips ── */
     function buildMenu() {
       const sidebar = document.getElementById('sidebarMenu');
       const chips   = document.getElementById('mobileChips');
@@ -484,7 +567,7 @@
       });
     }
 
-    /* â”€â”€ Select item â”€â”€ */
+    /* ── Select item ── */
     function selectItem(id) {
       if (activeId === id) return;
       activeId = id;
@@ -502,7 +585,7 @@
       if (chip) chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
-    /* â”€â”€ Render content â”€â”€ */
+    /* ── Render content ── */
     function renderContent(item) {
       const panel = document.getElementById('infoContent');
       panel.innerHTML = `
@@ -512,7 +595,7 @@
           </div>
           <div>
             <div class="info-content-title">${item.label}</div>
-            <div class="info-content-sub">CSE 62B Â· Leading University</div>
+            <div class="info-content-sub">CSE 62B · Leading University</div>
           </div>
         </div>
         <div class="info-content-body" id="contentBody">
@@ -522,7 +605,7 @@
       loadContent(item);
     }
 
-    /* â”€â”€ Sheet fetch (JSONP) â”€â”€ */
+    /* ── Sheet fetch (JSONP) ── */
     const INFO_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
 
     function fetchSheet(sheetName) {
@@ -544,7 +627,7 @@
       );
     }
 
-    /* â”€â”€ Course color palette â”€â”€ */
+    /* ── Course color palette ── */
     const COLORS = ['#a78bfa','#38bdf8','#34d399','#fb923c','#f472b6','#818cf8','#4ade80','#f87171','#fbbf24','#22d3ee'];
     const _colorCache = {};
     function courseColor(code) {
@@ -555,11 +638,11 @@
       return (_colorCache[code] = COLORS[Math.abs(h) % COLORS.length]);
     }
 
-    /* â”€â”€ Day ordering â”€â”€ */
+    /* ── Day ordering ── */
     const DAY_ORDER = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
     function daySort(d) { const i = DAY_ORDER.findIndex(x => x.toLowerCase() === d.toLowerCase()); return i < 0 ? 99 : i; }
 
-    /* â”€â”€ Time slot sort (handles 01:xx as afternoon) â”€â”€ */
+    /* ── Time slot sort (handles 01:xx as afternoon) ── */
     function timeToMin(t) {
       const m = (t || '').match(/(\d{1,2}):(\d{2})/);
       if (!m) return 9999;
@@ -568,7 +651,7 @@
       return h * 60 + min;
     }
 
-    /* â”€â”€ Routine: day tab names (fetch by name, sheet ID comes from user's Routine tab) â”€â”€ */
+    /* ── Routine: day tab names (fetch by name, sheet ID comes from user's Routine tab) ── */
     /* Tab names are UPPERCASE in LU sheet (confirmed from lazmart network tab) */
     const ROUTINE_DAY_NAMES = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
     const DAY_DISPLAY = { SATURDAY:'Saturday', SUNDAY:'Sunday', MONDAY:'Monday', TUESDAY:'Tuesday', WEDNESDAY:'Wednesday', THURSDAY:'Thursday', FRIDAY:'Friday' };
@@ -586,11 +669,11 @@
       });
     }
 
-    /* Parse "CSE-3214 MSR ACL-3" â†’ { code, initials, room } */
+    /* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */
     function parseClassCell(cell) {
       if (!cell) return null;
       cell = cell.trim();
-      if (!cell || cell === '--' || cell === 'â€“') return null;
+      if (!cell || cell === '--' || cell === '–') return null;
       const parts = cell.split(/\s+/).filter(Boolean);
       if (parts.length >= 3) return { code: parts[0], initials: parts[1], room: parts.slice(2).join(' ') };
       if (parts.length === 2) return { code: parts[0], initials: '', room: parts[1] };
@@ -610,6 +693,9 @@
       'group-links':     'info/group-links.js',
       'bkash':           'info/bkash.js',
       'course-offer':   'info/course-offer.js',
+      'bus':             'info/bus.js',
+      'semester':        'info/semester.js',
+      'all-course':      'info/all-course.js',
     };
 
     async function loadContent(item) {
@@ -626,13 +712,12 @@
       if (item.id === 'group-links')     { loadGroupLinks(body);            return; }
       if (item.id === 'bkash')           { loadBkash(body);                 return; }
       if (item.id === 'course-offer')   { loadCourseOffer(body);           return; }
-      
+      if (item.id === 'bus')            { loadBus(body);                   return; }
+      if (item.id === 'semester')      { loadSemester(body);              return; }
+      if (item.id === 'all-course')   { loadAllCourse(body);             return; }
 
       const COMING = {
         'course-offer':  'Current semester course offer will be shown here.',
-        'all-course':    'All batch course offer list will be shown here.',
-        'bus':           'Bus schedule and routes will be shown here.',
-        'semester':      'Semester dates, registration deadlines and info will be shown here.',
         'teachers':      'Teacher contact numbers and emails will be shown here.',
         'bkash':         'bKash payment number and fees codes will be shown here.',
       };
@@ -647,7 +732,7 @@
       }, 300);
     }
 
-    /* â”€â”€ Lazy-load external script â”€â”€ */
+    /* ── Lazy-load external script ── */
     function loadScript(src) {
       return new Promise((resolve, reject) => {
         if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -657,7 +742,7 @@
       });
     }
 
-    /* â”€â”€ Shared: find a sheet ID from the Routine tab by keyword in col A â”€â”€ */
+    /* ── Shared: find a sheet ID from the Routine tab by keyword in col A ── */
     async function getSheetIdFromRoutineTab(keyword) {
       try {
         const d = await fetchSheet('Routine');
@@ -676,7 +761,74 @@
           || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
     }
 
-    /* â”€â”€ Shared: time deduplication for any schedule â”€â”€ */
+    /* ── Shared: auto-detect current semester from Semester sheet ── */
+    let _semesterLabelCache = null;
+    async function getSemesterLabel() {
+      if (_semesterLabelCache) return _semesterLabelCache;
+      try {
+        const data = await fetchSheet('Semester');
+        // Prefer c.f (formatted) to handle GVIZ Date objects
+        const rows = (data.table?.rows || []).map(r =>
+          (r.c || []).map(c => {
+            if (!c) return '';
+            if (c.f != null && c.f !== '') return String(c.f).trim();
+            if (c.v == null) return '';
+            return String(c.v).trim();
+          })
+        );
+        const firstVal = rows[0] && rows[0][0] ? rows[0][0].toLowerCase().trim() : '';
+        const startIdx = firstVal === 'semester' ? 1 : 0;
+
+        function parseSemDate(str) {
+          if (!str) return null;
+          // GVIZ Date(year, month0, day) format
+          const dm = str.match(/^Date\((\d+),(\d+),(\d+)\)/);
+          if (dm) return new Date(parseInt(dm[1]), parseInt(dm[2]), parseInt(dm[3]));
+          const d = new Date(str);
+          return isNaN(d.getTime()) ? null : d;
+        }
+
+        const today    = new Date(); today.setHours(0, 0, 0, 0);
+        const ranges   = {};   // semName → { min, max }
+        const semOrder = [];
+        for (let i = startIdx; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || !row[0]) continue;
+          const sem = row[0].trim();
+          const s   = parseSemDate(row[2]);
+          const e   = parseSemDate(row[3] || row[2]);
+          if (!sem || !s) continue;
+          if (!ranges[sem]) { ranges[sem] = { min: s, max: e || s }; semOrder.push(sem); }
+          else {
+            if (s < ranges[sem].min) ranges[sem].min = s;
+            if (e && e > ranges[sem].max) ranges[sem].max = e;
+          }
+        }
+
+        // 1. Active: today is inside the semester window
+        let label = semOrder.find(n => {
+          const end = new Date(ranges[n].max); end.setHours(23, 59, 59, 999);
+          return today >= ranges[n].min && today <= end;
+        });
+        // 2. No active → nearest upcoming
+        if (!label) {
+          const up = semOrder.filter(n => today < ranges[n].min);
+          if (up.length) label = up.sort((a, b) => ranges[a].min - ranges[b].min)[0];
+        }
+        // 3. No upcoming → most recent past
+        if (!label) {
+          const past = semOrder.filter(n => today > ranges[n].max);
+          if (past.length) label = past.sort((a, b) => ranges[b].max - ranges[a].max)[0];
+        }
+
+        _semesterLabelCache = label || 'Current Semester';
+      } catch(_) {
+        _semesterLabelCache = 'Current Semester';
+      }
+      return _semesterLabelCache;
+    }
+
+    /* ── Shared: time deduplication for any schedule ── */
     function deduplicateTimes(schedule) {
       const keyMap    = new Map();
       const breakKeys = new Set();
@@ -694,9 +846,9 @@
       return { allTimes, breakTimesSet: breakSet };
     }
 
-    /* â”€â”€ Shared: parse all day tabs into a schedule â”€â”€ */
+    /* ── Shared: parse all day tabs into a schedule ── */
     function parseDayResults(dayResults, rowFilter) {
-      // rowFilter(cells) â†’ object to merge into slot, or null to skip row
+      // rowFilter(cells) → object to merge into slot, or null to skip row
       const schedule = {};
       ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
         const data = dayResults[idx];
@@ -716,8 +868,8 @@
           }
         }
 
-        const breakCounts = {}; // slotIndex â†’ how many rows have BREAK there
-        const slotData    = {}; // slotIndex â†’ [extra]
+        const breakCounts = {}; // slotIndex → how many rows have BREAK there
+        const slotData    = {}; // slotIndex → [extra]
 
         for (let r = dataStart; r < rows.length; r++) {
           const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
@@ -734,7 +886,7 @@
           });
         }
 
-        // Pick the slot with the most BREAK votes â€” real break beats any one-off outlier
+        // Pick the slot with the most BREAK votes — real break beats any one-off outlier
         let breakSlotIdx = -1, maxBreakCount = 0;
         Object.entries(breakCounts).forEach(([k, cnt]) => {
           if (cnt > maxBreakCount) { maxBreakCount = cnt; breakSlotIdx = parseInt(k); }
@@ -752,11 +904,11 @@
       return schedule;
     }
 
-    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /* ─────────────────────────────────────────────
        PRINT TEMPLATE (shared, generic)
-    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    ───────────────────────────────────────────── */
     /* title: heading; subtitle: second line; cache: {allTimes,schedule,courseInfo,breakTimesSet}
-       getCellLine2(slot, info) â†’ string for middle line of cell */
+       getCellLine2(slot, info) → string for middle line of cell */
     function buildPrintTemplate(title, subtitle, cache, getCellLine2) {
       if (!cache) return '';
       const { allTimes, schedule, courseInfo, breakTimesSet } = cache;
@@ -800,7 +952,7 @@
                 ${slot.room?`<div style="font-size:9.5px;color:#64748b;margin-top:2px;">${escH(slot.room)}</div>`:''}
               </div></td>`;
           } else {
-            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">â€”</td>`;
+            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">—</td>`;
           }
         });
         tbl += `</tr>`;
@@ -826,13 +978,13 @@
         </div>
         ${tbl}
         <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;Â·&nbsp; cse62b.vercel.app</div>
+          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; cse62b.vercel.app</div>
           <div style="font-size:10.5px;color:#374151;">Generated: ${dateStr}</div>
         </div>
       </div>`;
     }
 
-    /* â”€â”€ Render off-screen template â†’ canvas â”€â”€ */
+    /* ── Render off-screen template → canvas ── */
     async function captureTemplate(title, subtitle, cache, getCellLine2) {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';

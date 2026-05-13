@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -167,7 +167,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -188,7 +188,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -198,23 +198,11 @@
       <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
-    
-    <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
-      <a href="../index.html">Home</a>
-      <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="classwork.html">Classwork</a>
-      <a class="auth-only" href="info.html">Info</a>
-      <a class="auth-only" href="resources.html">Resources</a>
-      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
-      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-    </div>
 
     <!-- Level 1: Events -->
     <div class="events-view" id="eventsView">
       <div class="section-header fade-in delay-1" style="margin-top:40px;">
-        <span class="section-label">ðŸ“¸ Memories &amp; Events</span>
+        <span class="section-label">📸 Memories &amp; Events</span>
         <div class="section-line"></div>
       </div>
       <div class="event-grid fade-in delay-2" id="eventGrid">
@@ -229,14 +217,26 @@
           <i class="fa-solid fa-arrow-left"></i> Back to Events
         </div>
         <div class="section-header fade-in" style="margin-bottom:20px;">
-          <span class="section-label" id="eventLabel">ðŸ“¸ Event</span>
+          <span class="section-label" id="eventLabel">📸 Event</span>
           <div class="section-line"></div>
         </div>
         <div class="photo-grid fade-in" id="photoGrid"></div>
       </div>
     </div>
 
-    
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="info.html">Class Info</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 CSE 62 B. All Rights Reserved.
+      </div>
+    </footer>
   </div>
 
   <!-- Lightbox -->
@@ -247,22 +247,6 @@
     <button class="lb-nav lb-next" onclick="lbNav(1)"><i class="fa-solid fa-chevron-right"></i></button>
     <div class="lb-caption" id="lbCaption"></div>
     <div class="lb-counter" id="lbCounter"></div>
-      <footer>
-      <div class="footer-brand">CSE 62B Â· PORTAL</div>
-      <div class="footer-links">
-        <a href="../index.html">Home</a>
-        <a href="students.html">Students Directory</a>
-        <a href="info.html">Class Info</a>
-        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
-      </div>
-      <div class="footer-note">
-        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
-        Â© 2026 CSE 62 B. All Rights Reserved.
-      </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
-      </div>
-    </footer>
   </div>
 
   <script>
@@ -367,7 +351,7 @@
     async function openEvent(folderId, folderName) {
       document.getElementById('eventsView').classList.add('hidden');
       document.getElementById('photosView').classList.add('active');
-      document.getElementById('eventLabel').textContent = 'ðŸ“¸ ' + folderName;
+      document.getElementById('eventLabel').textContent = '📸 ' + folderName;
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       const grid = document.getElementById('photoGrid');

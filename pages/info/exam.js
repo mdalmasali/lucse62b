@@ -60,6 +60,17 @@ function parseExamRoutine(data, targetBatch, targetSection) {
     })
   );
 
+  // ── If Day-N labels live in GVIZ column headers (not data rows), inject a synthetic row ──
+  // This happens when the sheet's first row is the column header row consumed by GVIZ
+  const colLabels = (table.cols || []).map(c => String(c.label || '').trim());
+  if (colLabels.some(l => /day[\s\-]*\d+/i.test(l))) {
+    const synRow = colLabels.map(l => {
+      const m = l.match(/day[\s\-]*(\d+)/i);
+      return m ? `Day-${m[1]}` : '';
+    });
+    allRows.unshift(synRow);
+  }
+
   // ── Step 1: Find ALL "Day" header rows ──
   const blockStarts = [];
   for (let r = 0; r < allRows.length; r++) {
@@ -254,9 +265,10 @@ async function doExamSearch(type) {
       return;
     }
 
-    const [cpgData, examData] = await Promise.all([
+    const [cpgData, examData, sem] = await Promise.all([
       fetchSheet('CPG_Courses').catch(() => null),
-      fetchExamTab(sheetId)
+      fetchExamTab(sheetId),
+      getSemesterLabel()
     ]);
 
     const courseInfo = {};
@@ -276,7 +288,7 @@ async function doExamSearch(type) {
       return;
     }
 
-    _examCache = { type, label, exams, courseInfo, targetBatch, targetSection };
+    _examCache = { type, label, exams, courseInfo, targetBatch, targetSection, semester: sem };
 
     const today = new Date(); today.setHours(0,0,0,0);
     let cards = '';
@@ -306,7 +318,7 @@ async function doExamSearch(type) {
     resultDiv.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
-        <span>${label} Exam Routine &nbsp;·&nbsp; Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; Spring 2026</span>
+        <span>${label} Exam Routine &nbsp;·&nbsp; Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; ${sem}</span>
       </div>
       <div class="exam-meta">
         <span class="exam-count-badge">${exams.length} Exam${exams.length !== 1 ? 's' : ''}</span>
@@ -366,7 +378,7 @@ function buildExamPrintTemplate() {
         </div>
         <div>
           <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em;">${escH(label)} Exam Routine</div>
-          <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; Spring 2026</div>
+          <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; ${_examCache?.semester || ''}</div>
         </div>
       </div>
       <div style="text-align:right;">

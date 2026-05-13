@@ -1,262 +1,95 @@
 /* ── Website/pages/info/group-links.js ── */
 
-async function loadGroupLinks(body) {
+function _glCopyCode(btn, code) {
+    navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.style.color = '#34d399';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1600);
+    }).catch(() => {});
+}
 
-    body.innerHTML = `
-        <div class="info-loading-spin">
-            <div class="spin-sm"></div>
-            Loading Links & Codes...
-        </div>
-    `;
+async function loadGroupLinks(body) {
+    body.innerHTML = `<div class="info-loading-spin"><div class="spin-sm"></div> Loading Links &amp; Codes...</div>`;
 
     try {
-
-        const data = await fetchSheet('CPG_Courses');
+        const [data, sem] = await Promise.all([fetchSheet('CPG_Courses'), getSemesterLabel()]);
         const rows = sheetRows(data);
 
-        console.log("Rows:", rows);
-
         if (!rows || rows.length === 0) {
-
-            body.innerHTML = `
-                <div class="info-placeholder">
-                    <p>No data found.</p>
-                </div>
-            `;
-
+            body.innerHTML = `<div class="info-placeholder"><i class="fa-solid fa-link"></i><p>No group links available yet.</p></div>`;
             return;
         }
 
-        let html = `<div class="info-card-grid">`;
+        const cards = [];
 
-        let foundAny = false;
+        const firstCode = (rows[0] && rows[0][1]) ? rows[0][1].toLowerCase().trim() : '';
+        const startIdx  = (firstCode === 'code' || firstCode === 'course code') ? 1 : 0;
 
-        // Row 0 = Header
-        for (let i = 1; i < rows.length; i++) {
-
+        for (let i = startIdx; i < rows.length; i++) {
             const row = rows[i];
-
             if (!row || row.length === 0) continue;
 
-            /* ---------------- FIXED COLUMN INDEX ---------------- */
+            const title      = row[0]  || '';
+            const courseCode = row[1]  || '';
+            const teacher    = row[4]  || 'TBA';
+            const waLink     = row[9]  || '';
+            const gcLink     = row[10] || '';
+            const gcCode     = row[11] || '';
 
-            const title = row[0] || '';
-            const courseCode = row[1] || '';
-            const teacher = row[4] || 'TBA';
+            if (!waLink && !gcLink && !gcCode) continue;
 
-            const waLink = row[9] || '';
-            const gcLink = row[10] || '';
-            const gcCode = row[11] || '';
+            const color = typeof courseColor === 'function' ? courseColor(courseCode) : '#a78bfa';
+            const hasGcCode = gcCode && gcCode !== '-';
+            const hasWa     = waLink && waLink !== '-';
+            const hasGc     = gcLink && gcLink !== '-';
 
-            // Empty হলে skip
-            if (!waLink && !gcLink && !gcCode) {
-                continue;
-            }
+            const gcCodeSafe = gcCode.replace(/'/g, "\\'");
 
-            foundAny = true;
-
-            const color =
-                typeof courseColor === 'function'
-                    ? courseColor(courseCode)
-                    : '#1a73e8';
-
-            html += `
-                <div 
-                    class="info-item-card"
-                    style="
-                        border-top: 4px solid ${color};
-                        display: flex;
-                        flex-direction: column;
-                        gap: 12px;
-                        padding: 15px;
-                        background: var(--bg-card, #111827);
-                        border-radius: 12px;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-                    "
-                >
-
-                    <!-- Top Info -->
+            cards.push(`
+                <div class="gl-card" style="border-top:3px solid ${color};">
                     <div>
-
-                        <div
-                            style="
-                                font-size: 0.72rem;
-                                font-weight: 800;
-                                color: ${color};
-                                text-transform: uppercase;
-                                letter-spacing: 0.05em;
-                            "
-                        >
-                            ${escH(courseCode)}
-                        </div>
-
-                        <div
-                            style="
-                                font-size: 1rem;
-                                font-weight: 700;
-                                color: var(--text);
-                                margin: 4px 0;
-                            "
-                        >
-                            ${escH(title)}
-                        </div>
-
-                        <div
-                            style="
-                                font-size: 0.82rem;
-                                color: var(--text-secondary);
-                                opacity: 0.85;
-                            "
-                        >
+                        <div class="gl-course-code" style="color:${color};background:${color}1a;">${escH(courseCode)}</div>
+                        <div class="gl-course-title">${escH(title)}</div>
+                        <div class="gl-teacher">
                             <i class="fa-solid fa-chalkboard-user"></i>
                             ${escH(teacher)}
                         </div>
-
                     </div>
 
-                    <!-- Classroom Code -->
-                    ${
-                        gcCode &&
-                        gcCode !== '-'
-                            ? `
-                        <div
-                            style="
-                                background: rgba(255,255,255,0.03);
-                                border: 1px dashed rgba(255,255,255,0.08);
-                                padding: 10px;
-                                border-radius: 8px;
-                                display: flex;
-                                align-items: center;
-                                justify-content: space-between;
-                                gap: 10px;
-                            "
-                        >
+                    ${hasGcCode ? `
+                    <button class="gl-code-btn" onclick="_glCopyCode(this,'${gcCodeSafe}')">
+                        <span style="opacity:0.55;font-size:0.68rem;">Classroom Code</span>
+                        <span class="gl-code-val">${escH(gcCode)}</span>
+                        <i class="fa-regular fa-copy" style="margin-left:auto;opacity:0.45;font-size:0.75rem;"></i>
+                    </button>` : ''}
 
-                            <span
-                                style="
-                                    font-size: 0.75rem;
-                                    color: var(--text-secondary);
-                                "
-                            >
-                                Classroom Code:
-                            </span>
-
-                            <code
-                                style="
-                                    font-family: monospace;
-                                    font-size: 0.9rem;
-                                    font-weight: 700;
-                                    color: #b388ff;
-                                    letter-spacing: 1px;
-                                "
-                            >
-                                ${escH(gcCode)}
-                            </code>
-
-                        </div>
-                    `
-                            : ''
-                    }
-
-                    <!-- Buttons -->
-                    <div
-                        style="
-                            margin-top: auto;
-                            display: flex;
-                            flex-direction: column;
-                            gap: 8px;
-                        "
-                    >
-
-                        ${
-                            waLink &&
-                            waLink !== '-'
-                                ? `
-                            <a
-                                href="${waLink}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style="
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    gap: 8px;
-                                    background: #25D366;
-                                    color: #fff;
-                                    padding: 10px;
-                                    border-radius: 8px;
-                                    text-decoration: none;
-                                    font-weight: 700;
-                                    font-size: 0.82rem;
-                                    transition: 0.2s;
-                                "
-                            >
-                                <i class="fa-brands fa-whatsapp"></i>
-                                WhatsApp Group
-                            </a>
-                        `
-                                : ''
-                        }
-
-                        ${
-                            gcLink &&
-                            gcLink !== '-'
-                                ? `
-                            <a
-                                href="${gcLink}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style="
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    gap: 8px;
-                                    background: #1a73e8;
-                                    color: #fff;
-                                    padding: 10px;
-                                    border-radius: 8px;
-                                    text-decoration: none;
-                                    font-weight: 700;
-                                    font-size: 0.82rem;
-                                    transition: 0.2s;
-                                "
-                            >
-                                <i class="fa-solid fa-graduation-cap"></i>
-                                Google Classroom
-                            </a>
-                        `
-                                : ''
-                        }
-
+                    <div class="gl-btn-row">
+                        ${hasWa ? `<a href="${waLink}" target="_blank" rel="noopener noreferrer" class="gl-btn gl-btn-wa">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </a>` : ''}
+                        ${hasGc ? `<a href="${gcLink}" target="_blank" rel="noopener noreferrer" class="gl-btn gl-btn-gc">
+                            <i class="fa-solid fa-graduation-cap"></i> Classroom
+                        </a>` : ''}
                     </div>
-
                 </div>
-            `;
+            `);
         }
 
-        html += `</div>`;
-
-        if (!foundAny) {
-
-            body.innerHTML = `
-                <div class="info-placeholder">
-                    <p>No links or codes available yet.</p>
-                </div>
-            `;
-
+        if (!cards.length) {
+            body.innerHTML = `<div class="info-placeholder"><i class="fa-solid fa-link"></i><p>No links or codes available yet.</p></div>`;
             return;
         }
 
-        body.innerHTML = html;
+        body.innerHTML = `
+            <div class="rt-sync">
+                <div class="rt-sync-dot"></div>
+                <span>${escH(sem)} &nbsp;·&nbsp; Batch 62, Section B</span>
+            </div>
+            <div class="info-card-grid">${cards.join('')}</div>`;
 
     } catch (err) {
-
-        console.error("Group Link Error:", err);
-
-        body.innerHTML = `
-            <div class="info-placeholder">
-                <p>Error fetching links and codes.</p>
-            </div>
-        `;
+        console.error('Group Link Error:', err);
+        body.innerHTML = `<div class="info-placeholder"><p>Error fetching links and codes.</p></div>`;
     }
 }

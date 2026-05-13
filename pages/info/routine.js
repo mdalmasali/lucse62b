@@ -7,7 +7,7 @@ let _routineCache = null;
 
 async function loadRoutine(body) {
   try {
-    const routineSheetId = await getRoutineSheetId();
+    const [routineSheetId, sem] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
 
     const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
     const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
@@ -19,7 +19,9 @@ async function loadRoutine(body) {
         .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
         .forEach(r => {
           courseInfo[r[1].trim().toUpperCase()] = {
-            name: r[0].trim(), teacher: r[2]?.trim() || '', desig: r[3]?.trim() || ''
+            name:    r[0]?.trim() || '',
+            teacher: r[4]?.trim() || '',   // Column E — Teacher Name
+            desig:   r[5]?.trim() || '',   // Column F — Designation
           };
         });
     }
@@ -44,25 +46,30 @@ async function loadRoutine(body) {
         }
       }
 
-      let breakSlotIdx = -1, targetRow = null;
+      let breakSlotIdx = -1;
+      const targetRows = [];   // collect ALL rows for batch 62 section B
 
       for (let r = dataStart; r < rows.length; r++) {
         const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
         cells.slice(3).forEach((cell, i) => {
           if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i;
         });
-        if (cells[1] === '62' && cells[2] === 'B') targetRow = cells;
+        if (cells[1] === '62' && cells[2] === 'B') targetRows.push(cells);
       }
 
-      if (!targetRow) return;
+      if (!targetRows.length) return;
 
-      const classCells  = targetRow.slice(3);
+      // Merge all matching rows: first non-empty value per time slot wins
+      const mergedCells = targetRows[0].slice(3).map((_, i) =>
+        targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
+      );
+
       const daySchedule = [];
 
       timeSlots.forEach((time, i) => {
         if (!time) return;
         if (i === breakSlotIdx) { daySchedule.push({ isBreak: true, time }); return; }
-        const parsed = parseClassCell(classCells[i]);
+        const parsed = parseClassCell(mergedCells[i]);
         if (parsed) daySchedule.push({ time, ...parsed });
       });
 
@@ -89,13 +96,13 @@ async function loadRoutine(body) {
       (schedule[day] || []).forEach(s => { s.time = timeKeyMap.get(timeToMin(s.time)) || s.time; });
     });
 
-    _routineCache = { days, schedule, courseInfo, allTimes, breakTimesSet };
+    _routineCache = { days, schedule, courseInfo, allTimes, breakTimesSet, semester: sem };
 
     const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
     body.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
-        <span>Live sync · Spring 2026 · Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+        <span>Live sync · ${sem} · Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
       </div>
       ${buildGrid(todayName)}`;
 
@@ -120,7 +127,7 @@ function buildGrid(todayName) {
   });
 
   let html = `<div id="rt-capture" class="rt-capture-area">
-    <div class="rt-capture-title"><i class="fa-solid fa-calendar-week" style="margin-right:6px;color:var(--accent-bright);"></i>Class Routine — Batch 62, Section B · Spring 2026</div>
+    <div class="rt-capture-title"><i class="fa-solid fa-calendar-week" style="margin-right:6px;color:var(--accent-bright);"></i>Class Routine — Batch 62, Section B · ${_routineCache?.semester || ''}</div>
     <div class="rt-grid-wrap"><table class="rt-grid"><thead><tr>
     <th class="rt-th-day">Day</th>`;
   allTimes.forEach(time => {
@@ -171,10 +178,14 @@ function buildGrid(todayName) {
 }
 
 function downloadRoutineImage(btn) {
-  _doDownloadImg('Routine-CSE62B-Spring2026.png',
-    'Class Routine', 'Batch 62, Section B · Spring 2026', _routineCache, null, btn);
+  const sem  = _routineCache?.semester || 'Routine';
+  const slug = sem.replace(/\s+/g, '');
+  _doDownloadImg(`Routine-CSE62B-${slug}.png`,
+    'Class Routine', `Batch 62, Section B · ${sem}`, _routineCache, null, btn);
 }
 function downloadRoutinePDF(btn) {
-  _doDownloadPDF('Routine-CSE62B-Spring2026.pdf',
-    'Class Routine', 'Batch 62, Section B · Spring 2026', _routineCache, null, btn);
+  const sem  = _routineCache?.semester || 'Routine';
+  const slug = sem.replace(/\s+/g, '');
+  _doDownloadPDF(`Routine-CSE62B-${slug}.pdf`,
+    'Class Routine', `Batch 62, Section B · ${sem}`, _routineCache, null, btn);
 }

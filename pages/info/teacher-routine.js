@@ -38,7 +38,7 @@ async function doTeacherSearch() {
   resultDiv.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Fetching routine...</div>';
 
   try {
-    const routineSheetId = await getRoutineSheetId();
+    const [routineSheetId, sem] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
     const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
     const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
     const [cpgData, ...dayResults] = await Promise.all([cpgFetch, ...dayFetches]);
@@ -49,7 +49,9 @@ async function doTeacherSearch() {
         .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
         .forEach(r => {
           courseInfo[r[1].trim().toUpperCase()] = {
-            name: r[0].trim(), teacher: r[2]?.trim() || '', desig: r[3]?.trim() || ''
+            name:    r[0]?.trim() || '',
+            teacher: r[4]?.trim() || '',   // Column E — Teacher Name
+            desig:   r[5]?.trim() || '',   // Column F — Designation
           };
         });
     }
@@ -71,13 +73,13 @@ async function doTeacherSearch() {
     }
 
     const { allTimes, breakTimesSet } = deduplicateTimes(schedule);
-    _teacherCache = { days, schedule, courseInfo, allTimes, breakTimesSet, initials };
+    _teacherCache = { days, schedule, courseInfo, allTimes, breakTimesSet, initials, semester: sem };
 
     const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
     resultDiv.innerHTML = `
       <div class="rt-sync" style="margin-top:4px;">
         <div class="rt-sync-dot"></div>
-        <span>Teacher: <strong style="color:#34d399;">${escH(initials)}</strong> &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+        <span>Teacher: <strong style="color:#34d399;">${escH(initials)}</strong> &nbsp;·&nbsp; ${sem} &nbsp;·&nbsp; ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
       </div>
       ${buildTeacherGrid(todayName)}
       <div class="rt-dl-bar">
@@ -150,15 +152,19 @@ function buildTeacherGrid(todayName) {
 
 function downloadTeacherImage(btn) {
   if (!_teacherCache) return;
-  const ini = _teacherCache.initials;
-  _doDownloadImg(`Routine-Teacher-${ini}-Spring2026.png`,
-    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · Spring 2026`,
+  const ini  = _teacherCache.initials;
+  const sem  = _teacherCache.semester || 'Routine';
+  const slug = sem.replace(/\s+/g, '');
+  _doDownloadImg(`Routine-Teacher-${ini}-${slug}.png`,
+    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · ${sem}`,
     _teacherCache, (s) => `${s.batch||''}${s.section?'-'+s.section:''}`, btn);
 }
 function downloadTeacherPDF(btn) {
   if (!_teacherCache) return;
-  const ini = _teacherCache.initials;
-  _doDownloadPDF(`Routine-Teacher-${ini}-Spring2026.pdf`,
-    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · Spring 2026`,
+  const ini  = _teacherCache.initials;
+  const sem  = _teacherCache.semester || 'Routine';
+  const slug = sem.replace(/\s+/g, '');
+  _doDownloadPDF(`Routine-Teacher-${ini}-${slug}.pdf`,
+    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · ${sem}`,
     _teacherCache, (s) => `${s.batch||''}${s.section?'-'+s.section:''}`, btn);
 }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="../assets/images/lu%20logo.png">
   <title>Classwork | CSE 62B LU</title>
-  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B â€” synced live from Google Sheets."/>
+  <meta name="description" content="Class assignments, tutorials, lab reports, viva and more for CSE 62B — synced live from Google Sheets."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -22,7 +22,7 @@
 
   <div class="wrapper">
     <nav class="topbar fade-in">
-      <a href="../index.html" class="topbar-brand">CSE 62B Â· PORTAL</a>
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="../index.html">Home</a></li>
         <li class="auth-only"><a href="students.html">Students</a></li>
@@ -43,7 +43,7 @@
     </nav>
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="../index.html">Home</a>
       <a class="auth-only" href="students.html">Students</a>
       <a class="auth-only" href="classwork.html">Classwork</a>
@@ -53,21 +53,9 @@
       <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
-    
-    <div class="mobile-nav-overlay" id="mobileNav">
-      <button class="mobile-nav-close" id="mobileNavClose">âœ•</button>
-      <a href="../index.html">Home</a>
-      <a class="auth-only" href="students.html">Students</a>
-      <a class="auth-only" href="classwork.html">Classwork</a>
-      <a class="auth-only" href="info.html">Info</a>
-      <a class="auth-only" href="resources.html">Resources</a>
-      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
-      <a class="auth-only" href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
-      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-    </div>
 
     <div class="section-header fade-in delay-1" style="margin-top: 40px;">
-      <span class="section-label">ðŸ“ Classwork</span>
+      <span class="section-label">📝 Classwork</span>
       <div class="section-line"></div>
     </div>
 
@@ -78,7 +66,7 @@
 
     <div class="info-search-bar fade-in delay-2">
       <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-      <input type="text" id="searchInput" placeholder="Search assignment, lab report, vivaâ€¦" autocomplete="off"/>
+      <input type="text" id="searchInput" placeholder="Search assignment, lab report, viva…" autocomplete="off"/>
     </div>
 
     <div class="info-tabs fade-in delay-2" id="infoTabs">
@@ -94,7 +82,7 @@
 
     
       <footer>
-      <div class="footer-brand">CSE 62B Â· PORTAL</div>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
         <a href="students.html">Students Directory</a>
@@ -102,11 +90,8 @@
         <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
       </div>
       <div class="footer-note">
-        Built with â¤ï¸ for CSE Batch 62, Section B.<br>
-        Â© 2026 CSE 62 B. All Rights Reserved.
-      </div>
-      <div style="margin-top: 10px;">
-        <a href="admin.html" style="color: var(--accent2); text-decoration: none; font-size: 0.8rem; font-weight: 600; background: rgba(236,72,153,0.1); padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(236,72,153,0.2);"><i class="fa-solid fa-lock"></i> Admin Portal</a>
+        Built with ❤️ for CSE Batch 62, Section B.<br>
+        © 2026 CSE 62 B. All Rights Reserved.
       </div>
     </footer>
   </div>
@@ -191,7 +176,7 @@
         );
       }
       if (!filtered.length) {
-        container.innerHTML = '<div class="info-empty">ðŸ˜• No results found.</div>';
+        container.innerHTML = '<div class="info-empty">😕 No results found.</div>';
         return;
       }
       container.innerHTML = '';
@@ -260,12 +245,12 @@
         allItems = items;
         buildTabs(items);
         renderCards();
-        setSyncText(`Live sync Â· Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
+        setSyncText(`Live sync · Last updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`);
       } catch (err) {
-        setSyncText('Sync failed Â· retrying shortly...', false);
+        setSyncText('Sync failed · retrying shortly...', false);
         if (!allItems.length) {
           document.getElementById('infoCards').innerHTML =
-            '<div class="info-empty">âš ï¸ Could not load data from Google Sheet. Please refresh. Please refresh.</div>';
+            '<div class="info-empty">⚠️ Could not load data from Google Sheet. Please refresh.</div>';
         }
       }
     }
