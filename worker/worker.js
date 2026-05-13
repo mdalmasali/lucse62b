@@ -55,6 +55,9 @@ export default {
         const id  = url.searchParams.get('id');
         const tab = url.searchParams.get('sheet') || '';
         if (!id) return errResp(cors, 400, 'Missing id');
+        /* Validate Google Sheet ID format — alphanumeric + hyphens/underscores only */
+        if (!/^[A-Za-z0-9_-]{20,60}$/.test(id))
+          return errResp(cors, 400, 'Invalid sheet ID');
         return gvizProxy(id, tab, cors);
       }
 
@@ -62,6 +65,11 @@ export default {
       if (p === '/sms' && request.method === 'POST') {
         const { phone, message } = await request.json();
         if (!phone || !message) return errResp(cors, 400, 'Missing phone or message');
+        /* Only allow Bangladeshi mobile numbers and short OTP messages */
+        if (!/^01[3-9]\d{8}$/.test(String(phone).trim()))
+          return errResp(cors, 400, 'Invalid phone number');
+        if (String(message).length > 160)
+          return errResp(cors, 400, 'Message too long');
         const smsUrl =
           `https://bulksmsbd.net/api/smsapi?api_key=${env.SMS_API_KEY}` +
           `&type=text&number=${encodeURIComponent(phone)}` +
