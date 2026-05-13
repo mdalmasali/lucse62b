@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -1238,6 +1239,9 @@
         <div class="status-dot"></div>
         Portal Active
       </div>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
+        <i class="fa-solid fa-sun"></i>
+      </button>
       <button class="hamburger" id="hamburger" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
@@ -1328,6 +1332,41 @@
         </div>
         <div id="profileDemoHint" style="display:none;margin-top:14px;color:#fbbf24;font-size:0.85rem;line-height:1.5;text-align:center;">
           Demo mode can browse the portal, but password changes and personal result tools are unavailable.
+        </div>
+      </div>
+
+      <!-- Appearance Section -->
+      <div class="appearance-card">
+        <div class="appearance-card-header">
+          <div class="appearance-card-icon"><i class="fa-solid fa-palette"></i></div>
+          <div>
+            <div class="appearance-card-title">Appearance</div>
+            <div class="appearance-card-sub" id="themeDesc">Dark mode is active</div>
+          </div>
+        </div>
+        <div class="theme-options-row">
+          <button class="theme-opt active" id="themeOptDark" onclick="setTheme('dark')">
+            <div class="theme-opt-check"><i class="fa-solid fa-check"></i></div>
+            <div class="theme-preview theme-preview-dark">
+              <span class="tp-dot" style="background:#7c3aed;"></span>
+              <span class="tp-line" style="background:#a78bfa;"></span>
+              <span class="tp-dot" style="background:#06b6d4;"></span>
+            </div>
+            <div class="theme-opt-label">
+              <i class="fa-solid fa-moon" style="color:#a78bfa;"></i> Dark Mode
+            </div>
+          </button>
+          <button class="theme-opt" id="themeOptLight" onclick="setTheme('light')">
+            <div class="theme-opt-check"><i class="fa-solid fa-check"></i></div>
+            <div class="theme-preview theme-preview-light">
+              <span class="tp-dot" style="background:#7c3aed;"></span>
+              <span class="tp-line" style="background:#6d28d9;"></span>
+              <span class="tp-dot" style="background:#0e7490;"></span>
+            </div>
+            <div class="theme-opt-label">
+              <i class="fa-solid fa-sun" style="color:#b45309;"></i> Light Mode
+            </div>
+          </button>
         </div>
       </div>
 
@@ -2671,6 +2710,7 @@
       document.getElementById('resultError').classList.remove('show');
     }
   </script>
+  <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/analytics.js"></script>
 </body>
 </html>

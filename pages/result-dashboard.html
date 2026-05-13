@@ -1,6 +1,7 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -330,6 +331,7 @@
         <div class="status-dot"></div>
         Portal Active
       </div>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme"><i class="fa-solid fa-sun"></i></button>
       <button class="hamburger" id="hamburger" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
@@ -986,6 +988,7 @@
 
     function hideErr() { document.getElementById('rError').classList.remove('show'); }
   </script>
+  <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/analytics.js"></script>
 </body>
 </html>
