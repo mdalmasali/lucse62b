@@ -489,6 +489,13 @@
     /* -- Drive API: list files in a folder (proxied via Worker) -- */
     async function loadFolderFiles(folderId) {
       const data = await fetchDriveFolder(folderId);
+      if (data.error) {
+        const code = data.error.code;
+        const msg  = code === 403 ? 'Folder not shared publicly. Set it to "Anyone with the link → Viewer" in Google Drive.'
+                   : code === 400 ? 'Drive API key is invalid or not configured.'
+                   : data.error.message || 'Drive API error';
+        throw new Error(msg);
+      }
       return data.files || [];
     }
 
