@@ -1637,8 +1637,7 @@
       'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
     };
 
-    const SMS_API_KEY   = 'nJOmvZlaS3yclfACHGU2';
-    const SMS_SENDER_ID = '8809617627097';
+    const WORKER_URL_SMS = 'https://lucse62b-api.sy164425.workers.dev';
     let cpOTP         = null;
     let cpPendingHash = null;
 
@@ -1808,9 +1807,11 @@
     function sendCpOTP(phone) {
       cpOTP = Math.floor(1000 + Math.random() * 9000).toString();
       const msg = `Your CSE 62B PORTAL OTP is ${cpOTP} (Password Change)`;
-      return fetch(`https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phone}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(msg)}`)
-        .then(r => r.json())
-        .then(d => { if (d.response_code !== 202) throw new Error('SMS send failed'); });
+      return fetch(WORKER_URL_SMS + '/sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: msg }),
+      }).then(r => { if (!r.ok) throw new Error('SMS send failed'); });
     }
 
     async function resendCpOTP() {

@@ -398,13 +398,12 @@
   </div>
 
   <script src="assets/js/theme.js"></script>
+  <script src="assets/js/sheets.js"></script>
   <script src="assets/js/script.js"></script>
   <script>
     // Fetch Top Notice from Google Sheets
     function loadTopNotice() {
-      const SHEET_ID = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
       const SHEET_NAME = 'Website';
-      const cb = `botSheet_ticker_${Date.now()}`;
 
       const rawSession = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
       const isAuth = !!rawSession;
@@ -429,11 +428,7 @@
         setTimeout(() => { wrap.style.animation = ''; }, 10);
       }
 
-      const scr = document.createElement('script');
-      window[cb] = (data) => {
-        delete window[cb];
-        scr.remove();
-
+      fetchBotSheet(SHEET_NAME).then(data => {
         let noticeGlobal = null, noticeMember = null, memberOverview = null;
         (data.table?.rows || []).forEach(row => {
           const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
@@ -455,10 +450,7 @@
         } else {
           showTicker(noticeGlobal);
         }
-      };
-
-      scr.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
-      document.body.appendChild(scr);
+      }).catch(() => {});
     }
 
     // Initialize
@@ -625,7 +617,6 @@
   <script>
     /* -- Deadline Countdown -- */
     (function () {
-      const DL_SHEET_ID   = '1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc';
       const DL_SHEET_NAME = 'Deadlines';
 
       const DL_META = {
@@ -714,17 +705,7 @@
       async function init() {
         if (!localStorage.getItem('lu62b_student') && !sessionStorage.getItem('lu62b_student')) return;
         try {
-          const data = await new Promise((res, rej) => {
-            const cb = 'dl_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-            const s  = document.createElement('script');
-            const t  = setTimeout(() => { delete window[cb]; s.remove(); rej(); }, 12000);
-            window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); res(d); };
-            s.src = 'https://docs.google.com/spreadsheets/d/' + DL_SHEET_ID +
-                    '/gviz/tq?tqx=out:json;responseHandler:' + cb +
-                    '&sheet=' + encodeURIComponent(DL_SHEET_NAME);
-            s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); rej(); };
-            document.body.appendChild(s);
-          });
+          const data = await fetchBotSheet(DL_SHEET_NAME);
           let id = 0;
           (data.table?.rows || []).forEach(row => {
             const c = (row.c || []).map(x => (x && x.v != null) ? String(x.v).trim() : '');

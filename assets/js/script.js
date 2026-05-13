@@ -1,6 +1,6 @@
 const STUDENT_SHEET_NAME = 'Student Info';
 const STUDENT_SYNC_INTERVAL = 60000;
-const WORKER_URL = 'https://api.lucse62.xyz';
+const WORKER_URL = 'https://lucse62b-api.sy164425.workers.dev';
 
 document.addEventListener('DOMContentLoaded', () => {
   createParticles();

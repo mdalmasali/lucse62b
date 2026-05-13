@@ -341,6 +341,7 @@ function buildExamPrintTemplate() {
   if (!_examCache) return '';
   const { label, exams, courseInfo, targetBatch, targetSection } = _examCache;
   const today = new Date(); today.setHours(0,0,0,0);
+  const t = getPrintTheme();
 
   let rows = '';
   exams.forEach((exam, ri) => {
@@ -348,47 +349,47 @@ function buildExamPrintTemplate() {
     const info   = courseInfo[exam.course.toUpperCase()] || {};
     const dObj   = examDateObj(exam.date);
     const isPast = dObj && dObj < today;
-    const rowBg  = ri % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+    const rowBg  = ri % 2 === 0 ? t.rowEven : t.rowOdd;
     rows += `<tr style="opacity:${isPast?0.85:1};">
-      <td style="padding:11px 16px;text-align:center;font-size:11px;font-weight:700;color:#a78bfa;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.label)}</td>
-      <td style="padding:11px 16px;font-size:12px;color:#e2e8f0;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.weekday)}, ${escH(fmtExamDate(exam.date))}</td>
-      <td style="padding:11px 16px;font-size:12px;color:#38bdf8;font-weight:600;border:1px solid rgba(255,255,255,0.06);background:${rowBg};white-space:nowrap;">${escH(exam.time)}</td>
-      <td style="padding:11px 16px;border:1px solid rgba(255,255,255,0.06);background:${rowBg};">
+      <td style="padding:11px 16px;text-align:center;font-size:11px;font-weight:700;color:${t.examDay};border:1px solid ${t.borderSub};background:${rowBg};white-space:nowrap;">${escH(exam.label)}</td>
+      <td style="padding:11px 16px;font-size:12px;color:${t.examDate};border:1px solid ${t.borderSub};background:${rowBg};white-space:nowrap;">${escH(exam.weekday)}, ${escH(fmtExamDate(exam.date))}</td>
+      <td style="padding:11px 16px;font-size:12px;color:${t.examTime};font-weight:600;border:1px solid ${t.borderSub};background:${rowBg};white-space:nowrap;">${escH(exam.time)}</td>
+      <td style="padding:11px 16px;border:1px solid ${t.borderSub};background:${rowBg};">
         <span style="font-size:13px;font-weight:800;color:${color};">${escH(exam.course)}</span>
-        ${info.name?`<div style="font-size:10px;color:#94a3b8;margin-top:2px;">${escH(info.name)}</div>`:''}
+        ${info.name?`<div style="font-size:10px;color:${t.textMuted};margin-top:2px;">${escH(info.name)}</div>`:''}
       </td>
     </tr>`;
   });
 
   const dateStr = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  return `<div style="width:860px;background:#0d0d1b;padding:36px;font-family:'Inter',system-ui,sans-serif;color:#e2e8f0;box-sizing:border-box;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:20px;border-bottom:1.5px solid rgba(124,58,237,0.4);">
+  return `<div style="width:860px;background:${t.bg};padding:36px;font-family:'Inter',system-ui,sans-serif;color:${t.text};box-sizing:border-box;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:20px;border-bottom:1.5px solid ${t.divider};">
       <div style="display:flex;align-items:center;gap:16px;">
         <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="white" stroke-width="2"/><path d="M16 2V6M8 2V6M3 10H21" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M8 14h8M8 17h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <div>
-          <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em;">${escH(label)} Exam Routine</div>
+          <div style="font-size:22px;font-weight:800;color:${t.text};letter-spacing:-0.02em;">${escH(label)} Exam Routine</div>
           <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; ${_examCache?.semester || ''}</div>
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:13px;font-weight:700;color:#94a3b8;">Leading University, Sylhet</div>
-        <div style="font-size:11.5px;color:#4b5563;margin-top:4px;">Department of Computer Science &amp; Engineering</div>
+        <div style="font-size:13px;font-weight:700;color:${t.univText};">Leading University, Sylhet</div>
+        <div style="font-size:11.5px;color:${t.univFaint};margin-top:4px;">Department of Computer Science &amp; Engineering</div>
       </div>
     </div>
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr>
-        <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">DAY</th>
-        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">DATE</th>
-        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">TIME</th>
-        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">COURSE</th>
+        <th style="padding:10px 16px;text-align:center;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${t.headerText};background:${t.headerBg};border:1px solid ${t.border};">DAY</th>
+        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${t.headerText};background:${t.headerBg};border:1px solid ${t.border};">DATE</th>
+        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${t.headerText};background:${t.headerBg};border:1px solid ${t.border};">TIME</th>
+        <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${t.headerText};background:${t.headerBg};border:1px solid ${t.border};">COURSE</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
-      <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; cse62b.vercel.app</div>
-      <div style="font-size:10.5px;color:#374151;">Generated: ${dateStr}</div>
+    <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid ${t.borderSub};">
+      <div style="font-size:10.5px;color:${t.footer};font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; lucse62b.xyz</div>
+      <div style="font-size:10.5px;color:${t.footer};">Generated: ${dateStr}</div>
     </div>
   </div>`;
 }
@@ -399,14 +400,16 @@ async function downloadExamImage(btn) {
   btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing...';
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    const t = getPrintTheme();
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';
     wrapper.innerHTML = buildExamPrintTemplate();
     document.body.appendChild(wrapper);
-    const canvas = await html2canvas(wrapper.firstElementChild, {backgroundColor:'#0d0d1b',scale:3,useCORS:true,logging:false,allowTaint:true});
+    const canvas = await html2canvas(wrapper.firstElementChild, {backgroundColor:t.bg,scale:3,useCORS:true,logging:false,allowTaint:true});
     document.body.removeChild(wrapper);
     const a = document.createElement('a');
-    a.download = `${_examCache.label.replace(' ','-')}-Exam-CSE62B-Spring2026.png`;
+    const slug = (_examCache.semester || 'Exam').replace(/\s+/g, '');
+    a.download = `${_examCache.label.replace(' ','-')}-Exam-CSE62B-${slug}.png`;
     a.href = canvas.toDataURL('image/png'); a.click();
   } catch(e) { alert('Download failed: ' + e.message); }
   finally { btn.disabled = false; btn.innerHTML = orig; }
@@ -421,17 +424,19 @@ async function downloadExamPDF(btn) {
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
     ]);
+    const t = getPrintTheme();
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';
     wrapper.innerHTML = buildExamPrintTemplate();
     document.body.appendChild(wrapper);
-    const canvas = await html2canvas(wrapper.firstElementChild, {backgroundColor:'#0d0d1b',scale:3,useCORS:true,logging:false,allowTaint:true});
+    const canvas = await html2canvas(wrapper.firstElementChild, {backgroundColor:t.bg,scale:3,useCORS:true,logging:false,allowTaint:true});
     document.body.removeChild(wrapper);
     const { jsPDF } = window.jspdf;
     const w = canvas.width/3, h = canvas.height/3;
     const pdf = new jsPDF({orientation: w > h ? 'landscape' : 'portrait', unit:'px', format:[w+20,h+20]});
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, w, h);
-    pdf.save(`${_examCache.label.replace(' ','-')}-Exam-CSE62B-Spring2026.pdf`);
+    const slug = (_examCache.semester || 'Exam').replace(/\s+/g, '');
+    pdf.save(`${_examCache.label.replace(' ','-')}-Exam-CSE62B-${slug}.pdf`);
   } catch(e) { alert('Download failed: ' + e.message); }
   finally { btn.disabled = false; btn.innerHTML = orig; }
 }

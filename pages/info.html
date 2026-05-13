@@ -888,12 +888,66 @@
     /* ─────────────────────────────────────────────
        PRINT TEMPLATE (shared, generic)
     ───────────────────────────────────────────── */
+    function getPrintTheme() {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      return isLight ? {
+        bg:         '#f8f7ff',
+        text:       '#1e1b4b',
+        textMuted:  '#6b7280',
+        border:     'rgba(0,0,0,0.08)',
+        borderSub:  'rgba(0,0,0,0.06)',
+        headerBg:   'rgba(124,58,237,0.1)',
+        headerText: '#7c3aed',
+        rowEven:    'rgba(124,58,237,0.03)',
+        rowOdd:     'rgba(124,58,237,0.01)',
+        dayCell:    '#ede9fecc',
+        dayCellText:'#7c3aed',
+        dayCellFaint:'#9ca3af',
+        line2:      '#374151',
+        room:       '#6b7280',
+        free:       '#9ca3af',
+        footer:     '#6b7280',
+        univText:   '#374151',
+        univFaint:  '#6b7280',
+        breakColor: '#d97706',
+        examDay:    '#7c3aed',
+        examDate:   '#1e293b',
+        examTime:   '#0284c7',
+        divider:    'rgba(124,58,237,0.3)',
+      } : {
+        bg:         '#0d0d1b',
+        text:       '#e2e8f0',
+        textMuted:  '#94a3b8',
+        border:     'rgba(255,255,255,0.07)',
+        borderSub:  'rgba(255,255,255,0.06)',
+        headerBg:   'rgba(124,58,237,0.14)',
+        headerText: '#a78bfa',
+        rowEven:    'rgba(255,255,255,0.015)',
+        rowOdd:     'transparent',
+        dayCell:    '#0f0f1acc',
+        dayCellText:'#c4b5fd',
+        dayCellFaint:'#374151',
+        line2:      '#cbd5e1',
+        room:       '#64748b',
+        free:       '#1f2937',
+        footer:     '#374151',
+        univText:   '#94a3b8',
+        univFaint:  '#4b5563',
+        breakColor: '#fbbf24',
+        examDay:    '#a78bfa',
+        examDate:   '#e2e8f0',
+        examTime:   '#38bdf8',
+        divider:    'rgba(124,58,237,0.4)',
+      };
+    }
+
     /* title: heading; subtitle: second line; cache: {allTimes,schedule,courseInfo,breakTimesSet}
        getCellLine2(slot, info) → string for middle line of cell */
     function buildPrintTemplate(title, subtitle, cache, getCellLine2) {
       if (!cache) return '';
       const { allTimes, schedule, courseInfo, breakTimesSet } = cache;
       getCellLine2 = getCellLine2 || ((s, info) => info.teacher || s.initials || '');
+      const t = getPrintTheme();
 
       const TOTAL_W = 1280, PADDING = 36, DAY_W = 130;
       const colW    = Math.floor((TOTAL_W - PADDING * 2 - DAY_W) / allTimes.length);
@@ -905,35 +959,35 @@
       });
 
       let tbl = `<table style="width:100%;border-collapse:collapse;table-layout:fixed;"><thead><tr>
-        <th style="width:${DAY_W}px;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,0.14);border:1px solid rgba(255,255,255,0.07);">DAY / TIME</th>`;
+        <th style="width:${DAY_W}px;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${t.headerText};background:${t.headerBg};border:1px solid ${t.border};">DAY / TIME</th>`;
       allTimes.forEach(time => {
         const isBreak = breakTimesSet.has(time);
-        tbl += `<th style="width:${colW}px;padding:9px 4px;text-align:center;font-size:10px;font-weight:700;color:${isBreak?'#fbbf24':'#94a3b8'};background:${isBreak?'rgba(251,191,36,0.09)':'rgba(255,255,255,0.03)'};border:1px solid rgba(255,255,255,0.07);white-space:nowrap;">${escH(time)}</th>`;
+        tbl += `<th style="width:${colW}px;padding:9px 4px;text-align:center;font-size:10px;font-weight:700;color:${isBreak?t.breakColor:t.textMuted};background:${isBreak?'rgba(251,191,36,0.09)':'rgba(124,58,237,0.03)'};border:1px solid ${t.border};white-space:nowrap;">${escH(time)}</th>`;
       });
       tbl += `</tr></thead><tbody>`;
 
       ROUTINE_DAY_NAMES.forEach((day, ri) => {
         const daySlots = lookup[day];
         const hasClass = schedule[day]?.some(s => !s.isBreak);
-        const rowBg    = ri % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent';
-        tbl += `<tr><td style="padding:10px 14px;font-size:13px;font-weight:${hasClass?'700':'400'};color:${hasClass?'#c4b5fd':'#374151'};background:#0f0f1acc;border:1px solid rgba(255,255,255,0.06);white-space:nowrap;">${escH(DAY_DISPLAY[day]||day)}</td>`;
+        const rowBg    = ri % 2 === 0 ? t.rowEven : t.rowOdd;
+        tbl += `<tr><td style="padding:10px 14px;font-size:13px;font-weight:${hasClass?'700':'400'};color:${hasClass?t.dayCellText:t.dayCellFaint};background:${t.dayCell};border:1px solid ${t.borderSub};white-space:nowrap;">${escH(DAY_DISPLAY[day]||day)}</td>`;
         allTimes.forEach(time => {
           const isBreak = breakTimesSet.has(time);
           const slot    = daySlots[time];
           if (isBreak) {
-            tbl += `<td style="padding:6px 4px;text-align:center;background:rgba(251,191,36,0.07);border:1px solid rgba(255,255,255,0.06);font-size:9px;font-weight:700;color:${slot?.isBreak?'#fbbf24':'transparent'};letter-spacing:0.07em;">${slot?.isBreak?'&#9749; BREAK':''}</td>`;
+            tbl += `<td style="padding:6px 4px;text-align:center;background:rgba(251,191,36,0.07);border:1px solid ${t.borderSub};font-size:9px;font-weight:700;color:${slot?.isBreak?t.breakColor:'transparent'};letter-spacing:0.07em;">${slot?.isBreak?'&#9749; BREAK':''}</td>`;
           } else if (slot && !slot.isBreak) {
             const color = courseColor(slot.code);
             const info  = courseInfo[slot.code?.toUpperCase()] || {};
             const line2 = getCellLine2(slot, info);
-            tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);">
+            tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};">
               <div style="background:${color}1a;border:1.5px solid ${color}55;border-radius:8px;padding:7px 5px;margin:0 auto;max-width:98%;">
                 <div style="font-size:11.5px;font-weight:800;color:${color};letter-spacing:0.02em;">${escH(slot.code)}</div>
-                ${line2?`<div style="font-size:10px;color:#cbd5e1;font-weight:600;margin-top:3px;">${escH(line2)}</div>`:''}
-                ${slot.room?`<div style="font-size:9.5px;color:#64748b;margin-top:2px;">${escH(slot.room)}</div>`:''}
+                ${line2?`<div style="font-size:10px;color:${t.line2};font-weight:600;margin-top:3px;">${escH(line2)}</div>`:''}
+                ${slot.room?`<div style="font-size:9.5px;color:${t.room};margin-top:2px;">${escH(slot.room)}</div>`:''}
               </div></td>`;
           } else {
-            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid rgba(255,255,255,0.06);color:#1f2937;font-size:14px;">—</td>`;
+            tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};color:${t.free};font-size:14px;">—</td>`;
           }
         });
         tbl += `</tr>`;
@@ -941,38 +995,39 @@
       tbl += `</tbody></table>`;
 
       const dateStr = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
-      return `<div style="width:${TOTAL_W}px;background:#0d0d1b;padding:${PADDING}px;font-family:'Inter',system-ui,sans-serif;color:#e2e8f0;box-sizing:border-box;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:20px;border-bottom:1.5px solid rgba(124,58,237,0.4);">
+      return `<div style="width:${TOTAL_W}px;background:${t.bg};padding:${PADDING}px;font-family:'Inter',system-ui,sans-serif;color:${t.text};box-sizing:border-box;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;padding-bottom:20px;border-bottom:1.5px solid ${t.divider};">
           <div style="display:flex;align-items:center;gap:16px;">
             <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="white" stroke-width="2"/><path d="M16 2V6M8 2V6M3 10H21" stroke="white" stroke-width="2" stroke-linecap="round"/><rect x="7" y="14" width="4" height="4" rx="1" fill="white"/></svg>
             </div>
             <div>
-              <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em;">${escH(title||'Class Routine')}</div>
+              <div style="font-size:22px;font-weight:800;color:${t.text};letter-spacing:-0.02em;">${escH(title||'Class Routine')}</div>
               <div style="font-size:13px;color:#a78bfa;font-weight:600;margin-top:4px;">${escH(subtitle||'Spring 2026')}</div>
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:13px;font-weight:700;color:#94a3b8;">Leading University, Sylhet</div>
-            <div style="font-size:11.5px;color:#4b5563;margin-top:4px;">Department of Computer Science &amp; Engineering</div>
+            <div style="font-size:13px;font-weight:700;color:${t.univText};">Leading University, Sylhet</div>
+            <div style="font-size:11.5px;color:${t.univFaint};margin-top:4px;">Department of Computer Science &amp; Engineering</div>
           </div>
         </div>
         ${tbl}
-        <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
-          <div style="font-size:10.5px;color:#374151;font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; cse62b.vercel.app</div>
-          <div style="font-size:10.5px;color:#374151;">Generated: ${dateStr}</div>
+        <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid ${t.borderSub};">
+          <div style="font-size:10.5px;color:${t.footer};font-weight:500;">CSE 62B Portal &nbsp;·&nbsp; lucse62b.xyz</div>
+          <div style="font-size:10.5px;color:${t.footer};">Generated: ${dateStr}</div>
         </div>
       </div>`;
     }
 
     /* ── Render off-screen template → canvas ── */
     async function captureTemplate(title, subtitle, cache, getCellLine2) {
+      const t = getPrintTheme();
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-99999px;top:0;z-index:-1;';
       wrapper.innerHTML = buildPrintTemplate(title, subtitle, cache, getCellLine2);
       document.body.appendChild(wrapper);
       const canvas = await html2canvas(wrapper.firstElementChild, {
-        backgroundColor: '#0d0d1b', scale: 3, useCORS: true, logging: false, allowTaint: true
+        backgroundColor: t.bg, scale: 3, useCORS: true, logging: false, allowTaint: true
       });
       document.body.removeChild(wrapper);
       return canvas;
