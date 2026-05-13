@@ -298,10 +298,8 @@
                 if (!covers.length) { wrap.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images"></i></div>`; return; }
                 const img = document.createElement('img');
                 img.className = 'event-cover';
-                img.src = thumb(covers[0].id, 600);
                 img.alt = card.dataset.folderName;
-                img.loading = 'lazy';
-                img.decoding = 'async';
+                img.src = thumb(covers[0].id, 600);
                 wrap.appendChild(img);
                 if (covers.length > 1) {
                   const dotsEl = document.createElement('div');
