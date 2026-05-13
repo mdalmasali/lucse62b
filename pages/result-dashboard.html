@@ -304,6 +304,18 @@
       .res-sem-mini-stats { grid-template-columns: 1fr; gap: 4px; font-size: 0.7rem; }
       .res-sem-mini-stat { padding: 4px 7px; }
     }
+    /* ── Light mode overrides ── */
+    html[data-theme="light"] .res-sem-mini { background: rgba(124,58,237,0.04); }
+    html[data-theme="light"] .res-sem-mini-stat { background: rgba(124,58,237,0.07); }
+    html[data-theme="light"] .res-chart-card { background: rgba(255,255,255,0.8); }
+    html[data-theme="light"] .res-course { background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.2); }
+    html[data-theme="light"] .res-stat { background: rgba(255,255,255,0.9); }
+    html[data-theme="light"] .res-card { background: rgba(255,255,255,0.9); }
+    html[data-theme="light"] .res-profile-strip { background: rgba(255,255,255,0.9); }
+    html[data-theme="light"] .res-login-box { background: rgba(255,255,255,0.95); box-shadow: 0 24px 50px rgba(0,0,0,0.12); }
+    html[data-theme="light"] .rfield input, html[data-theme="light"] .rfield select { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.15); color: var(--text); }
+    html[data-theme="light"] .rfield input:focus, html[data-theme="light"] .rfield select:focus { background: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .res-login-title { background: linear-gradient(to right, #0f172a, var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
   </style>
 </head>
 <body>
