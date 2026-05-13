@@ -566,8 +566,9 @@
   <script>
     /* -- Hero photo frame — Drive images -- */
     (async function loadHeroPhotos() {
-      const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const frame  = document.getElementById('heroPhotoFrame');
+      const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
+      const CACHE_KEY = 'lu62b_gallery_hero';
+      const frame     = document.getElementById('heroPhotoFrame');
       if (!frame) return;
 
       function shuffle(arr) {
@@ -579,10 +580,18 @@
       }
 
       try {
-        const data = await fetchDriveGallery(FOLDER, 6);
-        let images = shuffle(data.files || []);
-        if (!images.length) return;
+        let files;
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          files = JSON.parse(cached);
+        } else {
+          const data = await fetchDriveGallery(FOLDER, 6);
+          files = data.files || [];
+          if (files.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(files));
+        }
 
+        let images = shuffle(files);
+        if (!images.length) return;
         while (images.length < 8) images = [...images, ...images];
         images = images.slice(0, 8);
 
@@ -591,6 +600,7 @@
           el.className = 'photo-slide';
           el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
           el.alt = '';
+          el.decoding = 'async';
           frame.appendChild(el);
         });
       } catch (e) { /* fail silently */ }
@@ -599,7 +609,8 @@
   <script>
     /* -- Memories polaroid strip -- */
     (async function initMemories() {
-      const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
+      const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
+      const CACHE_KEY = 'lu62b_gallery_mem';
 
       function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -616,14 +627,23 @@
         img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
         img.alt = '';
         img.loading = 'lazy';
+        img.decoding = 'async';
         card.appendChild(img);
         card.addEventListener('click', () => openMemLb(`https://drive.google.com/thumbnail?id=${id}&sz=w1200`));
         return card;
       }
 
       try {
-        const data = await fetchDriveGallery(FOLDER, 8);
-        const images = shuffle(data.files || []).slice(0, 24);
+        let files;
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          files = JSON.parse(cached);
+        } else {
+          const data = await fetchDriveGallery(FOLDER, 8);
+          files = data.files || [];
+          if (files.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(files));
+        }
+        const images = shuffle(files).slice(0, 24);
         if (images.length < 3) return;
 
         const track = document.getElementById('memoriesTrack');
