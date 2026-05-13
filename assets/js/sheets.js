@@ -3,7 +3,7 @@
    Worker at api.lucse62.xyz so no secret IDs appear in client-side code.
    ─────────────────────────────────────────────────────────────────────────── */
 (function () {
-  var W = 'https://api.lucse62.xyz';
+  var W = 'https://lucse62b-api.sy164425.workers.dev';
 
   function get(path) {
     return fetch(W + path).then(function (r) {

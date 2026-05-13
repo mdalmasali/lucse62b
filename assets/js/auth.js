@@ -8,7 +8,7 @@
   if (window.lu62b_auth_initialized) return;
   window.lu62b_auth_initialized = true;
 
-  const WORKER_URL = 'https://api.lucse62.xyz';
+  const WORKER_URL = 'https://lucse62b-api.sy164425.workers.dev';
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   const ONE_HOUR   = 60 * 60 * 1000;
 
