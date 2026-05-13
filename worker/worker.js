@@ -67,6 +67,8 @@ export default {
         if (!name) return errResp(cors, 400, 'Missing name');
         const id = type === 'bot' ? env.BOT_SHEET_ID : env.MAIN_SHEET_ID;
         if (!id)   return errResp(cors, 500, 'Not configured');
+        // Strip phone column (index 3) from Student Info to prevent exposure
+        if (name === 'Student Info') return gvizProxyStrip(id, name, [3], cors);
         return gvizProxy(id, name, cors);
       }
 
@@ -177,6 +179,24 @@ async function gvizProxy(sheetId, tab, cors) {
   const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
   if (!m) return errResp(cors, 502, 'Bad upstream response');
   return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json' } });
+}
+
+async function gvizProxyStrip(sheetId, tab, stripCols, cors) {
+  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+  const r    = await fetch(u);
+  const text = await r.text();
+  const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  if (!m) return errResp(cors, 502, 'Bad upstream response');
+  const data = JSON.parse(m[1]);
+  if (data.table) {
+    if (data.table.cols) data.table.cols = data.table.cols.map((c, i) => stripCols.includes(i) ? { label: '', type: 'string' } : c);
+    if (data.table.rows) data.table.rows = data.table.rows.map(row => ({
+      ...row,
+      c: (row.c || []).map((cell, i) => stripCols.includes(i) ? null : cell)
+    }));
+  }
+  return new Response(JSON.stringify(data), { headers: { ...cors, 'Content-Type': 'application/json' } });
 }
 
 function jsonResp(cors, data) {

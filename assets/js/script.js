@@ -49,6 +49,19 @@ function initStudentDirectory() {
     return;
   }
 
+  // Demo users must not receive real student data
+  try {
+    const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+    if (raw) {
+      const u = JSON.parse(raw);
+      if (u.isDemo || String(u.id || '').toUpperCase() === 'DEMO') {
+        renderStudentMessage(container, 'Student directory is not available in demo mode.', 'student-error');
+        note.textContent = 'Demo mode — real student data is restricted.';
+        return;
+      }
+    }
+  } catch(e) {}
+
   let isLoading = false;
   let hasRendered = false;
 
