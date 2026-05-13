@@ -1825,8 +1825,15 @@ html[data-theme="light"] .rt-grid th { background: rgba(0,0,0,0.03) !important; 
 html[data-theme="light"] .rt-grid td { border-color: rgba(0,0,0,0.07); }
 html[data-theme="light"] .rt-grid tr:hover td { background: rgba(0,0,0,0.02); }
 html[data-theme="light"] .rt-grid-free { color: rgba(0,0,0,0.2) !important; }
-html[data-theme="light"] .rt-grid-break-cell { background: rgba(0,0,0,0.03) !important; }
+html[data-theme="light"] .rt-grid-break-cell { background: rgba(251,191,36,0.08) !important; }
 html[data-theme="light"] .rt-gc { background: rgba(255,255,255,0.95) !important; }
+/* Day cells — override hardcoded dark background */
+html[data-theme="light"] .rt-grid-day-cell { background: rgba(241,245,249,0.98) !important; color: var(--text-secondary) !important; }
+html[data-theme="light"] .rt-grid tr.has-class .rt-grid-day-cell { color: var(--accent) !important; }
+html[data-theme="light"] .rt-grid tr.no-class .rt-grid-day-cell { opacity: 1; color: rgba(0,0,0,0.3) !important; }
+html[data-theme="light"] .rt-grid tr.no-class { opacity: 1; }
+html[data-theme="light"] .rt-grid tr.no-class td:not(.rt-grid-day-cell) { opacity: 0.35; }
+html[data-theme="light"] .rt-th-day { background: rgba(241,245,249,0.98) !important; color: var(--accent) !important; }
 
 /* All-course table */
 html[data-theme="light"] .ac-table-scroll { border-color: rgba(0,0,0,0.09); }
@@ -1834,7 +1841,9 @@ html[data-theme="light"] .ac-table thead th { background: rgba(0,0,0,0.03); bord
 html[data-theme="light"] .ac-table tbody tr { border-color: rgba(0,0,0,0.07); }
 html[data-theme="light"] .ac-table tbody tr:hover { background: rgba(0,0,0,0.02); }
 html[data-theme="light"] .ac-summary-bar { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.09); }
-html[data-theme="light"] .ac-chip { background: rgba(0,0,0,0.04); }
+html[data-theme="light"] .ac-chip { background: rgba(0,0,0,0.04); color: var(--text-secondary); }
+/* Active chip must stay purple — higher specificity fix */
+html[data-theme="light"] .ac-chip.ac-chip-active { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
 
 /* Bus schedule */
 html[data-theme="light"] .bus-tab-bar { border-color: rgba(0,0,0,0.09) !important; }
