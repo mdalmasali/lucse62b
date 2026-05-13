@@ -9,6 +9,9 @@
 //   SMS_SENDER_ID   → (your sender ID)
 //   DRIVE_API_KEY   → (your Google Drive API key)
 //
+// Required KV Namespace (Settings → Variables → KV Namespace Bindings):
+//   SMS_RATE        → create a KV namespace named "SMS_RATE" and bind it here
+//
 // Endpoints:
 //   GET  /sheet?name=TabName[&type=bot]   → Google Sheets GVIZ proxy
 //   GET  /fetch?id=SHEET_ID[&sheet=Tab]   → Arbitrary sheet (exam/routine)
@@ -77,9 +80,7 @@ export default {
         const id  = url.searchParams.get('id');
         const tab = url.searchParams.get('sheet') || '';
         if (!id) return errResp(cors, 400, 'Missing id');
-        /* Validate Google Sheet ID format — alphanumeric + hyphens/underscores only */
-        if (!/^[A-Za-z0-9_-]{20,60}$/.test(id))
-          return errResp(cors, 400, 'Invalid sheet ID');
+        if (!/^[A-Za-z0-9_-]{20,60}$/.test(id)) return errResp(cors, 400, 'Invalid sheet ID');
         return gvizProxy(id, tab, cors);
       }
 
@@ -92,6 +93,23 @@ export default {
           return errResp(cors, 400, 'Invalid phone number');
         if (String(message).length > 160)
           return errResp(cors, 400, 'Message too long');
+
+        // Rate limiting via KV: max 5/hour and 20/day per IP
+        if (env.SMS_RATE) {
+          const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const now = Date.now();
+          const hKey = `sms:h:${ip}:${Math.floor(now / 3600000)}`;
+          const dKey = `sms:d:${ip}:${Math.floor(now / 86400000)}`;
+          const [hRaw, dRaw] = await Promise.all([env.SMS_RATE.get(hKey), env.SMS_RATE.get(dKey)]);
+          const hCount = parseInt(hRaw || '0');
+          const dCount = parseInt(dRaw || '0');
+          if (hCount >= 5 || dCount >= 20) return errResp(cors, 429, 'Rate limit exceeded');
+          await Promise.all([
+            env.SMS_RATE.put(hKey, String(hCount + 1), { expirationTtl: 3600 }),
+            env.SMS_RATE.put(dKey, String(dCount + 1), { expirationTtl: 86400 }),
+          ]);
+        }
+
         const smsUrl =
           `https://bulksmsbd.net/api/smsapi?api_key=${env.SMS_API_KEY}` +
           `&type=text&number=${encodeURIComponent(phone)}` +
@@ -117,6 +135,8 @@ export default {
           },
         });
         const text = await r.text();
+        // If LUS returns HTML (bot challenge/block), signal client to use fallback
+        if (text.trimStart().startsWith('<')) return errResp(cors, 503, 'LUS temporarily unavailable');
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
       }
 

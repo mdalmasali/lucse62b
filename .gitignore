@@ -2,3 +2,8 @@ $R7ERV33.html
 .DS_Store
 Thumbs.db
 *.apk
+.env
+.env.*
+*.local.json
+.claude/
+.claude/settings.local.json

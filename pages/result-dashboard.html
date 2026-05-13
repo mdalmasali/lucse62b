@@ -524,12 +524,22 @@
   <script>
     /* ── Config ── */
     const WORKER_URL = 'https://lucse62b-api.sy164425.workers.dev';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
     const PROXIES = [
       async (id, dob) => {
         const r = await fetch(WORKER_URL + '/result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: id, birth_date: dob }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      },
+      async (id, dob) => {
+        const r = await fetch('https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/get-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY },
           body: JSON.stringify({ student_id: id, birth_date: dob }),
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);

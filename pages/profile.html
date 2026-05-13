@@ -1980,6 +1980,15 @@
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
       },
+      async (studentId, birthDate) => {
+        const r = await fetch('https://ftvtlqxpalwvyserujuh.supabase.co/functions/v1/get-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY },
+          body: JSON.stringify({ student_id: studentId, birth_date: birthDate }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      },
     ];
 
     let resData     = null;

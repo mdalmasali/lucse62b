@@ -36,24 +36,17 @@
   // ── Sheet validation (proxied via Worker) ────────────────────────────
   function checkStudentInSheet(studentId) {
     var timeout = new Promise(function (resolve) {
-      setTimeout(function () { resolve(true); }, 8000); // network timeout → assume valid
+      setTimeout(function () { resolve(false); }, 5000); // network timeout → fail closed
     });
-    var check = fetch(WORKER_URL + '/sheet?name=Student%20Info')
+    var check = fetch(WORKER_URL + '/lookup?id=' + encodeURIComponent(studentId))
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var rows = (data.table && data.table.rows) || [];
-        return rows.some(function (row) {
-          return (row.c || []).some(function (cell) {
-            return cell && cell.v != null && String(cell.v).trim() === studentId;
-          });
-        });
-      })
-      .catch(function () { return true; }); // network error → assume valid
+      .then(function (data) { return data.found === true; })
+      .catch(function () { return false; }); // network error → fail closed
     return Promise.race([timeout, check]);
   }
 
   function runBackgroundValidation(session) {
-    if (!session || !session.id || isDemoSession) return;
+    if (!session || !session.id) return;
     // Skip on login/password-setup pages — no point checking there
     const page = window.location.pathname.split('/').pop();
     if (page === 'login.html' || page === 'password-setup.html') return;
@@ -76,18 +69,16 @@
         return;
       }
 
-      // B — background sheet re-validation (once per hour)
-      if (!isDemoSession) {
-        var lastVal = null;
-        try { lastVal = JSON.parse(localStorage.getItem('lu62b_last_validation')); } catch (e) {}
-        var shouldValidate = !lastVal || !lastVal.t || (Date.now() - lastVal.t > ONE_HOUR);
+      // B — background sheet re-validation (once per hour, applies to all sessions)
+      var lastVal = null;
+      try { lastVal = JSON.parse(localStorage.getItem('lu62b_last_validation')); } catch (e) {}
+      var shouldValidate = !lastVal || !lastVal.t || (Date.now() - lastVal.t > ONE_HOUR);
 
-        if (shouldValidate) {
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () { runBackgroundValidation(session); });
-          } else {
-            runBackgroundValidation(session);
-          }
+      if (shouldValidate) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function () { runBackgroundValidation(session); });
+        } else {
+          runBackgroundValidation(session);
         }
       }
     }
