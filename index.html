@@ -437,13 +437,36 @@
     </footer>
   </div>
 
+  <!-- Classmate birthday notification -->
+  <div id="classmateBdayNotif" style="display:none;position:fixed;top:72px;right:16px;z-index:9970;max-width:300px;width:calc(100% - 32px);background:linear-gradient(135deg,#1a0a35,#200d3a);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:16px 18px;box-shadow:0 8px 32px rgba(124,58,237,.3),0 2px 8px rgba(0,0,0,.4);animation:notifSlideIn .5s cubic-bezier(.34,1.56,.64,1) both;">
+    <style>
+      @keyframes notifSlideIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+      #classmateBdayNotif .nb-close{position:absolute;top:10px;right:12px;background:none;border:none;color:rgba(196,181,253,.5);font-size:1rem;cursor:pointer;line-height:1;padding:2px;}
+      #classmateBdayNotif .nb-close:hover{color:#c4b5fd;}
+    </style>
+    <button class="nb-close" onclick="document.getElementById('classmateBdayNotif').style.display='none'">✕</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:1.8rem;line-height:1;">🎂</span>
+      <div>
+        <div style="font-size:.7rem;font-weight:700;color:#a78bfa;letter-spacing:.5px;text-transform:uppercase;">Today's Birthday</div>
+        <div style="font-size:.95rem;font-weight:800;color:#f0e6ff;line-height:1.2;" id="classmateBdayName">—</div>
+      </div>
+    </div>
+    <div style="font-size:.78rem;color:rgba(196,181,253,.65);line-height:1.5;margin-bottom:12px;">
+      It's your classmate's special day!<br>Take a moment to wish them. 💜
+    </div>
+    <button onclick="document.getElementById('classmateBdayNotif').style.display='none'" style="width:100%;padding:9px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.82rem;font-weight:700;font-family:inherit;cursor:pointer;">
+      🎉 Noted! Happy Birthday to them!
+    </button>
+  </div>
+
   <!-- Birthday replay button (visible only on birthday) -->
   <button id="bdayReplayBtn" onclick="replayBirthdayOverlay()" title="View Birthday Wish" style="display:none;position:fixed;bottom:60px;right:20px;z-index:9980;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:50px;padding:8px 16px 8px 12px;color:#fff;font-size:.78rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(124,58,237,.45);animation:bdayBtnPulse 2s ease-in-out infinite;">
     <span style="font-size:1.1rem;">🎂</span> My Birthday Wish
   </button>
   <style>
     @keyframes bdayBtnPulse{0%,100%{box-shadow:0 4px 20px rgba(124,58,237,.45);}50%{box-shadow:0 4px 28px rgba(236,72,153,.65),0 0 0 4px rgba(124,58,237,.15);}}
-    @media(max-width:768px){#bdayReplayBtn{bottom:100px;}}
+    @media(max-width:768px){#bdayReplayBtn{bottom:140px;}}
   </style>
 
   <!-- Birthday Overlay -->
@@ -916,6 +939,54 @@
     } catch { return null; }
   }
 
+  /* Fetch all classmates with today's birthday, names resolved from sheet */
+  async function fetchClassmateBirthdays(currentStudentId) {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/student_passwords?select=student_id,dob,h_dob`,
+        { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+      );
+      if (!r.ok) return [];
+      const data = await r.json();
+      const birthdayStudents = data.filter(s =>
+        s.student_id !== currentStudentId &&
+        s.student_id !== 'DEMO' &&
+        isBirthdayToday(s.h_dob || s.dob)
+      );
+      if (!birthdayStudents.length) return [];
+      /* Only fetch the sheet if someone actually has a birthday today */
+      const sheetData = await fetchSheet('Student Info');
+      const rows = (sheetData.table && sheetData.table.rows) || [];
+      const nameMap = {};
+      rows.forEach(function (row) {
+        const cells = (row.c || []).map(function (c) { return (c && c.v != null) ? String(c.f || c.v).trim() : ''; });
+        if (cells[1]) nameMap[cells[1]] = cells[2] || cells[1];
+      });
+      return birthdayStudents.map(function (s) {
+        return { student_id: s.student_id, name: nameMap[s.student_id] || s.student_id };
+      });
+    } catch { return []; }
+  }
+
+  function classmateNotifShownToday() {
+    const key = 'lu62b_classmate_bday_' + new Date().toISOString().slice(0, 10);
+    return !!sessionStorage.getItem(key);
+  }
+
+  function markClassmateNotifShown() {
+    const key = 'lu62b_classmate_bday_' + new Date().toISOString().slice(0, 10);
+    sessionStorage.setItem(key, '1');
+  }
+
+  function showClassmateBdayNotif(classmates) {
+    const notif = document.getElementById('classmateBdayNotif');
+    const nameEl = document.getElementById('classmateBdayName');
+    if (!notif || !nameEl) return;
+    const names = classmates.map(s => s.name).join(', ');
+    nameEl.textContent = names;
+    notif.style.display = 'block';
+  }
+
   /* Main check — runs after page load */
   document.addEventListener('DOMContentLoaded', function () {
     try {
@@ -923,15 +994,24 @@
       if (!raw) return;
       const student = JSON.parse(raw);
       if (!student || student.isDemo || !student.id) return;
+
+      /* Own birthday check */
       fetchBirthday(student.id).then(function (bday) {
         if (!bday || !isBirthdayToday(bday)) return;
-        /* Show floating replay button on birthday */
         const btn = document.getElementById('bdayReplayBtn');
         if (btn) btn.style.display = 'flex';
-        /* Auto-show once per visit */
         if (alreadyShownThisVisit(student.id)) return;
         setTimeout(() => showBirthdayOverlay(student.name || 'Friend', student.id), 1200);
       });
+
+      /* Classmate birthday notification */
+      if (!classmateNotifShownToday()) {
+        fetchClassmateBirthdays(student.id).then(function (classmates) {
+          if (!classmates.length) return;
+          markClassmateNotifShown();
+          setTimeout(() => showClassmateBdayNotif(classmates), 2000);
+        });
+      }
     } catch (e) { /* fail silently */ }
   });
 })();
