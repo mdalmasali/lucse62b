@@ -511,41 +511,17 @@
   <script src="../assets/js/auth.js"></script>
   <script>
     /* ── Config ── */
-    const RES_API    = 'https://lus.ac.bd/wp-admin/admin-ajax.php';
-    const CF_WORKER  = 'https://crimson-poetry-020c.classrecordpranto2021.workers.dev';
+    const WORKER_URL = 'https://api.lucse62.xyz';
 
     const PROXIES = [
-      // Proxy 1: Cloudflare Worker
       async (id, dob) => {
-        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
-        const r = await fetch(CF_WORKER, { method:'POST', body });
-        if (!r.ok) throw new Error(`CF Worker HTTP ${r.status}`);
-        return r.text();
-      },
-      // Proxy 2: corsproxy.io (direct URL append)
-      async (id, dob) => {
-        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
-        const r = await fetch(`https://corsproxy.io/?${RES_API}`, {
-          method:'POST', body, headers:{ 'x-requested-with':'XMLHttpRequest', 'content-type':'application/x-www-form-urlencoded' }
+        const r = await fetch(WORKER_URL + '/result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: id, birth_date: dob }),
         });
-        if (!r.ok) throw new Error(`corsproxy.io HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
-      },
-      // Proxy 3: corsproxy.io with encoded URL
-      async (id, dob) => {
-        const body = new URLSearchParams({ action:'get-result', student_id:id, birth_date:dob });
-        const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(RES_API)}`, {
-          method:'POST', body, headers:{ 'content-type':'application/x-www-form-urlencoded' }
-        });
-        if (!r.ok) throw new Error(`corsproxy.io[enc] HTTP ${r.status}`);
-        return r.text();
-      },
-      // Proxy 4: allorigins raw (GET fallback — may not work for POST-only endpoints)
-      async (id, dob) => {
-        const params = `action=get-result&student_id=${encodeURIComponent(id)}&birth_date=${encodeURIComponent(dob)}`;
-        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`${RES_API}?${params}`)}`);
-        if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`);
-        return (await r.json()).contents;
       },
     ];
 

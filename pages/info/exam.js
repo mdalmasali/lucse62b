@@ -3,16 +3,7 @@
 let _examCache = null;
 
 function fetchExamTab(sheetId) {
-  return new Promise((resolve, reject) => {
-    const cb = `exam_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const s  = document.createElement('script');
-    const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
-    function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-    window[cb] = d => { cleanup(); resolve(d); };
-    s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}`;
-    s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-    document.body.appendChild(s);
-  });
+  return fetchSheetById(sheetId);
 }
 
 function normExamDate(raw) {

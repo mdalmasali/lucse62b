@@ -553,6 +553,7 @@
     </footer>
   </div>
 
+  <script src="../assets/js/sheets.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script>
     let currentType = 'asgn-single';
@@ -851,22 +852,12 @@
       scalePreview();
     });
 
-    /* ── Autocomplete data — loaded from Google Sheet ── */
-    const CPG_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
+    /* ── Autocomplete data — loaded via Worker proxy ── */
     let TEACHERS = [];
     let COURSES  = [];
 
     function loadCPGSheet(sheetName) {
-      return new Promise((resolve, reject) => {
-        const cb = `cpg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { cleanup(); reject(); }, 10000);
-        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-        window[cb] = d => { cleanup(); resolve(d); };
-        s.src = `https://docs.google.com/spreadsheets/d/${CPG_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
-        s.onerror = () => { cleanup(); reject(); };
-        document.body.appendChild(s);
-      });
+      return fetchSheet(sheetName);
     }
 
     async function loadAutocompleteData() {

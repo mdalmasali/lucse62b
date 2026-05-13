@@ -523,9 +523,10 @@
     </footer>
   </div>
 
+  <script src="../assets/js/sheets.js"></script>
   <script src="../assets/js/auth.js"></script>
-    <script src="../assets/js/theme.js"></script>
-<script src="../assets/js/analytics.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/analytics.js"></script>
   <script src="../assets/js/script.js"></script>
   <script>
     const MENU = [
@@ -608,21 +609,7 @@
       loadContent(item);
     }
 
-    /* ── Sheet fetch (JSONP) ── */
-    const INFO_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-
-    function fetchSheet(sheetName) {
-      return new Promise((resolve, reject) => {
-        const cb = `inf_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 12000);
-        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-        window[cb] = d => { cleanup(); resolve(d); };
-        s.src = `https://docs.google.com/spreadsheets/d/${INFO_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}`;
-        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-        document.body.appendChild(s);
-      });
-    }
+    /* ── Sheet fetch (proxied via Cloudflare Worker — see sheets.js) ── */
 
     function sheetRows(data) {
       return (data.table?.rows || []).map(r =>
@@ -660,16 +647,7 @@
     const DAY_DISPLAY = { SATURDAY:'Saturday', SUNDAY:'Sunday', MONDAY:'Monday', TUESDAY:'Tuesday', WEDNESDAY:'Wednesday', THURSDAY:'Thursday', FRIDAY:'Friday' };
 
     function fetchDayTab(sheetId, dayName) {
-      return new Promise((resolve, reject) => {
-        const cb = `rt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
-        function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
-        window[cb] = d => { cleanup(); resolve(d); };
-        s.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(dayName)}`;
-        s.onerror = () => { cleanup(); reject(new Error('Load error')); };
-        document.body.appendChild(s);
-      });
+      return fetchSheetById(sheetId, dayName);
     }
 
     /* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */

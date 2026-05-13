@@ -8,8 +8,7 @@
   if (window.lu62b_auth_initialized) return;
   window.lu62b_auth_initialized = true;
 
-  const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-  const SHEET_NAME = 'Student Info';
+  const WORKER_URL = 'https://api.lucse62.xyz';
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   const ONE_HOUR   = 60 * 60 * 1000;
 
@@ -34,42 +33,23 @@
     window.location.replace(loginPath + '?lo=' + reason);
   }
 
-  // ── Sheet validation (JSONP, background) ────────────────────────────
+  // ── Sheet validation (proxied via Worker) ────────────────────────────
   function checkStudentInSheet(studentId) {
-    return new Promise(function (resolve) {
-      const cb    = 'lu62b_val_' + Date.now();
-      const s     = document.createElement('script');
-      const timer = setTimeout(function () {
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        resolve(true); // timeout → assume valid, don't kick out on bad network
-      }, 8000);
-
-      window[cb] = function (data) {
-        clearTimeout(timer);
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        const rows  = (data.table && data.table.rows) || [];
-        const found = rows.some(function (row) {
+    var timeout = new Promise(function (resolve) {
+      setTimeout(function () { resolve(true); }, 8000); // network timeout → assume valid
+    });
+    var check = fetch(WORKER_URL + '/sheet?name=Student%20Info')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var rows = (data.table && data.table.rows) || [];
+        return rows.some(function (row) {
           return (row.c || []).some(function (cell) {
             return cell && cell.v != null && String(cell.v).trim() === studentId;
           });
         });
-        resolve(found);
-      };
-
-      s.onerror = function () {
-        clearTimeout(timer);
-        delete window[cb];
-        if (s.parentNode) s.parentNode.removeChild(s);
-        resolve(true); // network error → assume valid
-      };
-
-      s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
-              '/gviz/tq?tqx=out:json;responseHandler=' + cb +
-              '&sheet=' + encodeURIComponent(SHEET_NAME);
-      document.body.appendChild(s);
-    });
+      })
+      .catch(function () { return true; }); // network error → assume valid
+    return Promise.race([timeout, check]);
   }
 
   function runBackgroundValidation(session) {

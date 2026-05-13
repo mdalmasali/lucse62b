@@ -245,10 +245,8 @@
 
   <script src="../assets/js/bcrypt.min.js"></script>
   <script>
-    const SHEET_ID   = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
-    const SHEET_NAME = 'Student Info';
-    const SMS_API_KEY   = 'nJOmvZlaS3yclfACHGU2';
-    const SMS_SENDER_ID = '8809617627097';
+    const SHEET_NAME    = 'Student Info';
+    const WORKER_URL    = 'https://api.lucse62.xyz';
     const SUPABASE_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
     const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
     const DEMO_STUDENT_ID = 'DEMO';
@@ -336,33 +334,32 @@
       if (!res.ok) throw new Error('Save failed');
     }
 
-    /* -- Fetch student from sheet -- */
-    function fetchStudentData(studentId) {
-      return new Promise((resolve, reject) => {
-        const cb = `s_${Date.now()}`;
-        const s  = document.createElement('script');
-        const t  = setTimeout(() => { if(window[cb]){delete window[cb];s.remove();reject('Network error');} }, 8000);
-        window[cb] = (data) => {
-          clearTimeout(t); delete window[cb]; s.remove();
-          const rows = data.table?.rows || [];
-          for (const row of rows) {
-            const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
-            let sid = cells[1]||'';
-            if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
-              let raw = (cells[3]||'').replace(/\s+/g,'');
-              if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
-              if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
-              if (raw.startsWith('+88')) raw=raw.substring(3);
-              else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
-              resolve({ id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null });
-              return;
-            }
+    /* -- Fetch student from sheet (via Worker proxy) -- */
+    async function fetchStudentData(studentId) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const r    = await fetch(WORKER_URL + '/sheet?name=' + encodeURIComponent(SHEET_NAME), { signal: controller.signal });
+        const data = await r.json();
+        clearTimeout(timer);
+        const rows = data.table?.rows || [];
+        for (const row of rows) {
+          const cells = (row.c||[]).map(c=>(c&&c.v!=null)?String(c.f||c.v).trim():'');
+          let sid = cells[1]||'';
+          if (sid===studentId || sid.replace(/^0+/,'')===studentId.replace(/^0+/,'')) {
+            let raw = (cells[3]||'').replace(/\s+/g,'');
+            if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
+            if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
+            if (raw.startsWith('+88')) raw=raw.substring(3);
+            else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
+            return { id: studentId, name: cells[2]||'Student', phone: /^01\d{9}$/.test(raw)?raw:null };
           }
-          reject('Student not found');
-        };
-        s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(SHEET_NAME)}`;
-        document.body.appendChild(s);
-      });
+        }
+        throw new Error('Student not found');
+      } catch (e) {
+        clearTimeout(timer);
+        throw e.name === 'AbortError' ? new Error('Network error') : e;
+      }
     }
 
     /* -- OTP helpers -- */
@@ -382,7 +379,11 @@
     function sendSMSOTP(phone) {
       generatedOTP = Math.floor(1000+Math.random()*9000).toString();
       const msg = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
-      return fetch(`https://bulksmsbd.net/api/smsapi?api_key=${SMS_API_KEY}&type=text&number=${phone}&senderid=${SMS_SENDER_ID}&message=${encodeURIComponent(msg)}`,{mode:'no-cors'});
+      return fetch(WORKER_URL + '/sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: msg }),
+      });
     }
 
     /* -- Step 1: Check Student ID -- */

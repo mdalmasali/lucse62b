@@ -1,6 +1,6 @@
-const STUDENT_SHEET_ID = '1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY';
 const STUDENT_SHEET_NAME = 'Student Info';
 const STUDENT_SYNC_INTERVAL = 60000;
+const WORKER_URL = 'https://api.lucse62.xyz';
 
 document.addEventListener('DOMContentLoaded', () => {
   createParticles();
@@ -96,35 +96,11 @@ function initStudentDirectory() {
 }
 
 function loadGoogleSheet(sheetName) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `codexSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Google Sheet request timed out.'));
-    }, 15000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      delete window[callbackName];
-      script.remove();
-    }
-
-    window[callbackName] = (payload) => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.src =
-      `https://docs.google.com/spreadsheets/d/${STUDENT_SHEET_ID}/gviz/tq?` +
-      `tqx=out:json;responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}`;
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Failed to load the Google Sheet script.'));
-    };
-
-    document.body.appendChild(script);
-  });
+  return fetch(WORKER_URL + '/sheet?name=' + encodeURIComponent(sheetName))
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
 }
 
 function parseStudentSheet(rows) {
