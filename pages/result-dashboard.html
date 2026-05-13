@@ -727,7 +727,7 @@
           await new Promise(r => setTimeout(r, 300));
         }
       }
-      throw new Error('Could not connect to LU result server. Please try again later.');
+      throw new Error('LUS is currently blocking all external servers. Please check your results directly on lus.ac.bd/result/.');
     }
 
     /* ── Render ── */
