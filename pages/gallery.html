@@ -253,24 +253,31 @@
 
   <script>
     const FOLDER_ID = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-    const API_KEY   = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
+    const W = 'https://lucse62b-api.sy164425.workers.dev';
 
     function thumb(id, size=400) {
       return `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;
     }
 
-    async function driveList(q, extra='') {
-      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=name&fields=files(id,name,mimeType)${extra}&key=${API_KEY}`;
-      const res = await fetch(url);
+    function escH(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function driveList(folderId, filterType, limit) {
+      const res = await fetch(`${W}/drive?folder=${encodeURIComponent(folderId)}`);
       if (!res.ok) throw new Error('Drive API ' + res.status);
-      return (await res.json()).files || [];
+      let files = (await res.json()).files || [];
+      if (filterType === 'folder') files = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+      if (filterType === 'image')  files = files.filter(f => f.mimeType && f.mimeType.includes('image/'));
+      if (limit) files = files.slice(0, limit);
+      return files;
     }
 
     /* -- Level 1: load events -- */
     async function loadEvents() {
       const grid = document.getElementById('eventGrid');
       try {
-        const folders = await driveList(`'${FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+        const folders = await driveList(FOLDER_ID, 'folder');
         if (!folders.length) {
           grid.innerHTML = '<div class="gal-empty"><i class="fa-solid fa-images"></i><p>No events yet. Upload event folders to the Drive folder.</p></div>';
           return;
@@ -286,7 +293,7 @@
             const folderId = card.dataset.folderId;
             const wrap = card.querySelector('.event-cover-wrap');
             if (!wrap || !folderId) return;
-            driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`, '&pageSize=5')
+            driveList(folderId, 'image', 5)
               .then(covers => {
                 if (!covers.length) { wrap.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images"></i></div>`; return; }
                 const img = document.createElement('img');
@@ -337,7 +344,7 @@
 
           const info = document.createElement('div');
           info.className = 'event-info';
-          info.innerHTML = `<div class="event-name">${folder.name}</div><div class="event-meta"><i class="fa-solid fa-folder-open" style="font-size:0.65rem;margin-right:4px;"></i>Tap to view photos</div>`;
+          info.innerHTML = `<div class="event-name">${escH(folder.name)}</div><div class="event-meta"><i class="fa-solid fa-folder-open" style="font-size:0.65rem;margin-right:4px;"></i>Tap to view photos</div>`;
           card.appendChild(info);
 
           card.addEventListener('click', () => openEvent(folder.id, folder.name));
@@ -362,7 +369,7 @@
       grid.innerHTML = '<div class="gal-loading" style="grid-column:1/-1;"><div class="spin"></div><span>Loading photos...</span></div>';
 
       try {
-        const photos = await driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`);
+        const photos = await driveList(folderId, 'image');
         currentPhotos = photos;
 
         if (!photos.length) {
@@ -441,6 +448,7 @@
 
     loadEvents();
   </script>
+  <script src="../assets/js/sheets.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/analytics.js"></script>
