@@ -86,7 +86,13 @@ export default {
         const body = new URLSearchParams({ action: 'get-result', student_id, birth_date });
         const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', {
           method: 'POST', body,
-          headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-requested-with': 'XMLHttpRequest' },
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'x-requested-with': 'XMLHttpRequest',
+            'origin': 'https://lus.ac.bd',
+            'referer': 'https://lus.ac.bd/result/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          },
         });
         const text = await r.text();
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
