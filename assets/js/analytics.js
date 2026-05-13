@@ -13,7 +13,7 @@ const LU_ANALYTICS = (() => {
   const PAGE_MAP = {
     'cover-page': 'page_cover', 'classwork': 'page_classwork',
     'info':       'page_info',  'students':  'page_students',
-    'resources':  'page_resources', 'notices': 'page_notices',
+    'resources':  'page_resources',
     'routine':    'page_routine',   'result':  'page_result',
     'gallery':    'page_gallery',   'login':   'page_login',
     'profile':    'page_profile',   'index':   'page_home',
@@ -21,7 +21,7 @@ const LU_ANALYTICS = (() => {
   const PAGE_DISPLAY = {
     'page_home': 'Home', 'page_cover': 'Cover Page', 'page_classwork': 'Classwork',
     'page_info': 'Info', 'page_students': 'Students', 'page_resources': 'Resources',
-    'page_notices': 'Notices', 'page_routine': 'Routine', 'page_result': 'Results',
+    'page_routine': 'Routine', 'page_result': 'Results',
     'page_gallery': 'Gallery', 'page_login': 'Login', 'page_profile': 'Profile',
   };
 

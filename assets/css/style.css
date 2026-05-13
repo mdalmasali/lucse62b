@@ -167,63 +167,97 @@ body {
 .lu62b-logged-in .topbar-links .auth-only { display: list-item !important; }
 .lu62b-logged-in .mobile-nav-overlay .auth-only { display: flex !important; }
 
-/* ── Top Notice Ticker ── */
-.notice-ticker-wrap {
+/* ── Portal Stats ── */
+.portal-stats-wrap {
+  margin: 32px 0 16px;
+}
+.portal-stats-header {
   display: flex;
   align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.portal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pstat-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  margin: 8px 0 16px;
-  padding: 6px 8px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  animation: tickerSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  position: sticky;
-  top: 68px;
-  z-index: 99;
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-@keyframes tickerSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-16px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.pstat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.12);
 }
-.ticker-badge {
-  background: linear-gradient(135deg, #f43f5e, #e11d48);
-  color: white;
-  font-size: 0.7rem;
+.pstat-icon {
+  font-size: 1.2rem;
+  color: var(--accent-bright);
+  margin-bottom: 10px;
+}
+.pstat-val {
+  font-size: 1.9rem;
   font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 8px;
-  letter-spacing: 1px;
-  margin-right: 12px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.4);
-  animation: tickerBadgePulse 1s ease-in-out infinite;
-}
-@keyframes tickerBadgePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-.ticker-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
   color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  white-space: nowrap;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
-.ticker-content marquee {
-  width: 100%;
+.pstat-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 6px;
 }
+.pstat-presence-row {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.pstat-presence-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.pstat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pstat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  background: rgba(124,58,237,0.07);
+  border: 1px solid rgba(124,58,237,0.18);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+.pstat-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 5px #22c55e;
+  flex-shrink: 0;
+  animation: lu-pulse 2s ease-in-out infinite;
+}
+.pstat-chip-page {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  padding-left: 5px;
+  border-left: 1px solid var(--border);
+}
+html[data-theme="light"] .pstat-card { background: rgba(255,255,255,0.9); }
+html[data-theme="light"] .pstat-chip { background: rgba(124,58,237,0.05); }
 
 /* ── Hero / Profile ── */
 .hero {
@@ -1376,16 +1410,7 @@ footer {
   .topbar-status { display: none; }
   .hamburger { display: flex; }
 
-  /* Top Notice */
-  .notice-ticker-wrap {
-    top: 57px;
-    margin: 6px 0 12px;
-    padding: 6px 8px;
-    border-radius: 10px;
-    gap: 8px;
-  }
-  .ticker-badge { padding: 3px 8px; font-size: 0.65rem; }
-  .ticker-content { font-size: 0.85rem; }
+  .portal-stats-grid { grid-template-columns: repeat(2, 1fr); }
 
   /* Hero — centered layout */
   .hero {

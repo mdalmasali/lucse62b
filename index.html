@@ -147,16 +147,6 @@
     
     
 
-    <!-- Top Notice Ticker -->
-    <div class="notice-ticker-wrap fade-in delay-1" id="tickerWrap" style="display: none;">
-      <div class="ticker-badge">LATEST</div>
-      <div class="ticker-content">
-        <marquee behavior="scroll" direction="left" id="topNoticeMarquee" scrollamount="5" onmouseover="this.stop();" onmouseout="this.start();">
-          Loading top notice...
-        </marquee>
-      </div>
-    </div>
-
     <!-- Hero Section -->
     <section class="hero fade-in delay-1">
       <div class="avatar-container">
@@ -381,9 +371,38 @@
       </div>
     </div>
 
-    
-      
-      <footer>
+    <!-- Portal Stats -->
+    <div class="portal-stats-wrap fade-in delay-4" id="portalStatsWrap">
+      <div class="portal-stats-header">
+        <span class="section-label" style="font-size:0.7rem;">📊 Portal Activity</span>
+        <div class="section-line" style="flex:1;"></div>
+      </div>
+      <div class="portal-stats-grid">
+        <div class="pstat-card">
+          <div class="pstat-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="pstat-val" id="pstat-visits">—</div>
+          <div class="pstat-label">Total Visits</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-icon" style="color:#22c55e;"><i class="fa-solid fa-circle"></i></div>
+          <div class="pstat-val" id="pstat-online">—</div>
+          <div class="pstat-label">Online Now</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-icon"><i class="fa-solid fa-file-pdf"></i></div>
+          <div class="pstat-val" id="pstat-pdfs">—</div>
+          <div class="pstat-label">PDFs Generated</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <div class="pstat-val" id="pstat-logins">—</div>
+          <div class="pstat-label">Total Logins</div>
+        </div>
+      </div>
+      <div class="pstat-presence-row" id="pstatPresenceRow"></div>
+    </div>
+
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="index.html">Home</a>
@@ -401,62 +420,6 @@
   <script src="assets/js/theme.js"></script>
   <script src="assets/js/sheets.js"></script>
   <script src="assets/js/script.js"></script>
-  <script>
-    // Fetch Top Notice from Google Sheets
-    function loadTopNotice() {
-      const SHEET_NAME = 'Website';
-
-      const rawSession = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
-      const isAuth = !!rawSession;
-      let firstName = '';
-      if (isAuth) {
-        try {
-          const s = JSON.parse(rawSession);
-          const parts = (s.name || '').trim().split(/\s+/);
-          firstName = (parts.length > 1 && /^(md\.?|mr\.?|ms\.?|dr\.?)$/i.test(parts[0]))
-            ? parts[1] : parts[0];
-        } catch (e) {}
-      }
-
-      function showTicker(text) {
-        if (!text) return;
-        document.getElementById('topNoticeMarquee').innerHTML =
-          text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--accent-bright);">$1</a>');
-        const wrap = document.getElementById('tickerWrap');
-        wrap.style.display = 'flex';
-        wrap.offsetHeight;
-        wrap.style.animation = 'none';
-        setTimeout(() => { wrap.style.animation = ''; }, 10);
-      }
-
-      fetchBotSheet(SHEET_NAME).then(data => {
-        let noticeGlobal = null, noticeMember = null, memberOverview = null;
-        (data.table?.rows || []).forEach(row => {
-          const cells = (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
-          if (cells.length < 2) return;
-          const key = cells[0].toLowerCase();
-          if (key === 'top notice')        noticeGlobal   = cells[1];
-          if (key === 'top notice member') noticeMember   = cells[1];
-          if (key === 'member overview')   memberOverview = cells[1];
-        });
-
-        if (isAuth) {
-          if (noticeMember) {
-            showTicker(noticeMember);
-          } else {
-            const greeting = `Welcome back, ${firstName}!`;
-            const overview = memberOverview ? `  ·  ${memberOverview}` : '';
-            showTicker(greeting + overview);
-          }
-        } else {
-          showTicker(noticeGlobal);
-        }
-      }).catch(() => {});
-    }
-
-    // Initialize
-    loadTopNotice();
-  </script>
   <script src="assets/js/auth.js"></script>
   <script>
     /* -- Graduation Countdown Timer -- */
@@ -725,5 +688,33 @@
     })();
   </script>
 <script src="assets/js/analytics.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (!window.LU_ANALYTICS) return;
+    try {
+      const [visits, pdfs, logins, online, presence] = await Promise.all([
+        LU_ANALYTICS.getCounter('total_visits'),
+        LU_ANALYTICS.getCounter('total_pdfs'),
+        LU_ANALYTICS.getCounter('total_logins'),
+        LU_ANALYTICS.getOnlineCount(),
+        LU_ANALYTICS.getPresenceList(),
+      ]);
+      const fmt = n => Number(n).toLocaleString();
+      document.getElementById('pstat-visits').textContent  = fmt(visits);
+      document.getElementById('pstat-online').textContent  = online;
+      document.getElementById('pstat-pdfs').textContent   = fmt(pdfs);
+      document.getElementById('pstat-logins').textContent = fmt(logins);
+
+      const row = document.getElementById('pstatPresenceRow');
+      if (presence.length > 0) {
+        const chips = presence.map(p => {
+          const name = p.user_name || 'Guest';
+          return `<span class="pstat-chip"><span class="pstat-chip-dot"></span>${name}<span class="pstat-chip-page">${p.page}</span></span>`;
+        }).join('');
+        row.innerHTML = `<div class="pstat-presence-label">Currently viewing</div><div class="pstat-chips">${chips}</div>`;
+      }
+    } catch(e) {}
+  });
+</script>
 </body>
 </html>
