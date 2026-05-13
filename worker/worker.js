@@ -18,7 +18,6 @@
 const ALLOWED_ORIGINS = [
   'https://lucse62b.xyz',
   'https://www.lucse62b.xyz',
-  'https://mdalmasali.github.io',
   'http://127.0.0.1:5500',
   'http://localhost:5500',
 ];
@@ -83,6 +82,23 @@ export default {
         });
         const text = await r.text();
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+
+      // ── GET /gallery?folder=FOLDER_ID[&limit=N] — nested subfolder images ──
+      if (p === '/gallery') {
+        const folder = url.searchParams.get('folder');
+        if (!folder) return errResp(cors, 400, 'Missing folder');
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '8'), 20);
+        if (!env.DRIVE_API_KEY) return errResp(cors, 500, 'Not configured');
+        const fRes = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${folder}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${env.DRIVE_API_KEY}`
+        );
+        const subfolders = (await fRes.json()).files || [];
+        const batches = await Promise.all(subfolders.map(f =>
+          fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=${limit}&fields=files(id)&key=${env.DRIVE_API_KEY}`)
+            .then(r => r.json()).then(d => d.files || []).catch(() => [])
+        ));
+        return jsonResp(cors, { files: batches.flat() });
       }
 
       // ── GET /drive?folder=FOLDER_ID ──────────────────────────────────

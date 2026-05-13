@@ -42,4 +42,11 @@
   window.fetchDriveFolder = function (folderId) {
     return get('/drive?folder=' + encodeURIComponent(folderId));
   };
+
+  /* List images from subfolders (API key hidden in Worker) */
+  window.fetchDriveGallery = function (folderId, limit) {
+    var q = '/gallery?folder=' + encodeURIComponent(folderId);
+    if (limit) q += '&limit=' + encodeURIComponent(limit);
+    return get(q);
+  };
 })();

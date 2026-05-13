@@ -492,7 +492,7 @@
       const errEl = document.getElementById('otpError');
       const btn   = document.getElementById('verifyOtpBtn');
       errEl.style.display='none';
-      if (code===generatedOTP||code==='0000') {
+      if (code===generatedOTP) {
         btn.innerText='Checking...'; btn.disabled=true;
         try {
           const hash = await getPasswordHash(studentData.id);
@@ -561,7 +561,7 @@
       if (!otp||!npwd||!cpwd) { errEl.innerText='Please fill all fields.'; errEl.style.display='block'; return; }
       if (npwd.length<6) { errEl.innerText='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
       if (npwd!==cpwd) { errEl.innerText='Passwords do not match.'; errEl.style.display='block'; return; }
-      if (otp!==generatedOTP&&otp!=='0000') { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
+      if (otp!==generatedOTP) { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
       btn.innerText='Resetting...'; btn.disabled=true;
       try {
         const hash = await bcrypt.hash(npwd, 10);

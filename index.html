@@ -567,7 +567,6 @@
     /* -- Hero photo frame — Drive images -- */
     (async function loadHeroPhotos() {
       const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const KEY    = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
       const frame  = document.getElementById('heroPhotoFrame');
       if (!frame) return;
 
@@ -580,18 +579,10 @@
       }
 
       try {
-        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
-        const folders = (await fRes.json()).files || [];
-
-        const batches = await Promise.all(folders.map(f =>
-          fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=6&fields=files(id)&key=${KEY}`)
-            .then(r => r.json()).then(d => d.files || []).catch(() => [])
-        ));
-
-        let images = shuffle(batches.flat());
+        const data = await fetchDriveGallery(FOLDER, 6);
+        let images = shuffle(data.files || []);
         if (!images.length) return;
 
-        /* Always fill 8 slots so CSS nth-child delays are correct */
         while (images.length < 8) images = [...images, ...images];
         images = images.slice(0, 8);
 
@@ -609,7 +600,6 @@
     /* -- Memories polaroid strip -- */
     (async function initMemories() {
       const FOLDER = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const KEY    = 'AIzaSyBqYuhImYpnY3f7KClyuAK7Z7lQGslGDY8';
 
       function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -632,15 +622,8 @@
       }
 
       try {
-        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${FOLDER}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${KEY}`);
-        const folders = (await fRes.json()).files || [];
-
-        const batches = await Promise.all(folders.map(f =>
-          fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=8&fields=files(id)&key=${KEY}`)
-            .then(r => r.json()).then(d => d.files || []).catch(() => [])
-        ));
-
-        const images = shuffle(batches.flat()).slice(0, 24);
+        const data = await fetchDriveGallery(FOLDER, 8);
+        const images = shuffle(data.files || []).slice(0, 24);
         if (images.length < 3) return;
 
         const track = document.getElementById('memoriesTrack');
