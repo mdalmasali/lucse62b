@@ -759,10 +759,14 @@
     const now = new Date();
     const dd = now.getDate();
     const mm = now.getMonth() + 1;
-    // Support: "15/05", "15/5", "15 May", "15-05"
     const cleaned = bdayStr.trim();
-    const slashMatch = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})/);
-    if (slashMatch) return parseInt(slashMatch[1]) === dd && parseInt(slashMatch[2]) === mm;
+    // YYYY-MM-DD (Supabase default: "2004-05-13" or "2026-05-13")
+    const isoMatch = cleaned.match(/^\d{4}-(\d{2})-(\d{2})/);
+    if (isoMatch) return parseInt(isoMatch[2]) === dd && parseInt(isoMatch[1]) === mm;
+    // DD/MM or DD-MM ("13/05", "13-05")
+    const dmMatch = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})/);
+    if (dmMatch) return parseInt(dmMatch[1]) === dd && parseInt(dmMatch[2]) === mm;
+    // DD Month ("13 May")
     const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
     const wordMatch = cleaned.match(/^(\d{1,2})\s+([a-zA-Z]+)/);
     if (wordMatch) {
