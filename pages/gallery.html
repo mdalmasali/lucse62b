@@ -277,62 +277,64 @@
           return;
         }
 
-        /* Load up to 5 cover photos per folder for slideshow */
-        const coverPromises = folders.map(f =>
-          driveList(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`, '&pageSize=5')
-            .then(imgs => ({ folder: f, covers: imgs }))
-            .catch(() => ({ folder: f, covers: [] }))
-        );
-        const events = await Promise.all(coverPromises);
-
+        /* Render cards immediately, then lazy-load covers via IntersectionObserver */
         grid.innerHTML = '';
-        events.forEach(({ folder, covers }) => {
+        const observer = new IntersectionObserver((entries, obs) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            obs.unobserve(entry.target);
+            const card = entry.target;
+            const folderId = card.dataset.folderId;
+            const wrap = card.querySelector('.event-cover-wrap');
+            if (!wrap || !folderId) return;
+            driveList(`'${folderId}' in parents and mimeType contains 'image/' and trashed=false`, '&pageSize=5')
+              .then(covers => {
+                if (!covers.length) { wrap.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images"></i></div>`; return; }
+                const img = document.createElement('img');
+                img.className = 'event-cover';
+                img.src = thumb(covers[0].id, 600);
+                img.alt = card.dataset.folderName;
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                wrap.appendChild(img);
+                if (covers.length > 1) {
+                  const dotsEl = document.createElement('div');
+                  dotsEl.className = 'event-ss-dots';
+                  covers.forEach((_, di) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'event-ss-dot' + (di === 0 ? ' active' : '');
+                    dotsEl.appendChild(dot);
+                  });
+                  wrap.appendChild(dotsEl);
+                  let ssIdx = 0, ssTimer = null;
+                  const dots = dotsEl.querySelectorAll('.event-ss-dot');
+                  function ssNext() {
+                    ssIdx = (ssIdx + 1) % covers.length;
+                    img.src = thumb(covers[ssIdx].id, 600);
+                    dots.forEach((d, i) => d.classList.toggle('active', i === ssIdx));
+                  }
+                  card.addEventListener('mouseenter', () => { ssTimer = setInterval(ssNext, 1500); });
+                  card.addEventListener('mouseleave', () => {
+                    clearInterval(ssTimer); ssIdx = 0;
+                    img.src = thumb(covers[0].id, 600);
+                    dots.forEach((d, i) => d.classList.toggle('active', i === 0));
+                  });
+                }
+              }).catch(() => {});
+          });
+        }, { rootMargin: '100px' });
+
+        folders.forEach(folder => {
           const card = document.createElement('div');
           card.className = 'event-card';
+          card.dataset.folderId = folder.id;
+          card.dataset.folderName = folder.name;
 
-          if (covers.length > 0) {
-            const wrap = document.createElement('div');
-            wrap.className = 'event-cover-wrap';
-
-            const img = document.createElement('img');
-            img.className = 'event-cover';
-            img.src = thumb(covers[0].id, 600);
-            img.alt = folder.name;
-            img.loading = 'lazy';
-            wrap.appendChild(img);
-
-            if (covers.length > 1) {
-              const dotsEl = document.createElement('div');
-              dotsEl.className = 'event-ss-dots';
-              covers.forEach((_, di) => {
-                const dot = document.createElement('div');
-                dot.className = 'event-ss-dot' + (di === 0 ? ' active' : '');
-                dotsEl.appendChild(dot);
-              });
-              wrap.appendChild(dotsEl);
-
-              let ssIdx = 0, ssTimer = null;
-              const dots = dotsEl.querySelectorAll('.event-ss-dot');
-
-              function ssNext() {
-                ssIdx = (ssIdx + 1) % covers.length;
-                img.src = thumb(covers[ssIdx].id, 600);
-                dots.forEach((d, i) => d.classList.toggle('active', i === ssIdx));
-              }
-
-              card.addEventListener('mouseenter', () => { ssTimer = setInterval(ssNext, 1500); });
-              card.addEventListener('mouseleave', () => {
-                clearInterval(ssTimer);
-                ssIdx = 0;
-                img.src = thumb(covers[0].id, 600);
-                dots.forEach((d, i) => d.classList.toggle('active', i === 0));
-              });
-            }
-
-            card.appendChild(wrap);
-          } else {
-            card.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images"></i></div>`;
-          }
+          const wrap = document.createElement('div');
+          wrap.className = 'event-cover-wrap';
+          wrap.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images" style="opacity:0.3;"></i></div>`;
+          card.appendChild(wrap);
+          observer.observe(card);
 
           const info = document.createElement('div');
           info.className = 'event-info';

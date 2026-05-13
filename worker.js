@@ -94,7 +94,8 @@ export default {
           `?q=%27${folder}%27+in+parents+and+trashed%3Dfalse` +
           `&orderBy=name&fields=files(id%2Cname%2CmimeType)` +
           `&key=${env.DRIVE_API_KEY}`;
-        const r = await fetch(driveUrl);
+        const referer = request.headers.get('Referer') || 'https://lucse62b.xyz/';
+        const r = await fetch(driveUrl, { headers: { 'Referer': referer } });
         const d = await r.json();
         return jsonResp(cors, d);
       }

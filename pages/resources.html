@@ -585,7 +585,7 @@
             `<div class="res-empty" style="border-radius:0 0 18px 18px;">
               <i class="fa-solid fa-triangle-exclamation"></i>
               <h3>Could not load files</h3>
-              <p>Make sure the folder is shared as "Anyone with the link".</p>
+              <p>${e.message || 'Unknown error — check browser console.'}</p>
             </div>`;
           return;
         }

@@ -22,6 +22,7 @@
   <meta name="twitter:title" content="CSE 62B Portal | Leading University">
   <meta name="twitter:description" content="Official digital portal for CSE Batch 62, Section B at Leading University.">
   <link rel="canonical" href="https://lucse62b.xyz/">
+  <link rel="preload" as="image" href="assets/images/590013759_3767129716922986_2615902175743881826_n.jpg" fetchpriority="high">
   <style>
     .memories-scroll-wrap {
       position: relative;
@@ -153,7 +154,7 @@
         <div class="avatar-glow"></div>
         <div class="avatar-ring">
           <div class="avatar-img-wrap">
-            <img class="avatar-img" src="assets/images/590013759_3767129716922986_2615902175743881826_n.jpg" alt="CSE 62B">
+            <img class="avatar-img" src="assets/images/590013759_3767129716922986_2615902175743881826_n.jpg" alt="CSE 62B" fetchpriority="high" decoding="async">
           </div>
         </div>
       </div>
@@ -341,7 +342,7 @@
         <!-- CR 1 -->
         <div class="contact-detail" style="align-items: center;">
           <div class="cr-avatar" style="border: 2px solid rgba(14,165,233,0.4);">
-            <img src="assets/images/CR Image/CR 1.jpg" alt="Md. Almas Ali">
+            <img src="assets/images/CR Image/CR 1.jpg" alt="Md. Almas Ali" loading="lazy" decoding="async">
           </div>
           <div class="contact-text">
             <span>Class Representative</span>
@@ -356,7 +357,7 @@
         <!-- CR 2 -->
         <div class="contact-detail" style="align-items: center;">
           <div class="cr-avatar" style="border: 2px solid rgba(109,40,217,0.4);">
-            <img src="assets/images/CR Image/CR 2.jpg" alt="MD. Shahriar Khan">
+            <img src="assets/images/CR Image/CR 2.jpg" alt="MD. Shahriar Khan" loading="lazy" decoding="async">
           </div>
           <div class="contact-text">
             <span>Class Representative</span>
@@ -369,37 +370,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Portal Stats -->
-    <div class="portal-stats-wrap fade-in delay-4" id="portalStatsWrap">
-      <div class="portal-stats-header">
-        <span class="section-label" style="font-size:0.7rem;">📊 Portal Activity</span>
-        <div class="section-line" style="flex:1;"></div>
-      </div>
-      <div class="portal-stats-grid">
-        <div class="pstat-card">
-          <div class="pstat-icon"><i class="fa-solid fa-chart-line"></i></div>
-          <div class="pstat-val" id="pstat-visits">—</div>
-          <div class="pstat-label">Total Visits</div>
-        </div>
-        <div class="pstat-card">
-          <div class="pstat-icon" style="color:#22c55e;"><i class="fa-solid fa-circle"></i></div>
-          <div class="pstat-val" id="pstat-online">—</div>
-          <div class="pstat-label">Online Now</div>
-        </div>
-        <div class="pstat-card">
-          <div class="pstat-icon"><i class="fa-solid fa-file-pdf"></i></div>
-          <div class="pstat-val" id="pstat-pdfs">—</div>
-          <div class="pstat-label">PDFs Generated</div>
-        </div>
-        <div class="pstat-card">
-          <div class="pstat-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
-          <div class="pstat-val" id="pstat-logins">—</div>
-          <div class="pstat-label">Total Logins</div>
-        </div>
-      </div>
-      <div class="pstat-presence-row" id="pstatPresenceRow"></div>
     </div>
 
     <footer>
@@ -688,33 +658,5 @@
     })();
   </script>
 <script src="assets/js/analytics.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', async function () {
-    if (!window.LU_ANALYTICS) return;
-    try {
-      const [visits, pdfs, logins, online, presence] = await Promise.all([
-        LU_ANALYTICS.getCounter('total_visits'),
-        LU_ANALYTICS.getCounter('total_pdfs'),
-        LU_ANALYTICS.getCounter('total_logins'),
-        LU_ANALYTICS.getOnlineCount(),
-        LU_ANALYTICS.getPresenceList(),
-      ]);
-      const fmt = n => Number(n).toLocaleString();
-      document.getElementById('pstat-visits').textContent  = fmt(visits);
-      document.getElementById('pstat-online').textContent  = online;
-      document.getElementById('pstat-pdfs').textContent   = fmt(pdfs);
-      document.getElementById('pstat-logins').textContent = fmt(logins);
-
-      const row = document.getElementById('pstatPresenceRow');
-      if (presence.length > 0) {
-        const chips = presence.map(p => {
-          const name = p.user_name || 'Guest';
-          return `<span class="pstat-chip"><span class="pstat-chip-dot"></span>${name}<span class="pstat-chip-page">${p.page}</span></span>`;
-        }).join('');
-        row.innerHTML = `<div class="pstat-presence-label">Currently viewing</div><div class="pstat-chips">${chips}</div>`;
-      }
-    } catch(e) {}
-  });
-</script>
 </body>
 </html>

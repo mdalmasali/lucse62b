@@ -146,6 +146,15 @@
     .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
     .btn-gen:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
+    /* PDF counter line */
+    .pdf-counter-line {
+      display: flex; align-items: center; gap: 6px; justify-content: center;
+      margin-top: 16px; margin-bottom: 2px;
+      font-size: 0.77rem; color: var(--text-secondary); opacity: 0.78;
+      font-family: 'Inter', sans-serif;
+    }
+    .pdf-counter-line strong { color: var(--accent); font-weight: 700; }
+
     /* Share buttons */
     .btn-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .btn-share {
@@ -495,6 +504,11 @@
         <div class="cg-field">
           <label>Date of Submission</label>
           <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()">
+        </div>
+
+        <div class="pdf-counter-line" id="pdfCounterLine">
+          <i class="fa-solid fa-chart-bar" style="font-size:0.78rem;opacity:0.6;"></i>
+          <span>Total PDFs generated on this site: <strong id="pdfCountVal">…</strong></span>
         </div>
 
         <button class="btn-gen" id="btnGen" onclick="generatePDF()">
@@ -1128,5 +1142,13 @@
   </script>
   <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/analytics.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    LU_ANALYTICS.getCounter('total_pdfs').then(n => {
+      const el = document.getElementById('pdfCountVal');
+      if (el) el.textContent = n.toLocaleString();
+    });
+  });
+</script>
 </body>
 </html>
