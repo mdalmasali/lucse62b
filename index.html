@@ -438,6 +438,15 @@
     </footer>
   </div>
 
+  <!-- Birthday replay button (visible only on birthday) -->
+  <button id="bdayReplayBtn" onclick="replayBirthdayOverlay()" title="View Birthday Wish" style="display:none;position:fixed;bottom:60px;right:20px;z-index:9980;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:50px;padding:8px 16px 8px 12px;color:#fff;font-size:.78rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(124,58,237,.45);animation:bdayBtnPulse 2s ease-in-out infinite;">
+    <span style="font-size:1.1rem;">🎂</span> My Birthday Wish
+  </button>
+  <style>
+    @keyframes bdayBtnPulse{0%,100%{box-shadow:0 4px 20px rgba(124,58,237,.45);}50%{box-shadow:0 4px 28px rgba(236,72,153,.65),0 0 0 4px rgba(124,58,237,.15);}}
+    @media(max-width:768px){#bdayReplayBtn{bottom:100px;}}
+  </style>
+
   <!-- Birthday Overlay -->
   <canvas id="fwCanvas"></canvas>
   <div class="bday-balloon-layer" id="bdayBalloonLayer"></div>
@@ -776,14 +785,12 @@
     return false;
   }
 
-  /* Only show once per calendar day */
-  function alreadyShownToday(studentId) {
-    const today = new Date().toISOString().slice(0, 10);
-    return localStorage.getItem('lu62b_bday_' + today + '_' + studentId) === '1';
+  /* Show once per browser session (sessionStorage clears on tab close) */
+  function alreadyShownThisVisit(studentId) {
+    return sessionStorage.getItem('lu62b_bday_shown_' + studentId) === '1';
   }
-  function markShownToday(studentId) {
-    const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem('lu62b_bday_' + today + '_' + studentId, '1');
+  function markShownThisVisit(studentId) {
+    sessionStorage.setItem('lu62b_bday_shown_' + studentId, '1');
   }
 
   /* HAPPY BIRTHDAY letter builder */
@@ -880,9 +887,17 @@
     const nameEl = document.getElementById('bdayStudentName');
     if (nameEl) nameEl.textContent = name;
     document.getElementById('bdayOverlay').classList.add('active');
-    markShownToday(studentId);
+    if (studentId) markShownThisVisit(studentId);
     setTimeout(() => { startFX(); startBalloons(); }, 300);
   }
+  window.replayBirthdayOverlay = function () {
+    const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+    if (!raw) return;
+    try {
+      const s = JSON.parse(raw);
+      showBirthdayOverlay(s.name || 'Friend', null);
+    } catch {}
+  };
 
   /* Fetch birthday from Supabase (h_dob takes priority over dob) */
   const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
@@ -909,10 +924,13 @@
       if (!raw) return;
       const student = JSON.parse(raw);
       if (!student || student.isDemo || !student.id) return;
-      if (alreadyShownToday(student.id)) return;
       fetchBirthday(student.id).then(function (bday) {
-        if (!bday) return;
-        if (!isBirthdayToday(bday)) return;
+        if (!bday || !isBirthdayToday(bday)) return;
+        /* Show floating replay button on birthday */
+        const btn = document.getElementById('bdayReplayBtn');
+        if (btn) btn.style.display = 'flex';
+        /* Auto-show once per visit */
+        if (alreadyShownThisVisit(student.id)) return;
         setTimeout(() => showBirthdayOverlay(student.name || 'Friend', student.id), 1200);
       });
     } catch (e) { /* fail silently */ }
