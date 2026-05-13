@@ -296,6 +296,7 @@
             driveList(folderId, 'image', 5)
               .then(covers => {
                 if (!covers.length) { wrap.innerHTML = `<div class="event-cover-placeholder"><i class="fa-solid fa-images"></i></div>`; return; }
+                wrap.innerHTML = '';
                 const img = document.createElement('img');
                 img.className = 'event-cover';
                 img.alt = card.dataset.folderName;
