@@ -599,12 +599,23 @@
       color: #fff;
     }
 
-    /* Overview 2-col layout */
-    .res-overview-top {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;
+    /* Stats Grid */
+    .result-stats-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 22px;
     }
-    .res-overview-top > div { margin-bottom: 0 !important; }
-    @media (max-width: 640px) { .res-overview-top { grid-template-columns: 1fr; } }
+    .result-stat-card {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 16px; padding: 18px; text-align: center; transition: border-color 0.3s;
+    }
+    .result-stat-card:hover { border-color: rgba(124,58,237,0.4); }
+    .result-stat-value {
+      font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-bright, #a78bfa), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px;
+    }
+    .result-stat-label {
+      color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+    }
 
     /* Semester Cards */
     .result-latest-semester {
@@ -1102,6 +1113,8 @@
 
     /* Responsive for result section */
     @media (max-width: 640px) {
+      .result-stats-grid { grid-template-columns: 1fr 1fr; }
+      .result-stat-value { font-size: 1.5rem; }
       .result-charts-grid { grid-template-columns: 1fr; }
       .result-extremes-grid { grid-template-columns: 1fr; }
       .result-compare-inputs { grid-template-columns: 1fr; }
@@ -1615,20 +1628,20 @@
 
         <!-- -- Overview Tab -- -->
         <div id="rtabOverviewContent">
-          <!-- Course Search (left) + Academic Progress (right) -->
-          <div class="res-overview-top">
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;">
-              <div class="result-section-subtitle" style="margin-bottom:14px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
-              <input type="text" class="res-search-input" id="resCourseSearch" placeholder="Search by course name or code..." oninput="searchResCourses(this.value)">
-              <div id="resCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
+          <!-- Stats -->
+          <div class="result-stats-grid" id="resStatsGrid"></div>
+
+          <!-- Academic Progress + Course Search -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px;" id="resProgressCard">
+            <div class="result-section-subtitle" style="margin-bottom:14px;"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
+            <div class="res-progress-row">
+              <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="resCreditFraction">— / 160 cr</span></div>
+              <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="resCreditBar" style="width:0%"></div></div>
             </div>
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;" id="resProgressCard">
-              <div class="result-section-subtitle" style="margin-bottom:14px;"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
-              <div class="res-progress-row">
-                <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="resCreditFraction">— / 160 cr</span></div>
-                <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="resCreditBar" style="width:0%"></div></div>
-              </div>
-            </div>
+            <div style="border-top:1px solid var(--border);margin:16px 0 14px;"></div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
+            <input type="text" class="res-search-input" id="resCourseSearch" placeholder="Search by course name or code..." oninput="searchResCourses(this.value)">
+            <div id="resCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
           </div>
 
           <!-- Latest Semester -->
@@ -1642,6 +1655,10 @@
         <!-- -- Analytics Tab -- -->
         <div id="rtabAnalyticsContent" style="display:none;">
           <div class="result-charts-grid">
+            <div class="result-chart-card">
+              <div class="result-chart-title"><i class="fa-solid fa-chart-bar"></i> Grade Distribution</div>
+              <div class="result-chart-wrap"><canvas id="resGradeChart"></canvas></div>
+            </div>
             <div class="result-chart-card">
               <div class="result-chart-title"><i class="fa-solid fa-chart-line"></i> GPA Trend</div>
               <div class="result-chart-wrap"><canvas id="resGpaChart"></canvas></div>
@@ -2113,6 +2130,7 @@
     ];
 
     let resData     = null;
+    let resGradeChart = null;
     let resGpaChart   = null;
 
     function renderProfileAcademicBar(data) {
@@ -2513,6 +2531,7 @@
     // -- Render Dashboard --------------------------------------------
     function renderResDashboard() {
       saveRetakeCodes(resData);
+      renderResStats();
       renderResProgress(resData);
       renderResLatestSemester();
       renderResAllSemesters();
@@ -2532,6 +2551,16 @@
         localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
         localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
       } catch(e) {}
+    }
+
+    function renderResStats() {
+      const d = resData, cr = d.total_credit || 0;
+      document.getElementById('resStatsGrid').innerHTML = `
+        <div class="result-stat-card"><div class="result-stat-value">${(d.cgpa||0).toFixed(2)}</div><div class="result-stat-label">CGPA</div></div>
+        <div class="result-stat-card"><div class="result-stat-value">${Number.isInteger(cr)?cr:cr.toFixed(1)}</div><div class="result-stat-label">Total Credit</div></div>
+        <div class="result-stat-card"><div class="result-stat-value">${d.courses_completed||0}</div><div class="result-stat-label">Courses Done</div></div>
+        <div class="result-stat-card"><div class="result-stat-value">${(d.semesters||[]).length}</div><div class="result-stat-label">Semesters</div></div>
+      `;
     }
 
     function renderResLatestSemester() {
@@ -2671,13 +2700,35 @@
       if (!resData) return;
       const semesters = resData.semesters || [];
 
+      const gradeCount = { 'A+':0,'A':0,'A-':0,'B+':0,'B':0,'B-':0,'C+':0,'C':0,'D':0,'F':0 };
+      semesters.forEach(sem => (sem.courses||[]).forEach(c => {
+        if (gradeCount.hasOwnProperty(c.grade)) gradeCount[c.grade]++;
+      }));
+      renderResGradeChart(gradeCount);
       renderResGpaChart(semesters);
       renderResExtremes(semesters);
       renderResRetake(semesters);
       renderResTrajectory(semesters);
     }
 
-
+    function renderResGradeChart(gradeCount) {
+      const ctx = document.getElementById('resGradeChart').getContext('2d');
+      if (resGradeChart) resGradeChart.destroy();
+      const grades = Object.keys(gradeCount), counts = Object.values(gradeCount);
+      const colors = grades.map(g => g.includes('A') ? '#a78bfa' : g.includes('B') ? '#7c3aed' : g === 'F' ? '#f43f5e' : '#64748b');
+      resGradeChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: grades, datasets: [{ data: counts, backgroundColor: colors, borderRadius: 6, borderWidth: 0 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          }
+        }
+      });
+    }
 
     function renderResGpaChart(semesters) {
       const ctx = document.getElementById('resGpaChart').getContext('2d');

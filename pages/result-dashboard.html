@@ -113,11 +113,25 @@
       border-color: transparent; color: #fff;
     }
 
-    /* ── Overview top 2-col ── */
-    .res-overview-top {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0;
+    /* ── Stats ── */
+    .res-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
     }
-    @media (max-width: 640px) { .res-overview-top { grid-template-columns: 1fr; } }
+    .res-stat {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px 16px; text-align: center; transition: border-color 0.3s;
+    }
+    .res-stat:hover { border-color: rgba(124,58,237,0.4); }
+    .res-stat-val {
+      font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 4px;
+    }
+    .res-stat-lbl {
+      color: var(--text-secondary); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+    }
 
     /* ── Cards ── */
     .res-card {
@@ -369,6 +383,7 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
+      .res-stats { grid-template-columns: 1fr 1fr; }
       .res-charts { grid-template-columns: 1fr; }
       .res-extremes { grid-template-columns: 1fr; }
       .res-cmp-inputs { grid-template-columns: 1fr; }
@@ -389,6 +404,7 @@
     html[data-theme="light"] .res-sem-mini-stat { background: rgba(124,58,237,0.07); }
     html[data-theme="light"] .res-chart-card { background: rgba(255,255,255,0.8); }
     html[data-theme="light"] .res-course { background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.2); }
+    html[data-theme="light"] .res-stat { background: rgba(255,255,255,0.9); }
     html[data-theme="light"] .res-card { background: rgba(255,255,255,0.9); }
     html[data-theme="light"] .res-profile-strip { background: rgba(255,255,255,0.9); }
     html[data-theme="light"] .res-login-box { background: rgba(255,255,255,0.95); box-shadow: 0 24px 50px rgba(0,0,0,0.12); }
@@ -508,21 +524,19 @@
 
       <!-- ── Overview ── -->
       <div id="tabOverviewContent">
-        <div class="res-overview-top">
-          <!-- Course Search (left) -->
-          <div class="res-card fade-in">
-            <div class="res-card-title"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
-            <input type="text" class="res-search-input" id="dCourseSearch" placeholder="Search by course name or code..." oninput="searchCourses(this.value)">
-            <div id="dCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
+        <div class="res-stats fade-in" id="dStats"></div>
+
+        <!-- Academic Progress + Course Search -->
+        <div class="res-card fade-in" id="dProgressCard">
+          <div class="res-card-title"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
+          <div class="res-progress-row">
+            <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="dCreditFraction">— / 160 cr</span></div>
+            <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="dCreditBar" style="width:0%"></div></div>
           </div>
-          <!-- Academic Progress (right) -->
-          <div class="res-card fade-in" id="dProgressCard">
-            <div class="res-card-title"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
-            <div class="res-progress-row">
-              <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="dCreditFraction">— / 160 cr</span></div>
-              <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="dCreditBar" style="width:0%"></div></div>
-            </div>
-          </div>
+          <div style="border-top:1px solid var(--border);margin:18px 0 14px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
+          <input type="text" class="res-search-input" id="dCourseSearch" placeholder="Search by course name or code..." oninput="searchCourses(this.value)">
+          <div id="dCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
         </div>
 
         <div class="res-card fade-in" id="dLatest"></div>
@@ -535,6 +549,10 @@
       <!-- ── Analytics ── -->
       <div id="tabAnalyticsContent" style="display:none;">
         <div class="res-charts fade-in">
+          <div class="res-chart-card">
+            <div class="res-chart-title"><i class="fa-solid fa-chart-bar"></i> Grade Distribution</div>
+            <div class="res-chart-wrap"><canvas id="gradeChart"></canvas></div>
+          </div>
           <div class="res-chart-card">
             <div class="res-chart-title"><i class="fa-solid fa-chart-line"></i> GPA Trend</div>
             <div class="res-chart-wrap"><canvas id="gpaChart"></canvas></div>
@@ -669,7 +687,7 @@
       },
     ];
 
-    let resData = null, gpaChart = null;
+    let resData = null, gradeChart = null, gpaChart = null;
 
     /* ── Init ── */
     (function init() {
@@ -864,9 +882,20 @@
       const badgeEl = document.getElementById('dExtraInfo');
       if (badgeEl) badgeEl.innerHTML = badges.join('');
 
+      renderStats(d);
       renderProgress(d);
       renderLatest(d);
       renderAllSems(d);
+    }
+
+    function renderStats(d) {
+      const credit = d.total_credit || 0;
+      document.getElementById('dStats').innerHTML = `
+        <div class="res-stat"><div class="res-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-stat-lbl">CGPA</div></div>
+        <div class="res-stat"><div class="res-stat-val">${Number.isInteger(credit) ? credit : credit.toFixed(1)}</div><div class="res-stat-lbl">Total Credit</div></div>
+        <div class="res-stat"><div class="res-stat-val">${d.courses_completed||0}</div><div class="res-stat-lbl">Courses Done</div></div>
+        <div class="res-stat"><div class="res-stat-val">${(d.semesters||[]).length}</div><div class="res-stat-lbl">Semesters</div></div>
+      `;
     }
 
     function renderLatest(d) {
@@ -940,6 +969,28 @@
       if (!resData) return;
       const sems     = resData.semesters || [];
       const chromSems = sems.slice().reverse(); // oldest→newest for chart
+
+      const gc = {'A+':0,'A':0,'A-':0,'B+':0,'B':0,'B-':0,'C+':0,'C':0,'D':0,'F':0};
+      sems.forEach(s => (s.courses||[]).forEach(c => { if (gc.hasOwnProperty(c.grade)) gc[c.grade]++; }));
+      const ctx1 = document.getElementById('gradeChart').getContext('2d');
+      if (gradeChart) gradeChart.destroy();
+      gradeChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(gc),
+          datasets: [{ data: Object.values(gc),
+            backgroundColor: Object.keys(gc).map(g => g.startsWith('A') ? '#a78bfa' : g.startsWith('B') ? '#7c3aed' : g==='F' ? '#f43f5e' : '#64748b'),
+            borderRadius: 6, borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { color:'#94a3b8', stepSize:1 }, grid: { color:'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color:'#94a3b8' }, grid: { display:false } }
+          }
+        }
+      });
 
       const ctx2 = document.getElementById('gpaChart').getContext('2d');
       if (gpaChart) gpaChart.destroy();
