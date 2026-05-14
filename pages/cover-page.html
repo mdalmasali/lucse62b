@@ -1075,6 +1075,12 @@
 
         const fname = buildFilename();
         pdf.save(`${fname}_CoverPage.pdf`);
+        LU_ANALYTICS.trackPDF().then(() =>
+          LU_ANALYTICS.getCounter('total_pdfs').then(n => {
+            const el = document.getElementById('pdfCountVal');
+            if (el) el.textContent = n.toLocaleString();
+          })
+        );
       } catch (err) {
         alert('PDF generation failed. Please try again.\n' + err.message);
       } finally {
