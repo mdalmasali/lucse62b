@@ -2663,6 +2663,10 @@
         if (c.grade === 'F')           retake.push(entry);
         else if (IMPROVE.has(c.grade)) improve.push(entry);
       }));
+      try {
+        localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake.map(c => (c.course_code||'').trim().toUpperCase())));
+        localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve.map(c => (c.course_code||'').trim().toUpperCase())));
+      } catch(e) {}
       if (!retake.length && !improve.length) {
         el.innerHTML = `<div class="retake-badge ok"><i class="fa-solid fa-circle-check"></i> All courses are above B− — nothing to retake or improve!</div>`;
         return;

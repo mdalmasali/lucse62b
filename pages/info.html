@@ -427,6 +427,17 @@
       color: var(--accent-bright); white-space: nowrap;
     }
 
+    /* Retake / Improve badges in course table */
+    .ac-retake-tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 700;
+      padding: 1px 6px; border-radius: 5px; margin-left: 6px;
+      vertical-align: middle; white-space: nowrap; letter-spacing: 0.03em;
+    }
+    .ac-retake-tag.retake  { background: rgba(244,63,94,.18);  color: #f43f5e;  border: 1px solid rgba(244,63,94,.3); }
+    .ac-retake-tag.improve { background: rgba(251,146,60,.18); color: #fb923c; border: 1px solid rgba(251,146,60,.3); }
+    tr.ac-row-retake  { background: rgba(244,63,94,.04) !important; }
+    tr.ac-row-improve { background: rgba(251,146,60,.04) !important; }
+
     /* Responsive */
     @media (max-width: 900px) {
       .info-layout { grid-template-columns: 1fr; margin-top: 70px; }

@@ -87,10 +87,23 @@ async function loadAllCourse(body) {
     const courses = batches[batch] || [];
     const totalCredits = courses.reduce((s, c) => s + (parseFloat(c.credit) || 0), 0);
 
+    let retakeCodes = new Set(), improveCodes = new Set();
+    try {
+      JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]').forEach(x => retakeCodes.add(x));
+      JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]').forEach(x => improveCodes.add(x));
+    } catch(e) {}
+
+    const myRetakeCount  = courses.filter(c => retakeCodes.has((c.code||'').trim().toUpperCase())).length;
+    const myImproveCount = courses.filter(c => improveCodes.has((c.code||'').trim().toUpperCase())).length;
+    const myBadges = [
+      myRetakeCount  ? `<span class="ac-retake-tag retake"><i class="fa-solid fa-xmark-circle"></i> ${myRetakeCount} Retake</span>`   : '',
+      myImproveCount ? `<span class="ac-retake-tag improve"><i class="fa-solid fa-arrow-up"></i> ${myImproveCount} Improve</span>` : '',
+    ].filter(Boolean).join(' ');
+
     let html = `
       <div class="ac-summary-bar">
         <span><i class="fa-solid fa-layer-group" style="color:var(--accent-bright);margin-right:6px;"></i>Batch <strong>${escH(batch)}</strong></span>
-        <span><strong>${courses.length}</strong> courses &nbsp;·&nbsp; <strong>${totalCredits}</strong> total credits</span>
+        <span><strong>${courses.length}</strong> courses &nbsp;·&nbsp; <strong>${totalCredits}</strong> total credits${myBadges ? ' &nbsp;·&nbsp; ' + myBadges : ''}</span>
       </div>
       <div class="ac-table-scroll">
       <table class="ac-table">
@@ -105,9 +118,18 @@ async function loadAllCourse(body) {
         <tbody>`;
 
     courses.forEach((c, idx) => {
-      html += `<tr>
+      const codeUp  = (c.code || '').trim().toUpperCase();
+      const isRetake  = retakeCodes.has(codeUp);
+      const isImprove = improveCodes.has(codeUp);
+      const rowClass  = isRetake ? 'ac-row-retake' : isImprove ? 'ac-row-improve' : '';
+      const badge     = isRetake
+        ? `<span class="ac-retake-tag retake">Retake</span>`
+        : isImprove
+          ? `<span class="ac-retake-tag improve">Improve</span>`
+          : '';
+      html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>
         <td class="ac-td-num">${idx + 1}</td>
-        <td><span class="ac-code">${escH(c.code)}</span></td>
+        <td><span class="ac-code">${escH(c.code)}</span>${badge}</td>
         <td class="ac-td-title">${escH(c.title)}</td>
         <td class="ac-td-cr">${escH(c.credit)}</td>
         <td class="ac-td-sec">${escH(c.section)}</td>
