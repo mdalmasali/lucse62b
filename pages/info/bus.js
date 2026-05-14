@@ -48,7 +48,17 @@ async function loadBus(body) {
         }
 
         const keys     = Object.keys(schedules);
-        const examKeys = keys.filter(k => k.startsWith('Exam:')).sort();
+        const examKeys = keys.filter(k => k.startsWith('Exam:')).sort((a, b) => {
+            const toMin = s => {
+                const m = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                if (!m) return 0;
+                let h = parseInt(m[1]), mn = parseInt(m[2]);
+                if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+                if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+                return h * 60 + mn;
+            };
+            return toMin(a) - toMin(b);
+        });
         const hasReg   = keys.includes('Regular');
         const hasExam  = examKeys.length > 0;
 
@@ -67,7 +77,7 @@ async function loadBus(body) {
            Schedule Table  (Arrival / Departure)
            ───────────────────────────────────── */
         function scheduleTable(title, icon, accentColor, direction, dayData) {
-            const DAY_ORDER  = ['Sun–Thu', 'Saturday', 'Friday'];
+            const DAY_ORDER  = ['Sat–Thu', 'Sun–Thu', 'Saturday', 'Friday'];
             const dayGroups  = DAY_ORDER.filter(d => dayData[d] && (dayData[d][direction] || []).length);
             Object.keys(dayData).forEach(d => { if (!dayGroups.includes(d) && (dayData[d][direction] || []).length) dayGroups.push(d); });
             if (!dayGroups.length) return '';
