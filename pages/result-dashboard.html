@@ -113,9 +113,16 @@
       border-color: transparent; color: #fff;
     }
 
+    /* ── Overview 2-col (stats left, progress+search right) ── */
+    .res-overview-2col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 18px;
+    }
+    .res-overview-2col .res-card { margin-bottom: 0; }
+    @media (max-width: 768px) { .res-overview-2col { grid-template-columns: 1fr; } }
+
     /* ── Stats ── */
     .res-stats {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 0;
     }
     .res-stat {
       background: var(--card); border: 1px solid var(--border);
@@ -383,7 +390,6 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
-      .res-stats { grid-template-columns: 1fr 1fr; }
       .res-charts { grid-template-columns: 1fr; }
       .res-extremes { grid-template-columns: 1fr; }
       .res-cmp-inputs { grid-template-columns: 1fr; }
@@ -524,19 +530,21 @@
 
       <!-- ── Overview ── -->
       <div id="tabOverviewContent">
-        <div class="res-stats fade-in" id="dStats"></div>
-
-        <!-- Academic Progress + Course Search -->
-        <div class="res-card fade-in" id="dProgressCard">
-          <div class="res-card-title"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
-          <div class="res-progress-row">
-            <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="dCreditFraction">— / 160 cr</span></div>
-            <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="dCreditBar" style="width:0%"></div></div>
+        <div class="res-overview-2col fade-in">
+          <!-- Left: stat boxes 2×2 -->
+          <div class="res-stats" id="dStats"></div>
+          <!-- Right: Academic Progress + Course Search -->
+          <div class="res-card" id="dProgressCard">
+            <div class="res-card-title"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
+            <div class="res-progress-row">
+              <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="dCreditFraction">— / 160 cr</span></div>
+              <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="dCreditBar" style="width:0%"></div></div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin:18px 0 14px;"></div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
+            <input type="text" class="res-search-input" id="dCourseSearch" placeholder="Search by course name or code..." oninput="searchCourses(this.value)">
+            <div id="dCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
           </div>
-          <div style="border-top:1px solid var(--border);margin:18px 0 14px;"></div>
-          <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
-          <input type="text" class="res-search-input" id="dCourseSearch" placeholder="Search by course name or code..." oninput="searchCourses(this.value)">
-          <div id="dCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
         </div>
 
         <div class="res-card fade-in" id="dLatest"></div>

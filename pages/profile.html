@@ -599,9 +599,15 @@
       color: #fff;
     }
 
+    /* Overview 2-col */
+    .res-overview-2col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 18px;
+    }
+    @media (max-width: 768px) { .res-overview-2col { grid-template-columns: 1fr; } }
+
     /* Stats Grid */
     .result-stats-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 22px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 0;
     }
     .result-stat-card {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -1113,7 +1119,6 @@
 
     /* Responsive for result section */
     @media (max-width: 640px) {
-      .result-stats-grid { grid-template-columns: 1fr 1fr; }
       .result-stat-value { font-size: 1.5rem; }
       .result-charts-grid { grid-template-columns: 1fr; }
       .result-extremes-grid { grid-template-columns: 1fr; }
@@ -1628,20 +1633,21 @@
 
         <!-- -- Overview Tab -- -->
         <div id="rtabOverviewContent">
-          <!-- Stats -->
-          <div class="result-stats-grid" id="resStatsGrid"></div>
-
-          <!-- Academic Progress + Course Search -->
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px;" id="resProgressCard">
-            <div class="result-section-subtitle" style="margin-bottom:14px;"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
-            <div class="res-progress-row">
-              <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="resCreditFraction">— / 160 cr</span></div>
-              <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="resCreditBar" style="width:0%"></div></div>
+          <div class="res-overview-2col">
+            <!-- Left: stat boxes 2×2 -->
+            <div class="result-stats-grid" id="resStatsGrid"></div>
+            <!-- Right: Academic Progress + Course Search -->
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;" id="resProgressCard">
+              <div class="result-section-subtitle" style="margin-bottom:14px;"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
+              <div class="res-progress-row">
+                <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="resCreditFraction">— / 160 cr</span></div>
+                <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="resCreditBar" style="width:0%"></div></div>
+              </div>
+              <div style="border-top:1px solid var(--border);margin:16px 0 14px;"></div>
+              <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
+              <input type="text" class="res-search-input" id="resCourseSearch" placeholder="Search by course name or code..." oninput="searchResCourses(this.value)">
+              <div id="resCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
             </div>
-            <div style="border-top:1px solid var(--border);margin:16px 0 14px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text);margin-bottom:12px;"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
-            <input type="text" class="res-search-input" id="resCourseSearch" placeholder="Search by course name or code..." oninput="searchResCourses(this.value)">
-            <div id="resCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
           </div>
 
           <!-- Latest Semester -->
