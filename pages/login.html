@@ -257,8 +257,7 @@
       window.location.href = '../index.html';
     }
 
-    let studentData  = null;
-    let generatedOTP = null;
+    let studentData = null;
 
     const ALL_STEPS = ['stepId','stepPassword','stepOtp','stepVerify','stepForgot','stepReset'];
 
@@ -270,7 +269,6 @@
 
     function goBack() {
       studentData = null;
-      generatedOTP = null;
       document.getElementById('studentIdInput').value = '';
       resetPasswordStepState();
       showOnly('stepId');
@@ -307,7 +305,6 @@
       return {
         id: student.id,
         name: student.name,
-        phone: student.phone,
         loginTime: Date.now(),
         isDemo: !!student.isDemo
       };
@@ -354,12 +351,7 @@
         if (!r.ok) throw new Error('Lookup failed');
         const data = await r.json();
         if (!data.found) throw new Error('Student not found');
-        let raw = (data.phone || '').replace(/\s+/g, '');
-        if (raw.length===10&&raw.startsWith('1')) raw='0'+raw;
-        if (raw.length===12&&raw.startsWith('881')) raw='0'+raw.substring(2);
-        if (raw.startsWith('+88')) raw=raw.substring(3);
-        else if (raw.startsWith('88')&&raw.length===13) raw=raw.substring(2);
-        return { id: studentId, name: data.name||'Student', phone: /^01\d{9}$/.test(raw)?raw:null };
+        return { id: studentId, name: data.name||'Student' };
       } catch (e) {
         clearTimeout(timer);
         throw e.name === 'AbortError' ? new Error('Network error') : e;
@@ -380,14 +372,20 @@
       d.count++;
       localStorage.setItem('lu62b_otpLimit',JSON.stringify(d));
     }
-    function sendSMSOTP(phone) {
-      generatedOTP = Math.floor(1000+Math.random()*9000).toString();
-      const msg = `Your CSE 62B PORTAL OTP is ${generatedOTP}`;
-      return fetch(WORKER_URL + '/sms', {
+    function sendOtpForStudent(studentId) {
+      return fetch(WORKER_URL + '/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, message: msg }),
-      });
+        body: JSON.stringify({ student_id: studentId }),
+      }).then(r => r.json());
+    }
+
+    function verifyOtpWithServer(studentId, otp) {
+      return fetch(WORKER_URL + '/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, otp }),
+      }).then(r => r.json());
     }
 
     /* -- Step 1: Check Student ID -- */
@@ -468,22 +466,19 @@
       const errEl = document.getElementById('otpStepError');
       const btn   = document.getElementById('sendOtpBtn');
       errEl.style.display='none';
-      if (!studentData?.phone) {
-        errEl.innerText='No phone number found for this student. Contact admin.';
-        errEl.style.display='block'; return;
-      }
       if (!checkOTPLimit()) {
         errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.';
         errEl.style.display='block'; return;
       }
       btn.innerText='Sending...'; btn.disabled=true;
-      sendSMSOTP(studentData.phone).then(()=>{
+      sendOtpForStudent(studentData.id).then(data => {
+        if (!data.ok) throw new Error(data.error || 'Failed');
         incrementOTPLimit();
-        const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
-        document.getElementById('maskedPhone').textContent=masked;
+        document.getElementById('maskedPhone').textContent = data.masked || '***';
         showOnly('stepVerify');
-      }).catch(()=>{
-        errEl.innerText='Failed to send OTP. Please try again.';
+      }).catch(e => {
+        const msg = e?.message || '';
+        errEl.innerText = msg.includes('phone') ? 'No phone registered for this student. Contact admin.' : 'Failed to send OTP. Please try again.';
         errEl.style.display='block';
         btn.innerText='Send OTP'; btn.disabled=false;
       });
@@ -495,9 +490,11 @@
       const errEl = document.getElementById('otpError');
       const btn   = document.getElementById('verifyOtpBtn');
       errEl.style.display='none';
-      if (code===generatedOTP) {
-        btn.innerText='Checking...'; btn.disabled=true;
-        try {
+      if (!code) { errEl.innerText='Please enter the OTP.'; errEl.style.display='block'; return; }
+      btn.innerText='Checking...'; btn.disabled=true;
+      try {
+        const result = await verifyOtpWithServer(studentData.id, code);
+        if (result.valid) {
           const hasPwd = await hasPassword(studentData.id);
           if (hasPwd) {
             const u = buildStudentSession(studentData);
@@ -507,14 +504,15 @@
             sessionStorage.setItem('lu62b_firstTimeSetup',JSON.stringify(studentData));
             window.location.href='password-setup.html';
           }
-        } catch(e) {
-          errEl.innerText='Connection error. Please try again.';
+        } else {
+          errEl.innerText='Invalid OTP. Please try again.';
           errEl.style.display='block';
           btn.innerText='Verify & Continue'; btn.disabled=false;
         }
-      } else {
-        errEl.innerText='Invalid OTP. Please try again.';
+      } catch(e) {
+        errEl.innerText='Connection error. Please try again.';
         errEl.style.display='block';
+        btn.innerText='Verify & Continue'; btn.disabled=false;
       }
     }
 
@@ -542,13 +540,14 @@
       btn.innerText='Sending...'; btn.disabled=true;
       try {
         studentData = await fetchStudentData(sid);
-        await sendSMSOTP(studentData.phone);
+        const data = await sendOtpForStudent(sid);
+        if (!data.ok) throw new Error(data.error || 'Failed');
         incrementOTPLimit();
-        const masked = studentData.phone.substring(0,5)+'***'+studentData.phone.slice(-3);
-        document.getElementById('resetMaskedPhone').textContent=masked;
+        document.getElementById('resetMaskedPhone').textContent = data.masked || '***';
         showOnly('stepReset');
       } catch(e) {
-        errEl.innerText = e==='Student not found' ? 'Student not found.' : 'Failed to send OTP.';
+        const msg = e?.message || String(e);
+        errEl.innerText = msg.includes('not found') ? 'Student not found.' : msg.includes('phone') ? 'No phone registered for this student.' : 'Failed to send OTP.';
         errEl.style.display='block';
         btn.innerText='Send Reset OTP'; btn.disabled=false;
       }
@@ -564,9 +563,10 @@
       if (!otp||!npwd||!cpwd) { errEl.innerText='Please fill all fields.'; errEl.style.display='block'; return; }
       if (npwd.length<6) { errEl.innerText='Password must be at least 6 characters.'; errEl.style.display='block'; return; }
       if (npwd!==cpwd) { errEl.innerText='Passwords do not match.'; errEl.style.display='block'; return; }
-      if (otp!==generatedOTP) { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; return; }
-      btn.innerText='Resetting...'; btn.disabled=true;
+      btn.innerText='Verifying...'; btn.disabled=true;
       try {
+        const otpResult = await verifyOtpWithServer(studentData.id, otp);
+        if (!otpResult.valid) { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; btn.innerText='Reset Password'; btn.disabled=false; return; }
         const hash = await bcrypt.hash(npwd, 10);
         await savePasswordHash(studentData.id, hash);
         const u = buildStudentSession(studentData);

@@ -75,7 +75,7 @@ export default {
         const rows   = parsed.table?.rows || [];
         if (!rows.length) return jsonResp(cors, { found: false });
         const cells  = (rows[0].c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
-        return jsonResp(cors, { found: true, id: cells[1] || sid, name: cells[2] || 'Student', phone: cells[3] || '' });
+        return jsonResp(cors, { found: true, id: cells[1] || sid, name: cells[2] || 'Student' });
       }
 
       // ── GET /sheet?name=TabName[&type=bot] ───────────────────────────
@@ -132,6 +132,75 @@ export default {
           `&message=${encodeURIComponent(message)}`;
         await fetch(smsUrl);
         return jsonResp(cors, { ok: true });
+      }
+
+      // ── POST /send-otp  { student_id } — looks up phone internally, sends SMS OTP ──
+      if (p === '/send-otp' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id } = await request.json();
+        if (!student_id) return errResp(cors, 400, 'Missing student_id');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+
+        // Rate limit: max 5/day per IP
+        if (env.SMS_RATE) {
+          const ip   = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const dKey = `otp:d:${ip}:${Math.floor(Date.now() / 86400000)}`;
+          const dRaw = await env.SMS_RATE.get(dKey);
+          const dCnt = parseInt(dRaw || '0');
+          if (dCnt >= 5) return errResp(cors, 429, 'Daily OTP limit reached');
+          await env.SMS_RATE.put(dKey, String(dCnt + 1), { expirationTtl: 86400 });
+        }
+
+        // Look up phone from sheet
+        const sid2 = String(student_id);
+        const sheetId = env.MAIN_SHEET_ID;
+        if (!sheetId) return errResp(cors, 500, 'Not configured');
+        const tq2 = `select * where B='${sid2}'`;
+        const u2  = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Student%20Info&tq=${encodeURIComponent(tq2)}`;
+        const r2  = await fetch(u2);
+        const t2  = await r2.text();
+        const m2  = t2.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+        if (!m2) return errResp(cors, 502, 'Bad upstream');
+        const parsed2 = JSON.parse(m2[1]);
+        const rows2   = parsed2.table?.rows || [];
+        if (!rows2.length) return errResp(cors, 404, 'Student not found');
+        const cells2 = (rows2[0].c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
+        let phone2 = (cells2[3] || '').replace(/\s+/g, '');
+        if (phone2.length === 10 && phone2.startsWith('1')) phone2 = '0' + phone2;
+        if (phone2.startsWith('+88')) phone2 = phone2.substring(3);
+        else if (phone2.startsWith('88') && phone2.length === 13) phone2 = phone2.substring(2);
+        if (!/^01[3-9]\d{8}$/.test(phone2)) return errResp(cors, 400, 'No valid phone for this student');
+
+        // Generate OTP and store in KV (5-minute TTL)
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        const otp = String(arr[0] % 1000000).padStart(6, '0');
+        if (env.SMS_RATE) {
+          await env.SMS_RATE.put(`otp:${sid2}`, otp, { expirationTtl: 300 });
+        }
+
+        // Send SMS
+        const smsUrl2 =
+          `https://bulksmsbd.net/api/smsapi?api_key=${env.SMS_API_KEY}` +
+          `&type=text&number=${encodeURIComponent(phone2)}` +
+          `&senderid=${encodeURIComponent(env.SMS_SENDER_ID)}` +
+          `&message=${encodeURIComponent(`Your CSE 62B PORTAL OTP is ${otp}`)}`;
+        await fetch(smsUrl2);
+
+        const masked = phone2.substring(0, 5) + '***' + phone2.slice(-3);
+        return jsonResp(cors, { ok: true, masked });
+      }
+
+      // ── POST /verify-otp  { student_id, otp } — server-side OTP check ──
+      if (p === '/verify-otp' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id, otp } = await request.json();
+        if (!student_id || !otp) return errResp(cors, 400, 'Missing fields');
+        if (!env.SMS_RATE) return errResp(cors, 500, 'Not configured');
+        const stored = await env.SMS_RATE.get(`otp:${String(student_id)}`);
+        if (!stored || stored !== String(otp).trim()) return jsonResp(cors, { valid: false });
+        await env.SMS_RATE.delete(`otp:${String(student_id)}`);
+        return jsonResp(cors, { valid: true });
       }
 
       // ── POST /result  { student_id, birth_date } ─────────────────────
