@@ -620,10 +620,11 @@ const LU_ANALYTICS = (() => {
         await _checkNewArrivals(initialList); // snapshot silently (no toasts)
         _initRealtimePresence();              // instant WebSocket joins
         setInterval(async () => {
+          if (document.hidden) return; // don't poll while tab is not visible
           await _upsertPresence();
-          const list = await getPresenceList(); // one fetch per tick
+          const list = await getPresenceList();
           _updateBadgeFromList(list);
-          await _checkNewArrivals(list);        // polling fallback
+          await _checkNewArrivals(list);
         }, 30000);
         window.addEventListener('beforeunload', _deletePresence);
       } catch(e) { /* fail silently */ }

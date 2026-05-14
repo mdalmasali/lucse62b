@@ -10,25 +10,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function createParticles() {
   const particlesContainer = document.getElementById('particles');
-  if (!particlesContainer) {
-    return;
-  }
+  if (!particlesContainer) return;
 
-  for (let i = 0; i < 30; i += 1) {
+  // Fewer particles on mobile/low-end devices
+  const count = window.matchMedia('(max-width: 768px)').matches ? 12 : 22;
+  const frag  = document.createDocumentFragment();
+
+  for (let i = 0; i < count; i++) {
     const particle = document.createElement('div');
     const size = Math.random() * 4 + 2;
-
-    particle.classList.add('particle');
-    particle.style.width = `${size}px`;
-    particle.style.height = `${size}px`;
-    particle.style.left = `${Math.random() * 100}vw`;
-    particle.style.background =
-      Math.random() > 0.5 ? 'rgba(109,40,217,0.5)' : 'rgba(14,165,233,0.5)';
-    particle.style.animationDuration = `${Math.random() * 15 + 10}s`;
-    particle.style.animationDelay = `${Math.random() * 5}s`;
-
-    particlesContainer.appendChild(particle);
+    particle.className = 'particle';
+    particle.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;`
+      + `background:${Math.random()>0.5?'rgba(109,40,217,0.5)':'rgba(14,165,233,0.5)'};`
+      + `animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*5}s;`;
+    frag.appendChild(particle);
   }
+  particlesContainer.appendChild(frag);
 }
 
 function updateTodayDate() {
@@ -160,7 +157,7 @@ function parseStudentSheet(rows) {
 }
 
 function renderStudentGroups(container, groups) {
-  container.innerHTML = '';
+  const frag = document.createDocumentFragment();
 
   const demoMode = (() => {
     try {
@@ -250,8 +247,11 @@ function renderStudentGroups(container, groups) {
     table.append(thead, tbody);
     tableContainer.appendChild(table);
     section.append(header, tableContainer);
-    container.appendChild(section);
+    frag.appendChild(section);
   });
+
+  container.innerHTML = '';
+  container.appendChild(frag);
 }
 
 function renderStudentMessage(container, message, className) {
