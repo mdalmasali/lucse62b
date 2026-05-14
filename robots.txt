@@ -1,6 +1,12 @@
 User-agent: *
 Allow: /
-Disallow: /pages/login.html
 Disallow: /pages/password-setup.html
+Disallow: /pages/classwork.html
+Disallow: /pages/students.html
+Disallow: /pages/resources.html
+Disallow: /pages/info.html
+Disallow: /pages/result-dashboard.html
+Disallow: /pages/profile.html
+Disallow: /pages/category.html
 
 Sitemap: https://lucse62b.xyz/sitemap.xml

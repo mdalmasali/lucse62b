@@ -11,23 +11,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://lucse62b.xyz/pages/students.html</loc>
+    <loc>https://lucse62b.xyz/pages/cover-page.html</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://lucse62b.xyz/pages/classwork.html</loc>
-    <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lucse62b.xyz/pages/resources.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://lucse62b.xyz/pages/result-dashboard.html</loc>
+    <loc>https://lucse62b.xyz/pages/login.html</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.4</priority>
   </url>
 </urlset>
