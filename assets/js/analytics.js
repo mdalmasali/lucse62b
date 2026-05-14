@@ -358,6 +358,107 @@ const LU_ANALYTICS = (() => {
     } catch { /* fail silently */ }
   }
 
+  /* ═══════════════════════════════════════════════════
+     ── Realtime WebSocket (instant presence notify) ──
+     Uses Supabase Realtime Phoenix protocol directly,
+     no SDK needed. Polling stays as a silent fallback.
+     ═══════════════════════════════════════════════════ */
+  function _initRealtimePresence() {
+    const u = _user();
+    if (!u?.name || u.isDemo || String(u.id || '').toUpperCase() === 'DEMO') return;
+
+    const WS   = `wss://ftvtlqxpalwvyserujuh.supabase.co/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
+    const CHAN  = 'realtime:lu62b-presence';
+
+    let ws          = null;
+    let ref         = 1;
+    let joinRef     = null;
+    let hbTimer     = null;
+    let reconnTimer = null;
+    let dead        = false; // set true on page unload
+
+    function _send(obj) {
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+    }
+
+    function _join() {
+      joinRef = String(ref++);
+      _send({
+        topic: CHAN, event: 'phx_join',
+        payload: { config: { broadcast: { self: false } } },
+        ref: joinRef, join_ref: joinRef,
+      });
+    }
+
+    function _broadcastSelf() {
+      const me = _user();
+      if (!me?.name) return;
+      _send({
+        topic: CHAN, event: 'broadcast',
+        payload: { type: 'broadcast', event: 'user_join', payload: { name: me.name, sid: _sid } },
+        ref: String(ref++), join_ref: joinRef,
+      });
+    }
+
+    function _connect() {
+      if (dead) return;
+      try {
+        ws = new WebSocket(WS);
+
+        ws.onopen = () => {
+          _join();
+          hbTimer = setInterval(() =>
+            _send({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(ref++) })
+          , 25000);
+        };
+
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+
+            // Channel joined — announce ourselves instantly
+            if (msg.event === 'phx_reply' && msg.ref === joinRef && msg.payload?.status === 'ok') {
+              _broadcastSelf();
+              return;
+            }
+
+            // Someone else broadcasted their join
+            if (msg.topic === CHAN && msg.event === 'broadcast') {
+              const p = msg.payload?.payload;
+              if (!p?.name || p.sid === _sid) return;
+              const me = _user();
+              if (me?.name && p.name === me.name) return;
+
+              // Deduplicate with polling fallback via shared seen-set
+              const seen = _seenSet();
+              if (seen.has(p.sid)) return;
+              seen.add(p.sid);
+              _saveSeen(seen);
+
+              showPresenceToast(p.name);
+            }
+          } catch { /* malformed message */ }
+        };
+
+        ws.onclose = () => {
+          clearInterval(hbTimer);
+          if (!dead) reconnTimer = setTimeout(_connect, 5000); // auto-reconnect
+        };
+
+        ws.onerror = () => ws.close();
+      } catch { /* WebSocket not supported or blocked */ }
+    }
+
+    _connect();
+
+    window.addEventListener('beforeunload', () => {
+      dead = true;
+      clearInterval(hbTimer);
+      clearTimeout(reconnTimer);
+      try { ws?.close(); } catch {}
+    });
+  }
+
   /* ── Public API ── */
   return {
     increment, getCounter, getOnlineCount, getPresenceList,
@@ -370,12 +471,13 @@ const LU_ANALYTICS = (() => {
         await Promise.all([increment('total_visits'), increment(_pageKey()), _upsertPresence()]);
         _createBadge();
         await _updateBadge();
-        await _checkNewArrivals(); // snapshot current presence silently
+        await _checkNewArrivals(); // snapshot current presence (no toast on first call)
+        _initRealtimePresence();   // instant WebSocket channel
         setInterval(async () => {
           await _upsertPresence();
           await _updateBadge();
-          await _checkNewArrivals();
-        }, 30000); // 30s — more responsive than original 60s
+          await _checkNewArrivals(); // polling fallback — deduped via shared seen-set
+        }, 30000);
         window.addEventListener('beforeunload', _deletePresence);
       } catch(e) { /* fail silently */ }
     },
