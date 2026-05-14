@@ -2,7 +2,7 @@
 const LU_ANALYTICS = (() => {
   const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
-  /* Session ID — unique per browser tab */
+
   let _sid = sessionStorage.getItem('lu62b_sid');
   if (!_sid) {
     _sid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -62,7 +62,7 @@ const LU_ANALYTICS = (() => {
     return Number(d[0]?.count) || 0;
   }
 
-  /* ── Presence ── */
+  /* ── Presence (DB) ── */
   async function _upsertPresence(pageName) {
     const u = _user();
     await _req('/rest/v1/presence', {
@@ -92,7 +92,7 @@ const LU_ANALYTICS = (() => {
     return Array.isArray(d) ? d.length : 0;
   }
   async function getPresenceList() {
-    const r = await _req('/rest/v1/presence?select=page,user_name,updated_at&order=updated_at.desc');
+    const r = await _req('/rest/v1/presence?select=session_id,page,user_name,updated_at&order=updated_at.desc');
     if (!r || !r.ok) return [];
     return await r.json();
   }
@@ -132,10 +132,237 @@ const LU_ANALYTICS = (() => {
     if (el) el.textContent = await getOnlineCount();
   }
 
+  /* ═══════════════════════════════════════════════════
+     ── Presence Toast — "X is online now" ──
+     ═══════════════════════════════════════════════════ */
+
+  const _AVATAR_GRADIENTS = [
+    'linear-gradient(135deg,#7c3aed,#a855f7)',
+    'linear-gradient(135deg,#2563eb,#38bdf8)',
+    'linear-gradient(135deg,#059669,#34d399)',
+    'linear-gradient(135deg,#dc2626,#f87171)',
+    'linear-gradient(135deg,#d97706,#fbbf24)',
+    'linear-gradient(135deg,#db2777,#f472b6)',
+    'linear-gradient(135deg,#7c3aed,#ec4899)',
+    'linear-gradient(135deg,#0891b2,#22d3ee)',
+  ];
+  function _avatarGrad(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0x7fffffff;
+    return _AVATAR_GRADIENTS[h % _AVATAR_GRADIENTS.length];
+  }
+
+  function _injectToastStyle() {
+    if (document.getElementById('lu-toast-css')) return;
+    const s = document.createElement('style');
+    s.id = 'lu-toast-css';
+    s.textContent = `
+      #lu-toast-stack{
+        position:fixed;bottom:58px;right:20px;z-index:9995;
+        display:flex;flex-direction:column-reverse;gap:9px;
+        pointer-events:none;
+      }
+      @media(max-width:768px){#lu-toast-stack{bottom:128px;right:14px;}}
+
+      .lu-pt{
+        position:relative;
+        background:rgba(8,5,22,0.96);
+        border:1px solid rgba(124,58,237,0.38);
+        border-radius:18px;
+        padding:13px 15px 15px 12px;
+        display:flex;align-items:center;gap:11px;
+        min-width:220px;max-width:268px;
+        box-shadow:
+          0 16px 48px rgba(0,0,0,0.65),
+          0 0 0 1px rgba(124,58,237,0.12),
+          inset 0 1px 0 rgba(255,255,255,0.06);
+        backdrop-filter:blur(24px);
+        -webkit-backdrop-filter:blur(24px);
+        overflow:hidden;
+        pointer-events:all;
+        cursor:pointer;
+        animation:luPtIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+      }
+      .lu-pt.lu-pt-out{
+        animation:luPtOut 0.36s cubic-bezier(0.55,0,1,0.45) forwards;
+      }
+
+      /* top shimmer line */
+      .lu-pt::before{
+        content:'';position:absolute;top:0;left:0;right:0;height:1px;
+        background:linear-gradient(90deg,transparent 0%,rgba(167,139,250,0.55) 50%,transparent 100%);
+        border-radius:18px 18px 0 0;
+      }
+      /* sweep shimmer */
+      .lu-pt::after{
+        content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;
+        background:linear-gradient(90deg,transparent,rgba(167,139,250,0.07),transparent);
+        animation:luPtSweep 4s ease-in-out infinite 0.6s;
+        pointer-events:none;
+      }
+
+      .lu-pt-avatar{
+        width:42px;height:42px;border-radius:13px;
+        display:flex;align-items:center;justify-content:center;
+        font-size:1.1rem;font-weight:800;color:#fff;
+        font-family:'Space Grotesk','Inter',sans-serif;
+        flex-shrink:0;position:relative;
+        animation:luPtAvatarPop 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+      }
+      /* glow layer behind avatar */
+      .lu-pt-avatar::before{
+        content:'';position:absolute;inset:-4px;border-radius:16px;
+        background:inherit;filter:blur(10px);opacity:0.45;z-index:-1;
+      }
+
+      .lu-pt-body{flex:1;min-width:0;}
+      .lu-pt-name{
+        font-weight:700;font-size:0.875rem;color:#ede9fe;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        font-family:'Space Grotesk','Inter',sans-serif;
+        letter-spacing:0.01em;
+        animation:luPtNameIn 0.4s ease 0.2s both;
+      }
+      .lu-pt-sub{
+        font-size:0.7rem;color:rgba(167,139,250,0.6);
+        display:flex;align-items:center;gap:5px;margin-top:3px;
+        font-family:'Inter',sans-serif;
+        animation:luPtNameIn 0.4s ease 0.3s both;
+      }
+      .lu-pt-dot{
+        width:6px;height:6px;border-radius:50%;
+        background:#22c55e;box-shadow:0 0 8px #22c55e;
+        flex-shrink:0;animation:lu-pulse 1.5s ease-in-out infinite;
+      }
+
+      /* animated progress bar */
+      .lu-pt-bar{
+        position:absolute;bottom:0;left:0;
+        height:2px;
+        background:linear-gradient(90deg,#7c3aed,#a855f7,#ec4899);
+        border-radius:0 0 0 18px;
+        width:100%;
+        animation:luPtBar var(--bar-dur,5s) linear forwards;
+      }
+
+      @keyframes luPtIn{
+        0%  {transform:translateX(115%) scale(0.78);opacity:0;}
+        65% {transform:translateX(-6px) scale(1.02);opacity:1;}
+        100%{transform:translateX(0) scale(1);opacity:1;}
+      }
+      @keyframes luPtOut{
+        0%  {transform:translateX(0) scale(1);opacity:1;}
+        100%{transform:translateX(115%) scale(0.82);opacity:0;}
+      }
+      @keyframes luPtSweep{
+        0%  {left:-80%;}
+        40% {left:130%;}
+        100%{left:130%;}
+      }
+      @keyframes luPtAvatarPop{
+        0%  {transform:scale(0) rotate(-15deg);opacity:0;}
+        70% {transform:scale(1.15) rotate(3deg);opacity:1;}
+        100%{transform:scale(1) rotate(0deg);opacity:1;}
+      }
+      @keyframes luPtNameIn{
+        from{transform:translateY(6px);opacity:0;}
+        to  {transform:translateY(0);opacity:1;}
+      }
+      @keyframes luPtBar{
+        from{width:100%;}
+        to  {width:0%;}
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const _DISMISS_DELAY = 5000;
+
+  function showPresenceToast(name) {
+    _injectToastStyle();
+    let stack = document.getElementById('lu-toast-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'lu-toast-stack';
+      document.body.appendChild(stack);
+    }
+
+    const initial = name.trim().charAt(0).toUpperCase();
+    const grad    = _avatarGrad(name);
+
+    const toast = document.createElement('div');
+    toast.className = 'lu-pt';
+    toast.innerHTML = `
+      <div class="lu-pt-avatar" style="background:${grad};">${initial}</div>
+      <div class="lu-pt-body">
+        <div class="lu-pt-name">${_escHtml(name.trim())}</div>
+        <div class="lu-pt-sub">
+          <span class="lu-pt-dot"></span>is online now
+        </div>
+      </div>
+      <div class="lu-pt-bar" style="--bar-dur:${_DISMISS_DELAY}ms;"></div>
+    `;
+
+    const dismiss = () => {
+      if (toast.classList.contains('lu-pt-out')) return;
+      toast.classList.add('lu-pt-out');
+      toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    };
+
+    toast.addEventListener('click', dismiss);
+    setTimeout(dismiss, _DISMISS_DELAY);
+    stack.appendChild(toast);
+  }
+
+  function _escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── New-arrival detection ── */
+  let _presenceReady = false;
+
+  function _seenSet() {
+    try { return new Set(JSON.parse(sessionStorage.getItem('lu62b_seen_sids') || '[]')); }
+    catch { return new Set(); }
+  }
+  function _saveSeen(set) {
+    try { sessionStorage.setItem('lu62b_seen_sids', JSON.stringify([...set])); } catch {}
+  }
+
+  async function _checkNewArrivals() {
+    try {
+      const list = await getPresenceList();
+      const seen = _seenSet();
+      const me   = _user();
+
+      if (!_presenceReady) {
+        // First call: silently snapshot current presence, no toasts
+        list.forEach(p => seen.add(p.session_id));
+        _saveSeen(seen);
+        _presenceReady = true;
+        return;
+      }
+
+      const fresh = list.filter(p =>
+        !seen.has(p.session_id) &&
+        p.user_name &&
+        p.session_id !== _sid &&
+        (!me || p.user_name !== me.name)
+      );
+
+      list.forEach(p => seen.add(p.session_id));
+      _saveSeen(seen);
+
+      // Stagger multiple toasts so they don't all appear at once
+      fresh.forEach((p, i) => setTimeout(() => showPresenceToast(p.user_name), i * 900));
+    } catch { /* fail silently */ }
+  }
+
   /* ── Public API ── */
   return {
     increment, getCounter, getOnlineCount, getPresenceList,
     pageKey: _pageKey, pageName: _pageName,
+    showPresenceToast,
 
     async init() {
       try {
@@ -143,14 +370,19 @@ const LU_ANALYTICS = (() => {
         await Promise.all([increment('total_visits'), increment(_pageKey()), _upsertPresence()]);
         _createBadge();
         await _updateBadge();
-        setInterval(async () => { await _upsertPresence(); await _updateBadge(); }, 60000);
+        await _checkNewArrivals(); // snapshot current presence silently
+        setInterval(async () => {
+          await _upsertPresence();
+          await _updateBadge();
+          await _checkNewArrivals();
+        }, 30000); // 30s — more responsive than original 60s
         window.addEventListener('beforeunload', _deletePresence);
       } catch(e) { /* fail silently */ }
     },
 
     async trackPDF() {
       await Promise.all([increment('total_pdfs'), _upsertPresence('Generating PDF')]);
-      setTimeout(() => _upsertPresence(), 8000); /* restore after generation */
+      setTimeout(() => _upsertPresence(), 8000);
     },
     async trackLogin()           { await increment('total_logins'); },
     async trackShare(platform)   { await increment(platform === 'whatsapp' ? 'total_shares_wa' : 'total_shares_tg'); },
