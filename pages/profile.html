@@ -753,13 +753,22 @@
       border-color: rgba(124,58,237,0.4);
       transform: translateY(-2px);
     }
+    .result-sem-mini.sem-best  { border-color: rgba(251,191,36,0.5); background: rgba(251,191,36,0.06); }
+    .result-sem-mini.sem-worst { border-color: rgba(244,63,94,0.4);  background: rgba(244,63,94,0.05); }
 
     .result-sem-mini-title {
       font-weight: 600;
       font-size: 0.88rem;
       color: var(--text);
       margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
+    .sem-rank-badge {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    }
+    .sem-rank-badge.best  { background: rgba(251,191,36,0.18); color: #fbbf24; border: 1px solid rgba(251,191,36,0.35); }
+    .sem-rank-badge.worst { background: rgba(244,63,94,0.15);  color: #f43f5e; border: 1px solid rgba(244,63,94,0.3); }
 
     .result-sem-mini-stats {
       display: grid;
@@ -1255,6 +1264,8 @@
       border-color: rgba(109,40,217,0.14);
     }
     html[data-theme="light"] .result-sem-mini:hover { border-color: rgba(109,40,217,0.35); }
+    html[data-theme="light"] .result-sem-mini.sem-best  { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.4); }
+    html[data-theme="light"] .result-sem-mini.sem-worst { background: rgba(244,63,94,0.06);  border-color: rgba(244,63,94,0.3); }
     html[data-theme="light"] .result-sem-mini-stat { background: rgba(109,40,217,0.04); }
 
     /* Result course cards */
@@ -2519,15 +2530,29 @@
       const el = document.getElementById('resSemestersGrid');
       if (!semesters.length) { el.innerHTML = '<p style="color:var(--text-secondary);">No data</p>'; return; }
 
-      el.innerHTML = semesters.map((sem, i) => `
-        <div class="result-sem-mini" onclick="expandResSemester(${i})">
-          <div class="result-sem-mini-title">${sem.semester_name || sem.semester || `Semester ${i+1}`}</div>
-          <div class="result-sem-mini-stats">
-            <div class="result-sem-mini-stat"><span>CGPA</span><span>${(sem.gpa||0).toFixed(2)}</span></div>
-            <div class="result-sem-mini-stat"><span>Courses</span><span>${(sem.courses||[]).length}</span></div>
-          </div>
-        </div>
-      `).join('');
+      const gpas     = semesters.map(s => s.gpa || 0);
+      const maxGpa   = Math.max(...gpas);
+      const minGpa   = Math.min(...gpas);
+      const bestIdx  = gpas.indexOf(maxGpa);
+      const worstIdx = gpas.indexOf(minGpa);
+
+      el.innerHTML = semesters.map((sem, i) => {
+        const isBest  = i === bestIdx && semesters.length > 1;
+        const isWorst = i === worstIdx && semesters.length > 1;
+        const cls     = isBest ? 'sem-best' : isWorst ? 'sem-worst' : '';
+        const badge   = isBest  ? `<span class="sem-rank-badge best">🏆 Best</span>`
+                      : isWorst ? `<span class="sem-rank-badge worst">↓ Lowest</span>` : '';
+        return `
+          <div class="result-sem-mini ${cls}" onclick="expandResSemester(${i})">
+            <div class="result-sem-mini-title">
+              <span>${sem.semester_name || sem.semester || `Semester ${i+1}`}</span>${badge}
+            </div>
+            <div class="result-sem-mini-stats">
+              <div class="result-sem-mini-stat"><span>CGPA</span><span>${(sem.gpa||0).toFixed(2)}</span></div>
+              <div class="result-sem-mini-stat"><span>Courses</span><span>${(sem.courses||[]).length}</span></div>
+            </div>
+          </div>`;
+      }).join('');
     }
 
     function closeResSemModal() {
