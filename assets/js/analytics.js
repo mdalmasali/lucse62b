@@ -81,21 +81,34 @@ const LU_ANALYTICS = (() => {
   async function _cleanup() {
     await _req('/rest/v1/rpc/cleanup_old_presence', { method: 'POST', body: '{}' });
   }
-  async function getOnlineCount() {
-    const r = await _req('/rest/v1/presence?select=session_id', {
-      headers: { 'Prefer': 'count=exact', 'Range': '0-0' },
-    });
-    if (!r) return 0;
-    const cr = r.headers.get('content-range');
-    if (cr) return parseInt(cr.split('/')[1]) || 0;
-    const d = await r.json();
-    return Array.isArray(d) ? d.length : 0;
-  }
   async function getPresenceList() {
-    const r = await _req('/rest/v1/presence?select=session_id,page,user_name,updated_at&order=updated_at.desc');
+    const r = await _req('/rest/v1/presence?select=session_id,page,user_name,user_id,updated_at&order=updated_at.desc');
     if (!r || !r.ok) return [];
     return await r.json();
   }
+
+  /* Deduplicate by user_id — multi-tab users count once */
+  function _dedupeList(list) {
+    const byUser = new Map();
+    const anon   = [];
+    list.forEach(p => {
+      if (p.user_id) {
+        if (!byUser.has(p.user_id)) byUser.set(p.user_id, p);
+      } else {
+        anon.push(p);
+      }
+    });
+    return { users: [...byUser.values()], anon };
+  }
+
+  function getOnlineCount(list) {
+    if (!list) return 0;
+    const { users, anon } = _dedupeList(list);
+    return users.length + anon.length;
+  }
+
+  /* Shared cache — one fetch per interval serves badge + arrivals */
+  let _lastList = [];
 
   /* ── Online Badge ── */
   function _injectBadgeStyle() {
@@ -109,27 +122,158 @@ const LU_ANALYTICS = (() => {
         font-family:'Inter',sans-serif;font-size:.73rem;color:#c4b5fd;
         display:flex;align-items:center;gap:7px;
         box-shadow:0 4px 20px rgba(0,0,0,.35);user-select:none;
-        transition:opacity .3s;cursor:default;}
-      #lu-online-badge:hover{opacity:.7;}
+        transition:opacity .3s;cursor:pointer;}
+      #lu-online-badge:hover{opacity:.85;}
+      #lu-online-badge.lu-badge-open{border-color:rgba(124,58,237,.6);box-shadow:0 4px 24px rgba(124,58,237,.25);}
       @media (max-width:768px) { #lu-online-badge { bottom:90px; right:20px; } }
       .lu-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;
         box-shadow:0 0 6px #22c55e;flex-shrink:0;
         animation:lu-pulse 2s ease-in-out infinite;}
       @keyframes lu-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
+
+      /* ── Who's Online Panel ── */
+      #lu-who-panel{
+        position:fixed;bottom:54px;right:20px;z-index:9991;
+        background:rgba(8,5,22,0.97);border:1px solid rgba(124,58,237,0.35);
+        border-radius:18px;padding:14px 0 10px;min-width:230px;max-width:280px;
+        box-shadow:0 16px 48px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.05);
+        backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+        transform-origin:bottom right;
+        animation:luPanelIn .22s cubic-bezier(0.34,1.56,0.64,1) both;
+      }
+      #lu-who-panel.lu-panel-out{animation:luPanelOut .16s ease-in forwards;}
+      @media(max-width:768px){#lu-who-panel{bottom:124px;right:14px;}}
+      .lu-panel-title{
+        font-size:.68rem;font-weight:700;color:rgba(167,139,250,.5);
+        letter-spacing:.1em;text-transform:uppercase;
+        padding:0 16px 10px;border-bottom:1px solid rgba(124,58,237,.12);
+        font-family:'Inter',sans-serif;
+      }
+      .lu-panel-list{max-height:260px;overflow-y:auto;padding:6px 0;}
+      .lu-panel-row{
+        display:flex;align-items:center;gap:10px;padding:7px 14px;
+        transition:background .15s;cursor:default;
+      }
+      .lu-panel-row:hover{background:rgba(124,58,237,.06);}
+      .lu-panel-av{
+        width:32px;height:32px;border-radius:10px;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+        font-size:.85rem;font-weight:800;color:#fff;
+        font-family:'Space Grotesk','Inter',sans-serif;
+        position:relative;
+      }
+      .lu-panel-av::before{
+        content:'';position:absolute;inset:-3px;border-radius:12px;
+        background:inherit;filter:blur(7px);opacity:.35;z-index:-1;
+      }
+      .lu-panel-info{flex:1;min-width:0;}
+      .lu-panel-name{
+        font-size:.82rem;font-weight:600;color:#ede9fe;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        font-family:'Space Grotesk','Inter',sans-serif;
+      }
+      .lu-panel-page{font-size:.67rem;color:rgba(167,139,250,.5);font-family:'Inter',sans-serif;}
+      .lu-panel-you{
+        font-size:.6rem;font-weight:700;color:#7c3aed;
+        background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);
+        border-radius:6px;padding:1px 6px;flex-shrink:0;
+      }
+      .lu-panel-anon{
+        padding:7px 14px;font-size:.73rem;color:rgba(167,139,250,.4);
+        font-family:'Inter',sans-serif;
+      }
+      .lu-panel-empty{
+        padding:18px 14px;text-align:center;font-size:.78rem;
+        color:rgba(167,139,250,.4);font-family:'Inter',sans-serif;
+      }
+      @keyframes luPanelIn{
+        from{transform:scale(.88) translateY(8px);opacity:0;}
+        to  {transform:scale(1) translateY(0);opacity:1;}
+      }
+      @keyframes luPanelOut{
+        from{transform:scale(1) translateY(0);opacity:1;}
+        to  {transform:scale(.88) translateY(8px);opacity:0;}
+      }
     `;
     document.head.appendChild(s);
   }
+
+  function _closePanel() {
+    const p = document.getElementById('lu-who-panel');
+    if (!p) return;
+    p.classList.add('lu-panel-out');
+    p.addEventListener('animationend', () => p.remove(), { once: true });
+    document.getElementById('lu-online-badge')?.classList.remove('lu-badge-open');
+  }
+
+  function _openPanel(list) {
+    if (document.getElementById('lu-who-panel')) { _closePanel(); return; }
+
+    const me = _user();
+    const { users, anon } = _dedupeList(list);
+    const badge = document.getElementById('lu-online-badge');
+    badge?.classList.add('lu-badge-open');
+
+    const panel = document.createElement('div');
+    panel.id = 'lu-who-panel';
+
+    let rows = '';
+    users.forEach(p => {
+      const isMe = me && p.user_id === me.id;
+      const initial = (p.user_name || '?').charAt(0).toUpperCase();
+      const grad = _avatarGrad(p.user_name || '?');
+      rows += `
+        <div class="lu-panel-row">
+          <div class="lu-panel-av" style="background:${grad}">${_escHtml(initial)}</div>
+          <div class="lu-panel-info">
+            <div class="lu-panel-name">${_escHtml(p.user_name || 'Unknown')}</div>
+            <div class="lu-panel-page">${_escHtml(p.page || 'Portal')}</div>
+          </div>
+          ${isMe ? '<span class="lu-panel-you">You</span>' : ''}
+        </div>`;
+    });
+
+    const anonCount = anon.length - (me ? 0 : 0); // anonymous (not counted separately here)
+    if (!users.length && !anon.length) {
+      rows = '<div class="lu-panel-empty">No one else is online</div>';
+    } else if (anon.length) {
+      rows += `<div class="lu-panel-anon"><span class="lu-dot" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>${anon.length} anonymous visitor${anon.length > 1 ? 's' : ''}</div>`;
+    }
+
+    panel.innerHTML = `
+      <div class="lu-panel-title">Online Now · ${getOnlineCount(list)}</div>
+      <div class="lu-panel-list">${rows}</div>`;
+
+    document.body.appendChild(panel);
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!panel.contains(e.target) && e.target.id !== 'lu-online-badge') {
+          _closePanel();
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 0);
+  }
+
   function _createBadge() {
     if (document.getElementById('lu-online-badge')) return;
     _injectBadgeStyle();
     const el = document.createElement('div');
     el.id = 'lu-online-badge';
     el.innerHTML = `<span class="lu-dot"></span><span id="lu-badge-num">…</span>&nbsp;online`;
+    el.addEventListener('click', () => _openPanel(_lastList));
     document.body.appendChild(el);
   }
-  async function _updateBadge() {
+
+  function _updateBadgeFromList(list) {
+    _lastList = list;
     const el = document.getElementById('lu-badge-num');
-    if (el) el.textContent = await getOnlineCount();
+    if (el) el.textContent = getOnlineCount(list);
+    // Refresh panel if open
+    const panel = document.getElementById('lu-who-panel');
+    if (panel) { _closePanel(); setTimeout(() => _openPanel(list), 220); }
   }
 
   /* ═══════════════════════════════════════════════════
@@ -329,9 +473,9 @@ const LU_ANALYTICS = (() => {
     try { sessionStorage.setItem('lu62b_seen_sids', JSON.stringify([...set])); } catch {}
   }
 
-  async function _checkNewArrivals() {
+  async function _checkNewArrivals(list) {
     try {
-      const list = await getPresenceList();
+      if (!list) list = await getPresenceList();
       const seen = _seenSet();
       const me   = _user();
 
@@ -347,7 +491,7 @@ const LU_ANALYTICS = (() => {
         !seen.has(p.session_id) &&
         p.user_name &&
         p.session_id !== _sid &&
-        (!me || p.user_name !== me.name)
+        (!me || p.user_id !== me.id)
       );
 
       list.forEach(p => seen.add(p.session_id));
@@ -470,13 +614,16 @@ const LU_ANALYTICS = (() => {
         await _cleanup();
         await Promise.all([increment('total_visits'), increment(_pageKey()), _upsertPresence()]);
         _createBadge();
-        await _updateBadge();
-        await _checkNewArrivals(); // snapshot current presence (no toast on first call)
-        _initRealtimePresence();   // instant WebSocket channel
+        // Single fetch: serves badge count + arrival snapshot
+        const initialList = await getPresenceList();
+        _updateBadgeFromList(initialList);
+        await _checkNewArrivals(initialList); // snapshot silently (no toasts)
+        _initRealtimePresence();              // instant WebSocket joins
         setInterval(async () => {
           await _upsertPresence();
-          await _updateBadge();
-          await _checkNewArrivals(); // polling fallback — deduped via shared seen-set
+          const list = await getPresenceList(); // one fetch per tick
+          _updateBadgeFromList(list);
+          await _checkNewArrivals(list);        // polling fallback
         }, 30000);
         window.addEventListener('beforeunload', _deletePresence);
       } catch(e) { /* fail silently */ }
