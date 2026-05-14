@@ -237,7 +237,12 @@
       font-size: 0.82rem; color: var(--muted); font-style: italic;
     }
 
-    /* -- Mid / Final section dividers -- */
+    /* -- Mid / Final split columns -- */
+    .split-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .split-col:first-child { border-right: 1px solid var(--border); }
     .files-section-hdr {
       display: flex; align-items: center; gap: 8px;
       padding: 9px 20px;
@@ -246,12 +251,12 @@
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 700; font-size: 0.78rem; letter-spacing: 0.4px;
       color: var(--text-secondary); text-transform: uppercase;
+      position: sticky; top: 0; z-index: 1;
     }
     .files-section-hdr i { font-size: 0.82rem; opacity: 0.75; }
     .files-section-empty {
-      padding: 16px 20px; font-size: 0.82rem;
-      color: var(--muted); font-style: italic;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+      padding: 24px 20px; font-size: 0.82rem;
+      color: var(--muted); font-style: italic; text-align: center;
     }
 
     /* Mobile */
@@ -268,6 +273,9 @@
       .file-btn { padding: 7px 12px; font-size: 0.75rem; }
       .mat-course-header { padding: 14px 16px; gap: 10px; }
       .mat-course-name { font-size: 0.95rem; }
+      .split-view { grid-template-columns: 1fr; }
+      .split-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      .file-item { padding: 10px 12px; gap: 8px; }
     }
 
     /* -- Preview Modal -- */
@@ -641,21 +649,20 @@
     }
 
     function renderBothFiles(midFiles, finalFiles) {
-      const list = document.getElementById('fileList');
-      let html = '';
-      html += `<div class="files-section-hdr"><i class="fa-solid fa-crosshairs"></i> Mid Term</div>`;
-      if (midFiles && midFiles.length) {
-        html += midFiles.map(fileItemHtml).join('');
-      } else {
-        html += `<div class="files-section-empty">No Mid Term files yet.</div>`;
-      }
-      html += `<div class="files-section-hdr"><i class="fa-solid fa-flag-checkered"></i> Final Term</div>`;
-      if (finalFiles && finalFiles.length) {
-        html += finalFiles.map(fileItemHtml).join('');
-      } else {
-        html += `<div class="files-section-empty">No Final Term files yet.</div>`;
-      }
-      list.innerHTML = html;
+      const list     = document.getElementById('fileList');
+      const midBody  = (midFiles   && midFiles.length)   ? midFiles.map(fileItemHtml).join('')   : `<div class="files-section-empty">No Mid Term files yet.</div>`;
+      const finalBody= (finalFiles && finalFiles.length) ? finalFiles.map(fileItemHtml).join('') : `<div class="files-section-empty">No Final Term files yet.</div>`;
+      list.innerHTML = `
+        <div class="split-view">
+          <div class="split-col">
+            <div class="files-section-hdr"><i class="fa-solid fa-crosshairs"></i> Mid Term</div>
+            ${midBody}
+          </div>
+          <div class="split-col">
+            <div class="files-section-hdr"><i class="fa-solid fa-flag-checkered"></i> Final Term</div>
+            ${finalBody}
+          </div>
+        </div>`;
     }
 
     function filterFiles(q) {
