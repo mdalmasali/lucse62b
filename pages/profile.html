@@ -2089,15 +2089,22 @@
       }
 
       let savedDob = localStorage.getItem(`lu62b_dob_${currentUser.id}`);
-      if (!savedDob) {
-        savedDob = await getDobFromSupabase(currentUser.id);
-        if (savedDob) localStorage.setItem(`lu62b_dob_${currentUser.id}`, savedDob);
+      let dobOk    = localStorage.getItem(`lu62b_dob_ok_${currentUser.id}`) === '1';
+
+      if (!savedDob || !dobOk) {
+        const supabaseDob = await getDobFromSupabase(currentUser.id);
+        if (supabaseDob) {
+          savedDob = supabaseDob;
+          dobOk = true;
+          localStorage.setItem(`lu62b_dob_${currentUser.id}`, savedDob);
+          localStorage.setItem(`lu62b_dob_ok_${currentUser.id}`, '1');
+        }
       }
 
-      if (savedDob) {
+      if (savedDob && dobOk) {
         showProfile(savedDob);
       } else {
-        // No DOB yet — show gate, keep profile hidden
+        // No verified DOB yet — show gate, keep profile hidden
         document.getElementById('dobGate').style.display = 'flex';
         document.getElementById('profileContent').style.display = 'none';
       }
@@ -2150,6 +2157,7 @@
         const data = await fetchResData(currentUser.id, dobStr);
         // DOB verified — save then enter profile with already-fetched data
         localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
+        localStorage.setItem(`lu62b_dob_ok_${currentUser.id}`, '1');
         await saveDobToSupabase(currentUser.id, dobStr);
         showProfile(dobStr, data);
       } catch (err) {
@@ -2245,6 +2253,7 @@
 
       const dobStr = `${year}-${month}-${day}`;
       localStorage.setItem(`lu62b_dob_${currentUser.id}`, dobStr);
+      localStorage.removeItem(`lu62b_dob_ok_${currentUser.id}`);
       saveDobToSupabase(currentUser.id, dobStr); // sync to Supabase (non-blocking)
       prefillDobSelects('cmpS1Day', 'cmpS1Month', 'cmpS1Year', day, month, year);
       showSavedDob(dobStr);
@@ -2277,6 +2286,7 @@
 
       try {
         resData = await fetchResData(currentUser.id, dob);
+        localStorage.setItem(`lu62b_dob_ok_${currentUser.id}`, '1');
         renderResDashboard();
         renderProfileAcademicBar(resData);
         document.getElementById('resultDashboard').style.display = 'block';
