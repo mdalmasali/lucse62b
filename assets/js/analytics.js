@@ -103,8 +103,8 @@ const LU_ANALYTICS = (() => {
 
   function getOnlineCount(list) {
     if (!list) return 0;
-    const { users, anon } = _dedupeList(list);
-    return users.length + anon.length;
+    const { users } = _dedupeList(list);
+    return users.length; // only count logged-in users
   }
 
   /* Shared cache — one fetch per interval serves badge + arrivals */
@@ -233,11 +233,8 @@ const LU_ANALYTICS = (() => {
         </div>`;
     });
 
-    const anonCount = anon.length - (me ? 0 : 0); // anonymous (not counted separately here)
-    if (!users.length && !anon.length) {
+    if (!users.length) {
       rows = '<div class="lu-panel-empty">No one else is online</div>';
-    } else if (anon.length) {
-      rows += `<div class="lu-panel-anon"><span class="lu-dot" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>${anon.length} anonymous visitor${anon.length > 1 ? 's' : ''}</div>`;
     }
 
     panel.innerHTML = `
