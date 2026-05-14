@@ -247,7 +247,14 @@
     .retake-badge.fail    { background:rgba(244,63,94,.13);  border:1px solid rgba(244,63,94,.3);  color:#f43f5e; }
     .retake-badge.improve { background:rgba(251,146,60,.13); border:1px solid rgba(251,146,60,.3); color:#fb923c; }
     .retake-badge.ok      { background:rgba(34,197,94,.13);  border:1px solid rgba(34,197,94,.3);  color:#22c55e; }
-    .retake-list { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .retake-list { display:flex; flex-direction:column; gap:8px; }
+    .retake-2col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:14px; }
+    .retake-col-hdr { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .retake-col-hdr.fail-hdr    { color:#f43f5e; }
+    .retake-col-hdr.improve-hdr { color:#fb923c; }
+    .res-analytics-2col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+    .res-analytics-2col .res-card { margin-bottom:0; }
+    @media (max-width:768px) { .res-analytics-2col { grid-template-columns:1fr; } .retake-2col { grid-template-columns:1fr; } }
     .retake-row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 14px; }
     .retake-row.fail-row    { border-left:3px solid #f43f5e; }
     .retake-row.improve-row { border-left:3px solid #fb923c; }
@@ -566,20 +573,20 @@
             <div class="res-chart-wrap"><canvas id="gpaChart"></canvas></div>
           </div>
         </div>
-        <!-- CGPA Goal Tracker -->
-        <div class="res-card fade-in">
-          <div class="res-card-title"><i class="fa-solid fa-bullseye"></i> CGPA Goal Tracker</div>
-          <div class="res-goal-inputs">
-            <div><label>Target CGPA</label><input type="number" id="goalTarget" min="0" max="4" step="0.01" value="3.50" oninput="updateGoal()"></div>
-            <div><label>Remaining Semesters</label><input type="number" id="goalRemaining" min="1" max="12" value="2" oninput="updateGoal()"></div>
+        <!-- CGPA Goal Tracker + GPA Trajectory side by side -->
+        <div class="res-analytics-2col fade-in">
+          <div class="res-card">
+            <div class="res-card-title"><i class="fa-solid fa-bullseye"></i> CGPA Goal Tracker</div>
+            <div class="res-goal-inputs">
+              <div><label>Target CGPA</label><input type="number" id="goalTarget" min="0" max="4" step="0.01" value="3.50" oninput="updateGoal()"></div>
+              <div><label>Remaining Semesters</label><input type="number" id="goalRemaining" min="1" max="12" value="2" oninput="updateGoal()"></div>
+            </div>
+            <div id="goalResult"></div>
           </div>
-          <div id="goalResult"></div>
-        </div>
-
-        <!-- GPA Trajectory -->
-        <div class="res-card fade-in">
-          <div class="res-card-title"><i class="fa-solid fa-chart-line"></i> GPA Trajectory Analysis</div>
-          <div id="dTrajectory"></div>
+          <div class="res-card">
+            <div class="res-card-title"><i class="fa-solid fa-chart-line"></i> GPA Trajectory Analysis</div>
+            <div id="dTrajectory"></div>
+          </div>
         </div>
 
         <div class="res-card fade-in">
@@ -1080,8 +1087,10 @@
           ${retake.length  ? `<span class="retake-badge fail"><i class="fa-solid fa-xmark-circle"></i> ${retake.length} Retake</span>` : ''}
           ${improve.length ? `<span class="retake-badge improve"><i class="fa-solid fa-arrow-up"></i> ${improve.length} Improvement</span>` : ''}
         </div>
-        ${retake.length  ? `<div class="retake-list">${retake.map(c=>row(c,'retake')).join('')}</div>`  : ''}
-        ${improve.length ? `<div class="retake-list">${improve.map(c=>row(c,'improve')).join('')}</div>` : ''}`;
+        <div class="retake-2col">
+          ${retake.length  ? `<div><div class="retake-col-hdr fail-hdr"><i class="fa-solid fa-rotate-right"></i> Retake (${retake.length})</div><div class="retake-list">${retake.map(c=>row(c,'retake')).join('')}</div></div>`   : ''}
+          ${improve.length ? `<div><div class="retake-col-hdr improve-hdr"><i class="fa-solid fa-arrow-trend-up"></i> Improve (${improve.length})</div><div class="retake-list">${improve.map(c=>row(c,'improve')).join('')}</div></div>` : ''}
+        </div>`;
     }
 
     /* ── Compare ── */
