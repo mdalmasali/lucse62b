@@ -237,26 +237,22 @@
       font-size: 0.82rem; color: var(--muted); font-style: italic;
     }
 
-    /* -- Exam tabs (Mid / Final Term) -- */
-    .exam-tabs {
-      display: flex; gap: 6px; margin-bottom: 20px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 5px;
+    /* -- Mid / Final section dividers -- */
+    .files-section-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 20px;
+      background: rgba(124,58,237,0.06);
+      border-bottom: 1px solid var(--border);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 0.78rem; letter-spacing: 0.4px;
+      color: var(--text-secondary); text-transform: uppercase;
     }
-    .exam-tab {
-      flex: 1; padding: 10px 20px; border-radius: 10px; border: none;
-      font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.88rem;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-      color: var(--text-secondary); background: transparent;
-      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    .files-section-hdr i { font-size: 0.82rem; opacity: 0.75; }
+    .files-section-empty {
+      padding: 16px 20px; font-size: 0.82rem;
+      color: var(--muted); font-style: italic;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
     }
-    .exam-tab.active {
-      background: linear-gradient(135deg, var(--accent), #6d28d9);
-      color: #fff; box-shadow: 0 4px 14px rgba(124,58,237,0.35);
-    }
-    .exam-tab:not(.active):hover { background: rgba(124,58,237,0.08); color: var(--text); }
-    .exam-tabs-mini { margin-bottom: 16px; }
 
     /* Mobile */
     @media (max-width: 640px) {
@@ -272,7 +268,6 @@
       .file-btn { padding: 7px 12px; font-size: 0.75rem; }
       .mat-course-header { padding: 14px 16px; gap: 10px; }
       .mat-course-name { font-size: 0.95rem; }
-      .exam-tab { padding: 8px 14px; font-size: 0.82rem; gap: 6px; }
     }
 
     /* -- Preview Modal -- */
@@ -375,15 +370,6 @@
         <span id="syncText">Connecting...</span>
       </div>
 
-      <div class="exam-tabs fade-in delay-1" id="examTabs">
-        <button class="exam-tab active" data-tab="mid" onclick="switchTab('mid')">
-          <i class="fa-solid fa-crosshairs"></i> Mid Term
-        </button>
-        <button class="exam-tab" data-tab="final" onclick="switchTab('final')">
-          <i class="fa-solid fa-flag-checkered"></i> Final Term
-        </button>
-      </div>
-
       <div id="courseGrid" class="course-grid fade-in delay-2">
         <div class="res-loading" style="grid-column:1/-1;">
           <div class="spin"></div><span>Loading courses...</span>
@@ -396,15 +382,6 @@
       <div style="margin-top: 40px;">
         <div class="back-btn fade-in" id="backBtn" onclick="showCourses()">
           <i class="fa-solid fa-arrow-left"></i> Back to Courses
-        </div>
-
-        <div class="exam-tabs exam-tabs-mini fade-in" id="examTabsMini">
-          <button class="exam-tab active" data-tab="mid" onclick="switchTab('mid')">
-            <i class="fa-solid fa-crosshairs"></i> Mid Term
-          </button>
-          <button class="exam-tab" data-tab="final" onclick="switchTab('final')">
-            <i class="fa-solid fa-flag-checkered"></i> Final Term
-          </button>
         </div>
 
         <div id="matHeader" class="mat-course-header fade-in"></div>
@@ -525,24 +502,6 @@
     let grouped      = {};  // { code: { name, colorIdx, midFolderId, finalFolderId, midFiles: null|[], finalFiles: null|[] } }
     let marksData    = {};  // { code: [{component, marks}] }
     let activeCourse = null;
-    let activeTab    = 'mid';
-
-    function updateTabUI() {
-      document.querySelectorAll('.exam-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === activeTab);
-      });
-    }
-
-    function switchTab(tab) {
-      if (activeTab === tab) return;
-      activeTab = tab;
-      updateTabUI();
-      if (activeCourse && grouped[activeCourse]) {
-        showMaterials(activeCourse);
-      } else {
-        renderCourses();
-      }
-    }
 
     /* -- Drive API: list files in a folder (proxied via Worker) -- */
     async function loadFolderFiles(folderId) {
@@ -577,7 +536,7 @@
             <div>
               <div class="cc-code">${esc(code)}</div>
               <div class="cc-name" style="margin-top:6px;">${esc(g.name)}</div>
-              <div class="cc-count" style="margin-top:4px;"><i class="fa-solid fa-folder-open" style="font-size:0.7rem;margin-right:4px;"></i>${activeTab === 'mid' ? 'Mid Term' : 'Final Term'} Materials</div>
+              <div class="cc-count" style="margin-top:4px;"><i class="fa-solid fa-folder-open" style="font-size:0.7rem;margin-right:4px;"></i>Mid + Final Materials</div>
             </div>
           </div>`;
       }).join('');
@@ -610,19 +569,15 @@
         </div>`;
     }
 
-    /* -- Level 2: open a course -- */
+    /* -- Level 2: open a course — loads Mid + Final together -- */
     async function showMaterials(code) {
       activeCourse = code;
-      const g        = grouped[code];
-      const ci       = g.colorIdx;
-      const tab      = activeTab;
-      const folderId = tab === 'mid' ? g.midFolderId : g.finalFolderId;
-      const filesKey = tab === 'mid' ? 'midFiles' : 'finalFiles';
+      const g  = grouped[code];
+      const ci = g.colorIdx;
 
       document.getElementById('coursesView').classList.add('hidden');
       document.getElementById('materialsView').classList.add('active');
       document.getElementById('matSearch').value = '';
-      updateTabUI();
 
       document.getElementById('matHeader').className = `mat-course-header fade-in ca-${ci}`;
       document.getElementById('matHeader').innerHTML = `
@@ -635,34 +590,18 @@
       renderMarks(code);
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      if (!folderId) {
-        document.getElementById('fileList').innerHTML =
-          `<div class="res-empty" style="border-radius:0 0 18px 18px;">
-            <i class="fa-regular fa-folder-open"></i>
-            <h3>No ${tab === 'mid' ? 'Mid Term' : 'Final Term'} folder</h3>
-            <p>No folder ID configured for this tab.</p>
-          </div>`;
-        return;
-      }
-
-      /* Load files from Drive API if not cached */
-      if (g[filesKey] === null) {
+      /* Load both folders simultaneously if not already cached */
+      if (g.midFiles === null || g.finalFiles === null) {
         document.getElementById('fileList').innerHTML =
           `<div class="res-loading"><div class="spin"></div><span>Loading files from Drive...</span></div>`;
-        try {
-          g[filesKey] = await loadFolderFiles(folderId);
-        } catch (e) {
-          g[filesKey] = [];
-          document.getElementById('fileList').innerHTML =
-            `<div class="res-empty" style="border-radius:0 0 18px 18px;">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <h3>Could not load files</h3>
-              <p>${e.message || 'Unknown error — check browser console.'}</p>
-            </div>`;
-          return;
-        }
+        const [midRes, finalRes] = await Promise.allSettled([
+          g.midFolderId   ? loadFolderFiles(g.midFolderId)   : Promise.resolve([]),
+          g.finalFolderId ? loadFolderFiles(g.finalFolderId) : Promise.resolve([]),
+        ]);
+        g.midFiles   = midRes.status   === 'fulfilled' ? midRes.value   : [];
+        g.finalFiles = finalRes.status === 'fulfilled' ? finalRes.value : [];
       }
-      renderFiles(g[filesKey]);
+      renderBothFiles(g.midFiles, g.finalFiles);
     }
 
     /* Check if file type supports Drive preview */
@@ -677,46 +616,55 @@
         || m === 'application/vnd.google-apps.spreadsheet';
     }
 
-    function renderFiles(files) {
+    function fileItemHtml(f) {
+      const tm      = typeMeta(f.mimeType);
+      const dlUrl   = fileUrl(f);
+      const prevUrl = `https://drive.google.com/file/d/${f.id}/preview`;
+      const preview = canPreview(f.mimeType);
+      const nameEsc = esc(f.name).replace(/'/g, '\\x27');
+      return `
+        <div class="file-item">
+          <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
+          <div class="file-info">
+            <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
+            <span class="file-type-label">${tm.label}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            ${preview ? `<button class="file-btn vw" onclick="openPreview('${nameEsc}','${esc(prevUrl)}','${esc(dlUrl)}')" style="border:none;cursor:pointer;">
+              <i class="fa-solid fa-eye"></i> Preview
+            </button>` : ''}
+            <a class="file-btn dl" href="${dlUrl}" target="_blank" rel="noopener">
+              <i class="fa-solid fa-download"></i> Download
+            </a>
+          </div>
+        </div>`;
+    }
+
+    function renderBothFiles(midFiles, finalFiles) {
       const list = document.getElementById('fileList');
-      if (!files || !files.length) {
-        list.innerHTML = `<div class="res-empty" style="border-radius:0 0 18px 18px;"><i class="fa-regular fa-folder-open"></i><h3>No files in this folder</h3></div>`;
-        return;
+      let html = '';
+      html += `<div class="files-section-hdr"><i class="fa-solid fa-crosshairs"></i> Mid Term</div>`;
+      if (midFiles && midFiles.length) {
+        html += midFiles.map(fileItemHtml).join('');
+      } else {
+        html += `<div class="files-section-empty">No Mid Term files yet.</div>`;
       }
-      list.innerHTML = files.map(f => {
-        const tm       = typeMeta(f.mimeType);
-        const dlUrl    = fileUrl(f);
-        const prevUrl  = `https://drive.google.com/file/d/${f.id}/preview`;
-        const preview  = canPreview(f.mimeType);
-        const nameEsc  = esc(f.name).replace(/'/g, '\\x27');
-        const prevEsc  = esc(prevUrl);
-        const dlEsc    = esc(dlUrl);
-        return `
-          <div class="file-item">
-            <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
-            <div class="file-info">
-              <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
-              <span class="file-type-label">${tm.label}</span>
-            </div>
-            <div style="display:flex;gap:6px;flex-shrink:0;">
-              ${preview ? `<button class="file-btn vw" onclick="openPreview('${nameEsc}','${prevEsc}','${dlEsc}')" style="border:none;cursor:pointer;">
-                <i class="fa-solid fa-eye"></i> Preview
-              </button>` : ''}
-              <a class="file-btn dl" href="${dlUrl}" target="_blank" rel="noopener">
-                <i class="fa-solid fa-download"></i> Download
-              </a>
-            </div>
-          </div>`;
-      }).join('');
+      html += `<div class="files-section-hdr"><i class="fa-solid fa-flag-checkered"></i> Final Term</div>`;
+      if (finalFiles && finalFiles.length) {
+        html += finalFiles.map(fileItemHtml).join('');
+      } else {
+        html += `<div class="files-section-empty">No Final Term files yet.</div>`;
+      }
+      list.innerHTML = html;
     }
 
     function filterFiles(q) {
       if (!activeCourse) return;
-      const filesKey = activeTab === 'mid' ? 'midFiles' : 'finalFiles';
-      const files = grouped[activeCourse][filesKey] || [];
+      const g  = grouped[activeCourse];
       const lq = q.trim().toLowerCase();
-      if (!lq) { renderFiles(files); return; }
-      renderFiles(files.filter(f => f.name.toLowerCase().includes(lq)));
+      if (!lq) { renderBothFiles(g.midFiles || [], g.finalFiles || []); return; }
+      const filt = arr => (arr || []).filter(f => f.name.toLowerCase().includes(lq));
+      renderBothFiles(filt(g.midFiles), filt(g.finalFiles));
     }
 
     function showCourses() {
