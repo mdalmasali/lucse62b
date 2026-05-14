@@ -45,9 +45,24 @@ export default {
 
       // ── GET /lookup?id=STUDENT_ID — single student lookup, never exposes full sheet ──
       if (p === '/lookup') {
+        // Only allow requests originating from the portal (blocks direct URL access & external scraping)
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+
         const sid = url.searchParams.get('id');
         if (!sid) return errResp(cors, 400, 'Missing id');
         if (!/^\d{8,16}$/.test(sid)) return errResp(cors, 400, 'Invalid ID');
+
+        // Rate limit: max 10 lookups per hour per IP
+        if (env.SMS_RATE) {
+          const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const now = Date.now();
+          const key = `lookup:h:${ip}:${Math.floor(now / 3600000)}`;
+          const raw = await env.SMS_RATE.get(key);
+          const cnt = parseInt(raw || '0');
+          if (cnt >= 10) return errResp(cors, 429, 'Too many lookups — try again later');
+          await env.SMS_RATE.put(key, String(cnt + 1), { expirationTtl: 3600 });
+        }
+
         const id = env.MAIN_SHEET_ID;
         if (!id) return errResp(cors, 500, 'Not configured');
         const tq = `select * where B='${sid}'`;
