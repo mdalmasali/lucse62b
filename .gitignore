@@ -7,3 +7,5 @@ Thumbs.db
 *.local.json
 .claude/
 .claude/settings.local.json
+skills-lock.json
+.agents/
