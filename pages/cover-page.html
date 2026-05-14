@@ -326,6 +326,56 @@
       border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Light mode overrides ── */
+    html[data-theme="light"] .cg-field input,
+    html[data-theme="light"] .cg-field select,
+    html[data-theme="light"] .cg-field textarea,
+    html[data-theme="light"] .cg-member-row input {
+      background: rgba(255,255,255,0.9);
+      border-color: rgba(109,40,217,0.2);
+      color: #0f172a;
+    }
+    html[data-theme="light"] .cg-field input:focus,
+    html[data-theme="light"] .cg-field select:focus,
+    html[data-theme="light"] .cg-field textarea:focus,
+    html[data-theme="light"] .cg-member-row input:focus {
+      background: #fff;
+      border-color: var(--accent);
+    }
+    html[data-theme="light"] .cg-field select option { background: #fff; color: #0f172a; }
+    html[data-theme="light"] .cg-type-btn {
+      background: rgba(109,40,217,0.05);
+      border-color: rgba(109,40,217,0.18);
+    }
+    html[data-theme="light"] .cg-type-btn:hover {
+      background: rgba(109,40,217,0.1);
+      border-color: rgba(109,40,217,0.4);
+    }
+    html[data-theme="light"] .btn-add-m,
+    html[data-theme="light"] .cg-preview-toggle-btn {
+      background: rgba(109,40,217,0.05);
+      border-color: rgba(109,40,217,0.18);
+      color: var(--text-secondary);
+    }
+    html[data-theme="light"] .btn-add-m:hover,
+    html[data-theme="light"] .cg-preview-toggle-btn:hover {
+      background: rgba(109,40,217,0.1);
+      color: var(--text);
+    }
+    html[data-theme="light"] .ac-dropdown {
+      background: #ffffff;
+      border-color: rgba(109,40,217,0.25);
+      box-shadow: 0 10px 36px rgba(0,0,0,0.12);
+    }
+    html[data-theme="light"] .ac-item { color: #0f172a; }
+    html[data-theme="light"] .ac-item:not(:last-child) {
+      border-bottom: 1px solid rgba(109,40,217,0.08);
+    }
+    html[data-theme="light"] .ac-item:hover,
+    html[data-theme="light"] .ac-item.ac-focused { background: rgba(109,40,217,0.07); }
+    html[data-theme="light"] .ac-item strong { color: var(--accent); }
+    html[data-theme="light"] .ac-item small { color: var(--text-secondary); }
   </style>
 </head>
 <body>

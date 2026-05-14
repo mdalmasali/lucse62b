@@ -1239,6 +1239,27 @@
     html[data-theme="light"] .res-sem-modal-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
     html[data-theme="light"] .res-sem-modal-close { background: rgba(0,0,0,0.05); }
     html[data-theme="light"] .res-sem-modal-course { background: rgba(124,58,237,0.05); border-color: rgba(124,58,237,0.15); }
+
+    /* Retake/improve rows — white-alpha bg invisible on light background */
+    html[data-theme="light"] .retake-row {
+      background: rgba(0,0,0,0.025);
+      border-color: rgba(0,0,0,0.09);
+    }
+    html[data-theme="light"] .retake-row.fail-row    { border-left-color: #f43f5e; }
+    html[data-theme="light"] .retake-row.improve-row { border-left-color: #fb923c; }
+    html[data-theme="light"] .retake-name { color: #0f172a; }
+
+    /* Semester mini-cards */
+    html[data-theme="light"] .result-sem-mini {
+      background: rgba(255,255,255,0.85);
+      border-color: rgba(109,40,217,0.14);
+    }
+    html[data-theme="light"] .result-sem-mini:hover { border-color: rgba(109,40,217,0.35); }
+    html[data-theme="light"] .result-sem-mini-stat { background: rgba(109,40,217,0.04); }
+
+    /* Result course cards */
+    html[data-theme="light"] .result-course-card { background: rgba(124,58,237,0.04); }
+    html[data-theme="light"] .result-course-card:hover { border-color: rgba(124,58,237,0.3); }
 </style>
 </head>
 <body>
