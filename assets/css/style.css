@@ -1583,7 +1583,8 @@ footer {
 }
 .dl-title {
   font-size: 0.9rem; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .dl-due { font-size: 0.71rem; color: var(--muted); margin-top: 3px; }
 .dl-timer { flex-shrink: 0; text-align: right; }
