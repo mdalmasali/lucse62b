@@ -314,14 +314,22 @@
     }
 
     /* -- Supabase helpers -- */
-    async function getPasswordHash(studentId) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      );
-      if (!res.ok) throw new Error('Supabase error');
-      const data = await res.json();
-      return data[0]?.password_hash || null;
+    async function supaRpc(fn, params) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      if (!res.ok) throw new Error('Supabase RPC error');
+      return res.json();
+    }
+
+    async function hasPassword(studentId) {
+      return supaRpc('student_has_password', { p_student_id: studentId });
+    }
+
+    async function verifyPassword(studentId, plainPassword) {
+      return supaRpc('verify_student_password', { p_student_id: studentId, p_password: plainPassword });
     }
 
     async function savePasswordHash(studentId, passwordHash) {
@@ -397,10 +405,10 @@
         } else {
           studentData = await fetchStudentData(sid);
         }
-        const hash  = await getPasswordHash(sid);
-        if (sid === DEMO_STUDENT_ID && !hash) throw new Error('Demo login unavailable');
+        const hasPwd = await hasPassword(sid);
+        if (sid === DEMO_STUDENT_ID && !hasPwd) throw new Error('Demo login unavailable');
         const inits = initials(studentData.name);
-        if (hash) {
+        if (hasPwd) {
           document.getElementById('pwdAvatar').textContent = inits;
           document.getElementById('pwdName').textContent   = studentData.name;
           applyPasswordStepState(studentData);
@@ -430,8 +438,7 @@
       if (!pwd) { errEl.innerText='Please enter your password.'; errEl.style.display='block'; return; }
       btn.innerText='Logging in...'; btn.disabled=true;
       try {
-        const hash  = await getPasswordHash(studentData.id);
-        const valid = await bcrypt.compare(pwd, hash);
+        const valid = await verifyPassword(studentData.id, pwd);
         if (valid) {
           const keep = document.getElementById('keepLoggedIn').checked;
           const u = buildStudentSession(studentData);
@@ -491,8 +498,8 @@
       if (code===generatedOTP) {
         btn.innerText='Checking...'; btn.disabled=true;
         try {
-          const hash = await getPasswordHash(studentData.id);
-          if (hash) {
+          const hasPwd = await hasPassword(studentData.id);
+          if (hasPwd) {
             const u = buildStudentSession(studentData);
             localStorage.setItem('lu62b_student',JSON.stringify(u));
             window.location.href='../index.html';

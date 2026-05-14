@@ -1789,15 +1789,24 @@
     let cpOTP         = null;
     let cpPendingHash = null;
 
-    async function getPasswordHash(studentId) {
-      try {
-        const r = await fetch(
-          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=password_hash`,
-          { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
-        );
-        const rows = await r.json();
-        return (Array.isArray(rows) && rows.length > 0) ? rows[0].password_hash : null;
-      } catch { return null; }
+    async function supaRpc(fn, params) {
+      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      if (!r.ok) throw new Error('RPC error');
+      return r.json();
+    }
+
+    async function hasPassword(studentId) {
+      try { return await supaRpc('student_has_password', { p_student_id: studentId }); }
+      catch { return false; }
+    }
+
+    async function verifyPassword(studentId, plainPassword) {
+      try { return await supaRpc('verify_student_password', { p_student_id: studentId, p_password: plainPassword }); }
+      catch { return false; }
     }
 
     async function getDobFromSupabase(studentId) {
@@ -1893,8 +1902,8 @@
       // settingsSection hidden by design
 
       // Check password status from Supabase
-      getPasswordHash(currentUser.id).then(hash => {
-        if (hash) {
+      hasPassword(currentUser.id).then(hasPwd => {
+        if (hasPwd) {
           document.getElementById('passwordStatus').innerText = 'Password is set';
           document.getElementById('statusIcon').innerText = '🔐';
           document.getElementById('statusIcon').style.color = 'var(--green)';
@@ -2062,9 +2071,9 @@
       btn.disabled = true;
 
       try {
-        const currentHash = await getPasswordHash(currentUser.id);
+        const hasPwd = await hasPassword(currentUser.id);
 
-        if (!currentHash) {
+        if (!hasPwd) {
           document.getElementById('currentPasswordError').innerText = 'No password set. Please use forgot password option.';
           document.getElementById('currentPasswordError').style.display = 'block';
           btn.innerHTML = 'Send OTP <i class="fa-solid fa-paper-plane"></i>';
@@ -2072,7 +2081,7 @@
           return;
         }
 
-        const isValid = await bcrypt.compare(currentPassword, currentHash);
+        const isValid = await verifyPassword(currentUser.id, currentPassword);
         if (!isValid) {
           document.getElementById('currentPasswordError').innerText = 'Current password is incorrect';
           document.getElementById('currentPasswordError').style.display = 'block';
