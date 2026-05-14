@@ -864,6 +864,26 @@
       margin-top: 2px;
     }
 
+    /* Retake & Improvement */
+    .retake-summary { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+    .retake-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:20px; font-size:.78rem; font-weight:600; }
+    .retake-badge.fail    { background:rgba(244,63,94,.13);  border:1px solid rgba(244,63,94,.3);  color:#f43f5e; }
+    .retake-badge.improve { background:rgba(251,146,60,.13); border:1px solid rgba(251,146,60,.3); color:#fb923c; }
+    .retake-badge.ok      { background:rgba(34,197,94,.13);  border:1px solid rgba(34,197,94,.3);  color:#22c55e; }
+    .retake-list { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .retake-row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 14px; }
+    .retake-row.fail-row    { border-left:3px solid #f43f5e; }
+    .retake-row.improve-row { border-left:3px solid #fb923c; }
+    .retake-info { flex:1; min-width:0; }
+    .retake-name { font-size:.84rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .retake-meta { font-size:.7rem; color:var(--text-secondary); margin-top:2px; }
+    .retake-grade { padding:3px 10px; border-radius:12px; font-size:.78rem; font-weight:700; flex-shrink:0; }
+    .retake-grade.fail    { background:rgba(244,63,94,.18);  color:#f43f5e; }
+    .retake-grade.improve { background:rgba(251,146,60,.18); color:#fb923c; }
+    .retake-tag { font-size:.67rem; padding:2px 8px; border-radius:8px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+    .retake-tag.retake  { background:rgba(244,63,94,.13);  color:#f43f5e;  border:1px solid rgba(244,63,94,.25); }
+    .retake-tag.improve { background:rgba(251,146,60,.13); color:#fb923c; border:1px solid rgba(251,146,60,.25); }
+
     /* Compare */
     .result-compare-inputs {
       display: grid;
@@ -1557,6 +1577,9 @@
           </div>
           <div class="result-section-subtitle"><i class="fa-solid fa-trophy"></i> Performance Extremes</div>
           <div class="result-extremes-grid" id="resExtremesGrid"></div>
+
+          <div class="result-section-subtitle"><i class="fa-solid fa-rotate-right"></i> Retake &amp; Improvement</div>
+          <div id="resRetakeSection"></div>
         </div>
 
         <!-- -- Compare Tab -- -->
@@ -2543,6 +2566,7 @@
       renderResGradeChart(gradeCount);
       renderResGpaChart(semesters);
       renderResExtremes(semesters);
+      renderResRetake(semesters);
     }
 
     function renderResGradeChart(gradeCount) {
@@ -2627,6 +2651,38 @@
           <div class="result-extreme-grade">Grade: ${lowest.grade||'N/A'}</div>
         </div>` : ''}
       `;
+    }
+
+    function renderResRetake(semesters) {
+      const el = document.getElementById('resRetakeSection');
+      if (!el) return;
+      const IMPROVE = new Set(['B-','C+','C','D']);
+      const retake = [], improve = [];
+      semesters.forEach(sem => (sem.courses||[]).forEach(c => {
+        const entry = { ...c, semester_name: sem.semester_name };
+        if (c.grade === 'F')           retake.push(entry);
+        else if (IMPROVE.has(c.grade)) improve.push(entry);
+      }));
+      if (!retake.length && !improve.length) {
+        el.innerHTML = `<div class="retake-badge ok"><i class="fa-solid fa-circle-check"></i> All courses are above B− — nothing to retake or improve!</div>`;
+        return;
+      }
+      const row = (c, type) => `
+        <div class="retake-row ${type==='retake'?'fail-row':'improve-row'}">
+          <div class="retake-info">
+            <div class="retake-name">${c.course_title||c.course_code||'N/A'}</div>
+            <div class="retake-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.semester_name||''}</div>
+          </div>
+          <span class="retake-grade ${type==='retake'?'fail':'improve'}">${c.grade}</span>
+          <span class="retake-tag ${type}">${type==='retake'?'Retake':'Improvement'}</span>
+        </div>`;
+      el.innerHTML = `
+        <div class="retake-summary">
+          ${retake.length  ? `<span class="retake-badge fail"><i class="fa-solid fa-xmark-circle"></i> ${retake.length} Retake</span>` : ''}
+          ${improve.length ? `<span class="retake-badge improve"><i class="fa-solid fa-arrow-up"></i> ${improve.length} Improvement</span>` : ''}
+        </div>
+        ${retake.length  ? `<div class="retake-list">${retake.map(c=>row(c,'retake')).join('')}</div>`  : ''}
+        ${improve.length ? `<div class="retake-list">${improve.map(c=>row(c,'improve')).join('')}</div>` : ''}`;
     }
 
     // -- Compare -----------------------------------------------------
