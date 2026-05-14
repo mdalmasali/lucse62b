@@ -2407,9 +2407,26 @@
 
     // -- Render Dashboard --------------------------------------------
     function renderResDashboard() {
+      saveRetakeCodes(resData);
       renderResStats();
       renderResLatestSemester();
       renderResAllSemesters();
+    }
+
+    function saveRetakeCodes(data) {
+      if (!data) return;
+      const IMPROVE = new Set(['B-','C+','C','D']);
+      const retake = [], improve = [];
+      (data.semesters || []).forEach(sem => (sem.courses||[]).forEach(c => {
+        const code = (c.course_code||'').trim().toUpperCase();
+        if (!code) return;
+        if (c.grade === 'F') retake.push(code);
+        else if (IMPROVE.has(c.grade)) improve.push(code);
+      }));
+      try {
+        localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
+        localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
+      } catch(e) {}
     }
 
     function renderResStats() {
@@ -2663,10 +2680,6 @@
         if (c.grade === 'F')           retake.push(entry);
         else if (IMPROVE.has(c.grade)) improve.push(entry);
       }));
-      try {
-        localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake.map(c => (c.course_code||'').trim().toUpperCase())));
-        localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve.map(c => (c.course_code||'').trim().toUpperCase())));
-      } catch(e) {}
       if (!retake.length && !improve.length) {
         el.innerHTML = `<div class="retake-badge ok"><i class="fa-solid fa-circle-check"></i> All courses are above B− — nothing to retake or improve!</div>`;
         return;
