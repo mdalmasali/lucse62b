@@ -1,6 +1,70 @@
 /* ─── All Batch Course Offer ─── */
 /* Globals from info.html: fetchSheet, getSemesterLabel, escH */
 
+const _AC_WORKER = 'https://lucse62b-api.sy164425.workers.dev';
+const _AC_SUPA   = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+const _AC_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+
+function _acCachedCodes() {
+  try {
+    return {
+      retake:  new Set(JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]')),
+      improve: new Set(JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]')),
+    };
+  } catch(e) { return { retake: new Set(), improve: new Set() }; }
+}
+
+async function _acFetchRetakeCodes() {
+  try {
+    const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+    if (!user?.id) return _acCachedCodes();
+    const dob = localStorage.getItem(`lu62b_dob_${user.id}`);
+    if (!dob) return _acCachedCodes();
+
+    const doFetch = async () => {
+      let text = null;
+      for (const [url, opts] of [
+        [_AC_WORKER + '/result', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ student_id: user.id, birth_date: dob }) }],
+        [_AC_SUPA + '/functions/v1/get-result', { method:'POST', headers:{'Content-Type':'application/json','apikey':_AC_KEY}, body: JSON.stringify({ student_id: user.id, birth_date: dob }) }],
+      ]) {
+        try {
+          const r = await fetch(url, opts);
+          if (!r.ok) continue;
+          const t = await r.text();
+          if (!t.trimStart().startsWith('<')) { text = t; break; }
+        } catch(e) {}
+      }
+      return text;
+    };
+
+    const timeout = new Promise(r => setTimeout(() => r(null), 6000));
+    const text = await Promise.race([doFetch(), timeout]);
+    if (!text) return _acCachedCodes();
+
+    const data = JSON.parse(text);
+    if (!data?.success) return _acCachedCodes();
+
+    const IMPROVE = new Set(['B-','C+','C','D']);
+    const retake = [], improve = [];
+    for (const yearSems of Object.values(data.results || {})) {
+      const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
+      for (const sem of sems) {
+        for (const c of (sem.courses || [])) {
+          const code = (c.course_code || '').trim().toUpperCase();
+          if (!code) continue;
+          if (c.grade === 'F') retake.push(code);
+          else if (IMPROVE.has(c.grade)) improve.push(code);
+        }
+      }
+    }
+    try {
+      localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
+      localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
+    } catch(e) {}
+    return { retake: new Set(retake), improve: new Set(improve) };
+  } catch(e) { return _acCachedCodes(); }
+}
+
 async function loadAllCourse(body) {
   body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading course offer...</div>';
 
@@ -8,7 +72,7 @@ async function loadAllCourse(body) {
   let batchOrder = [];
 
   try {
-    const [data, sem] = await Promise.all([fetchSheet('LU_Course_Offer'), getSemesterLabel()]);
+    const [data, sem, myCodes] = await Promise.all([fetchSheet('LU_Course_Offer'), getSemesterLabel(), _acFetchRetakeCodes()]);
 
     const rows = (data.table?.rows || []).map(r =>
       (r.c || []).map(c => {
@@ -66,12 +130,12 @@ async function loadAllCourse(body) {
       chip.onclick = () => {
         document.querySelectorAll('.ac-chip').forEach(c => c.classList.remove('ac-chip-active'));
         chip.classList.add('ac-chip-active');
-        renderBatchTable(batch);
+        renderBatchTable(batch, myCodes);
       };
       chipBar.appendChild(chip);
     });
 
-    renderBatchTable(defaultBatch);
+    renderBatchTable(defaultBatch, myCodes);
 
   } catch (err) {
     body.innerHTML = `<div class="info-placeholder">
@@ -81,17 +145,13 @@ async function loadAllCourse(body) {
     </div>`;
   }
 
-  function renderBatchTable(batch) {
+  function renderBatchTable(batch, myCodes) {
     const wrap = document.getElementById('ac-table-wrap');
     if (!wrap) return;
     const courses = batches[batch] || [];
     const totalCredits = courses.reduce((s, c) => s + (parseFloat(c.credit) || 0), 0);
 
-    let retakeCodes = new Set(), improveCodes = new Set();
-    try {
-      JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]').forEach(x => retakeCodes.add(x));
-      JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]').forEach(x => improveCodes.add(x));
-    } catch(e) {}
+    const { retake: retakeCodes, improve: improveCodes } = myCodes || _acCachedCodes();
 
     const myRetakeCount  = courses.filter(c => retakeCodes.has((c.code||'').trim().toUpperCase())).length;
     const myImproveCount = courses.filter(c => improveCodes.has((c.code||'').trim().toUpperCase())).length;
