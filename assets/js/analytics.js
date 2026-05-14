@@ -103,8 +103,8 @@ const LU_ANALYTICS = (() => {
 
   function getOnlineCount(list) {
     if (!list) return 0;
-    const { users } = _dedupeList(list);
-    return users.length; // only count logged-in users
+    const { users, anon } = _dedupeList(list);
+    return users.length + anon.length;
   }
 
   /* Shared cache — one fetch per interval serves badge + arrivals */
@@ -233,8 +233,10 @@ const LU_ANALYTICS = (() => {
         </div>`;
     });
 
-    if (!users.length) {
+    if (!users.length && !anon.length) {
       rows = '<div class="lu-panel-empty">No one else is online</div>';
+    } else if (anon.length) {
+      rows += `<div class="lu-panel-anon"><span class="lu-dot" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>${anon.length} anonymous visitor${anon.length > 1 ? 's' : ''}</div>`;
     }
 
     panel.innerHTML = `
@@ -255,6 +257,7 @@ const LU_ANALYTICS = (() => {
   }
 
   function _createBadge() {
+    if (!_user()) return; // hide badge entirely for logged-out users
     if (document.getElementById('lu-online-badge')) return;
     _injectBadgeStyle();
     const el = document.createElement('div');
