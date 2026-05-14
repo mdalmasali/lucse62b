@@ -145,6 +145,42 @@
     }
     .mem-lb-close:hover { background: rgba(255,255,255,0.25); }
   </style>
+  <style>
+    /* ── Home DOB Gate ── */
+    #homeDobGate{position:fixed;inset:0;z-index:99970;display:none;align-items:center;justify-content:center;padding:20px;
+      background:rgba(6,4,24,0.97);backdrop-filter:blur(14px);overflow-y:auto;}
+    #homeDobGate.active{display:flex;}
+    .hdg-card{background:#0f0c1e;border:1px solid rgba(124,58,237,0.25);border-radius:28px;padding:46px 38px 34px;
+      max-width:460px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,0.7);position:relative;overflow:hidden;}
+    .hdg-card::before{content:'';position:absolute;top:0;left:0;right:0;height:140px;
+      background:linear-gradient(135deg,rgba(124,58,237,0.16),rgba(236,72,153,0.12));
+      border-bottom:1px solid rgba(124,58,237,0.15);pointer-events:none;}
+    .hdg-icon{width:70px;height:70px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:20px;
+      margin:8px auto 18px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;color:#fff;
+      position:relative;z-index:1;box-shadow:0 10px 26px rgba(124,58,237,0.4);}
+    .hdg-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#a78bfa;font-size:0.76rem;
+      letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;position:relative;z-index:1;}
+    .hdg-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.65rem;color:#f0e6ff;
+      margin-bottom:10px;position:relative;z-index:1;}
+    .hdg-desc{color:rgba(196,181,253,0.65);font-size:0.87rem;line-height:1.75;margin-bottom:26px;position:relative;z-index:1;}
+    .hdg-selects{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+    .hdg-selects select{width:100%;padding:12px 8px;background:rgba(255,255,255,0.04);
+      border:1px solid rgba(124,58,237,0.2);border-radius:10px;color:#e2d9f3;
+      font-family:'Inter',sans-serif;font-size:0.88rem;cursor:pointer;}
+    .hdg-selects select:focus{outline:none;border-color:#7c3aed;}
+    .hdg-selects select option{background:#0f0c1e;}
+    .hdg-error{color:#f43f5e;font-size:0.82rem;font-weight:500;margin-bottom:12px;display:none;line-height:1.5;}
+    .hdg-btn{width:100%;padding:14px 20px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;
+      border:none;border-radius:12px;font-weight:700;font-family:'Inter',sans-serif;font-size:1rem;
+      cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .hdg-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(124,58,237,0.38);}
+    .hdg-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;box-shadow:none;}
+    .hdg-note{color:rgba(167,139,250,0.4);font-size:0.74rem;margin-top:14px;}
+    .hdg-spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;
+      border-radius:50%;animation:hdgSpin 0.7s linear infinite;display:inline-block;}
+    @keyframes hdgSpin{to{transform:rotate(360deg);}}
+    @media(max-width:480px){.hdg-card{padding:36px 20px 28px;border-radius:22px;}.hdg-title{font-size:1.4rem;}}
+  </style>
 </head>
 <body>
   <!-- Background layers -->
@@ -507,6 +543,37 @@
       </div>
       <button class="bday-close-btn" onclick="closeBdayOverlay()">Thank You! This means the world to me 🎊</button>
       <div class="bday-from-text">— CSE 62B Portal &nbsp;·&nbsp; lucse62b.xyz</div>
+    </div>
+  </div>
+
+  <!-- Home DOB Gate — blocks site use until LUS-verified DOB is entered -->
+  <div id="homeDobGate">
+    <div class="hdg-card fade-in">
+      <div class="hdg-icon"><i class="fa-solid fa-calendar-days"></i></div>
+      <div class="hdg-brand">CSE 62B · PORTAL</div>
+      <h2 class="hdg-title">One-Time Setup</h2>
+      <p class="hdg-desc">
+        Enter your <strong style="color:#c4b5fd;">Date of Birth</strong> exactly as written on your certificate.<br>
+        This verifies your identity with the LU portal and personalises your experience.
+      </p>
+      <div class="hdg-selects">
+        <select id="hgDobDay"><option value="">Day</option></select>
+        <select id="hgDobMonth">
+          <option value="">Month</option>
+          <option value="01">January</option><option value="02">February</option>
+          <option value="03">March</option><option value="04">April</option>
+          <option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option>
+          <option value="09">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="hgDobYear"><option value="">Year</option></select>
+      </div>
+      <div class="hdg-error" id="hgDobError"></div>
+      <button class="hdg-btn" id="hgDobBtn" onclick="submitHomeDob()">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Continue
+      </button>
+      <p class="hdg-note"><i class="fa-solid fa-lock" style="font-size:0.68rem;"></i> Stored securely · Used only for result lookup</p>
     </div>
   </div>
 
@@ -1017,6 +1084,183 @@
       }
     } catch (e) { /* fail silently */ }
   });
+})();
+</script>
+
+<script>
+/* ── Home DOB Gate ── */
+(function () {
+  var _HDG_WORKER   = 'https://lucse62b-api.sy164425.workers.dev';
+  var _HDG_SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+  var _HDG_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+
+  function getSession() {
+    try {
+      var raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (!s || !s.id || s.isDemo || String(s.id).toUpperCase() === 'DEMO') return null;
+      return s;
+    } catch (e) { return null; }
+  }
+
+  async function checkDobAndMaybeShowGate() {
+    var student = getSession();
+    if (!student) return;
+
+    var dobOk = localStorage.getItem('lu62b_dob_ok_' + student.id) === '1';
+    if (dobOk) return;
+
+    // Try Supabase — DOB stored there is already LUS-verified
+    try {
+      var r = await fetch(
+        _HDG_SUPA_URL + '/rest/v1/student_passwords?student_id=eq.' + encodeURIComponent(student.id) + '&select=dob',
+        { headers: { 'apikey': _HDG_SUPA_KEY, 'Authorization': 'Bearer ' + _HDG_SUPA_KEY } }
+      );
+      if (r.ok) {
+        var rows = await r.json();
+        if (Array.isArray(rows) && rows.length && rows[0].dob) {
+          localStorage.setItem('lu62b_dob_' + student.id, rows[0].dob);
+          localStorage.setItem('lu62b_dob_ok_' + student.id, '1');
+          return; // already verified — don't show gate
+        }
+      }
+    } catch (e) {}
+
+    // No verified DOB found — show gate
+    showGate(student);
+  }
+
+  function showGate(student) {
+    var overlay = document.getElementById('homeDobGate');
+    if (!overlay) return;
+    overlay.classList.add('active');
+    window._hgStudent = student;
+
+    // Populate day dropdown
+    var dayEl = document.getElementById('hgDobDay');
+    for (var i = 1; i <= 31; i++) {
+      var o = document.createElement('option');
+      o.value = String(i).padStart(2, '0');
+      o.textContent = i;
+      dayEl.appendChild(o);
+    }
+    // Populate year dropdown
+    var yearEl = document.getElementById('hgDobYear');
+    var curYear = new Date().getFullYear();
+    for (var y = curYear; y >= 1960; y--) {
+      var oy = document.createElement('option');
+      oy.value = y;
+      oy.textContent = y;
+      yearEl.appendChild(oy);
+    }
+  }
+
+  window.submitHomeDob = async function () {
+    var student = window._hgStudent;
+    if (!student) return;
+    var day   = document.getElementById('hgDobDay').value;
+    var month = document.getElementById('hgDobMonth').value;
+    var year  = document.getElementById('hgDobYear').value;
+    var errEl = document.getElementById('hgDobError');
+
+    if (!day || !month || !year) {
+      errEl.textContent = 'Please select your complete Date of Birth.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    var btn = document.getElementById('hgDobBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="hdg-spin"></span> Verifying with LU portal…';
+
+    var dobStr = year + '-' + month + '-' + day;
+
+    try {
+      // Verify via Worker → Supabase Edge Function fallback
+      var text = null;
+      var attempts = [
+        [_HDG_WORKER + '/result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: student.id, birth_date: dobStr }) }],
+        [_HDG_SUPA_URL + '/functions/v1/get-result', { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': _HDG_SUPA_KEY }, body: JSON.stringify({ student_id: student.id, birth_date: dobStr }) }],
+      ];
+      for (var ai = 0; ai < attempts.length; ai++) {
+        try {
+          var res = await fetch(attempts[ai][0], attempts[ai][1]);
+          if (!res.ok) continue;
+          var t = await res.text();
+          if (!t.trimStart().startsWith('<')) { text = t; break; }
+        } catch (e) {}
+      }
+
+      if (!text) {
+        var connErr = new Error('Connection failed');
+        connErr.isConn = true;
+        throw connErr;
+      }
+
+      var data = JSON.parse(text);
+      if (!data || !data.success) {
+        var apiErr = new Error(data && data.error ? data.error : 'Verification failed');
+        apiErr.isApiError = true;
+        throw apiErr;
+      }
+
+      // Verified — save DOB
+      localStorage.setItem('lu62b_dob_' + student.id, dobStr);
+      localStorage.setItem('lu62b_dob_ok_' + student.id, '1');
+
+      // Save to Supabase (non-blocking)
+      var hdrs = { 'apikey': _HDG_SUPA_KEY, 'Authorization': 'Bearer ' + _HDG_SUPA_KEY,
+                   'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+      fetch(_HDG_SUPA_URL + '/rest/v1/student_passwords?student_id=eq.' + encodeURIComponent(student.id),
+            { method: 'PATCH', headers: hdrs, body: JSON.stringify({ dob: dobStr }) })
+        .then(function (pr) { return pr.json(); })
+        .then(function (rows) {
+          if (!rows.length) {
+            fetch(_HDG_SUPA_URL + '/rest/v1/student_passwords',
+                  { method: 'POST', headers: hdrs, body: JSON.stringify({ student_id: student.id, dob: dobStr }) });
+          }
+        }).catch(function () {});
+
+      // Cache retake/improve codes from the fetched result
+      try {
+        var IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
+        var retake = [], improve = [];
+        Object.values(data.results || {}).forEach(function (yearSems) {
+          var sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
+          sems.forEach(function (sem) {
+            (sem.courses || []).forEach(function (c) {
+              var code = (c.course_code || '').trim().toUpperCase();
+              if (!code) return;
+              if (c.grade === 'F') retake.push(code);
+              else if (IMPROVE.has(c.grade)) improve.push(code);
+            });
+          });
+        });
+        localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
+        localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
+      } catch (e) {}
+
+      // Hide gate
+      document.getElementById('homeDobGate').classList.remove('active');
+
+    } catch (err) {
+      var isDobWrong = err.isApiError || /not found|invalid|incorrect|credential/i.test(err.message);
+      errEl.textContent = isDobWrong
+        ? 'Date of Birth is incorrect. Please check your certificate and try again.'
+        : 'Connection failed. Please check your internet and try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Continue';
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkDobAndMaybeShowGate);
+  } else {
+    checkDobAndMaybeShowGate();
+  }
 })();
 </script>
 </body>
