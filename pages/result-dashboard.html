@@ -310,6 +310,82 @@
     }
     .sem-modal-mark-chip strong { color:var(--text); }
 
+    /* ── Credit + Grade Progress ── */
+    .res-progress-row { margin-bottom: 16px; }
+    .res-progress-label { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 7px; }
+    .res-progress-fraction { color: #a78bfa; font-weight: 700; }
+    .res-progress-bar-wrap { height: 8px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; }
+    .res-progress-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), #06b6d4); transition: width 0.8s ease; }
+    .res-grade-breakdown { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .res-gb-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .rgb-ap { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+    .rgb-a  { background: rgba(139,92,246,0.12);  color: #8b5cf6; border: 1px solid rgba(139,92,246,0.25); }
+    .rgb-am { background: rgba(99,102,241,0.12);  color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+    .rgb-bp { background: rgba(16,185,129,0.1);   color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .rgb-b  { background: rgba(20,184,166,0.1);   color: #2dd4bf; border: 1px solid rgba(20,184,166,0.25); }
+    .rgb-bm { background: rgba(234,179,8,0.1);    color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+    .rgb-cp { background: rgba(249,115,22,0.1);   color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
+    .rgb-c  { background: rgba(249,115,22,0.12);  color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
+    .rgb-d  { background: rgba(244,63,94,0.08);   color: #f87171; border: 1px solid rgba(244,63,94,0.2); }
+    .rgb-f  { background: rgba(244,63,94,0.15);   color: #f43f5e; border: 1px solid rgba(244,63,94,0.3); }
+    .rgb-x  { background: rgba(148,163,184,0.08); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+
+    /* ── Goal Tracker ── */
+    .res-goal-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .res-goal-inputs label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .res-goal-inputs input { width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: border-color 0.2s; box-sizing: border-box; }
+    .res-goal-inputs input:focus { outline: none; border-color: var(--accent); }
+    .res-goal-result { display: flex; flex-direction: column; gap: 10px; }
+    .res-goal-bar-wrap { height: 10px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; margin: 4px 0; }
+    .res-goal-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), #06b6d4); transition: width 0.8s ease; }
+    .res-goal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .res-goal-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; text-align: center; }
+    .res-goal-box-val { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: #a78bfa; }
+    .res-goal-box-lbl { font-size: 0.72rem; color: var(--text-secondary); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+    .res-goal-status { padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; }
+    .res-goal-status.ok   { background: rgba(16,185,129,0.1);  color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .res-goal-status.hard { background: rgba(234,179,8,0.08);  color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+    .res-goal-status.done { background: rgba(167,139,250,0.12);color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+    .res-goal-status.imp  { background: rgba(244,63,94,0.08);  color: #f43f5e; border: 1px solid rgba(244,63,94,0.25); }
+
+    /* ── Course Search ── */
+    .res-search-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem; box-sizing: border-box; transition: border-color 0.2s; margin-bottom: 14px; }
+    .res-search-input:focus { outline: none; border-color: var(--accent); }
+    .res-search-input::placeholder { color: var(--muted); }
+    .res-search-result { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); margin-bottom: 6px; gap: 10px; }
+    .res-search-result-info { flex: 1; min-width: 0; }
+    .res-search-result-name { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .res-search-result-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .res-search-result-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .res-search-grade { padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+    .res-search-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Summary Card ── */
+    .res-summary-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+    .res-summary-btn:hover { background: rgba(124,58,237,0.22); }
+    .res-summary-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .res-summary-modal { background: #13131f; border: 1px solid rgba(124,58,237,0.4); border-radius: 24px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 32px 80px rgba(0,0,0,0.7); }
+    .res-summary-name { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: 4px; }
+    .res-summary-id { text-align: center; color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 24px; }
+    .res-summary-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .res-summary-stat { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); border-radius: 14px; padding: 16px 12px; text-align: center; }
+    .res-summary-stat-val { font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 700; color: #a78bfa; }
+    .res-summary-stat-lbl { font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 3px; font-weight: 600; }
+    .res-summary-rows { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .res-summary-row { display: flex; justify-content: space-between; padding: 10px 16px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.04); gap: 10px; }
+    .res-summary-row:last-child { border-bottom: none; }
+    .res-summary-row span:first-child { color: var(--text-secondary); flex-shrink: 0; }
+    .res-summary-row span:last-child { color: var(--text); font-weight: 600; text-align: right; }
+    .res-summary-footer { text-align: center; font-size: 0.72rem; color: var(--muted); margin-top: 16px; }
+    .res-summary-close { width: 100%; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: var(--text-secondary); font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .res-summary-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+    /* ── Trajectory ── */
+    .res-traj-box { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); margin-bottom: 12px; }
+    .res-traj-icon { font-size: 1.8rem; flex-shrink: 0; }
+    .res-traj-label { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .res-traj-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 3px; }
+
     /* ── Spinner ── */
     .rspinner {
       display: inline-block; width: 16px; height: 16px;
@@ -447,6 +523,7 @@
           <div class="res-profile-name" id="dName">Student</div>
           <div class="res-profile-meta" id="dMeta">—</div>
         </div>
+        <button class="res-summary-btn" onclick="showSummaryCard()"><i class="fa-solid fa-id-card"></i> Summary</button>
         <button class="res-logout" onclick="resLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
       <div class="res-extra-info" id="dExtraInfo"></div>
@@ -461,6 +538,24 @@
       <!-- ── Overview ── -->
       <div id="tabOverviewContent">
         <div class="res-stats fade-in" id="dStats"></div>
+
+        <!-- Academic Progress -->
+        <div class="res-card fade-in" id="dProgressCard">
+          <div class="res-card-title"><i class="fa-solid fa-chart-pie"></i> Academic Progress</div>
+          <div class="res-progress-row">
+            <div class="res-progress-label"><span>Degree Credit Progress</span><span class="res-progress-fraction" id="dCreditFraction">— / 160 cr</span></div>
+            <div class="res-progress-bar-wrap"><div class="res-progress-bar" id="dCreditBar" style="width:0%"></div></div>
+          </div>
+          <div class="res-grade-breakdown" id="dGradeBreakdown"></div>
+        </div>
+
+        <!-- Course Search -->
+        <div class="res-card fade-in">
+          <div class="res-card-title"><i class="fa-solid fa-magnifying-glass"></i> Course Search</div>
+          <input type="text" class="res-search-input" id="dCourseSearch" placeholder="Search by course name or code..." oninput="searchCourses(this.value)">
+          <div id="dCourseResults"><div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div></div>
+        </div>
+
         <div class="res-card fade-in" id="dLatest"></div>
         <div class="res-card fade-in">
           <div class="res-card-title"><i class="fa-solid fa-calendar-check"></i> All Semesters</div>
@@ -480,6 +575,22 @@
             <div class="res-chart-wrap"><canvas id="gpaChart"></canvas></div>
           </div>
         </div>
+        <!-- CGPA Goal Tracker -->
+        <div class="res-card fade-in">
+          <div class="res-card-title"><i class="fa-solid fa-bullseye"></i> CGPA Goal Tracker</div>
+          <div class="res-goal-inputs">
+            <div><label>Target CGPA</label><input type="number" id="goalTarget" min="0" max="4" step="0.01" value="3.50" oninput="updateGoal()"></div>
+            <div><label>Remaining Semesters</label><input type="number" id="goalRemaining" min="1" max="12" value="2" oninput="updateGoal()"></div>
+          </div>
+          <div id="goalResult"></div>
+        </div>
+
+        <!-- GPA Trajectory -->
+        <div class="res-card fade-in">
+          <div class="res-card-title"><i class="fa-solid fa-chart-line"></i> GPA Trajectory Analysis</div>
+          <div id="dTrajectory"></div>
+        </div>
+
         <div class="res-card fade-in">
           <div class="res-card-title"><i class="fa-solid fa-trophy"></i> Performance Extremes</div>
           <div class="res-extremes" id="dExtremes"></div>
@@ -532,6 +643,14 @@
           <div class="res-cmp-results" id="cmpResults"></div>
         </div>
       </div>
+
+    <!-- Summary Card Modal -->
+    <div id="summaryCardModal" style="display:none;" class="res-summary-modal-backdrop" onclick="if(event.target===this)hideSummaryCard()">
+      <div class="res-summary-modal">
+        <div id="summaryCardInner"></div>
+        <button class="res-summary-close" onclick="hideSummaryCard()"><i class="fa-solid fa-xmark"></i> Close</button>
+      </div>
+    </div>
 
     </div><!-- /dashboardView -->
 
@@ -781,6 +900,8 @@
       if (badgeEl) badgeEl.innerHTML = badges.join('');
 
       renderStats(d);
+      renderProgress(d);
+      renderGradeBreakdown(d);
       renderLatest(d);
       renderAllSems(d);
     }
@@ -857,7 +978,7 @@
       if (tab === 'compare')   document.getElementById('tabCompareContent').style.display   = 'block';
       if (tab === 'analytics') {
         document.getElementById('tabAnalyticsContent').style.display = 'block';
-        setTimeout(renderAnalytics, 100);
+        setTimeout(() => { renderAnalytics(); updateGoal(); renderTrajectory(resData.semesters||[]); }, 100);
       }
     }
 
@@ -915,6 +1036,7 @@
       });
 
       renderRetake(sems);
+      renderTrajectory(sems);
 
       let hi = null, lo = null;
       sems.forEach(s => (s.courses||[]).forEach(c => {
@@ -1073,6 +1195,137 @@
     }
 
     function hideErr() { document.getElementById('rError').classList.remove('show'); }
+
+    /* ── New Features ── */
+    const GRADE_CSS_MAP = {'A+':'rgb-ap','A':'rgb-a','A-':'rgb-am','B+':'rgb-bp','B':'rgb-b','B-':'rgb-bm','C+':'rgb-cp','C':'rgb-c','D':'rgb-d','F':'rgb-f'};
+    const GRADE_ORDER   = ['A+','A','A-','B+','B','B-','C+','C','D','F'];
+
+    function renderProgress(d) {
+      const done = d.total_credit || 0;
+      const total = 160;
+      const pct = Math.min(100, Math.round(done / total * 100));
+      document.getElementById('dCreditFraction').textContent = `${done} / ${total} cr`;
+      document.getElementById('dCreditBar').style.width = pct + '%';
+    }
+
+    function renderGradeBreakdown(d) {
+      const counts = {};
+      GRADE_ORDER.forEach(g => counts[g] = 0);
+      (d.semesters||[]).forEach(s => (s.courses||[]).forEach(c => {
+        if (counts.hasOwnProperty(c.grade)) counts[c.grade]++;
+      }));
+      document.getElementById('dGradeBreakdown').innerHTML = GRADE_ORDER
+        .filter(g => counts[g] > 0)
+        .map(g => `<span class="res-gb-badge ${GRADE_CSS_MAP[g]||'rgb-x'}">${g} <strong>×${counts[g]}</strong></span>`)
+        .join('') || '<span style="color:var(--muted);font-size:0.82rem;">No grade data yet.</span>';
+    }
+
+    function updateGoal() {
+      if (!resData) return;
+      const target    = Math.min(4, Math.max(0, parseFloat(document.getElementById('goalTarget').value) || 3.5));
+      const remaining = Math.max(1, parseInt(document.getElementById('goalRemaining').value) || 2);
+      const current   = resData.cgpa || 0;
+      const completed = (resData.semesters || []).length;
+      const total     = completed + remaining;
+      const pct       = Math.min(100, current > 0 ? Math.round((current / Math.min(target, 4)) * 100) : 0);
+      const required  = ((target * total) - (current * completed)) / remaining;
+      const el        = document.getElementById('goalResult');
+      if (current >= target) {
+        el.innerHTML = `<div class="res-goal-result"><div class="res-goal-bar-wrap"><div class="res-goal-bar" style="width:100%;background:linear-gradient(90deg,#10b981,#34d399)"></div></div><div class="res-goal-status done">🎉 Goal already achieved! CGPA ${current.toFixed(2)} ≥ Target ${target.toFixed(2)}</div></div>`;
+        return;
+      }
+      const maxPossible = ((4 * total) - (current * completed)) / total;
+      const statusCls = required > 4 ? 'imp' : required > 3.8 ? 'hard' : 'ok';
+      const statusMsg = required > 4
+        ? `⚠️ Not reachable — max possible CGPA with ${remaining} sems left: ${maxPossible.toFixed(2)}`
+        : required > 3.8 ? `🔥 Very challenging — need ${required.toFixed(2)}/sem. Push hard!`
+        : `✅ Achievable! Stay consistent above ${required.toFixed(2)}/sem.`;
+      el.innerHTML = `<div class="res-goal-result">
+        <div class="res-goal-bar-wrap"><div class="res-goal-bar" style="width:${pct}%"></div></div>
+        <div class="res-goal-info">
+          <div class="res-goal-box"><div class="res-goal-box-val">${current.toFixed(2)}</div><div class="res-goal-box-lbl">Current CGPA</div></div>
+          <div class="res-goal-box"><div class="res-goal-box-val" style="color:${required>4?'#f43f5e':required>3.8?'#fbbf24':'#34d399'}">${Math.min(required,4).toFixed(2)}</div><div class="res-goal-box-lbl">Required / Sem</div></div>
+        </div>
+        <div class="res-goal-status ${statusCls}">${statusMsg}</div>
+      </div>`;
+    }
+
+    function searchCourses(q) {
+      const el = document.getElementById('dCourseResults');
+      if (!resData || !q.trim()) {
+        el.innerHTML = `<div class="res-search-empty"><i class="fa-solid fa-magnifying-glass" style="display:block;font-size:1.8rem;opacity:0.25;margin-bottom:10px;"></i>Type to search across all semesters</div>`;
+        return;
+      }
+      const lq = q.trim().toLowerCase();
+      const results = [];
+      (resData.semesters||[]).forEach(sem => (sem.courses||[]).forEach(c => {
+        if ((c.course_title||'').toLowerCase().includes(lq) || (c.course_code||'').toLowerCase().includes(lq))
+          results.push({...c, semester_name: sem.semester_name});
+      }));
+      if (!results.length) { el.innerHTML = `<div class="res-search-empty">No courses found for "<strong>${q}</strong>"</div>`; return; }
+      el.innerHTML = results.map(c => `
+        <div class="res-search-result">
+          <div class="res-search-result-info">
+            <div class="res-search-result-name">${c.course_title||c.course_code||'N/A'}</div>
+            <div class="res-search-result-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.semester_name||''} &nbsp;·&nbsp; ${c.credit||0} Cr</div>
+          </div>
+          <div class="res-search-result-right">
+            ${c.mark > 0 ? `<span style="font-size:0.78rem;color:var(--muted)">${c.mark}/100</span>` : ''}
+            <span class="res-search-grade">${c.grade||'N/A'}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    function showSummaryCard() {
+      if (!resData) return;
+      const d = resData, sems = d.semesters || [];
+      const gpas = sems.map(s => s.gpa||0);
+      const bestSem  = sems.length ? sems[gpas.indexOf(Math.max(...gpas))] : null;
+      const worstSem = sems.length > 1 ? sems[gpas.indexOf(Math.min(...gpas))] : null;
+      document.getElementById('summaryCardInner').innerHTML = `
+        <div class="res-summary-name">${d.student_name||'Student'}</div>
+        <div class="res-summary-id">${d.student_id||''} &nbsp;·&nbsp; ${d.department||'CSE'}</div>
+        <div class="res-summary-stats">
+          <div class="res-summary-stat"><div class="res-summary-stat-val">${(d.cgpa||0).toFixed(2)}</div><div class="res-summary-stat-lbl">CGPA</div></div>
+          <div class="res-summary-stat"><div class="res-summary-stat-val">${d.total_credit||0}</div><div class="res-summary-stat-lbl">Credits</div></div>
+          <div class="res-summary-stat"><div class="res-summary-stat-val">${sems.length}</div><div class="res-summary-stat-lbl">Semesters</div></div>
+        </div>
+        <div class="res-summary-rows">
+          <div class="res-summary-row"><span>Courses Completed</span><span>${d.courses_completed||0}</span></div>
+          ${bestSem  ? `<div class="res-summary-row"><span>🏆 Best Semester</span><span>${bestSem.semester_name||''} (${(bestSem.gpa||0).toFixed(2)})</span></div>`:''}
+          ${worstSem ? `<div class="res-summary-row"><span>↓ Lowest Semester</span><span>${worstSem.semester_name||''} (${(worstSem.gpa||0).toFixed(2)})</span></div>`:''}
+          ${d.degree ? `<div class="res-summary-row"><span>Degree</span><span>${d.degree}</span></div>`:''}
+        </div>
+        <div class="res-summary-footer">lucse62b.xyz · CSE 62B Portal · ${new Date().toLocaleDateString()}</div>`;
+      document.getElementById('summaryCardModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function hideSummaryCard() {
+      document.getElementById('summaryCardModal').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function renderTrajectory(sems) {
+      const el = document.getElementById('dTrajectory');
+      if (!el) return;
+      const chron = sems.slice().reverse();
+      if (chron.length < 2) { el.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;">Need at least 2 semesters for trend analysis.</p>'; return; }
+      const changes = chron.slice(1).map((s,i) => s.gpa - chron[i].gpa);
+      const avg = changes.reduce((a,b)=>a+b,0) / changes.length;
+      const dir = avg > 0.05 ? {icon:'📈', label:'Improving', color:'#34d399', cls:'ok'}
+                : avg < -0.05 ? {icon:'📉', label:'Declining', color:'#f43f5e', cls:'imp'}
+                : {icon:'➡️', label:'Stable', color:'#fbbf24', cls:'hard'};
+      const improving = changes.filter(c=>c>0).length;
+      el.innerHTML = `
+        <div class="res-traj-box">
+          <div class="res-traj-icon">${dir.icon}</div>
+          <div>
+            <div class="res-traj-label" style="color:${dir.color}">GPA Trend: ${dir.label}</div>
+            <div class="res-traj-sub">Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}/sem &nbsp;·&nbsp; ${improving} of ${changes.length} sems improved</div>
+          </div>
+        </div>`;
+    }
   </script>
   <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/analytics.js"></script>
