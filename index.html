@@ -53,6 +53,10 @@
   }
   </script>
   <link rel="preload" as="image" href="assets/images/hero.jpg" fetchpriority="high">
+  <!-- Drive thumbnail CDN — preconnect eliminates DNS+TLS overhead on first image request -->
+  <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+  <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+  <link rel="preconnect" href="https://drive.google.com">
   <style>
   /* ── Birthday Overlay ── */
   #bdayOverlay{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(60,10,120,.88) 0%,rgba(6,4,24,.96) 100%);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .6s ease;}
@@ -175,6 +179,26 @@
       transition: background 0.2s; z-index: 2001;
     }
     .mem-lb-close:hover { background: rgba(255,255,255,0.25); }
+    /* -- Skeleton shimmer while hero photo frame loads -- */
+    .photo-frame-inner:empty {
+      background: linear-gradient(110deg,
+        rgba(109,40,217,0.08) 0%, rgba(109,40,217,0.18) 40%,
+        rgba(14,165,233,0.12) 55%, rgba(109,40,217,0.08) 100%);
+      background-size: 240% 100%;
+      animation: frameShimmer 1.8s ease-in-out infinite;
+    }
+    @keyframes frameShimmer {
+      0%   { background-position: 100% 50%; }
+      100% { background-position: -60% 50%; }
+    }
+    /* -- Skeleton for memory strip while loading -- */
+    .mem-photo-card.mem-skeleton {
+      background: linear-gradient(110deg,
+        rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+      background-size: 200% 100%;
+      animation: frameShimmer 1.6s ease-in-out infinite;
+      cursor: default;
+    }
   </style>
   <style>
     /* ── Home DOB Gate ── */
@@ -665,7 +689,8 @@
     /* -- Hero photo frame — Drive images -- */
     (async function loadHeroPhotos() {
       const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const CACHE_KEY = 'lu62b_gallery_hero';
+      const CACHE_KEY = 'lu62b_gallery_hero2';
+      const CACHE_TTL = 3_600_000; // 1 hour
       const frame     = document.getElementById('heroPhotoFrame');
       if (!frame) return;
 
@@ -679,13 +704,20 @@
 
       try {
         let files;
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (cached) {
-          files = JSON.parse(cached);
-        } else {
-          const data = await fetchDriveGallery(FOLDER, 6);
+        try {
+          const raw = localStorage.getItem(CACHE_KEY);
+          if (raw) {
+            const c = JSON.parse(raw);
+            if (Date.now() - c.ts < CACHE_TTL) files = c.data;
+          }
+        } catch(e) {}
+
+        if (!files) {
+          const data = await fetchDriveGallery(FOLDER, 8);
           files = data.files || [];
-          if (files.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(files));
+          if (files.length) {
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: files })); } catch(e) {}
+          }
         }
 
         let images = shuffle(files);
@@ -693,14 +725,21 @@
         while (images.length < 8) images = [...images, ...images];
         images = images.slice(0, 8);
 
-        images.forEach(img => {
+        const frag = document.createDocumentFragment();
+        images.forEach((img, i) => {
           const el = document.createElement('img');
           el.className = 'photo-slide';
-          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w600`;
+          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w400`;
           el.alt = '';
           el.decoding = 'async';
-          frame.appendChild(el);
+          if (i === 0) {
+            el.fetchPriority = 'high';
+          } else {
+            el.loading = 'lazy';
+          }
+          frag.appendChild(el);
         });
+        frame.appendChild(frag);
       } catch (e) { /* fail silently */ }
     })();
   </script>
@@ -708,7 +747,8 @@
     /* -- Memories polaroid strip -- */
     (async function initMemories() {
       const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const CACHE_KEY = 'lu62b_gallery_mem';
+      const CACHE_KEY = 'lu62b_gallery_mem2';
+      const CACHE_TTL = 3_600_000; // 1 hour
 
       function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -722,34 +762,44 @@
         const card = document.createElement('div');
         card.className = 'mem-photo-card';
         const img = document.createElement('img');
-        img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
+        img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w300`;
         img.alt = '';
         img.loading = 'lazy';
         img.decoding = 'async';
         card.appendChild(img);
-        card.addEventListener('click', () => openMemLb(`https://drive.google.com/thumbnail?id=${id}&sz=w1200`));
+        card.addEventListener('click', () => openMemLb(`https://drive.google.com/thumbnail?id=${id}&sz=w1000`));
         return card;
       }
 
       try {
         let files;
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (cached) {
-          files = JSON.parse(cached);
-        } else {
-          const data = await fetchDriveGallery(FOLDER, 8);
+        try {
+          const raw = localStorage.getItem(CACHE_KEY);
+          if (raw) {
+            const c = JSON.parse(raw);
+            if (Date.now() - c.ts < CACHE_TTL) files = c.data;
+          }
+        } catch(e) {}
+
+        if (!files) {
+          const data = await fetchDriveGallery(FOLDER, 12);
           files = data.files || [];
-          if (files.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(files));
+          if (files.length) {
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: files })); } catch(e) {}
+          }
         }
-        const images = shuffle(files).slice(0, 24);
+
+        const images = shuffle(files).slice(0, 12);
         if (images.length < 3) return;
 
         const track = document.getElementById('memoriesTrack');
+        const frag = document.createDocumentFragment();
         /* Build twice for seamless loop */
-        [...images, ...images].forEach(img => track.appendChild(makeCard(img.id)));
+        [...images, ...images].forEach(img => frag.appendChild(makeCard(img.id)));
+        track.appendChild(frag);
 
         /* Scale speed to image count */
-        track.style.animationDuration = Math.max(40, images.length * 2.8) + 's';
+        track.style.animationDuration = Math.max(40, images.length * 3) + 's';
 
         document.getElementById('memoriesSection').style.display = 'block';
       } catch (e) { /* fail silently */ }

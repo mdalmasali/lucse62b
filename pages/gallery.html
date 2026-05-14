@@ -17,6 +17,10 @@
   <meta name="twitter:title" content="Gallery | CSE 62B — Leading University">
   <meta name="twitter:description" content="Photo gallery of CSE Batch 62, Section B at Leading University — class events, trips, and memories.">
   <meta name="twitter:image" content="https://lucse62b.xyz/assets/images/hero.jpg">
+  <!-- Drive thumbnail CDN preconnect — eliminates DNS+TLS overhead on first image request -->
+  <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+  <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+  <link rel="preconnect" href="https://drive.google.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -311,7 +315,7 @@
                 const img = document.createElement('img');
                 img.className = 'event-cover';
                 img.alt = card.dataset.folderName;
-                img.src = thumb(covers[0].id, 600);
+                img.src = thumb(covers[0].id, 400);
                 wrap.appendChild(img);
                 if (covers.length > 1) {
                   const dotsEl = document.createElement('div');
@@ -326,7 +330,7 @@
                   const dots = dotsEl.querySelectorAll('.event-ss-dot');
                   function ssNext() {
                     ssIdx = (ssIdx + 1) % covers.length;
-                    img.src = thumb(covers[ssIdx].id, 600);
+                    img.src = thumb(covers[ssIdx].id, 400);
                     dots.forEach((d, i) => d.classList.toggle('active', i === ssIdx));
                   }
                   setInterval(ssNext, 2500);
