@@ -119,6 +119,101 @@
     }
   }
 
+  // ── DOB Gate ─────────────────────────────────────────────────────────
+  const SUPA_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+  const SKIP_DOB  = ['login.html', 'password-setup.html'];
+  const _curPage  = window.location.pathname.split('/').pop();
+
+  function _supaRpc(fn, params) {
+    return fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    }).then(function (r) { if (!r.ok) throw new Error('rpc'); return r.json(); });
+  }
+
+  function _showDobGate(sid) {
+    var style = document.createElement('style');
+    style.textContent = [
+      '#lu62b-dob-gate{position:fixed;inset:0;z-index:99999;background:rgba(10,10,20,.92);',
+      'backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;}',
+      '.lu62b-dob-box{background:#1a1a2e;border:1px solid rgba(99,102,241,.35);border-radius:20px;',
+      'padding:36px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6);}',
+      '.lu62b-dob-box .dob-icon{font-size:2.4rem;margin-bottom:16px;}',
+      '.lu62b-dob-box h2{font-size:1.25rem;font-weight:700;color:#e2e8f0;margin:0 0 8px;}',
+      '.lu62b-dob-box p{font-size:0.82rem;color:#94a3b8;margin:0 0 24px;line-height:1.55;}',
+      '.lu62b-dob-box input[type=date]{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);',
+      'color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:0.88rem;outline:none;',
+      'box-sizing:border-box;margin-bottom:12px;}',
+      '.lu62b-dob-box input[type=date]:focus{border-color:#6366f1;}',
+      '.lu62b-dob-box button{width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);',
+      'color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.9rem;font-weight:600;',
+      'cursor:pointer;transition:opacity .2s;}',
+      '.lu62b-dob-box button:disabled{opacity:.6;cursor:not-allowed;}',
+      '.lu62b-dob-err{font-size:0.78rem;color:#f87171;margin-top:8px;min-height:18px;}',
+    ].join('');
+    document.head.appendChild(style);
+
+    var gate = document.createElement('div');
+    gate.id = 'lu62b-dob-gate';
+    gate.innerHTML = [
+      '<div class="lu62b-dob-box">',
+      '<div class="dob-icon">🎂</div>',
+      '<h2>One quick step</h2>',
+      '<p>Enter your date of birth to continue.<br>This is used to verify your identity and personalise your experience.</p>',
+      '<input type="date" id="lu62b-dob-input" max="' + new Date().toISOString().split('T')[0] + '">',
+      '<button id="lu62b-dob-btn">Save &amp; Continue</button>',
+      '<div class="lu62b-dob-err" id="lu62b-dob-err"></div>',
+      '</div>',
+    ].join('');
+
+    var inject = function () {
+      document.body.appendChild(gate);
+      document.getElementById('lu62b-dob-btn').addEventListener('click', function () {
+        var input  = document.getElementById('lu62b-dob-input');
+        var btn    = document.getElementById('lu62b-dob-btn');
+        var errEl  = document.getElementById('lu62b-dob-err');
+        var dob    = input ? input.value : '';
+        errEl.textContent = '';
+        if (!dob) { errEl.textContent = 'Please enter your date of birth.'; return; }
+        btn.disabled = true; btn.textContent = 'Saving…';
+        _supaRpc('set_student_dob', { p_student_id: sid, p_dob: dob })
+          .then(function () {
+            localStorage.setItem('lu62b_dob_' + sid, dob);
+            document.getElementById('lu62b-dob-gate').remove();
+          })
+          .catch(function () {
+            errEl.textContent = 'Connection error. Please try again.';
+            btn.disabled = false; btn.textContent = 'Save & Continue';
+          });
+      });
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inject);
+    } else {
+      inject();
+    }
+  }
+
+  if (isLoggedIn && session && session.id && !isDemoSession && !SKIP_DOB.includes(_curPage)) {
+    var _dobKey = 'lu62b_dob_' + session.id;
+    if (!localStorage.getItem(_dobKey)) {
+      // Not cached — check Supabase
+      _supaRpc('student_has_dob', { p_student_id: session.id })
+        .then(function (hasDob) {
+          if (hasDob) {
+            // Already saved — fetch and cache
+            return _supaRpc('get_student_dob', { p_student_id: session.id })
+              .then(function (dob) { if (dob) localStorage.setItem(_dobKey, dob); });
+          } else {
+            _showDobGate(session.id);
+          }
+        })
+        .catch(function () { /* Supabase unreachable — don't block */ });
+    }
+  }
+
   // ── Hamburger menu ───────────────────────────────────────────────────
   function initHamburger() {
     var ham   = document.getElementById('hamburger');
