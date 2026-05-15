@@ -428,6 +428,30 @@
       color: var(--accent-bright); white-space: nowrap;
     }
 
+    /* DOB prompt card */
+    .ac-dob-card {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      background: rgba(99,102,241,.10); border: 1px solid rgba(99,102,241,.25);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 14px;
+    }
+    .ac-dob-icon { font-size: 1.3rem; color: #818cf8; flex-shrink: 0; }
+    .ac-dob-text { flex: 1; min-width: 160px; }
+    .ac-dob-text strong { display: block; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 2px; }
+    .ac-dob-text span   { font-size: 0.78rem; color: var(--muted); }
+    .ac-dob-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .ac-dob-row input[type="date"] {
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+      color: var(--text); border-radius: 8px; padding: 6px 10px;
+      font-size: 0.82rem; outline: none;
+    }
+    .ac-dob-row input[type="date"]:focus { border-color: #818cf8; }
+    .ac-dob-row button {
+      background: #6366f1; color: #fff; border: none; border-radius: 8px;
+      padding: 7px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      white-space: nowrap;
+    }
+    .ac-dob-row button:hover { background: #818cf8; }
+
     /* Retake / Improve badges in course table */
     .ac-retake-tag {
       display: inline-block; font-size: 0.62rem; font-weight: 700;

@@ -112,14 +112,45 @@ async function loadAllCourse(body) {
     }
 
     const defaultBatch = batchOrder.includes('62') ? '62' : batchOrder[0];
+    let activeBatch = defaultBatch;
+    let activeCodes = myCodes;
+
+    const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+    const needsDob = user?.id && !localStorage.getItem(`lu62b_dob_${user.id}`);
+
+    const dobCard = needsDob ? `
+      <div class="ac-dob-card" id="ac-dob-card">
+        <div class="ac-dob-icon"><i class="fa-solid fa-calendar-check"></i></div>
+        <div class="ac-dob-text">
+          <strong>See your retake &amp; improve courses</strong>
+          <span>Enter your date of birth to highlight courses you need to retake or improve.</span>
+        </div>
+        <div class="ac-dob-row">
+          <input type="date" id="ac-dob-input" max="${new Date().toISOString().split('T')[0]}">
+          <button onclick="_acDobSubmit()">Show <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>` : '';
 
     body.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
         <span>All Batch Course Offer &nbsp;·&nbsp; ${escH(sem)}</span>
       </div>
+      ${dobCard}
       <div id="ac-chip-bar" class="ac-chip-bar"></div>
       <div id="ac-table-wrap"></div>`;
+
+    window._acDobSubmit = async function() {
+      const input = document.getElementById('ac-dob-input');
+      const dob   = input?.value;
+      if (!dob) { input && (input.style.borderColor = '#f43f5e'); return; }
+      const btn = input.nextElementSibling;
+      btn.disabled = true; btn.textContent = 'Loading…';
+      localStorage.setItem(`lu62b_dob_${user.id}`, dob);
+      activeCodes = await _acFetchRetakeCodes();
+      document.getElementById('ac-dob-card')?.remove();
+      renderBatchTable(activeBatch, activeCodes);
+    };
 
     // Render batch chips
     const chipBar = document.getElementById('ac-chip-bar');
@@ -130,12 +161,13 @@ async function loadAllCourse(body) {
       chip.onclick = () => {
         document.querySelectorAll('.ac-chip').forEach(c => c.classList.remove('ac-chip-active'));
         chip.classList.add('ac-chip-active');
-        renderBatchTable(batch, myCodes);
+        activeBatch = batch;
+        renderBatchTable(batch, activeCodes);
       };
       chipBar.appendChild(chip);
     });
 
-    renderBatchTable(defaultBatch, myCodes);
+    renderBatchTable(defaultBatch, activeCodes);
 
   } catch (err) {
     body.innerHTML = `<div class="info-placeholder">
