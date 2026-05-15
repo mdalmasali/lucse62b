@@ -197,28 +197,21 @@
   }
 
   if (isLoggedIn && session && session.id && !isDemoSession && !SKIP_DOB.includes(_curPage)) {
-    var _dobKey     = 'lu62b_dob_' + session.id;
-    var _syncedKey  = 'lu62b_dob_synced_' + session.id;
-    var _localDob   = localStorage.getItem(_dobKey);
-    var _synced     = sessionStorage.getItem(_syncedKey);
+    var _dobKey   = 'lu62b_dob_' + session.id;
+    var _localDob = localStorage.getItem(_dobKey);
 
-    if (!_synced) {
-      // First page of this browser session — always verify against Supabase
+    if (_localDob) {
+      // Have local DOB — upsert to Supabase every page load (idempotent)
+      _supaRpc('set_student_dob', { p_student_id: session.id, p_dob: _localDob })
+        .catch(function () { /* non-fatal */ });
+    } else {
+      // No local DOB — check Supabase
       _supaRpc('student_has_dob', { p_student_id: session.id })
         .then(function (hasDob) {
           if (hasDob) {
-            sessionStorage.setItem(_syncedKey, '1');
-            if (!_localDob) {
-              // Supabase has it but local doesn't — cache it
-              return _supaRpc('get_student_dob', { p_student_id: session.id })
-                .then(function (dob) { if (dob) localStorage.setItem(_dobKey, dob); });
-            }
-          } else if (_localDob) {
-            // Local has DOB but Supabase doesn't — sync up silently
-            return _supaRpc('set_student_dob', { p_student_id: session.id, p_dob: _localDob })
-              .then(function () { sessionStorage.setItem(_syncedKey, '1'); });
+            return _supaRpc('get_student_dob', { p_student_id: session.id })
+              .then(function (dob) { if (dob) localStorage.setItem(_dobKey, dob); });
           } else {
-            // Neither has DOB — show gate
             _showDobGate(session.id);
           }
         })
