@@ -147,6 +147,15 @@ async function loadAllCourse(body) {
       const btn = input.nextElementSibling;
       btn.disabled = true; btn.textContent = 'Loading…';
       localStorage.setItem(`lu62b_dob_${user.id}`, dob);
+      // Save to Supabase so other devices/sessions sync automatically
+      try {
+        await fetch(`${_AC_SUPA}/rest/v1/rpc/set_student_dob`, {
+          method: 'POST',
+          headers: { 'apikey': _AC_KEY, 'Authorization': `Bearer ${_AC_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: user.id, p_dob: dob }),
+        });
+        sessionStorage.setItem(`lu62b_dob_synced_${user.id}`, '1');
+      } catch(e) { /* non-fatal */ }
       activeCodes = await _acFetchRetakeCodes();
       document.getElementById('ac-dob-card')?.remove();
       renderBatchTable(activeBatch, activeCodes);
