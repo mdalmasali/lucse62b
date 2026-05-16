@@ -1920,7 +1920,10 @@
         })
           .then(r => r.ok ? r.json() : null)
           .then(d => {
-            if (d && d.phone) document.getElementById('userPhone').innerText = d.phone;
+            if (d && d.phone) {
+              document.getElementById('userPhone').innerText = d.phone;
+              currentUser.phone = d.phone;
+            }
           })
           .catch(() => {});
       })(currentUser.id);
@@ -1975,26 +1978,25 @@
       document.getElementById('cpStep2').style.display = 'none';
     }
 
-    function showCpStep2() {
+    function showCpStep2(maskedPhone) {
       document.getElementById('cpStep1').style.display = 'none';
       document.getElementById('cpStep2').style.display = 'block';
-      const phone = currentUser.phone || '';
-      document.getElementById('cpMaskedPhone').textContent = phone.length >= 7
-        ? phone.slice(0, 4) + '***' + phone.slice(-3) : '***';
+      document.getElementById('cpMaskedPhone').textContent = maskedPhone || '***';
       document.getElementById('cpOtpInput').value = '';
       document.getElementById('cpOtpError').style.display = 'none';
       document.getElementById('successMsg').style.display = 'none';
       setTimeout(() => document.getElementById('cpOtpInput').focus(), 100);
     }
 
-    function sendCpOTP(phone) {
-      cpOTP = Math.floor(1000 + Math.random() * 9000).toString();
-      const msg = `Your CSE 62B PORTAL OTP is ${cpOTP} (Password Change)`;
-      return fetch(WORKER_URL_SMS + '/sms', {
+    function sendCpOTP() {
+      return fetch(WORKER_URL_SMS + '/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, message: msg }),
-      }).then(r => { if (!r.ok) throw new Error('SMS send failed'); });
+        body: JSON.stringify({ student_id: currentUser.id }),
+      }).then(r => {
+        if (!r.ok) return r.json().then(d => { throw new Error(d.error || 'SMS send failed'); });
+        return r.json();
+      });
     }
 
     async function resendCpOTP() {
@@ -2003,12 +2005,13 @@
         return;
       }
       try {
-        await sendCpOTP(currentUser.phone);
+        const res = await sendCpOTP();
+        document.getElementById('cpMaskedPhone').textContent = res.masked || '***';
         document.getElementById('cpOtpError').style.display = 'none';
         document.getElementById('successMsg').innerText = 'OTP resent!';
         document.getElementById('successMsg').style.display = 'block';
         setTimeout(() => { document.getElementById('successMsg').style.display = 'none'; }, 3000);
-      } catch {
+      } catch (e) {
         document.getElementById('cpOtpError').innerText = 'Failed to resend OTP. Please try again.';
         document.getElementById('cpOtpError').style.display = 'block';
       }
@@ -2025,7 +2028,14 @@
       errEl.style.display = 'none';
 
       if (!code) { errEl.innerText = 'Please enter the OTP.'; errEl.style.display = 'block'; return; }
-      if (code !== cpOTP && code !== '0000') {
+
+      const verifyRes = await fetch(WORKER_URL_SMS + '/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: currentUser.id, otp: code }),
+      }).then(r => r.json()).catch(() => ({ valid: false }));
+
+      if (!verifyRes.valid) {
         errEl.innerText = 'Invalid OTP. Please try again.';
         errEl.style.display = 'block';
         return;
@@ -2119,8 +2129,8 @@
         cpPendingHash = await bcrypt.hash(newPassword, 10);
 
         btn.innerText = 'Sending OTP...';
-        await sendCpOTP(currentUser.phone);
-        showCpStep2();
+        const otpRes = await sendCpOTP();
+        showCpStep2(otpRes.masked);
 
       } catch (err) {
         document.getElementById('generalError').innerText = 'Error: ' + (err.message || 'Please try again.');
