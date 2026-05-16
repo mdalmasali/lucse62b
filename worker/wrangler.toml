@@ -9,4 +9,4 @@ compatibility_date = "2024-01-01"
 
 [[kv_namespaces]]
 binding  = "SMS_RATE"
-id       = ""   # fill in your KV namespace ID from Cloudflare dashboard
+id       = "58bc2d2c8f2f45f78e5802fab91f09b4"
