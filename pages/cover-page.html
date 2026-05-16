@@ -1123,7 +1123,12 @@
 
       try {
         updatePreview();
-        await new Promise(r => setTimeout(r, 200));
+        await document.fonts.ready;
+        await Promise.allSettled([
+          document.fonts.load('400 19px Tinos'),
+          document.fonts.load('700 19px Tinos'),
+        ]);
+        await new Promise(r => setTimeout(r, 300));
 
         const canvas = await getCanvasFromPreview();
 
@@ -1161,7 +1166,11 @@
       try {
         updatePreview();
         await document.fonts.ready;
-        await new Promise(r => setTimeout(r, 200));
+        await Promise.allSettled([
+          document.fonts.load('400 19px Tinos'),
+          document.fonts.load('700 19px Tinos'),
+        ]);
+        await new Promise(r => setTimeout(r, 300));
 
         const canvas = await getCanvasFromPreview();
         const fname  = buildFilename();
