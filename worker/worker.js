@@ -415,7 +415,7 @@ async function gvizProxy(sheetId, tab, cors, env) {
     if (!m) return errResp(cors, 502, 'Bad upstream response');
     return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (e) {
-    return errResp(cors, 502, String(e));
+    return errResp(cors, 502, 'Upstream fetch failed');
   }
 }
 
@@ -447,7 +447,7 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
     }
     return new Response(JSON.stringify(data), { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (e) {
-    return errResp(cors, 502, String(e));
+    return errResp(cors, 502, 'Upstream fetch failed');
   }
 }
 
