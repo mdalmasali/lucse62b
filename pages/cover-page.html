@@ -15,7 +15,7 @@
   <meta property="og:title" content="Cover Page Generator | CSE 62B LU">
   <meta property="og:description" content="Generate assignment and lab report cover pages for CSE Batch 62, Section B — Leading University.">
   <meta property="og:image" content="https://lucse62b.xyz/assets/images/lu-logo.png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -197,7 +197,7 @@
     #coverPreview {
       width: 794px; height: 1123px;
       background: #fff; color: #000;
-      font-family: 'Times New Roman', Times, serif;
+      font-family: 'Tinos', 'Times New Roman', Times, serif;
       padding: 96px 96px 96px; box-sizing: border-box;
       position: relative;
       box-shadow: 0 24px 60px rgba(0,0,0,0.55);
@@ -1160,6 +1160,7 @@
 
       try {
         updatePreview();
+        await document.fonts.ready;
         await new Promise(r => setTimeout(r, 200));
 
         const canvas = await getCanvasFromPreview();
