@@ -370,7 +370,7 @@
 
       <div class="sem-bar fade-in delay-1">
         <span class="sem-bar-label"><i class="fa-solid fa-calendar-days" style="color:var(--accent-bright);margin-right:6px;"></i>Current Semester</span>
-        <span class="sem-badge">7th Semester</span>
+        <span class="sem-badge" id="semBadge">—</span>
       </div>
 
       <div class="sync-badge fade-in delay-1" id="syncBadge">
@@ -455,6 +455,44 @@
 
     const SHEET_NAME    = 'Materials';
     const MARKS_SHEET   = 'Marks';
+
+    async function getSemesterLabel() {
+      try {
+        const data = await fetchSheet('Semester');
+        const rows = (data.table?.rows || []).map(r =>
+          (r.c || []).map(c => {
+            if (!c) return '';
+            if (c.f != null && c.f !== '') return String(c.f).trim();
+            if (c.v == null) return '';
+            return String(c.v).trim();
+          })
+        );
+        const firstVal = rows[0]?.[0]?.toLowerCase().trim() || '';
+        const startIdx = firstVal === 'semester' ? 1 : 0;
+        function parseSemDate(str) {
+          if (!str) return null;
+          const dm = str.match(/^Date\((\d+),(\d+),(\d+)\)/);
+          if (dm) return new Date(parseInt(dm[1]), parseInt(dm[2]), parseInt(dm[3]));
+          const d = new Date(str); return isNaN(d.getTime()) ? null : d;
+        }
+        const today = new Date(); today.setHours(0,0,0,0);
+        const ranges = {}, semOrder = [], semOrdinal = {};
+        for (let i = startIdx; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row?.[0]) continue;
+          const sem = row[0].trim(), ordinal = (row[1] || '').trim();
+          const s = parseSemDate(row[2]), e = parseSemDate(row[3] || row[2]);
+          if (!sem || !s) continue;
+          if (!ranges[sem]) { ranges[sem] = { min: s, max: e || s }; semOrder.push(sem); semOrdinal[sem] = ordinal; }
+        }
+        let label = semOrder.find(n => { const end = new Date(ranges[n].max); end.setHours(23,59,59,999); return today >= ranges[n].min && today <= end; });
+        if (!label) { const up = semOrder.filter(n => today < ranges[n].min); if (up.length) label = up.sort((a,b) => ranges[a].min - ranges[b].min)[0]; }
+        if (!label) { const past = semOrder.filter(n => today > ranges[n].max); if (past.length) label = past.sort((a,b) => ranges[b].max - ranges[a].max)[0]; }
+        if (!label) return 'Current Semester';
+        const ord = semOrdinal[label];
+        return ord ? `${label} | ${ord}` : label;
+      } catch(_) { return 'Current Semester'; }
+    }
 
     /* -- Course icons -- */
     const COURSE_ICONS = { CSE:'fa-laptop-code', GED:'fa-book-open', MAT:'fa-square-root-variable', PHY:'fa-atom', EEE:'fa-bolt', default:'fa-graduation-cap' };
@@ -752,6 +790,7 @@
     }
 
     syncData();
+    getSemesterLabel().then(label => { const el = document.getElementById('semBadge'); if (el) el.textContent = label; });
     setInterval(syncData, 5 * 60 * 1000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) syncData(); });
   </script>
