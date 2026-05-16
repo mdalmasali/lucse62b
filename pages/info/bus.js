@@ -45,7 +45,17 @@ async function loadBus(body) {
     }
 
     const keys = Object.keys(schedules);
-    const examKeys = keys.filter(k => k.startsWith('Exam:')).sort();
+    const examKeys = keys.filter(k => k.startsWith('Exam:')).sort((a, b) => {
+      const toMin = s => {
+        const m = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!m) return 0;
+        let h = parseInt(m[1]), mn = parseInt(m[2]);
+        if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+        if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+        return h * 60 + mn;
+      };
+      return toMin(a) - toMin(b);
+    });
     const hasReg  = keys.includes('Regular');
     const hasExam = examKeys.length > 0;
 
@@ -54,7 +64,7 @@ async function loadBus(body) {
       return;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────
     function toMins(str) {
       const m = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
       if (!m) return -1;
@@ -77,21 +87,23 @@ async function loadBus(body) {
     }
 
     function detectDayGroup(groups) {
-      const day = new Date().getDay(); // 0=Sun…5=Fri,6=Sat
+      const day = new Date().getDay();
       const isFri = day === 5;
+      const isSat = day === 6;
       for (const g of groups) {
-        if (isFri && g.toLowerCase().includes('fri')) return g;
-        if (!isFri && !g.toLowerCase().includes('fri')) return g;
+        const gl = g.toLowerCase();
+        if (isFri && gl.includes('fri')) return g;
+        if (isSat && gl === 'saturday') return g;
+        if (!isFri && !isSat && (gl.includes('sun') || gl.includes('mon') || gl.includes('sat–thu') || gl.includes('sat-thu'))) return g;
       }
       return groups[0];
     }
 
     // ── State ─────────────────────────────────────────────────────────────
-    const regData     = schedules['Regular'] || {};
-    const allDayGrps  = Object.keys(regData);
-    let activeTab     = hasReg ? 'regular' : 'exam';
-    let activeDir     = 'To LU';
-    let activeDayGrp  = detectDayGroup(allDayGrps);
+    const regData    = schedules['Regular'] || {};
+    const allDayGrps = Object.keys(regData);
+    let activeTab    = hasReg ? 'regular' : 'exam';
+    let activeDayGrp = detectDayGroup(allDayGrps);
 
     // ── Next Bus cards ────────────────────────────────────────────────────
     function renderNextBus() {
@@ -135,8 +147,8 @@ async function loadBus(body) {
         </div>`;
     }
 
-    // ── Timeline pills ────────────────────────────────────────────────────
-    function renderTimeline(entries, color) {
+    // ── Timeline pills (green future, red past, no strikethrough) ─────────
+    function renderTimeline(entries) {
       if (!entries.length) return `
         <div style="color:var(--muted);font-size:0.82rem;padding:10px 0;text-align:center;opacity:0.5;">
           No buses scheduled
@@ -149,23 +161,51 @@ async function loadBus(body) {
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">
           ${entries.map(e => {
             const mins   = toMins(e.time);
-            const isPast = mins < now && mins !== -1;
+            const isPast = mins !== -1 && mins < now;
             const isNext = next && e.time === next.time;
+            let pillStyle;
+            if (isPast) {
+              pillStyle = 'background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.3);';
+            } else if (isNext) {
+              pillStyle = 'background:#34d399;color:#fff;box-shadow:0 0 14px #34d39966,0 0 4px #34d39999;border:1px solid #34d399;';
+            } else {
+              pillStyle = 'background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3);';
+            }
             return `
               <div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
                 <div style="padding:8px 14px;border-radius:10px;font-size:0.88rem;font-weight:700;
-                  font-variant-numeric:tabular-nums;white-space:nowrap;
-                  ${isNext
-                    ? `background:${color};color:#fff;box-shadow:0 2px 14px ${color}50;`
-                    : isPast
-                      ? 'background:rgba(255,255,255,0.04);color:var(--muted);text-decoration:line-through;opacity:0.45;'
-                      : `background:${color}15;color:var(--text);border:1px solid ${color}30;`}">
+                  font-variant-numeric:tabular-nums;white-space:nowrap;${pillStyle}">
                   ${escH(e.time)}${isNext ? ' <i class="fa-solid fa-bus" style="font-size:0.68rem;margin-left:3px;"></i>' : ''}
                 </div>
                 ${e.note ? `<span style="font-size:0.58rem;background:rgba(251,191,36,0.15);color:#fbbf24;
                   padding:1px 6px;border-radius:4px;font-weight:700;">${escH(e.note)}</span>` : ''}
               </div>`;
           }).join('')}
+        </div>`;
+    }
+
+    // ── Side-by-side direction panel ──────────────────────────────────────
+    function renderDirPanel(dayData) {
+      const toLU   = dayData?.['To LU']   || [];
+      const fromLU = dayData?.['From LU'] || [];
+      return `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:13px;">
+              <div style="width:3px;height:16px;background:#34d399;border-radius:2px;flex-shrink:0;"></div>
+              <i class="fa-solid fa-right-to-bracket" style="color:#34d399;font-size:0.72rem;"></i>
+              <span style="font-size:0.7rem;font-weight:800;color:#34d399;text-transform:uppercase;letter-spacing:0.07em;">To LU</span>
+            </div>
+            ${renderTimeline(toLU)}
+          </div>
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:13px;">
+              <div style="width:3px;height:16px;background:#38bdf8;border-radius:2px;flex-shrink:0;"></div>
+              <i class="fa-solid fa-right-from-bracket" style="color:#38bdf8;font-size:0.72rem;"></i>
+              <span style="font-size:0.7rem;font-weight:800;color:#38bdf8;text-transform:uppercase;letter-spacing:0.07em;">From LU</span>
+            </div>
+            ${renderTimeline(fromLU)}
+          </div>
         </div>`;
     }
 
@@ -182,48 +222,14 @@ async function loadBus(body) {
         ">${escH(dg)}</button>`;
       }).join('');
 
-      const dirs = [
-        { dir: 'To LU',   icon: 'fa-right-to-bracket',   color: '#34d399', label: '→  To LU'   },
-        { dir: 'From LU', icon: 'fa-right-from-bracket',  color: '#38bdf8', label: '←  From LU' },
-      ];
-      const dirBtns = dirs.map(d => {
-        const isActive = d.dir === activeDir;
-        return `<button class="bus-dir-btn" data-dir="${d.dir}" style="
-          flex:1;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;
-          font-size:0.85rem;font-weight:700;font-family:'Inter',sans-serif;
-          transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;
-          background:${isActive ? `${d.color}1a` : 'transparent'};
-          color:${isActive ? d.color : 'var(--muted)'};
-          border:1.5px solid ${isActive ? `${d.color}45` : 'transparent'};
-        "><i class="fa-solid ${d.icon}" style="font-size:0.8rem;"></i>${d.label}</button>`;
-      }).join('');
-
-      const color   = activeDir === 'To LU' ? '#34d399' : '#38bdf8';
-      const entries = regData[activeDayGrp]?.[activeDir] || [];
-      const dirIcon = activeDir === 'To LU' ? 'fa-right-to-bracket' : 'fa-right-from-bracket';
-      const dirLabel = activeDir === 'To LU' ? 'Arrival — To Leading University' : 'Departure — From Leading University';
-
       return `
         ${renderNextBus()}
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
           <i class="fa-solid fa-calendar-days" style="color:var(--muted);font-size:0.78rem;"></i>
           <span style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Day Group</span>
           ${dayChips}
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:18px;background:rgba(255,255,255,0.03);
-          padding:4px;border-radius:12px;border:1px solid var(--border);">
-          ${dirBtns}
-        </div>
-        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:18px 20px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-            <div style="width:3px;height:18px;background:${color};border-radius:2px;flex-shrink:0;"></div>
-            <i class="fa-solid ${dirIcon}" style="color:${color};font-size:0.75rem;"></i>
-            <span style="font-size:0.72rem;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:0.07em;">
-              ${dirLabel}
-            </span>
-          </div>
-          ${renderTimeline(entries, color)}
-        </div>`;
+        ${renderDirPanel(regData[activeDayGrp])}`;
     }
 
     // ── Exam tab ──────────────────────────────────────────────────────────
@@ -239,25 +245,11 @@ async function loadBus(body) {
               <i class="fa-solid fa-clock" style="color:#f87171;font-size:0.8rem;"></i>
               <span style="font-size:0.88rem;font-weight:800;color:#f87171;">${escH(examLabel)} Exam</span>
             </div>
-            <div style="padding:18px;">
+            <div style="padding:16px 18px;">
               ${Object.keys(slotData).map(dg => `
-                <div style="margin-bottom:18px;">
-                  <div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;
-                    letter-spacing:0.08em;margin-bottom:12px;">${escH(dg)}</div>
-                  <div style="margin-bottom:10px;">
-                    <div style="font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:7px;
-                      display:flex;align-items:center;gap:5px;">
-                      <i class="fa-solid fa-right-to-bracket" style="font-size:0.65rem;"></i> To LU
-                    </div>
-                    ${renderTimeline(slotData[dg]?.['To LU'] || [], '#34d399')}
-                  </div>
-                  <div>
-                    <div style="font-size:0.7rem;color:#38bdf8;font-weight:700;margin-bottom:7px;
-                      display:flex;align-items:center;gap:5px;">
-                      <i class="fa-solid fa-right-from-bracket" style="font-size:0.65rem;"></i> From LU
-                    </div>
-                    ${renderTimeline(slotData[dg]?.['From LU'] || [], '#38bdf8')}
-                  </div>
+                <div style="margin-bottom:6px;">
+                  ${Object.keys(slotData).length > 1 ? `<div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">${escH(dg)}</div>` : ''}
+                  ${renderDirPanel(slotData[dg])}
                 </div>`).join('')}
             </div>
           </div>`;
@@ -272,8 +264,8 @@ async function loadBus(body) {
 
     // ── Tab bar ───────────────────────────────────────────────────────────
     const tabs = [];
-    if (hasReg)  tabs.push({ id: 'regular', label: 'Regular',   icon: 'fa-solid fa-bus',      color: '#34d399' });
-    if (hasExam) tabs.push({ id: 'exam',    label: 'Exam Days', icon: 'fa-solid fa-file-pen',  color: '#f87171' });
+    if (hasReg)  tabs.push({ id: 'regular', label: 'Regular',   icon: 'fa-solid fa-bus',     color: '#34d399' });
+    if (hasExam) tabs.push({ id: 'exam',    label: 'Exam Days', icon: 'fa-solid fa-file-pen', color: '#f87171' });
 
     function tabStyle(tab, isActive) {
       return `padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;
@@ -314,12 +306,6 @@ async function loadBus(body) {
       const dayChip = e.target.closest('.bus-day-chip');
       if (dayChip) {
         activeDayGrp = dayChip.dataset.group;
-        document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
-        return;
-      }
-      const dirBtn = e.target.closest('.bus-dir-btn');
-      if (dirBtn) {
-        activeDir = dirBtn.dataset.dir;
         document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
       }
     });
