@@ -367,7 +367,7 @@ export default {
 };
 
 async function gvizProxy(sheetId, tab, cors) {
-  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
@@ -377,7 +377,7 @@ async function gvizProxy(sheetId, tab, cors) {
 }
 
 async function gvizProxyStrip(sheetId, tab, stripCols, cors) {
-  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
