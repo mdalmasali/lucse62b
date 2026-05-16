@@ -6,7 +6,7 @@
   var W = 'https://lucse62b-api.sy164425.workers.dev';
 
   function get(path) {
-    return fetch(W + path).then(function (r) {
+    return fetch(W + path, { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });

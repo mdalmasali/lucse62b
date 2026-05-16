@@ -6,6 +6,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CSE 62B | Leading University</title>
+  <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
   <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -482,37 +483,8 @@
           <p class="contact-badge">Contact for queries</p>
         </div>
       </div>
-      <div class="contact-grid">
-        <!-- CR 1 -->
-        <div class="contact-detail" style="align-items: center;">
-          <div class="cr-avatar" style="border: 2px solid rgba(14,165,233,0.4);">
-            <img src="assets/images/cr/cr1.jpg" alt="Md. Almas Ali" loading="lazy" decoding="async">
-          </div>
-          <div class="contact-text">
-            <span>Class Representative</span>
-            <strong>Md. Almas Ali</strong>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; margin-top: 2px;">ID: 0182320012101068</span>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal;">📞 01781782704</span>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; display: flex; align-items: center; gap: 4px;">✉️ <a href="mailto:cse_0182320012101068@lus.ac.bd" style="color: var(--accent2); text-decoration: none;">cse_0182320012101068@lus.ac.bd</a></span><a href="https://wa.me/8801781782704" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background-color: #25D366; color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; margin-top: 10px; width: fit-content; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Message on WhatsApp
-            </a>
-          </div>
-        </div>
-        <!-- CR 2 -->
-        <div class="contact-detail" style="align-items: center;">
-          <div class="cr-avatar" style="border: 2px solid rgba(109,40,217,0.4);">
-            <img src="assets/images/cr/cr2.jpg" alt="MD. Shahriar Khan" loading="lazy" decoding="async">
-          </div>
-          <div class="contact-text">
-            <span>Class Representative</span>
-            <strong>MD. Shahriar Khan</strong>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; margin-top: 2px;">ID: 0182320012101051</span>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal;">📞 01752184464</span>
-            <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: none; letter-spacing: normal; font-weight: normal; display: flex; align-items: center; gap: 4px;">✉️ <a href="mailto:cse_0182320012101051@lus.ac.bd" style="color: var(--accent2); text-decoration: none;">cse_0182320012101051@lus.ac.bd</a></span><a href="https://wa.me/8801752184464" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background-color: #25D366; color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.8rem; margin-top: 10px; width: fit-content; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-              <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Message on WhatsApp
-            </a>
-          </div>
-        </div>
+      <div class="contact-grid" id="crGrid">
+        <div style="opacity:0.4;font-size:0.85rem;color:var(--text-secondary);padding:10px;">Loading...</div>
       </div>
     </div>
 
@@ -1347,5 +1319,43 @@
   }
 })();
 </script>
+<script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
+
+  <script>
+    const CR_COLORS = ['rgba(14,165,233,0.4)', 'rgba(109,40,217,0.4)'];
+    (async function loadCR() {
+      try {
+        const data = await fetchSheet('CR Info');
+        const rows = (data.table?.rows || []).map(r =>
+          (r.c || []).map(c => (c && c.v != null) ? String(c.f || c.v).trim() : '')
+        );
+        if (!rows.length) return;
+        const grid = document.getElementById('crGrid');
+        grid.innerHTML = rows.map((r, i) => {
+          const [name, id, phone, wa, email, photo] = r;
+          const color = CR_COLORS[i] || CR_COLORS[0];
+          const photoSrc = photo ? 'assets/images/cr/' + photo : '';
+          return `
+            <div class="contact-detail" style="align-items:center;">
+              <div class="cr-avatar" style="border:2px solid ${color};">
+                ${photoSrc ? `<img src="${photoSrc}" alt="${name}" loading="lazy" decoding="async">` : ''}
+              </div>
+              <div class="contact-text">
+                <span>Class Representative</span>
+                <strong>${name}</strong>
+                ${id   ? `<span style="font-size:0.8rem;color:var(--text-secondary);text-transform:none;letter-spacing:normal;font-weight:normal;margin-top:2px;">ID: ${id}</span>` : ''}
+                ${phone ? `<span style="font-size:0.8rem;color:var(--text-secondary);text-transform:none;letter-spacing:normal;font-weight:normal;">📞 ${phone}</span>` : ''}
+                ${email ? `<span style="font-size:0.8rem;color:var(--text-secondary);text-transform:none;letter-spacing:normal;font-weight:normal;display:flex;align-items:center;gap:4px;">✉️ <a href="mailto:${email}" style="color:var(--accent2);text-decoration:none;">${email}</a></span>` : ''}
+                ${wa ? `<a href="https://wa.me/${wa}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:white;padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:10px;width:fit-content;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(37,211,102,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''"><i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i> Message on WhatsApp</a>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+      } catch(e) {}
+    })();
+  </script>
 </body>
 </html>

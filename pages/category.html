@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <script>if(!localStorage.getItem('lu62b_student')&&!sessionStorage.getItem('lu62b_student')){window.location.replace('login.html');}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
   <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
   <title>Loading... | CSE 62B LU</title>
@@ -349,5 +350,10 @@
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/theme.js"></script>
   <script src="../assets/js/analytics.js"></script>
+<script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
 </body>
 </html>
