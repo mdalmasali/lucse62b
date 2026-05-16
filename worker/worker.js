@@ -1,26 +1,4 @@
-// ── CSE 62B Portal · Cloudflare Worker ──────────────────────────────────────
-// Deploy this at: Cloudflare Dashboard → Workers → Create Worker → paste code
-// Custom domain:  api.lucse62.xyz  (add route in Cloudflare DNS)
-//
-// Required Worker Secrets (Settings → Variables → Add secret):
-//   MAIN_SHEET_ID   → 1Zv2PtPBmhVWAl7SeZnAXCpMiDZx_PDczeM6r-DrvPxY
-//   BOT_SHEET_ID    → 1oPrkupGA43ydBl-qL8XpAFjUpmPZqOyVfJq5iqn50kc
-//   SMS_API_KEY     → (your bulksmsbd API key)
-//   SMS_SENDER_ID   → (your sender ID)
-//   DRIVE_API_KEY   → (your Google Drive API key)
-//   SUPA_KEY        → (your Supabase anon key — keep server-side only)
-//
-// Required KV Namespace (Settings → Variables → KV Namespace Bindings):
-//   SMS_RATE        → create a KV namespace named "SMS_RATE" and bind it here
-//
-// Endpoints:
-//   GET  /sheet?name=TabName[&type=bot]   → Google Sheets GVIZ proxy
-//   GET  /fetch?id=SHEET_ID[&sheet=Tab]   → Arbitrary sheet (exam/routine)
-//   POST /sms   body: { phone, message }  → SMS gateway proxy
-//   GET  /drive?folder=FOLDER_ID          → Google Drive folder listing
-//   POST /dob-sync  { student_id, dob }   → Upsert DOB to Supabase
-//   POST /dob-check { student_id }        → { has_dob: bool }
-//   POST /dob-get   { student_id }        → { dob } (rate-limited)
+
 
 const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 
@@ -391,17 +369,17 @@ export default {
 async function gvizProxy(sheetId, tab, cors) {
   let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
-  const r    = await fetch(u);
+  const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
   const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
   if (!m) return errResp(cors, 502, 'Bad upstream response');
-  return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json' } });
+  return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 }
 
 async function gvizProxyStrip(sheetId, tab, stripCols, cors) {
   let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
-  const r    = await fetch(u);
+  const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
   const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
   if (!m) return errResp(cors, 502, 'Bad upstream response');
@@ -413,12 +391,12 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors) {
       c: (row.c || []).map((cell, i) => stripCols.includes(i) ? null : cell)
     }));
   }
-  return new Response(JSON.stringify(data), { headers: { ...cors, 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(data), { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 }
 
 function jsonResp(cors, data) {
   return new Response(JSON.stringify(data), {
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }
 
