@@ -1907,11 +1907,21 @@
       document.getElementById('userName').innerText = currentUser.name || 'Student';
       document.getElementById('userId').innerText = 'ID: ' + currentUser.id;
 
-      let phone = currentUser.phone || 'N/A';
-      if (phone !== 'N/A' && phone.length >= 11) {
-        phone = phone.substring(0, 5) + '...' + phone.substring(phone.length - 3);
-      }
-      document.getElementById('userPhone').innerText = phone;
+      // Fetch own phone number from Worker — DOB acts as second-factor verification
+      (function loadPhone(uid) {
+        const dob = localStorage.getItem('lu62b_dob_' + uid);
+        if (!dob || isDemoUser) return;
+        fetch('https://lucse62b-api.sy164425.workers.dev/my-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: uid, birth_date: dob }),
+        })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d && d.phone) document.getElementById('userPhone').innerText = d.phone;
+          })
+          .catch(() => {});
+      })(currentUser.id);
 
       // settingsSection hidden by design
 

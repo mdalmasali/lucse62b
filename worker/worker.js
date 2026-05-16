@@ -203,6 +203,59 @@ export default {
         return jsonResp(cors, { valid: true });
       }
 
+      // ── POST /my-phone  { student_id, birth_date } — returns verified student's own phone ──
+      if (p === '/my-phone' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id, birth_date } = await request.json();
+        if (!student_id || !birth_date) return errResp(cors, 400, 'Missing fields');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) return errResp(cors, 400, 'Invalid date');
+
+        // Rate limit: max 10/hour per IP
+        if (env.SMS_RATE) {
+          const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const key = `phone:h:${ip}:${Math.floor(Date.now() / 3600000)}`;
+          const raw = await env.SMS_RATE.get(key);
+          const cnt = parseInt(raw || '0');
+          if (cnt >= 10) return errResp(cors, 429, 'Too many requests');
+          await env.SMS_RATE.put(key, String(cnt + 1), { expirationTtl: 3600 });
+        }
+
+        // Fetch phone from sheet
+        const sid3 = String(student_id);
+        const shId = env.MAIN_SHEET_ID;
+        if (!shId) return errResp(cors, 500, 'Not configured');
+        const tq3 = `select * where B='${sid3}'`;
+        const u3  = `https://docs.google.com/spreadsheets/d/${shId}/gviz/tq?tqx=out:json&sheet=Student%20Info&tq=${encodeURIComponent(tq3)}`;
+        const r3  = await fetch(u3);
+        const t3  = await r3.text();
+        const m3  = t3.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+        if (!m3) return errResp(cors, 502, 'Bad upstream');
+        const d3 = JSON.parse(m3[1]);
+        const rows3 = d3.table?.rows || [];
+        if (!rows3.length) return errResp(cors, 404, 'Student not found');
+        const cells3 = (rows3[0].c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
+        let phone3 = (cells3[3] || '').replace(/\s+/g, '');
+        if (phone3.length === 10 && phone3.startsWith('1')) phone3 = '0' + phone3;
+        if (phone3.startsWith('+88')) phone3 = phone3.substring(3);
+        else if (phone3.startsWith('88') && phone3.length === 13) phone3 = phone3.substring(2);
+        if (!/^01[3-9]\d{8}$/.test(phone3)) return errResp(cors, 400, 'No phone on record');
+
+        // Verify DOB via Supabase (anon key is already public in client code)
+        const SUPA_URL3 = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+        const SUPA_KEY3 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+        const dobR = await fetch(`${SUPA_URL3}/rest/v1/rpc/get_student_dob`, {
+          method: 'POST',
+          headers: { 'apikey': SUPA_KEY3, 'Authorization': `Bearer ${SUPA_KEY3}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: sid3 }),
+        }).catch(() => null);
+        if (!dobR || !dobR.ok) return errResp(cors, 503, 'Verification unavailable');
+        const storedDob = await dobR.json();
+        if (!storedDob || storedDob !== String(birth_date)) return errResp(cors, 401, 'DOB mismatch');
+
+        return jsonResp(cors, { phone: phone3 });
+      }
+
       // ── POST /result  { student_id, birth_date } ─────────────────────
       if (p === '/result' && request.method === 'POST') {
         const { student_id, birth_date } = await request.json();
