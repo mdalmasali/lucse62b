@@ -407,7 +407,7 @@ async function gvizProxy(sheetId, tab, cors, env) {
     });
   }
   try {
-    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
+    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
     const r    = await fetch(u);
     const text = await r.text();
@@ -431,7 +431,7 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
     });
   }
   try {
-    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
+    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
     const r    = await fetch(u);
     const text = await r.text();
