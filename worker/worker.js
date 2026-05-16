@@ -409,13 +409,13 @@ async function gvizProxy(sheetId, tab, cors, env) {
   try {
     let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
-    const r    = await fetch(u, { cache: 'no-store' });
+    const r    = await fetch(u);
     const text = await r.text();
     const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
     if (!m) return errResp(cors, 502, 'Bad upstream response');
     return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (e) {
-    return errResp(cors, 502, 'Upstream fetch failed');
+    return errResp(cors, 502, String(e));
   }
 }
 
@@ -433,7 +433,7 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
   try {
     let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
-    const r    = await fetch(u, { cache: 'no-store' });
+    const r    = await fetch(u);
     const text = await r.text();
     const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
     if (!m) return errResp(cors, 502, 'Bad upstream response');
@@ -447,7 +447,7 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
     }
     return new Response(JSON.stringify(data), { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (e) {
-    return errResp(cors, 502, 'Upstream fetch failed');
+    return errResp(cors, 502, String(e));
   }
 }
 
