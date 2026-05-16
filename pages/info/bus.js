@@ -1,212 +1,331 @@
-/* ── Website/pages/info/bus.js ── */
+/* ── Bus Schedule ── */
 
 async function loadBus(body) {
-    body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Bus Schedule...</div>';
+  body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Bus Schedule...</div>';
 
-    try {
-        const data = await fetchSheet('Bus');
+  try {
+    const data = await fetchSheet('Bus');
 
-        /* ── Custom row parser: prefer c.f (formatted) over c.v (raw).
-           GVIZ converts time cells to "Date(1899,11,30,H,M,0)" — c.f has "8:00 AM". ── */
-        const rows = (data.table?.rows || []).map(r =>
-            (r.c || []).map(c => {
-                if (!c) return '';
-                if (c.f != null && c.f !== '') return String(c.f).trim();
-                if (c.v == null) return '';
-                const s = String(c.v).trim();
-                const dm = s.match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+)/);
-                if (dm) {
-                    let h = parseInt(dm[4]), m = parseInt(dm[5]);
-                    const ap = h >= 12 ? 'PM' : 'AM';
-                    h = h % 12 || 12;
-                    return `${h}:${String(m).padStart(2, '0')} ${ap}`;
-                }
-                return s;
-            })
-        );
-
-        if (!rows.length) {
-            body.innerHTML = '<div class="info-placeholder"><i class="fa-solid fa-bus"></i><p>No bus schedule data found.</p></div>';
-            return;
+    const rows = (data.table?.rows || []).map(r =>
+      (r.c || []).map(c => {
+        if (!c) return '';
+        if (c.f != null && c.f !== '') return String(c.f).trim();
+        if (c.v == null) return '';
+        const s = String(c.v).trim();
+        const dm = s.match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+)/);
+        if (dm) {
+          let h = parseInt(dm[4]), m = parseInt(dm[5]);
+          const ap = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return `${h}:${String(m).padStart(2, '0')} ${ap}`;
         }
+        return s;
+      })
+    );
 
-        const firstVal = rows[0] && rows[0][0] ? rows[0][0].toLowerCase().trim() : '';
-        const startIdx = firstVal === 'schedule' ? 1 : 0;
-
-        const schedules = {};
-        for (let i = startIdx; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || !row[0] || !row[3]) continue;
-            const sched = row[0].trim(), dayGrp = row[1].trim(), dir = row[2].trim();
-            const time  = row[3].trim();
-            const note  = row[4] ? row[4].trim() : '';
-            if (!sched || !time) continue;
-            if (!schedules[sched])              schedules[sched]              = {};
-            if (!schedules[sched][dayGrp])      schedules[sched][dayGrp]      = { 'To LU': [], 'From LU': [] };
-            if (!schedules[sched][dayGrp][dir]) schedules[sched][dayGrp][dir] = [];
-            schedules[sched][dayGrp][dir].push({ time, note });
-        }
-
-        const keys     = Object.keys(schedules);
-        const examKeys = keys.filter(k => k.startsWith('Exam:')).sort((a, b) => {
-            const toMin = s => {
-                const m = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                if (!m) return 0;
-                let h = parseInt(m[1]), mn = parseInt(m[2]);
-                if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
-                if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
-                return h * 60 + mn;
-            };
-            return toMin(a) - toMin(b);
-        });
-        const hasReg   = keys.includes('Regular');
-        const hasExam  = examKeys.length > 0;
-
-        if (!hasReg && !hasExam) {
-            body.innerHTML = '<div class="info-placeholder"><i class="fa-solid fa-bus"></i><p>No schedule data available.</p></div>';
-            return;
-        }
-
-        const tabs = [];
-        if (hasReg)  tabs.push({ id: 'regular', label: 'Regular',   icon: 'fa-solid fa-bus',      color: '#34d399' });
-        if (hasExam) tabs.push({ id: 'exam',    label: 'Exam Days', icon: 'fa-solid fa-file-pen', color: '#f87171' });
-
-        let activeTab = tabs[0].id;
-
-        /* ─────────────────────────────────────
-           Schedule Table  (Arrival / Departure)
-           ───────────────────────────────────── */
-        function scheduleTable(title, icon, accentColor, direction, dayData) {
-            const DAY_ORDER  = ['Sat–Thu', 'Sun–Thu', 'Saturday', 'Friday'];
-            const dayGroups  = DAY_ORDER.filter(d => dayData[d] && (dayData[d][direction] || []).length);
-            Object.keys(dayData).forEach(d => { if (!dayGroups.includes(d) && (dayData[d][direction] || []).length) dayGroups.push(d); });
-            if (!dayGroups.length) return '';
-
-            // Build grid: each day group is a column
-            const colMinW = Math.floor(100 / dayGroups.length);
-
-            const headers = dayGroups.map(dg => `
-                <th style="padding:10px 14px;text-align:center;font-size:0.68rem;font-weight:800;
-                    color:${accentColor};text-transform:uppercase;letter-spacing:0.09em;
-                    background:${accentColor}12;border-right:1px solid rgba(255,255,255,0.05);
-                    white-space:nowrap;">
-                    ${escH(dg)}
-                </th>`).join('');
-
-            // Find max rows
-            const maxLen = Math.max(...dayGroups.map(dg => (dayData[dg][direction] || []).length));
-            let bodyRows = '';
-            for (let r = 0; r < maxLen; r++) {
-                const cells = dayGroups.map(dg => {
-                    const entry = (dayData[dg][direction] || [])[r];
-                    if (!entry) return `<td style="padding:8px 14px;border-right:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04);text-align:center;color:var(--text-secondary);font-size:0.72rem;opacity:0.25;">—</td>`;
-                    return `
-                        <td style="padding:8px 14px;border-right:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04);text-align:center;">
-                            <span style="font-size:0.88rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">${escH(entry.time)}</span>
-                            ${entry.note ? `<br><span style="font-size:0.6rem;background:rgba(251,191,36,0.12);color:#fbbf24;padding:1px 6px;border-radius:4px;font-weight:700;">${escH(entry.note)}</span>` : ''}
-                        </td>`;
-                }).join('');
-                bodyRows += `<tr style="background:${r % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent'};">${cells}</tr>`;
-            }
-
-            return `
-                <div style="margin-bottom:22px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                        <div style="width:3px;height:18px;background:${accentColor};border-radius:2px;flex-shrink:0;"></div>
-                        <i class="${icon}" style="color:${accentColor};font-size:0.78rem;"></i>
-                        <span style="font-size:0.78rem;font-weight:800;color:${accentColor};text-transform:uppercase;letter-spacing:0.08em;">${title}</span>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-                        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-                            <table style="width:100%;border-collapse:collapse;min-width:300px;">
-                                <thead>
-                                    <tr>
-                                        ${headers}
-                                    </tr>
-                                </thead>
-                                <tbody>${bodyRows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        /* ─────────────────────────────────────
-           Render: Regular
-           ───────────────────────────────────── */
-        function renderRegular() {
-            const regData = schedules['Regular'] || {};
-            return (
-                scheduleTable('Arrival Schedule — To Leading University',   'fa-solid fa-arrow-right-to-bracket', '#34d399', 'To LU',   regData) +
-                scheduleTable('Departure Schedule — From Leading University', 'fa-solid fa-arrow-right-from-bracket', '#38bdf8', 'From LU', regData)
-            );
-        }
-
-        /* ─────────────────────────────────────
-           Render: Exam Days
-           ───────────────────────────────────── */
-        function renderExam() {
-            return examKeys.map(key => {
-                const slotData  = schedules[key] || {};
-                const examLabel = key.replace('Exam: ', '');
-                return `
-                    <div style="background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.22);border-radius:14px;overflow:hidden;margin-bottom:18px;">
-                        <div style="padding:12px 18px;border-bottom:1px solid rgba(248,113,113,0.15);background:rgba(248,113,113,0.08);display:flex;align-items:center;gap:8px;">
-                            <i class="fa-solid fa-clock" style="color:#f87171;font-size:0.8rem;"></i>
-                            <span style="font-size:0.88rem;font-weight:800;color:#f87171;">${escH(examLabel)} Exam</span>
-                        </div>
-                        <div style="padding:18px;">
-                            ${scheduleTable('Arrival — To Leading University',    'fa-solid fa-arrow-right-to-bracket',   '#34d399', 'To LU',   slotData)}
-                            ${scheduleTable('Departure — From Leading University', 'fa-solid fa-arrow-right-from-bracket', '#38bdf8', 'From LU', slotData)}
-                        </div>
-                    </div>`;
-            }).join('');
-        }
-
-        function renderTab(id) {
-            if (id === 'regular') return renderRegular();
-            if (id === 'exam')    return renderExam();
-            return '';
-        }
-
-        /* ─────────────────────────────────────
-           Tab switcher
-           ───────────────────────────────────── */
-        function tabStyle(tab, isActive) {
-            return `padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;
-                font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:all 0.18s;
-                background:${isActive ? `linear-gradient(135deg,${tab.color}cc,${tab.color}77)` : 'transparent'};
-                color:${isActive ? '#fff' : 'var(--text-secondary)'};`;
-        }
-
-        const tabBtns = tabs.map(t => `
-            <button class="bus-tab-btn" data-tabid="${t.id}" style="${tabStyle(t, t.id === activeTab)}">
-                <i class="${t.icon}" style="font-size:0.75rem;"></i> ${t.label}
-            </button>`).join('');
-
-        body.innerHTML = `
-            <div style="display:flex;gap:6px;margin-bottom:22px;background:rgba(255,255,255,0.03);padding:4px;border-radius:12px;border:1px solid var(--border);width:fit-content;">
-                ${tabBtns}
-            </div>
-            <div id="busTabContent">${renderTab(activeTab)}</div>
-            <div style="font-size:0.67rem;color:var(--text-secondary);opacity:0.4;margin-top:6px;display:flex;align-items:center;gap:6px;">
-                <i class="fa-solid fa-circle-info"></i>Schedule may change · Always check notice board for updates
-            </div>`;
-
-        body.addEventListener('click', e => {
-            const btn = e.target.closest('.bus-tab-btn');
-            if (btn) {
-                activeTab = btn.dataset.tabid;
-                body.querySelectorAll('.bus-tab-btn').forEach(b => {
-                    const t = tabs.find(x => x.id === b.dataset.tabid);
-                    b.style.cssText = tabStyle(t, b.dataset.tabid === activeTab);
-                });
-                document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
-            }
-        });
-
-    } catch (err) {
-        console.error('Bus Schedule Error:', err);
-        body.innerHTML = '<div class="info-placeholder"><p>Error fetching bus schedule.</p></div>';
+    if (!rows.length) {
+      body.innerHTML = '<div class="info-placeholder"><i class="fa-solid fa-bus"></i><p>No bus schedule data found.</p></div>';
+      return;
     }
+
+    const firstVal = rows[0]?.[0]?.toLowerCase().trim() || '';
+    const startIdx = firstVal === 'schedule' ? 1 : 0;
+
+    const schedules = {};
+    for (let i = startIdx; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row[0] || !row[3]) continue;
+      const sched = row[0].trim(), dayGrp = row[1].trim(), dir = row[2].trim();
+      const time = row[3].trim(), note = row[4] ? row[4].trim() : '';
+      if (!sched || !time) continue;
+      if (!schedules[sched]) schedules[sched] = {};
+      if (!schedules[sched][dayGrp]) schedules[sched][dayGrp] = { 'To LU': [], 'From LU': [] };
+      if (!schedules[sched][dayGrp][dir]) schedules[sched][dayGrp][dir] = [];
+      schedules[sched][dayGrp][dir].push({ time, note });
+    }
+
+    const keys = Object.keys(schedules);
+    const examKeys = keys.filter(k => k.startsWith('Exam:')).sort();
+    const hasReg  = keys.includes('Regular');
+    const hasExam = examKeys.length > 0;
+
+    if (!hasReg && !hasExam) {
+      body.innerHTML = '<div class="info-placeholder"><i class="fa-solid fa-bus"></i><p>No schedule data available.</p></div>';
+      return;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    function toMins(str) {
+      const m = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!m) return -1;
+      let h = parseInt(m[1]), mn = parseInt(m[2]);
+      if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+      if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+      return h * 60 + mn;
+    }
+
+    function nowMins() {
+      const n = new Date(); return n.getHours() * 60 + n.getMinutes();
+    }
+
+    function countdown(timeStr) {
+      const diff = toMins(timeStr) - nowMins();
+      if (diff <= 0) return null;
+      if (diff < 60) return `${diff} min`;
+      const h = Math.floor(diff / 60), m = diff % 60;
+      return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    }
+
+    function detectDayGroup(groups) {
+      const day = new Date().getDay(); // 0=Sun…5=Fri,6=Sat
+      const isFri = day === 5;
+      for (const g of groups) {
+        if (isFri && g.toLowerCase().includes('fri')) return g;
+        if (!isFri && !g.toLowerCase().includes('fri')) return g;
+      }
+      return groups[0];
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────
+    const regData     = schedules['Regular'] || {};
+    const allDayGrps  = Object.keys(regData);
+    let activeTab     = hasReg ? 'regular' : 'exam';
+    let activeDir     = 'To LU';
+    let activeDayGrp  = detectDayGroup(allDayGrps);
+
+    // ── Next Bus cards ────────────────────────────────────────────────────
+    function renderNextBus() {
+      if (activeTab !== 'regular') return '';
+      const now = nowMins();
+
+      const findNext = dir => (regData[activeDayGrp]?.[dir] || [])
+        .filter(e => toMins(e.time) >= now)
+        .sort((a, b) => toMins(a.time) - toMins(b.time))[0];
+
+      const toLU   = findNext('To LU');
+      const fromLU = findNext('From LU');
+
+      const items = [
+        toLU   ? { label: 'Next → To LU',   ...toLU,   color: '#34d399', icon: 'fa-right-to-bracket'   } : null,
+        fromLU ? { label: 'Next ← From LU', ...fromLU, color: '#38bdf8', icon: 'fa-right-from-bracket' } : null,
+      ].filter(Boolean);
+
+      if (!items.length) return `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;
+          padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-moon" style="color:var(--muted);"></i>
+          <span style="color:var(--muted);font-size:0.85rem;">No more buses today</span>
+        </div>`;
+
+      return `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px;">
+          ${items.map(c => `
+            <div style="background:${c.color}0f;border:1px solid ${c.color}30;border-radius:16px;padding:18px 20px;">
+              <div style="font-size:0.67rem;font-weight:800;color:${c.color};text-transform:uppercase;
+                letter-spacing:0.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid ${c.icon}"></i>${c.label}
+              </div>
+              <div style="font-size:1.9rem;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;line-height:1;">
+                ${escH(c.time)}
+              </div>
+              ${countdown(c.time) ? `<div style="font-size:0.72rem;color:${c.color};margin-top:6px;font-weight:600;">in ${countdown(c.time)}</div>` : ''}
+              ${c.note ? `<div style="font-size:0.64rem;background:rgba(251,191,36,0.12);color:#fbbf24;padding:2px 8px;
+                border-radius:5px;display:inline-block;margin-top:6px;font-weight:700;">${escH(c.note)}</div>` : ''}
+            </div>`).join('')}
+        </div>`;
+    }
+
+    // ── Timeline pills ────────────────────────────────────────────────────
+    function renderTimeline(entries, color) {
+      if (!entries.length) return `
+        <div style="color:var(--muted);font-size:0.82rem;padding:10px 0;text-align:center;opacity:0.5;">
+          No buses scheduled
+        </div>`;
+
+      const now  = nowMins();
+      const next = entries.find(e => toMins(e.time) >= now);
+
+      return `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">
+          ${entries.map(e => {
+            const mins   = toMins(e.time);
+            const isPast = mins < now && mins !== -1;
+            const isNext = next && e.time === next.time;
+            return `
+              <div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">
+                <div style="padding:8px 14px;border-radius:10px;font-size:0.88rem;font-weight:700;
+                  font-variant-numeric:tabular-nums;white-space:nowrap;
+                  ${isNext
+                    ? `background:${color};color:#fff;box-shadow:0 2px 14px ${color}50;`
+                    : isPast
+                      ? 'background:rgba(255,255,255,0.04);color:var(--muted);text-decoration:line-through;opacity:0.45;'
+                      : `background:${color}15;color:var(--text);border:1px solid ${color}30;`}">
+                  ${escH(e.time)}${isNext ? ' <i class="fa-solid fa-bus" style="font-size:0.68rem;margin-left:3px;"></i>' : ''}
+                </div>
+                ${e.note ? `<span style="font-size:0.58rem;background:rgba(251,191,36,0.15);color:#fbbf24;
+                  padding:1px 6px;border-radius:4px;font-weight:700;">${escH(e.note)}</span>` : ''}
+              </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    // ── Regular tab ───────────────────────────────────────────────────────
+    function renderRegular() {
+      const dayChips = allDayGrps.map(dg => {
+        const isActive = dg === activeDayGrp;
+        return `<button class="bus-day-chip" data-group="${escH(dg)}" style="
+          padding:5px 13px;border-radius:8px;border:none;cursor:pointer;
+          font-size:0.77rem;font-weight:700;font-family:'Inter',sans-serif;transition:all 0.15s;
+          background:${isActive ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)'};
+          color:${isActive ? '#a5b4fc' : 'var(--muted)'};
+          border:1px solid ${isActive ? 'rgba(99,102,241,0.4)' : 'transparent'};
+        ">${escH(dg)}</button>`;
+      }).join('');
+
+      const dirs = [
+        { dir: 'To LU',   icon: 'fa-right-to-bracket',   color: '#34d399', label: '→  To LU'   },
+        { dir: 'From LU', icon: 'fa-right-from-bracket',  color: '#38bdf8', label: '←  From LU' },
+      ];
+      const dirBtns = dirs.map(d => {
+        const isActive = d.dir === activeDir;
+        return `<button class="bus-dir-btn" data-dir="${d.dir}" style="
+          flex:1;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;
+          font-size:0.85rem;font-weight:700;font-family:'Inter',sans-serif;
+          transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;
+          background:${isActive ? `${d.color}1a` : 'transparent'};
+          color:${isActive ? d.color : 'var(--muted)'};
+          border:1.5px solid ${isActive ? `${d.color}45` : 'transparent'};
+        "><i class="fa-solid ${d.icon}" style="font-size:0.8rem;"></i>${d.label}</button>`;
+      }).join('');
+
+      const color   = activeDir === 'To LU' ? '#34d399' : '#38bdf8';
+      const entries = regData[activeDayGrp]?.[activeDir] || [];
+      const dirIcon = activeDir === 'To LU' ? 'fa-right-to-bracket' : 'fa-right-from-bracket';
+      const dirLabel = activeDir === 'To LU' ? 'Arrival — To Leading University' : 'Departure — From Leading University';
+
+      return `
+        ${renderNextBus()}
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <i class="fa-solid fa-calendar-days" style="color:var(--muted);font-size:0.78rem;"></i>
+          <span style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Day Group</span>
+          ${dayChips}
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;background:rgba(255,255,255,0.03);
+          padding:4px;border-radius:12px;border:1px solid var(--border);">
+          ${dirBtns}
+        </div>
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:18px 20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <div style="width:3px;height:18px;background:${color};border-radius:2px;flex-shrink:0;"></div>
+            <i class="fa-solid ${dirIcon}" style="color:${color};font-size:0.75rem;"></i>
+            <span style="font-size:0.72rem;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:0.07em;">
+              ${dirLabel}
+            </span>
+          </div>
+          ${renderTimeline(entries, color)}
+        </div>`;
+    }
+
+    // ── Exam tab ──────────────────────────────────────────────────────────
+    function renderExam() {
+      return examKeys.map(key => {
+        const slotData  = schedules[key] || {};
+        const examLabel = key.replace('Exam: ', '');
+        return `
+          <div style="background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.22);
+            border-radius:14px;overflow:hidden;margin-bottom:18px;">
+            <div style="padding:12px 18px;border-bottom:1px solid rgba(248,113,113,0.15);
+              background:rgba(248,113,113,0.08);display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-clock" style="color:#f87171;font-size:0.8rem;"></i>
+              <span style="font-size:0.88rem;font-weight:800;color:#f87171;">${escH(examLabel)} Exam</span>
+            </div>
+            <div style="padding:18px;">
+              ${Object.keys(slotData).map(dg => `
+                <div style="margin-bottom:18px;">
+                  <div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;
+                    letter-spacing:0.08em;margin-bottom:12px;">${escH(dg)}</div>
+                  <div style="margin-bottom:10px;">
+                    <div style="font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:7px;
+                      display:flex;align-items:center;gap:5px;">
+                      <i class="fa-solid fa-right-to-bracket" style="font-size:0.65rem;"></i> To LU
+                    </div>
+                    ${renderTimeline(slotData[dg]?.['To LU'] || [], '#34d399')}
+                  </div>
+                  <div>
+                    <div style="font-size:0.7rem;color:#38bdf8;font-weight:700;margin-bottom:7px;
+                      display:flex;align-items:center;gap:5px;">
+                      <i class="fa-solid fa-right-from-bracket" style="font-size:0.65rem;"></i> From LU
+                    </div>
+                    ${renderTimeline(slotData[dg]?.['From LU'] || [], '#38bdf8')}
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderTab(id) {
+      if (id === 'regular') return renderRegular();
+      if (id === 'exam')    return renderExam();
+      return '';
+    }
+
+    // ── Tab bar ───────────────────────────────────────────────────────────
+    const tabs = [];
+    if (hasReg)  tabs.push({ id: 'regular', label: 'Regular',   icon: 'fa-solid fa-bus',      color: '#34d399' });
+    if (hasExam) tabs.push({ id: 'exam',    label: 'Exam Days', icon: 'fa-solid fa-file-pen',  color: '#f87171' });
+
+    function tabStyle(tab, isActive) {
+      return `padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;
+        font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:all 0.18s;
+        background:${isActive ? `linear-gradient(135deg,${tab.color}cc,${tab.color}77)` : 'transparent'};
+        color:${isActive ? '#fff' : 'var(--text-secondary)'};`;
+    }
+
+    const tabBtns = tabs.map(t => `
+      <button class="bus-tab-btn" data-tabid="${t.id}" style="${tabStyle(t, t.id === activeTab)}">
+        <i class="${t.icon}" style="font-size:0.75rem;"></i>${t.label}
+      </button>`).join('');
+
+    body.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:22px;background:rgba(255,255,255,0.03);
+        padding:4px;border-radius:12px;border:1px solid var(--border);width:fit-content;">
+        ${tabBtns}
+      </div>
+      <div id="busTabContent">${renderTab(activeTab)}</div>
+      <div style="font-size:0.67rem;color:var(--text-secondary);opacity:0.4;margin-top:14px;
+        display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-circle-info"></i>
+        Schedule may change · Always check notice board for updates
+      </div>`;
+
+    // ── Event delegation ──────────────────────────────────────────────────
+    body.addEventListener('click', e => {
+      const tabBtn = e.target.closest('.bus-tab-btn');
+      if (tabBtn) {
+        activeTab = tabBtn.dataset.tabid;
+        body.querySelectorAll('.bus-tab-btn').forEach(b => {
+          const t = tabs.find(x => x.id === b.dataset.tabid);
+          b.style.cssText = tabStyle(t, b.dataset.tabid === activeTab);
+        });
+        document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
+        return;
+      }
+      const dayChip = e.target.closest('.bus-day-chip');
+      if (dayChip) {
+        activeDayGrp = dayChip.dataset.group;
+        document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
+        return;
+      }
+      const dirBtn = e.target.closest('.bus-dir-btn');
+      if (dirBtn) {
+        activeDir = dirBtn.dataset.dir;
+        document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
+      }
+    });
+
+  } catch (err) {
+    console.error('Bus Schedule Error:', err);
+    body.innerHTML = '<div class="info-placeholder"><p>Error fetching bus schedule.</p></div>';
+  }
 }
