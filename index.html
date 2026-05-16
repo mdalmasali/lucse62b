@@ -1332,7 +1332,7 @@
         const data = await fetchSheet('CR Info');
         const rows = (data.table?.rows || []).map(r =>
           (r.c || []).map(c => (c && c.v != null) ? String(c.f || c.v).trim() : '')
-        );
+        ).filter(r => r[0] && r[0].toLowerCase() !== 'name');
         if (!rows.length) return;
         const grid = document.getElementById('crGrid');
         grid.innerHTML = rows.map((r, i) => {

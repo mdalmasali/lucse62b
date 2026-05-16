@@ -1,0 +1,12 @@
+name            = "lucse62b-api"
+main            = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Non-secret env vars (if any) go here.
+# Secrets (SUPA_KEY, DRIVE_API_KEY, etc.) are stored in Cloudflare dashboard
+# under Workers → lucse62b-api → Settings → Variables → Secrets.
+
+[[kv_namespaces]]
+binding  = "SMS_RATE"
+id       = ""   # fill in your KV namespace ID from Cloudflare dashboard
