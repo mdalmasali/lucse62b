@@ -1,4 +1,4 @@
-const CACHE = 'lu62b-v2';
+const CACHE = 'lu62b-v3';
 
 const STATIC = [
   '/',
