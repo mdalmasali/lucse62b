@@ -100,10 +100,12 @@ async function loadBus(body) {
     }
 
     // ── State ─────────────────────────────────────────────────────────────
-    const regData    = schedules['Regular'] || {};
-    const allDayGrps = Object.keys(regData);
-    let activeTab    = hasReg ? 'regular' : 'exam';
-    let activeDayGrp = detectDayGroup(allDayGrps);
+    const regData     = schedules['Regular'] || {};
+    const allDayGrps  = Object.keys(regData);
+    const examDayGrps = examKeys.length ? Object.keys(schedules[examKeys[0]] || {}) : [];
+    let activeTab     = hasReg ? 'regular' : 'exam';
+    let activeDayGrp  = detectDayGroup(allDayGrps);
+    let activeExamDayGrp = detectDayGroup(examDayGrps);
 
     // ── Next Bus cards ────────────────────────────────────────────────────
     function renderNextBus() {
@@ -234,26 +236,42 @@ async function loadBus(body) {
 
     // ── Exam tab ──────────────────────────────────────────────────────────
     function renderExam() {
-      return examKeys.map(key => {
+      const dayChips = examDayGrps.map(dg => {
+        const isActive = dg === activeExamDayGrp;
+        return `<button class="bus-exam-day-chip" data-group="${escH(dg)}" style="
+          padding:5px 13px;border-radius:8px;border:none;cursor:pointer;
+          font-size:0.77rem;font-weight:700;font-family:'Inter',sans-serif;transition:all 0.15s;
+          background:${isActive ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)'};
+          color:${isActive ? '#a5b4fc' : 'var(--muted)'};
+          border:1px solid ${isActive ? 'rgba(99,102,241,0.4)' : 'transparent'};
+        ">${escH(dg)}</button>`;
+      }).join('');
+
+      const dayBar = examDayGrps.length > 1 ? `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <i class="fa-solid fa-calendar-days" style="color:var(--muted);font-size:0.78rem;"></i>
+          <span style="font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Day Group</span>
+          ${dayChips}
+        </div>` : '';
+
+      const slots = examKeys.map(key => {
         const slotData  = schedules[key] || {};
         const examLabel = key.replace('Exam: ', '');
         return `
           <div style="background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.22);
-            border-radius:14px;overflow:hidden;margin-bottom:18px;">
-            <div style="padding:12px 18px;border-bottom:1px solid rgba(248,113,113,0.15);
+            border-radius:14px;overflow:hidden;margin-bottom:14px;">
+            <div style="padding:10px 16px;border-bottom:1px solid rgba(248,113,113,0.15);
               background:rgba(248,113,113,0.08);display:flex;align-items:center;gap:8px;">
-              <i class="fa-solid fa-clock" style="color:#f87171;font-size:0.8rem;"></i>
-              <span style="font-size:0.88rem;font-weight:800;color:#f87171;">${escH(examLabel)} Exam</span>
+              <i class="fa-solid fa-clock" style="color:#f87171;font-size:0.78rem;"></i>
+              <span style="font-size:0.84rem;font-weight:800;color:#f87171;">${escH(examLabel)} Exam</span>
             </div>
-            <div style="padding:16px 18px;">
-              ${Object.keys(slotData).map(dg => `
-                <div style="margin-bottom:6px;">
-                  ${Object.keys(slotData).length > 1 ? `<div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">${escH(dg)}</div>` : ''}
-                  ${renderDirPanel(slotData[dg])}
-                </div>`).join('')}
+            <div style="padding:14px 16px;">
+              ${renderDirPanel(slotData[activeExamDayGrp] || {})}
             </div>
           </div>`;
       }).join('');
+
+      return dayBar + slots;
     }
 
     function renderTab(id) {
@@ -306,6 +324,12 @@ async function loadBus(body) {
       const dayChip = e.target.closest('.bus-day-chip');
       if (dayChip) {
         activeDayGrp = dayChip.dataset.group;
+        document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
+        return;
+      }
+      const examDayChip = e.target.closest('.bus-exam-day-chip');
+      if (examDayChip) {
+        activeExamDayGrp = examDayChip.dataset.group;
         document.getElementById('busTabContent').innerHTML = renderTab(activeTab);
       }
     });
