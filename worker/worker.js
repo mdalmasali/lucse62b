@@ -387,8 +387,7 @@ function v4ToTable(values) {
 async function tryV4(sheetId, tab, env) {
   if (!env || !env.DRIVE_API_KEY) return null;
   try {
-    // Sheet names with spaces must be wrapped in single quotes per Sheets API v4 spec
-    const range = tab ? encodeURIComponent(`'${tab}'`) : 'Sheet1';
+    const range = encodeURIComponent(tab || 'Sheet1');
     const r = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${env.DRIVE_API_KEY}`,
       { cache: 'no-store' }
@@ -407,7 +406,7 @@ async function gvizProxy(sheetId, tab, cors, env) {
       headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
-  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
+  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
@@ -427,7 +426,7 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
       headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
-  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
+  let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=1&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
   const text = await r.text();
