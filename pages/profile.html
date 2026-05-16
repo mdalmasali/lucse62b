@@ -14,9 +14,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <style>
     .profile-container {
-      max-width: 800px;
+      max-width: 1020px;
       margin: 80px auto 40px;
       padding: 0 20px;
+    }
+    .profile-top-row {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 780px) {
+      .profile-top-row { grid-template-columns: 1fr; }
     }
     
     .profile-header {
@@ -28,7 +38,6 @@
       -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 24px 50px rgba(0,0,0,0.5);
       text-align: center;
-      margin-bottom: 30px;
       position: relative;
       overflow: hidden;
     }
@@ -1410,6 +1419,9 @@
 
     <div class="profile-container fade-in delay-1" id="profileContent" style="display:none;">
 
+      <!-- Profile + Appearance side by side -->
+      <div class="profile-top-row">
+
       <!-- Profile Header -->
       <div class="profile-header">
         <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
@@ -1447,7 +1459,7 @@
         </div>
       </div>
 
-      <!-- Appearance Section -->
+      <!-- Appearance Section (right column) -->
       <div class="appearance-card">
         <div class="appearance-card-header">
           <div class="appearance-card-icon"><i class="fa-solid fa-palette"></i></div>
@@ -1481,6 +1493,8 @@
           </button>
         </div>
       </div>
+
+      </div><!-- /.profile-top-row -->
 
       <!-- Settings Section (hidden) -->
       <div class="settings-section" id="settingsSection" style="display: none !important;">
