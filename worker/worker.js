@@ -70,8 +70,8 @@ export default {
         const id = type === 'bot' ? env.BOT_SHEET_ID : env.MAIN_SHEET_ID;
         if (!id)   return errResp(cors, 500, 'Not configured');
         // Strip phone column (index 3) from Student Info to prevent exposure
-        if (name === 'Student Info') return gvizProxyStrip(id, name, [3], cors);
-        return gvizProxy(id, name, cors);
+        if (name === 'Student Info') return gvizProxyStrip(id, name, [3], cors, env);
+        return gvizProxy(id, name, cors, env);
       }
 
       // ── GET /fetch?id=SHEET_ID[&sheet=Tab] ───────────────────────────
@@ -80,7 +80,7 @@ export default {
         const tab = url.searchParams.get('sheet') || '';
         if (!id) return errResp(cors, 400, 'Missing id');
         if (!/^[A-Za-z0-9_-]{20,60}$/.test(id)) return errResp(cors, 400, 'Invalid sheet ID');
-        return gvizProxy(id, tab, cors);
+        return gvizProxy(id, tab, cors, env);
       }
 
       // ── POST /sms  { phone, message } ────────────────────────────────
@@ -366,7 +366,46 @@ export default {
   },
 };
 
-async function gvizProxy(sheetId, tab, cors) {
+/* ── Sheets API v4 helper — real-time, no Google-side caching ─────────────
+   Tries v4 first (instant updates). Falls back to GVIZ if v4 fails or the
+   API key doesn't have Sheets API enabled.
+   ─────────────────────────────────────────────────────────────────────────── */
+function v4ToTable(values) {
+  if (!values || values.length < 1) return { cols: [], rows: [] };
+  const headers = values[0] || [];
+  return {
+    cols: headers.map(h => ({ label: String(h || ''), type: 'string' })),
+    rows: values.slice(1).map(row => ({
+      c: headers.map((_, i) => {
+        const v = row[i];
+        return (v != null && v !== '') ? { v: String(v) } : null;
+      }),
+    })),
+  };
+}
+
+async function tryV4(sheetId, tab, env) {
+  if (!env || !env.DRIVE_API_KEY) return null;
+  try {
+    const range = encodeURIComponent(tab || 'Sheet1');
+    const r = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${env.DRIVE_API_KEY}`,
+      { cache: 'no-store' }
+    );
+    if (!r.ok) return null;
+    const d = await r.json();
+    const table = v4ToTable(d.values || []);
+    return table.rows.length > 0 ? table : null;
+  } catch (e) { return null; }
+}
+
+async function gvizProxy(sheetId, tab, cors, env) {
+  const v4 = await tryV4(sheetId, tab, env);
+  if (v4) {
+    return new Response(JSON.stringify({ table: v4 }), {
+      headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
   let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
@@ -376,7 +415,17 @@ async function gvizProxy(sheetId, tab, cors) {
   return new Response(m[1], { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 }
 
-async function gvizProxyStrip(sheetId, tab, stripCols, cors) {
+async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
+  const v4 = await tryV4(sheetId, tab, env);
+  if (v4) {
+    if (v4.cols) v4.cols = v4.cols.map((c, i) => stripCols.includes(i) ? { label: '', type: 'string' } : c);
+    if (v4.rows) v4.rows = v4.rows.map(row => ({
+      ...row, c: (row.c || []).map((cell, i) => stripCols.includes(i) ? null : cell),
+    }));
+    return new Response(JSON.stringify({ table: v4 }), {
+      headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
   let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
   if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
   const r    = await fetch(u, { cache: 'no-store' });
