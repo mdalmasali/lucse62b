@@ -488,9 +488,7 @@
         let label = semOrder.find(n => { const end = new Date(ranges[n].max); end.setHours(23,59,59,999); return today >= ranges[n].min && today <= end; });
         if (!label) { const up = semOrder.filter(n => today < ranges[n].min); if (up.length) label = up.sort((a,b) => ranges[a].min - ranges[b].min)[0]; }
         if (!label) { const past = semOrder.filter(n => today > ranges[n].max); if (past.length) label = past.sort((a,b) => ranges[b].max - ranges[a].max)[0]; }
-        if (!label) return 'Current Semester';
-        const ord = semOrdinal[label];
-        return ord ? `${label} | ${ord}` : label;
+        return label || 'Current Semester';
       } catch(_) { return 'Current Semester'; }
     }
 
