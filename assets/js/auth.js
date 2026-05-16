@@ -120,17 +120,15 @@
   }
 
   // ── DOB Gate ─────────────────────────────────────────────────────────
-  const SUPA_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
-  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
   const SKIP_DOB  = ['login.html', 'password-setup.html'];
   const _curPage  = window.location.pathname.split('/').pop();
 
-  function _supaRpc(fn, params) {
-    return fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+  function _workerPost(endpoint, body) {
+    return fetch(WORKER_URL + endpoint, {
       method: 'POST',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
-    }).then(function (r) { if (!r.ok) throw new Error('rpc'); return r.json(); });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
 
   function _showDobGate(sid) {
@@ -178,7 +176,7 @@
         errEl.textContent = '';
         if (!dob) { errEl.textContent = 'Please enter your date of birth.'; return; }
         btn.disabled = true; btn.textContent = 'Saving…';
-        _supaRpc('set_student_dob', { p_student_id: sid, p_dob: dob })
+        _workerPost('/dob-sync', { student_id: sid, dob: dob })
           .then(function () {
             localStorage.setItem('lu62b_dob_' + sid, dob);
             document.getElementById('lu62b-dob-gate').remove();
@@ -201,21 +199,21 @@
     var _localDob = localStorage.getItem(_dobKey);
 
     if (_localDob) {
-      // Have local DOB — upsert to Supabase every page load (idempotent)
-      _supaRpc('set_student_dob', { p_student_id: session.id, p_dob: _localDob })
+      // Have local DOB — sync to Supabase every page load (idempotent)
+      _workerPost('/dob-sync', { student_id: session.id, dob: _localDob })
         .catch(function () { /* non-fatal */ });
     } else {
-      // No local DOB — check Supabase
-      _supaRpc('student_has_dob', { p_student_id: session.id })
-        .then(function (hasDob) {
-          if (hasDob) {
-            return _supaRpc('get_student_dob', { p_student_id: session.id })
-              .then(function (dob) { if (dob) localStorage.setItem(_dobKey, dob); });
+      // No local DOB — check Worker → Supabase
+      _workerPost('/dob-check', { student_id: session.id })
+        .then(function (res) {
+          if (res.has_dob) {
+            return _workerPost('/dob-get', { student_id: session.id })
+              .then(function (res2) { if (res2.dob) localStorage.setItem(_dobKey, res2.dob); });
           } else {
             _showDobGate(session.id);
           }
         })
-        .catch(function () { /* Supabase unreachable — don't block */ });
+        .catch(function () { /* Worker unreachable — don't block */ });
     }
   }
 

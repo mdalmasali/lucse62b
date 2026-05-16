@@ -8,6 +8,7 @@
 //   SMS_API_KEY     → (your bulksmsbd API key)
 //   SMS_SENDER_ID   → (your sender ID)
 //   DRIVE_API_KEY   → (your Google Drive API key)
+//   SUPA_KEY        → (your Supabase anon key — keep server-side only)
 //
 // Required KV Namespace (Settings → Variables → KV Namespace Bindings):
 //   SMS_RATE        → create a KV namespace named "SMS_RATE" and bind it here
@@ -17,6 +18,11 @@
 //   GET  /fetch?id=SHEET_ID[&sheet=Tab]   → Arbitrary sheet (exam/routine)
 //   POST /sms   body: { phone, message }  → SMS gateway proxy
 //   GET  /drive?folder=FOLDER_ID          → Google Drive folder listing
+//   POST /dob-sync  { student_id, dob }   → Upsert DOB to Supabase
+//   POST /dob-check { student_id }        → { has_dob: bool }
+//   POST /dob-get   { student_id }        → { dob } (rate-limited)
+
+const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 
 const ALLOWED_ORIGINS = [
   'https://lucse62b.xyz',
@@ -241,12 +247,11 @@ export default {
         else if (phone3.startsWith('88') && phone3.length === 13) phone3 = phone3.substring(2);
         if (!/^01[3-9]\d{8}$/.test(phone3)) return errResp(cors, 400, 'No phone on record');
 
-        // Verify DOB via Supabase (anon key is already public in client code)
-        const SUPA_URL3 = 'https://ftvtlqxpalwvyserujuh.supabase.co';
-        const SUPA_KEY3 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
-        const dobR = await fetch(`${SUPA_URL3}/rest/v1/rpc/get_student_dob`, {
+        // Verify DOB via Supabase (key is a Worker secret, never in client code)
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const dobR = await fetch(`${SUPA_URL}/rest/v1/rpc/get_student_dob`, {
           method: 'POST',
-          headers: { 'apikey': SUPA_KEY3, 'Authorization': `Bearer ${SUPA_KEY3}`, 'Content-Type': 'application/json' },
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ p_student_id: sid3 }),
         }).catch(() => null);
         if (!dobR || !dobR.ok) return errResp(cors, 503, 'Verification unavailable');
@@ -314,6 +319,65 @@ export default {
         const r = await fetch(driveUrl, { headers: { 'Referer': referer } });
         const d = await r.json();
         return jsonResp(cors, d);
+      }
+
+      // ── POST /dob-sync { student_id, dob } — upsert DOB to Supabase ─────────
+      if (p === '/dob-sync' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id, dob } = await request.json();
+        if (!student_id || !dob) return errResp(cors, 400, 'Missing fields');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dob))) return errResp(cors, 400, 'Invalid date');
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_student_dob`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: String(student_id), p_dob: String(dob) }),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 503, 'Supabase unavailable');
+        return jsonResp(cors, { ok: true });
+      }
+
+      // ── POST /dob-check { student_id } — returns { has_dob: bool } ──────────
+      if (p === '/dob-check' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id } = await request.json();
+        if (!student_id) return errResp(cors, 400, 'Missing student_id');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const r = await fetch(`${SUPA_URL}/rest/v1/rpc/student_has_dob`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: String(student_id) }),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 503, 'Supabase unavailable');
+        const hasDob = await r.json();
+        return jsonResp(cors, { has_dob: !!hasDob });
+      }
+
+      // ── POST /dob-get { student_id } — returns { dob } (rate-limited) ────────
+      if (p === '/dob-get' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        if (env.SMS_RATE) {
+          const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const key = `dobget:h:${ip}:${Math.floor(Date.now() / 3600000)}`;
+          const raw = await env.SMS_RATE.get(key);
+          const cnt = parseInt(raw || '0');
+          if (cnt >= 10) return errResp(cors, 429, 'Too many requests');
+          await env.SMS_RATE.put(key, String(cnt + 1), { expirationTtl: 3600 });
+        }
+        const { student_id } = await request.json();
+        if (!student_id) return errResp(cors, 400, 'Missing student_id');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const r = await fetch(`${SUPA_URL}/rest/v1/rpc/get_student_dob`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: String(student_id) }),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 503, 'Supabase unavailable');
+        const dob = await r.json();
+        return jsonResp(cors, { dob: dob || null });
       }
 
       return new Response('Not found', { status: 404, headers: cors });
