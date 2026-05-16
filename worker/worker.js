@@ -387,7 +387,8 @@ function v4ToTable(values) {
 async function tryV4(sheetId, tab, env) {
   if (!env || !env.DRIVE_API_KEY) return null;
   try {
-    const range = encodeURIComponent(tab || 'Sheet1');
+    // Sheet names with spaces must be wrapped in single quotes per Sheets API v4 spec
+    const range = tab ? encodeURIComponent(`'${tab}'`) : 'Sheet1';
     const r = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${env.DRIVE_API_KEY}`,
       { cache: 'no-store' }
