@@ -1187,7 +1187,8 @@
             e.preventDefault();
             nameInput.value = s.name;
             if (sidInput) sidInput.value = s.id;
-            updatePreview();
+            nameInput.dispatchEvent(new Event('input'));
+            if (sidInput) sidInput.dispatchEvent(new Event('input'));
             _acClose();
           });
           _acEl.appendChild(div);
