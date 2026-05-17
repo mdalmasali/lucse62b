@@ -4,7 +4,7 @@
    Set EID_MODE = false to revert to the normal site instantly.
    ════════════════════════════════════════════════════════════ */
 
-const EID_MODE = true;
+const EID_MODE = false;
 
 if (EID_MODE) {
   /* ── Inject fonts + CSS ── */
