@@ -465,14 +465,6 @@
     tr.ac-row-retake  { background: rgba(244,63,94,.04) !important; }
     tr.ac-row-improve { background: rgba(251,146,60,.04) !important; }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      .info-layout { grid-template-columns: 1fr; margin-top: 70px; }
-      .info-sidebar { display: none; }
-      .info-chips { display: none; }
-      .info-radial-wrap { display: flex; }
-    }
-
     /* ── Mobile Radial Menu ── */
     .info-radial-wrap {
       display: none;
@@ -481,6 +473,14 @@
       height: 260px;
       margin: 0 auto 20px;
       z-index: 20;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .info-layout { grid-template-columns: 1fr; margin-top: 70px; }
+      .info-sidebar { display: none; }
+      .info-chips { display: none; }
+      .info-radial-wrap { display: flex; }
     }
     .info-radial-center {
       position: absolute;
