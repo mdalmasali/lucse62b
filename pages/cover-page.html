@@ -258,17 +258,20 @@
     /* ── Template 1 cover page styles ── */
     .cp2-wrap { height: 100%; display: flex; flex-direction: column; }
     .cp2-top  { flex: 1; }
-    .cp2-hd   { text-align: center; margin-bottom: 18px; }
+    .cp2-hd   { text-align: center; margin-bottom: 16px; }
     .cp2-univ { font-size: 44px; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; }
-    .cp2-dept { font-size: 20px; font-weight: bold; margin-bottom: 16px; }
-    .cp2-logo { width: 130px; height: auto; display: block; margin: 0 auto; }
-    .cp2-heading { font-size: 25px; font-weight: bold; text-align: center; text-decoration: underline; margin: 22px 0 8px; }
-    .cp2-course  { font-size: 19px; font-weight: bold; text-align: center; line-height: 1.65; }
-    .cp2-gap  { margin-bottom: 16px; }
+    .cp2-dept { font-size: 20px; font-weight: bold; margin-bottom: 14px; }
+    .cp2-logo { width: 160px; height: auto; display: block; margin: 0 auto; }
+    .cp2-heading { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin: 18px 0 6px; }
+    .cp2-course-tbl { margin: 0 auto; border-collapse: collapse; font-size: 19px; font-weight: bold; }
+    .cp2-course-tbl td { padding: 1px 6px; text-align: center; }
+    .cp2-gap  { margin-bottom: 14px; }
     .cp2-sec  { font-size: 19px; font-weight: bold; text-decoration: underline; margin-bottom: 2px; margin-top: 2px; }
-    .cp2-row  { font-size: 19px; font-weight: bold; line-height: 1.65; padding-left: 6px; }
-    .cp2-topic { font-size: 19px; line-height: 1.65; padding-left: 6px; }
-    .cp2-date  { font-size: 19px; font-weight: bold; text-align: center; padding-top: 18px; }
+    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-weight: bold; }
+    .cp2-info-tbl .cp2-k { white-space: nowrap; min-width: 110px; padding: 1px 0; vertical-align: top; }
+    .cp2-info-tbl .cp2-c { padding: 1px 10px; vertical-align: top; }
+    .cp2-info-tbl .cp2-v { padding: 1px 0; vertical-align: top; }
+    .cp2-date  { font-size: 19px; font-weight: bold; text-align: center; padding-top: 16px; }
 
     /* Autocomplete dropdown */
     .ac-dropdown {
@@ -792,28 +795,34 @@
       const date    = v('fDate');
       const logoSrc = logoDataUrl || '../assets/images/lu-logo.png';
 
+      /* helper: one key-value row for the info table */
+      const tr = (label, val) => val
+        ? `<tr><td class="cp2-k">${label}</td><td class="cp2-c">:</td><td class="cp2-v">${escH(val)}</td></tr>`
+        : '';
+
+      /* Submitted To rows */
+      const toRows = [tr('Name', teacher), tr('Designation', desig), tr('Department', tDept)].join('');
+
+      /* Submitted From rows */
       let fromRows = '';
       if (isGroup) {
         const batch   = v('fGBatch');
         const section = v('fGSection');
         members.filter(m => m.name || m.sid).forEach((m, i) => {
-          fromRows += `<div class="cp2-row">Name ${i + 1} : ${escH(m.name)}</div>`;
-          if (m.sid) fromRows += `<div class="cp2-row">ID : ${escH(m.sid)}</div>`;
+          fromRows += tr(`Name ${i + 1}`, m.name);
+          if (m.sid) fromRows += tr('ID', m.sid);
         });
-        if (batch)   fromRows += `<div class="cp2-row">Batch : ${escH(batch)}</div>`;
-        if (section) fromRows += `<div class="cp2-row">Section : ${escH(section)}</div>`;
+        fromRows += tr('Batch', batch) + tr('Section', section);
       } else {
-        const name    = v('fName');
-        const sid     = v('fSID');
-        const batch   = v('fBatch');
-        const section = v('fSection');
-        if (name)    fromRows += `<div class="cp2-row">Name : ${escH(name)}</div>`;
-        if (sid)     fromRows += `<div class="cp2-row">ID : ${escH(sid)}</div>`;
-        if (batch)   fromRows += `<div class="cp2-row">Batch : ${escH(batch)}</div>`;
-        if (section) fromRows += `<div class="cp2-row">Section : ${escH(section)}</div>`;
+        fromRows = [tr('Name', v('fName')), tr('ID', v('fSID')),
+                    tr('Batch', v('fBatch')), tr('Section', v('fSection'))].join('');
       }
 
-      const hasNoOrTopic = no || topic;
+      /* Assignment No / Topic table */
+      const noTopicRows = [
+        no    ? tr(noLabel, no)          : '',
+        topic ? tr('Assignment Topic', topic) : ''
+      ].join('');
 
       return `
         <div class="cp2-wrap">
@@ -825,26 +834,25 @@
             </div>
 
             <div class="cp2-heading">${escH(heading)}</div>
-            ${title ? `<div class="cp2-course">Course Title : ${escH(title)}</div>` : ''}
-            ${code  ? `<div class="cp2-course">Course Code : ${escH(code)}</div>` : ''}
+            ${(title || code) ? `
+              <table class="cp2-course-tbl">
+                ${title ? `<tr><td>Course <u>Title</u> :</td><td>${escH(title)}</td></tr>` : ''}
+                ${code  ? `<tr><td>Course <u>Code</u> :</td><td>${escH(code)}</td></tr>`  : ''}
+              </table>` : ''}
+
+            ${noTopicRows ? `<div class="cp2-gap"></div><table class="cp2-info-tbl">${noTopicRows}</table>` : ''}
 
             <div class="cp2-gap"></div>
 
-            ${no    ? `<div class="cp2-row">${escH(noLabel)} : ${escH(no)}</div>` : ''}
-            ${topic ? `<div class="cp2-row">Assignment Topic :</div><div class="cp2-topic">${escH(topic)}</div>` : ''}
-            ${hasNoOrTopic ? '<div class="cp2-gap"></div>' : ''}
-
             <div class="cp2-sec">Submitted To</div>
-            ${teacher ? `<div class="cp2-row">Name : ${escH(teacher)}</div>` : ''}
-            ${desig   ? `<div class="cp2-row">Designation : ${escH(desig)}</div>` : ''}
-            ${tDept   ? `<div class="cp2-row">Department : ${escH(tDept)}</div>` : ''}
+            ${toRows ? `<table class="cp2-info-tbl">${toRows}</table>` : ''}
 
             <div class="cp2-gap"></div>
 
             <div class="cp2-sec">Submitted From</div>
-            ${fromRows}
+            ${fromRows ? `<table class="cp2-info-tbl">${fromRows}</table>` : ''}
           </div>
-          <div class="cp2-date">Date of Submission : ${escH(date)}</div>
+          <div class="cp2-date">Date of <u>Submission</u> : ${escH(date)}</div>
         </div>
       `;
     }
