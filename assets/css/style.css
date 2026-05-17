@@ -332,7 +332,9 @@ body {
 .grad-strip-row2 {
   display: flex;
   align-items: center;
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
   min-width: 60px;
   gap: 8px;
 }
