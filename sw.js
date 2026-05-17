@@ -1,4 +1,4 @@
-const CACHE = 'lu62b-v13';
+const CACHE = 'lu62b-v14';
 
 const STATIC = [
   '/',
@@ -45,6 +45,9 @@ self.addEventListener('activate', e => {
 // Fetch — cache-first for static, network-first for API/sheets
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Skip non-http(s) requests (chrome-extension://, etc.)
+  if (!url.protocol.startsWith('http')) return;
 
   // Always network for external APIs (sheets, worker, supabase)
   if (
