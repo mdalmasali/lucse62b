@@ -329,9 +329,16 @@ body {
   color: var(--muted);
   line-height: 1;
 }
-.grad-strip-bar-wrap {
+.grad-strip-row2 {
+  display: flex;
+  align-items: center;
   flex: 1;
   min-width: 60px;
+  gap: 8px;
+}
+.grad-strip-bar-wrap {
+  flex: 1;
+  min-width: 0;
   position: relative;
   height: 4px;
   background: rgba(255,255,255,0.07);
@@ -358,10 +365,11 @@ body {
 .gs-sec-wrap { transition: opacity 0.18s ease; }
 
 @media (max-width: 500px) {
-  .grad-strip { padding: 9px 14px; gap: 7px; border-radius: 14px; }
-  .grad-strip-nums { font-size: 0.9rem; }
-  .grad-strip-label { font-size: 0.6rem; }
+  .grad-strip { padding: 9px 14px; gap: 6px; border-radius: 14px; flex-wrap: wrap; }
+  .grad-strip-nums { font-size: 0.9rem; flex-shrink: 0; }
+  .grad-strip-label { font-size: 0.6rem; flex-shrink: 0; }
   .grad-strip-pct { font-size: 0.65rem; }
+  .grad-strip-row2 { flex-basis: 100%; min-width: 0; }
 }
 
 /* ── Hero Photo Showcase ── */
