@@ -203,6 +203,9 @@
       box-shadow: 0 24px 60px rgba(0,0,0,0.55);
       overflow: hidden;
     }
+    #coverPreview table, #coverPreview td, #coverPreview th {
+      font-family: 'Tinos', 'Times New Roman', Times, serif;
+    }
     /* 26pt bold = 35px */
     .cp-univ-title {
       font-size: 35px; font-weight: bold; text-align: center;
@@ -256,22 +259,24 @@
     .cg-tpl-btn i { display: block; font-size: 1rem; margin-bottom: 4px; }
 
     /* ── Template 1 cover page styles ── */
-    .cp2-wrap { height: 100%; display: flex; flex-direction: column; }
+    .cp2-wrap { height: 100%; display: flex; flex-direction: column; font-family: 'Tinos', 'Times New Roman', Times, serif; }
     .cp2-top  { flex: 1; }
     .cp2-hd   { text-align: center; margin-bottom: 16px; }
     .cp2-univ { font-size: 44px; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; }
     .cp2-dept { font-size: 20px; font-weight: bold; margin-bottom: 14px; }
     .cp2-logo { width: 160px; height: auto; display: block; margin: 0 auto; }
-    .cp2-heading { font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin: 18px 0 6px; }
-    .cp2-course-tbl { margin: 0 auto; border-collapse: collapse; font-size: 19px; font-weight: bold; }
-    .cp2-course-tbl td { padding: 1px 6px; text-align: center; }
+    .cp2-heading { font-size: 24px; font-weight: bold; text-align: center; margin: 18px 0 6px; }
+    .cp2-course-line { font-size: 19px; text-align: center; line-height: 1.7; }
     .cp2-gap  { margin-bottom: 14px; }
-    .cp2-sec  { font-size: 19px; font-weight: bold; text-decoration: underline; margin-bottom: 2px; margin-top: 2px; }
-    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-weight: bold; }
-    .cp2-info-tbl .cp2-k { white-space: nowrap; min-width: 110px; padding: 1px 0; vertical-align: top; }
-    .cp2-info-tbl .cp2-c { padding: 1px 10px; vertical-align: top; }
-    .cp2-info-tbl .cp2-v { padding: 1px 0; vertical-align: top; }
-    .cp2-date  { font-size: 19px; font-weight: bold; text-align: center; padding-top: 16px; }
+    .cp2-sec  { font-size: 19px; font-weight: bold; margin-bottom: 2px; margin-top: 2px; }
+    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-family: 'Tinos', 'Times New Roman', Times, serif; }
+    .cp2-info-tbl td { padding: 1px 0; vertical-align: top; font-family: 'Tinos', 'Times New Roman', Times, serif; font-weight: normal; }
+    .cp2-info-tbl .cp2-k { font-weight: bold; white-space: nowrap; min-width: 115px; }
+    .cp2-info-tbl .cp2-c { padding: 0 10px; }
+    .cp2-date  { font-size: 19px; text-align: center; padding-top: 16px; }
+    .cp2-group-tbl { width: 100%; border-collapse: collapse; font-size: 19px; font-family: 'Tinos', 'Times New Roman', Times, serif; margin-top: 4px; }
+    .cp2-group-tbl th { border: 1px solid #444; padding: 5px 10px; font-weight: bold; text-align: center; background: #f0f0f0; }
+    .cp2-group-tbl td { border: 1px solid #444; padding: 5px 10px; text-align: center; font-weight: normal; }
 
     /* Autocomplete dropdown */
     .ac-dropdown {
@@ -795,33 +800,42 @@
       const date    = v('fDate');
       const logoSrc = logoDataUrl || '../assets/images/lu-logo.png';
 
-      /* helper: one key-value row for the info table */
+      /* bold label + normal colon + normal value row */
       const tr = (label, val) => val
-        ? `<tr><td class="cp2-k">${label}</td><td class="cp2-c">:</td><td class="cp2-v">${escH(val)}</td></tr>`
+        ? `<tr><td class="cp2-k">${label}</td><td class="cp2-c">:</td><td>${escH(val)}</td></tr>`
         : '';
 
       /* Submitted To rows */
       const toRows = [tr('Name', teacher), tr('Designation', desig), tr('Department', tDept)].join('');
 
       /* Submitted From rows */
-      let fromRows = '';
+      let fromBlock = '';
       if (isGroup) {
         const batch   = v('fGBatch');
         const section = v('fGSection');
-        members.filter(m => m.name || m.sid).forEach((m, i) => {
-          fromRows += tr(`Name ${i + 1}`, m.name);
-          if (m.sid) fromRows += tr('ID', m.sid);
-        });
-        fromRows += tr('Batch', batch) + tr('Section', section);
+        const rows    = members.filter(m => m.name || m.sid);
+        const n       = rows.length;
+        if (rows.length) {
+          fromBlock = `<table class="cp2-group-tbl">
+            <thead><tr><th>Name</th><th>Student ID</th><th>Batch</th><th>Section</th></tr></thead>
+            <tbody>${rows.map((m, i) => i === 0 ? `
+              <tr>
+                <td>${escH(m.name)}</td><td>${escH(m.sid)}</td>
+                <td rowspan="${n}" style="vertical-align:middle;">${escH(batch)}</td>
+                <td rowspan="${n}" style="vertical-align:middle;">${escH(section)}</td>
+              </tr>` : `<tr><td>${escH(m.name)}</td><td>${escH(m.sid)}</td></tr>`).join('')}
+            </tbody></table>`;
+        }
       } else {
-        fromRows = [tr('Name', v('fName')), tr('ID', v('fSID')),
-                    tr('Batch', v('fBatch')), tr('Section', v('fSection'))].join('');
+        const rows = [tr('Name', v('fName')), tr('ID', v('fSID')),
+                      tr('Batch', v('fBatch')), tr('Section', v('fSection'))].join('');
+        fromBlock = rows ? `<table class="cp2-info-tbl">${rows}</table>` : '';
       }
 
-      /* Assignment No / Topic table */
+      /* Assignment No / Topic — label bold, value normal */
       const noTopicRows = [
-        no    ? tr(noLabel, no)          : '',
-        topic ? tr('Assignment Topic', topic) : ''
+        no    ? `<tr><td class="cp2-k">${escH(noLabel)}</td><td class="cp2-c">:</td><td>${escH(no)}</td></tr>` : '',
+        topic ? `<tr><td class="cp2-k">Assignment Topic</td><td class="cp2-c">:</td><td>${escH(topic)}</td></tr>` : ''
       ].join('');
 
       return `
@@ -834,25 +848,20 @@
             </div>
 
             <div class="cp2-heading">${escH(heading)}</div>
-            ${(title || code) ? `
-              <table class="cp2-course-tbl">
-                ${title ? `<tr><td>Course <u>Title</u> :</td><td>${escH(title)}</td></tr>` : ''}
-                ${code  ? `<tr><td>Course <u>Code</u> :</td><td>${escH(code)}</td></tr>`  : ''}
-              </table>` : ''}
-
-            ${noTopicRows ? `<div class="cp2-gap"></div><table class="cp2-info-tbl">${noTopicRows}</table>` : ''}
+            ${title ? `<div class="cp2-course-line"><b>Course Title</b> : ${escH(title)}</div>` : ''}
+            ${code  ? `<div class="cp2-course-line"><b>Course Code</b> : ${escH(code)}</div>`  : ''}
 
             <div class="cp2-gap"></div>
+
+            ${noTopicRows ? `<table class="cp2-info-tbl" style="margin-bottom:14px;">${noTopicRows}</table>` : ''}
 
             <div class="cp2-sec">Submitted To</div>
-            ${toRows ? `<table class="cp2-info-tbl">${toRows}</table>` : ''}
-
-            <div class="cp2-gap"></div>
+            ${toRows ? `<table class="cp2-info-tbl" style="margin-bottom:14px;">${toRows}</table>` : '<div class="cp2-gap"></div>'}
 
             <div class="cp2-sec">Submitted From</div>
-            ${fromRows ? `<table class="cp2-info-tbl">${fromRows}</table>` : ''}
+            ${fromBlock}
           </div>
-          <div class="cp2-date">Date of <u>Submission</u> : ${escH(date)}</div>
+          <div class="cp2-date"><b>Date of Submission :</b> ${escH(date)}</div>
         </div>
       `;
     }
