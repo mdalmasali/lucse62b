@@ -465,70 +465,86 @@
     tr.ac-row-retake  { background: rgba(244,63,94,.04) !important; }
     tr.ac-row-improve { background: rgba(251,146,60,.04) !important; }
 
-    /* ── Mobile Radial Menu ── */
-    .info-radial-wrap {
+    /* ── Mobile Popup Menu ── */
+    .info-mob-trigger {
       display: none;
-      position: relative;
-      width: 260px;
-      height: 260px;
-      margin: 0 auto 20px;
-      z-index: 20;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1.5px solid rgba(255,255,255,0.09);
+      color: #fff;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      transition: background 0.15s;
     }
+    .info-mob-trigger:active { background: rgba(255,255,255,0.07); }
+    .info-mob-trigger > i:first-child { font-size: 1.1rem; color: var(--accent2); }
+    .info-mob-trigger > span { flex: 1; text-align: left; }
+    .info-mob-chevron { font-size: 0.75rem; opacity: 0.5; transition: transform 0.25s; }
+    .info-mob-trigger.open .info-mob-chevron { transform: rotate(180deg); }
+
+    .info-mob-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.94);
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 110px;
+    }
+    .info-mob-overlay.open { display: flex; }
+
+    .info-mob-box {
+      background: var(--card);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 14px;
+      width: calc(100% - 32px);
+      max-width: 360px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      animation: mobBoxIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    @keyframes mobBoxIn {
+      from { opacity: 0; transform: scale(0.92) translateY(-8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    }
+
+    .info-mob-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 11px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      color: #ccc;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .info-mob-option:active { background: rgba(255,255,255,0.09); }
+    .info-mob-option.im-active { color: #fff; border-color: currentColor; background: rgba(255,255,255,0.06); }
+    .info-mob-option > i { font-size: 1rem; flex-shrink: 0; }
 
     /* Responsive */
     @media (max-width: 900px) {
       .info-layout { grid-template-columns: 1fr; margin-top: 70px; }
       .info-sidebar { display: none; }
       .info-chips { display: none; }
-      .info-radial-wrap { display: flex; }
-    }
-    .info-radial-center {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 68px; height: 68px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: 3px solid rgba(255,255,255,0.15);
-      cursor: pointer;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 2px; color: #fff;
-      box-shadow: 0 0 28px rgba(124,58,237,0.5), 0 0 0 6px rgba(124,58,237,0.1);
-      transition: box-shadow 0.3s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      z-index: 10;
-      font-family: 'Inter', sans-serif;
-    }
-    .info-radial-center:active { transform: translate(-50%,-50%) scale(0.93); }
-    .info-radial-center > i { font-size: 1.3rem; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
-    .info-radial-center > span { font-size: 0.46rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.9; }
-    .info-radial-wrap.open .info-radial-center > i { transform: rotate(45deg); }
-    .info-radial-item {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      opacity: 0;
-      transition: transform 0.38s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease;
-      width: 50px; height: 50px;
-      border-radius: 50%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 3px; cursor: pointer;
-      background: var(--card);
-      border: 2px solid transparent;
-      z-index: 8;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      font-family: 'Inter', sans-serif;
-    }
-    .info-radial-item > i { font-size: 1rem; }
-    .info-radial-item > span {
-      font-size: 0.37rem; font-weight: 700; text-align: center;
-      line-height: 1.2; text-transform: uppercase; letter-spacing: 0.4px;
-      white-space: nowrap; max-width: 44px; overflow: hidden; text-overflow: ellipsis;
-    }
-    .info-radial-item.ir-active {
-      border-width: 2.5px;
-      box-shadow: 0 0 14px rgba(0,0,0,0.3), 0 0 0 4px rgba(255,255,255,0.06);
+      .info-mob-trigger { display: flex; }
     }
     @media (max-width: 640px) {
       .info-layout { padding: 0 12px; gap: 14px; }
@@ -593,12 +609,16 @@
         <!-- Mobile chips (desktop fallback, hidden on mobile) -->
         <div class="info-chips fade-in" id="mobileChips"></div>
 
-        <!-- Mobile Radial Menu -->
-        <div class="info-radial-wrap fade-in" id="infoRadialWrap">
-          <button class="info-radial-center" id="infoRadialCenter" aria-label="Open info menu">
-            <i class="fa-solid fa-circle-info" id="infoRadialIcon"></i>
-            <span id="infoRadialLabel">Info</span>
-          </button>
+        <!-- Mobile Popup Trigger -->
+        <button class="info-mob-trigger" id="infoMobTrigger" aria-label="Open info menu">
+          <i class="fa-solid fa-circle-info" id="infoMobIcon"></i>
+          <span id="infoMobLabel">Select a section…</span>
+          <i class="fa-solid fa-chevron-down info-mob-chevron"></i>
+        </button>
+
+        <!-- Mobile Popup Overlay -->
+        <div class="info-mob-overlay" id="infoMobOverlay">
+          <div class="info-mob-box" id="infoMobBox"></div>
         </div>
 
         <!-- Content panel -->
@@ -685,8 +705,8 @@
         el.classList.toggle('active', el.dataset.id === id));
       document.querySelectorAll('.info-chip').forEach(el =>
         el.classList.toggle('active', el.dataset.id === id));
-      document.querySelectorAll('.info-radial-item').forEach(el =>
-        el.classList.toggle('ir-active', el.getAttribute('aria-label') === (MENU.find(m => m.id === id)?.label || '')));
+      document.querySelectorAll('.info-mob-option').forEach(el =>
+        el.classList.toggle('im-active', el.dataset.id === id));
 
       const item = MENU.find(m => m.id === id);
       renderContent(item);
@@ -1173,66 +1193,38 @@
 
     buildMenu();
 
-    /* ── Mobile Radial Menu ── */
-    (function buildRadialMenu() {
-      const wrap   = document.getElementById('infoRadialWrap');
-      const center = document.getElementById('infoRadialCenter');
-      const cIcon  = document.getElementById('infoRadialIcon');
-      const cLabel = document.getElementById('infoRadialLabel');
-      if (!wrap || !center) return;
+    /* ── Mobile Popup Menu ── */
+    (function buildMobilePopup() {
+      const trigger = document.getElementById('infoMobTrigger');
+      const overlay = document.getElementById('infoMobOverlay');
+      const box     = document.getElementById('infoMobBox');
+      const mobIcon = document.getElementById('infoMobIcon');
+      const mobLabel= document.getElementById('infoMobLabel');
+      if (!trigger || !overlay) return;
 
-      const RADIUS = 105;
-      let isOpen   = false;
-
-      function shortLabel(label) {
-        const words = label.split(' ');
-        return words.length === 1 ? words[0] : words[0] + ' ' + words[1];
-      }
-
-      /* Build radial items */
-      const items = MENU.map((item) => {
+      MENU.forEach(item => {
         const btn = document.createElement('button');
-        btn.className = 'info-radial-item';
-        btn.setAttribute('aria-label', item.label);
-        btn.style.color       = item.color;
-        btn.style.borderColor = item.color + '60';
-        btn.innerHTML = `<i class="${item.icon}"></i><span>${shortLabel(item.label)}</span>`;
+        btn.className   = 'info-mob-option';
+        btn.dataset.id  = item.id;
+        btn.style.color = item.color;
+        btn.innerHTML   = `<i class="${item.icon}"></i><span>${item.label}</span>`;
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           selectItem(item.id);
-          cIcon.className  = item.icon;
-          cLabel.textContent = shortLabel(item.label);
-          center.style.boxShadow = `0 0 28px ${item.color}88, 0 0 0 6px ${item.color}22`;
-          items.forEach(r => r.classList.remove('ir-active'));
-          btn.classList.add('ir-active');
-          closeRadial();
+          mobIcon.className   = item.icon;
+          mobIcon.style.color = item.color;
+          mobLabel.textContent= item.label;
+          closeBox();
         });
-        wrap.insertBefore(btn, center);
-        return btn;
+        box.appendChild(btn);
       });
 
-      function positionItems(open) {
-        items.forEach((el, i) => {
-          const angle = (360 / items.length) * i - 90;
-          const rad   = angle * Math.PI / 180;
-          const tx    = Math.round(RADIUS * Math.cos(rad));
-          const ty    = Math.round(RADIUS * Math.sin(rad));
-          el.style.transitionDelay = open ? (i * 18) + 'ms' : '0ms';
-          if (open) {
-            el.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1)`;
-            el.style.opacity   = '1';
-          } else {
-            el.style.transform = 'translate(-50%, -50%) scale(0)';
-            el.style.opacity   = '0';
-          }
-        });
-      }
+      function openBox()  { overlay.classList.add('open');    trigger.classList.add('open');    }
+      function closeBox() { overlay.classList.remove('open'); trigger.classList.remove('open'); }
 
-      function openRadial()  { isOpen = true;  wrap.classList.add('open');    positionItems(true);  }
-      function closeRadial() { isOpen = false; wrap.classList.remove('open'); positionItems(false); }
-
-      center.addEventListener('click', () => isOpen ? closeRadial() : openRadial());
-      document.addEventListener('click', (e) => { if (isOpen && !wrap.contains(e.target)) closeRadial(); });
+      trigger.addEventListener('click', () =>
+        overlay.classList.contains('open') ? closeBox() : openBox());
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeBox(); });
     })();
 
     /* auto-select first item */
