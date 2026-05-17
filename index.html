@@ -339,13 +339,25 @@
       <span class="grad-strip-icon">🎓</span>
       <span class="grad-strip-label">Graduation in</span>
       <div class="grad-strip-nums">
-        <span id="gs-days">471</span><span class="gs-lbl">d</span>
+        <div class="gs-unit">
+          <span id="gs-days">471</span>
+          <span class="gs-lbl">Days</span>
+        </div>
         <span class="gs-sep">·</span>
-        <span id="gs-hrs">08</span><span class="gs-lbl">h</span>
+        <div class="gs-unit">
+          <span id="gs-hrs">08</span>
+          <span class="gs-lbl">Hrs</span>
+        </div>
         <span class="gs-sep">·</span>
-        <span id="gs-min">02</span><span class="gs-lbl">m</span>
+        <div class="gs-unit">
+          <span id="gs-min">02</span>
+          <span class="gs-lbl">Min</span>
+        </div>
         <span class="gs-sep">·</span>
-        <span class="gs-sec-wrap"><span id="gs-sec">50</span></span><span class="gs-lbl">s</span>
+        <div class="gs-unit gs-sec-wrap">
+          <span id="gs-sec">50</span>
+          <span class="gs-lbl">Sec</span>
+        </div>
       </div>
       <div class="grad-strip-bar-wrap">
         <div class="grad-strip-fill" id="gsFill"></div>
@@ -611,11 +623,13 @@
 
         if (secs !== prevSec) {
           prevSec = secs;
-          const wrap = document.querySelector('.gs-sec-wrap');
+          const wrap  = document.querySelector('.gs-sec-wrap');
           const secEl = document.getElementById('gs-sec');
-          if (wrap) { wrap.classList.remove('tick'); void wrap.offsetWidth; wrap.classList.add('tick'); }
-          if (secEl) secEl.textContent = pad(secs);
-          setTimeout(function () { if (wrap) wrap.classList.remove('tick'); }, 120);
+          if (wrap) wrap.style.opacity = '0';
+          setTimeout(function () {
+            if (secEl) secEl.textContent = pad(secs);
+            if (wrap)  wrap.style.opacity = '1';
+          }, 185);
         }
 
         const elapsed = Math.max(0, now - START);
