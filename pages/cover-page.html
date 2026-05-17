@@ -239,6 +239,37 @@
       border: 1px solid #444; padding: 6px 12px; text-align: center;
     }
 
+    /* ── Template picker buttons (separate class so setType() doesn't clear them) ── */
+    .cg-tpl-btn {
+      padding: 10px 8px; text-align: center;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text-secondary); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 600;
+      line-height: 1.4; transition: all 0.2s;
+    }
+    .cg-tpl-btn:hover { border-color: rgba(124,58,237,0.4); color: var(--text); }
+    .cg-tpl-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+    .cg-tpl-btn i { display: block; font-size: 1rem; margin-bottom: 4px; }
+
+    /* ── Template 1 cover page styles ── */
+    .cp2-wrap { height: 100%; display: flex; flex-direction: column; }
+    .cp2-top  { flex: 1; }
+    .cp2-hd   { text-align: center; margin-bottom: 18px; }
+    .cp2-univ { font-size: 44px; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; }
+    .cp2-dept { font-size: 20px; font-weight: bold; margin-bottom: 16px; }
+    .cp2-logo { width: 130px; height: auto; display: block; margin: 0 auto; }
+    .cp2-heading { font-size: 25px; font-weight: bold; text-align: center; text-decoration: underline; margin: 22px 0 8px; }
+    .cp2-course  { font-size: 19px; font-weight: bold; text-align: center; line-height: 1.65; }
+    .cp2-gap  { margin-bottom: 16px; }
+    .cp2-sec  { font-size: 19px; font-weight: bold; text-decoration: underline; margin-bottom: 2px; margin-top: 2px; }
+    .cp2-row  { font-size: 19px; font-weight: bold; line-height: 1.65; padding-left: 6px; }
+    .cp2-topic { font-size: 19px; line-height: 1.65; padding-left: 6px; }
+    .cp2-date  { font-size: 19px; font-weight: bold; text-align: center; padding-top: 18px; }
+
     /* Autocomplete dropdown */
     .ac-dropdown {
       position: fixed;
@@ -432,7 +463,19 @@
           Cover Page Generator
         </div>
 
+        <!-- Template Selector -->
+        <div class="cg-sec" style="margin-top:0;padding-top:0;border-top:none;">Template</div>
+        <div class="cg-type-grid" style="margin-bottom:20px;">
+          <button class="cg-tpl-btn active" data-tpl="v2" onclick="setTemplate('v2',this)">
+            <i class="fa-solid fa-file-lines"></i>Template 1
+          </button>
+          <button class="cg-tpl-btn" data-tpl="classic" onclick="setTemplate('classic',this)">
+            <i class="fa-solid fa-file-alt"></i>Template 2
+          </button>
+        </div>
+
         <!-- Type -->
+        <div class="cg-sec" style="margin-top:0;">Type</div>
         <div class="cg-type-grid">
           <button class="cg-type-btn active" data-type="asgn-single" onclick="setType('asgn-single',this)">
             <i class="fa-solid fa-pen-to-square"></i>Assignment<br><small>Single</small>
@@ -629,7 +672,8 @@
   <script src="../assets/js/sheets.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script>
-    let currentType = 'asgn-single';
+    let currentType     = 'asgn-single';
+    let currentTemplate = 'v2';
     let members = [];
     let memberIdCtr = 0;
 
@@ -671,6 +715,14 @@
       document.getElementById('groupWrap').style.display   = isGroup  ? 'block' : 'none';
       document.getElementById('fNoWrap').style.display     = showNo   ? 'block' : 'none';
       document.getElementById('fNoLabel').textContent      = isLab    ? 'Lab Report No' : 'Assignment No';
+      updatePreview();
+    }
+
+    /* ── Template switcher ── */
+    function setTemplate(tpl, btn) {
+      currentTemplate = tpl;
+      document.querySelectorAll('[data-tpl]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       updatePreview();
     }
 
@@ -720,6 +772,84 @@
 
     /* ── Build preview HTML ── */
     function buildCoverHTML() {
+      return currentTemplate === 'v2' ? buildCoverHTML_v2() : buildCoverHTML_classic();
+    }
+
+    function buildCoverHTML_v2() {
+      const isGroup = currentType.includes('group');
+      const isLab   = currentType.includes('lab');
+
+      const heading = isLab ? 'Lab Report On' : 'Assignment On';
+      const title   = v('fCourseTitle');
+      const code    = v('fCourseCode');
+      const hasNo   = isLab || currentType === 'asgn-single';
+      const no      = hasNo ? v('fNo') : '';
+      const noLabel = isLab ? 'Lab Report No' : 'Assignment No';
+      const topic   = v('fTopic');
+      const teacher = v('fTeacher');
+      const desig   = v('fDesig');
+      const tDept   = v('fTDept');
+      const date    = v('fDate');
+      const logoSrc = logoDataUrl || '../assets/images/lu-logo.png';
+
+      let fromRows = '';
+      if (isGroup) {
+        const batch   = v('fGBatch');
+        const section = v('fGSection');
+        members.filter(m => m.name || m.sid).forEach((m, i) => {
+          fromRows += `<div class="cp2-row">Name ${i + 1} : ${escH(m.name)}</div>`;
+          if (m.sid) fromRows += `<div class="cp2-row">ID : ${escH(m.sid)}</div>`;
+        });
+        if (batch)   fromRows += `<div class="cp2-row">Batch : ${escH(batch)}</div>`;
+        if (section) fromRows += `<div class="cp2-row">Section : ${escH(section)}</div>`;
+      } else {
+        const name    = v('fName');
+        const sid     = v('fSID');
+        const batch   = v('fBatch');
+        const section = v('fSection');
+        if (name)    fromRows += `<div class="cp2-row">Name : ${escH(name)}</div>`;
+        if (sid)     fromRows += `<div class="cp2-row">ID : ${escH(sid)}</div>`;
+        if (batch)   fromRows += `<div class="cp2-row">Batch : ${escH(batch)}</div>`;
+        if (section) fromRows += `<div class="cp2-row">Section : ${escH(section)}</div>`;
+      }
+
+      const hasNoOrTopic = no || topic;
+
+      return `
+        <div class="cp2-wrap">
+          <div class="cp2-top">
+            <div class="cp2-hd">
+              <div class="cp2-univ">LEADING UNIVERSITY</div>
+              <div class="cp2-dept">Department of Computer Science &amp; Engineering</div>
+              <img src="${logoSrc}" class="cp2-logo" alt="LU Logo">
+            </div>
+
+            <div class="cp2-heading">${escH(heading)}</div>
+            ${title ? `<div class="cp2-course">Course Title : ${escH(title)}</div>` : ''}
+            ${code  ? `<div class="cp2-course">Course Code : ${escH(code)}</div>` : ''}
+
+            <div class="cp2-gap"></div>
+
+            ${no    ? `<div class="cp2-row">${escH(noLabel)} : ${escH(no)}</div>` : ''}
+            ${topic ? `<div class="cp2-row">Assignment Topic :</div><div class="cp2-topic">${escH(topic)}</div>` : ''}
+            ${hasNoOrTopic ? '<div class="cp2-gap"></div>' : ''}
+
+            <div class="cp2-sec">Submitted To</div>
+            ${teacher ? `<div class="cp2-row">Name : ${escH(teacher)}</div>` : ''}
+            ${desig   ? `<div class="cp2-row">Designation : ${escH(desig)}</div>` : ''}
+            ${tDept   ? `<div class="cp2-row">Department : ${escH(tDept)}</div>` : ''}
+
+            <div class="cp2-gap"></div>
+
+            <div class="cp2-sec">Submitted From</div>
+            ${fromRows}
+          </div>
+          <div class="cp2-date">Date of Submission : ${escH(date)}</div>
+        </div>
+      `;
+    }
+
+    function buildCoverHTML_classic() {
       const isGroup = currentType.includes('group');
       const isLab   = currentType.includes('lab');
 
@@ -826,6 +956,7 @@
       try {
         localStorage.setItem(CPG_KEY, JSON.stringify({
           type:        currentType,
+          template:    currentTemplate,
           courseTitle: v('fCourseTitle'),
           courseCode:  v('fCourseCode'),
           no:          v('fNo'),
@@ -872,6 +1003,14 @@
             });
           });
           renderMembers();
+        }
+        if (s.template) {
+          currentTemplate = s.template;
+          const tplBtn = document.querySelector(`[data-tpl="${s.template}"]`);
+          if (tplBtn) {
+            document.querySelectorAll('[data-tpl]').forEach(b => b.classList.remove('active'));
+            tplBtn.classList.add('active');
+          }
         }
         return s.type || null;
       } catch(e) { return null; }
