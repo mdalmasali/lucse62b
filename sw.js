@@ -1,36 +1,18 @@
-const CACHE = 'lu62b-v17';
+const CACHE = 'lu62b-v18';
 
-const STATIC = [
-  '/',
-  '/index.html',
-  '/assets/css/style.css',
-  '/assets/js/auth.js',
-  '/assets/js/script.js',
-  '/assets/js/sheets.js',
-  '/assets/js/theme.js',
-  '/assets/js/analytics.js',
-  '/assets/js/bcrypt.min.js',
+const STATIC_IMAGES = [
   '/assets/images/hero.jpg',
   '/assets/images/lu-logo.png',
   '/assets/images/favicon-photo.png',
   '/assets/images/icon-192.png',
   '/assets/images/icon-512.png',
-  '/pages/login.html',
-  '/pages/profile.html',
-  '/pages/info.html',
-  '/pages/resources.html',
-  '/pages/result-dashboard.html',
-  '/pages/students.html',
-  '/pages/cover-page.html',
-  '/pages/gallery.html',
 ];
 
-// Install — cache only non-HTML assets (images, JS, CSS)
+// Install — pre-cache only images (they rarely change)
 self.addEventListener('install', e => {
   self.skipWaiting();
-  const nonHTML = STATIC.filter(p => !p.endsWith('.html') && p !== '/');
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(nonHTML).catch(() => {}))
+    caches.open(CACHE).then(c => c.addAll(STATIC_IMAGES).catch(() => {}))
   );
 });
 
@@ -63,8 +45,13 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // HTML pages — network-first so users always get fresh content after deploy
-  if (e.request.destination === 'document') {
+  // HTML, CSS, JS — network-first (always fresh after deploy, cache as offline fallback)
+  const p = url.pathname;
+  if (
+    e.request.destination === 'document' ||
+    p.endsWith('.css') ||
+    p.endsWith('.js')
+  ) {
     e.respondWith(
       fetch(e.request).then(res => {
         if (res && res.status === 200) {
@@ -72,12 +59,16 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(c => c || caches.match('/index.html')))
+      }).catch(() =>
+        caches.match(e.request).then(c => c || (
+          e.request.destination === 'document' ? caches.match('/index.html') : null
+        ))
+      )
     );
     return;
   }
 
-  // Everything else (JS, CSS, images) — cache-first
+  // Images — cache-first (they don't change often)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
