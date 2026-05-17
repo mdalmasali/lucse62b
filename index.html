@@ -704,16 +704,28 @@
           return;
         }
         const card = (label, e, color, icon) => {
-          const cd = cdText(e.time);
-          return `<div style="background:${color}0f;border:1px solid ${color}30;border-radius:14px;
-            padding:13px 16px;display:flex;align-items:center;gap:12px;">
-            <i class="fa-solid ${icon}" style="color:${color};font-size:1rem;flex-shrink:0;"></i>
-            <div>
-              <div style="font-size:0.6rem;font-weight:800;color:${color};text-transform:uppercase;
-                letter-spacing:0.08em;margin-bottom:2px;">${label}</div>
-              <div style="font-size:1.25rem;font-weight:900;color:var(--text);
-                font-variant-numeric:tabular-nums;line-height:1.1;">${e.time}</div>
-              ${cd ? `<div style="font-size:0.66rem;color:${color};font-weight:600;margin-top:2px;">${cd}</div>` : ''}
+          const cd      = cdText(e.time);
+          const animDir = label.includes('To') ? 'to-lu' : 'from-lu';
+          const roadBg  = `repeating-linear-gradient(90deg,${color}35 0,${color}35 5px,transparent 5px,transparent 11px)`;
+          return `<div style="background:${color}0f;border:1px solid ${color}30;border-radius:14px;padding:13px 16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <i class="fa-solid ${icon}" style="color:${color};font-size:1rem;flex-shrink:0;"></i>
+              <div>
+                <div style="font-size:0.6rem;font-weight:800;color:${color};text-transform:uppercase;
+                  letter-spacing:0.08em;margin-bottom:2px;">${label}</div>
+                <div style="font-size:1.25rem;font-weight:900;color:var(--text);
+                  font-variant-numeric:tabular-nums;line-height:1.1;">${e.time}</div>
+                ${cd ? `<div style="font-size:0.66rem;color:${color};font-weight:600;margin-top:2px;">${cd}</div>` : ''}
+              </div>
+            </div>
+            <div class="bus-anim-strip">
+              <span title="Home">🏠</span>
+              <div class="bus-anim-road">
+                <div style="position:absolute;top:50%;left:0;right:0;height:2px;
+                  transform:translateY(-50%);border-radius:1px;background:${roadBg};"></div>
+                <span class="bus-anim-icon ${animDir}">🚌</span>
+              </div>
+              <span title="Leading University">🏛️</span>
             </div>
           </div>`;
         };

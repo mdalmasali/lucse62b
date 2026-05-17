@@ -356,6 +356,45 @@ body {
   flex-shrink: 0;
 }
 .gs-sec-wrap { transition: opacity 0.18s ease; }
+
+/* ── Home Bus Animation ── */
+.bus-anim-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.82rem;
+  line-height: 1;
+}
+[data-theme="light"] .bus-anim-strip { border-top-color: rgba(0,0,0,0.07); }
+.bus-anim-road {
+  flex: 1;
+  height: 1.3rem;
+  position: relative;
+  overflow: hidden;
+}
+.bus-anim-icon {
+  position: absolute;
+  top: 50%;
+  font-size: 1rem;
+}
+.bus-anim-icon.to-lu   { animation: busGoRight 2.8s ease-in-out infinite; transform: translateY(-50%); }
+.bus-anim-icon.from-lu { animation: busGoLeft  2.8s ease-in-out infinite; transform: translateY(-50%) scaleX(-1); }
+@keyframes busGoRight {
+  0%   { left: -12%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 112%; opacity: 0; }
+}
+@keyframes busGoLeft {
+  0%   { left: 112%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: -12%; opacity: 0; }
+}
+
 @media (max-width: 500px) {
   .grad-strip { padding: 9px 14px; gap: 7px; border-radius: 14px; }
   .grad-strip-nums { font-size: 0.9rem; }
