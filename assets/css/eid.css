@@ -1,0 +1,742 @@
+/* ════════════════════════════════════════════════════════════
+   Eid ul-Adha Theme  ·  Royal & Ornate Edition
+   Active only when <html> has .eid-active class
+   ════════════════════════════════════════════════════════════ */
+
+/* ── CSS Variable Overrides ── */
+html.eid-active {
+  --accent:        #8b1a1a;
+  --accent-bright: #f87171;
+  --accent2:       #c9a227;
+  --accent3:       #f0c040;
+}
+
+/* ── Animated background overlay ── */
+html.eid-active body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse at 10% 15%, rgba(44,8,8,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 85%, rgba(201,162,39,0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(60,10,10,0.08) 0%, transparent 70%);
+}
+
+/* ── Eid Banner Strip ── */
+.eid-banner {
+  width: 100%;
+  background:
+    linear-gradient(135deg, #1c0404 0%, #3d0f0f 40%, #1a1200 70%, #7a4a00 100%);
+  padding: 10px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 90;
+  border-bottom: 1px solid rgba(212,175,55,0.3);
+}
+/* Geometric lattice pattern */
+.eid-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(212,175,55,0.6) 0px, transparent 1px, transparent 14px, rgba(212,175,55,0.6) 15px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55,0.6) 0px, transparent 1px, transparent 14px, rgba(212,175,55,0.6) 15px);
+}
+/* Gold shimmer sweep */
+.eid-banner::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -200%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(240,192,64,0.18), transparent);
+  animation: eidBannerShimmer 5s ease-in-out infinite;
+}
+@keyframes eidBannerShimmer {
+  0%   { left: -200%; }
+  100% { left: 220%; }
+}
+.eid-banner-inner {
+  position: relative;
+  z-index: 1;
+}
+.eid-banner-text {
+  font-family: 'Cinzel', 'Playfair Display', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f0c040;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(240,192,64,0.6);
+}
+.eid-banner-arabic {
+  font-family: 'Amiri', 'Times New Roman', serif;
+  font-size: 13px;
+  color: rgba(255,225,130,0.72);
+  margin-top: 3px;
+  direction: rtl;
+  letter-spacing: 0.5px;
+}
+
+/* ── Floating Particles ── */
+.eid-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+  animation: eidParticleFloat linear infinite;
+  opacity: 0;
+  user-select: none;
+  will-change: transform, opacity;
+}
+@keyframes eidParticleFloat {
+  0%   { transform: translateY(105vh) rotate(0deg) scale(0.7);   opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 0.7; }
+  100% { transform: translateY(-15vh) rotate(360deg) scale(1.2); opacity: 0; }
+}
+
+/* ── Fixed Corner Ornaments ── */
+.eid-corner-deco {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.eid-corner-deco.top-right  { top: 68px;  right: 8px;  }
+.eid-corner-deco.bottom-left { bottom: 16px; left: 8px; }
+
+/* ── Deco Scene — no box, fully transparent ── */
+.eid-deco-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: eidDecoFloat 4s ease-in-out infinite;
+}
+@keyframes eidDecoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+/* Top sparkle row */
+.eid-deco-top-stars {
+  font-size: 7px;
+  color: rgba(212,175,55,0.5);
+  letter-spacing: 4px;
+}
+
+/* Main row: lantern + moon+cow + lantern */
+.eid-deco-main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+}
+
+/* Lanterns — hanging, swinging */
+.eid-deco-lantern {
+  font-size: 1.6rem;
+  line-height: 1;
+  display: block;
+  transform-origin: top center;
+  animation: eidDecoLantern 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(212,175,55,0.65));
+}
+.eid-deco-lantern-r { animation-delay: -1.5s; }
+@keyframes eidDecoLantern {
+  0%, 100% { transform: rotate(-10deg); filter: drop-shadow(0 0 8px rgba(212,175,55,0.6)); }
+  50%       { transform: rotate(10deg);  filter: drop-shadow(0 0 20px rgba(240,192,64,0.95)); }
+}
+
+/* Moon + cow column */
+.eid-deco-moon-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  position: relative;
+}
+.eid-deco-moon {
+  font-size: 2.4rem;
+  display: block;
+  filter: drop-shadow(0 0 16px rgba(212,175,55,1)) drop-shadow(0 0 32px rgba(212,175,55,0.5));
+  animation: eidDecoMoonGlow 3.5s ease-in-out infinite;
+}
+@keyframes eidDecoMoonGlow {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(212,175,55,0.85)) drop-shadow(0 0 28px rgba(212,175,55,0.4)); transform: rotate(-15deg) scale(1); }
+  50%       { filter: drop-shadow(0 0 26px rgba(240,192,64,1))    drop-shadow(0 0 52px rgba(240,192,64,0.6)); transform: rotate(-15deg) scale(1.1); }
+}
+.eid-deco-cow {
+  font-size: 1.2rem;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+  animation: eidDecoCowBob 2.5s ease-in-out infinite;
+  margin-top: -8px;
+}
+@keyframes eidDecoCowBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-4px) scale(1.1); }
+}
+
+/* Bottom dot row */
+.eid-deco-bot-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.eid-deco-bot-line span {
+  width: 22px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.45), transparent);
+}
+.eid-deco-bot-line em {
+  font-style: normal;
+  font-size: 6px;
+  color: rgba(212,175,55,0.6);
+}
+
+@keyframes eidRingPulse {
+  0%, 100% { opacity: 0.8; }
+  50%       { opacity: 1; }
+}
+
+/* ══════════════════════════════════════
+   OVERLAY
+   ══════════════════════════════════════ */
+.eid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 8, 4, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: eidOverlayFadeIn 0.5s ease forwards;
+}
+@keyframes eidOverlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ══ OVERLAY CARD — Teal Eid Al Adha Theme ══ */
+.eid-overlay-card {
+  position: relative;
+  width: min(440px, 95vw);
+  background: linear-gradient(145deg, #031c1c 0%, #042e2e 35%, #0a4040 60%, #052828 100%);
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 20px;
+  padding: 22px 24px 20px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(212,175,55,0.06),
+    0 0 60px rgba(0,160,140,0.18),
+    0 0 120px rgba(0,100,90,0.15),
+    0 32px 80px rgba(0,0,0,0.85);
+  animation: eidCardPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+}
+@keyframes eidCardPop {
+  from { transform: scale(0.72) translateY(30px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* Radial teal glow behind scene */
+.eid-overlay-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 60%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, rgba(0,180,150,0.14) 0%, transparent 70%);
+}
+
+/* Shimmer */
+.eid-overlay-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -130%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(200,255,240,0.04), transparent);
+  animation: eidCardShimmer 5s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+@keyframes eidCardShimmer {
+  0%   { left: -130%; }
+  55%  { left: 160%; }
+  100% { left: 160%; }
+}
+
+/* ── Corner ornaments ── */
+.eid-orn {
+  position: absolute;
+  width: 36px; height: 36px;
+  border-color: rgba(212,175,55,0.5);
+  border-style: solid;
+}
+.eid-orn.tl { top: 10px; left: 10px;  border-width: 2px 0 0 2px; }
+.eid-orn.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+.eid-orn.bl { bottom: 10px; left: 10px;  border-width: 0 0 2px 2px; }
+.eid-orn.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+.eid-orn.tl::after { content:'◆'; position:absolute; top:-7px; left:-7px;  font-size:7px; color:rgba(212,175,55,0.7); }
+.eid-orn.tr::after { content:'◆'; position:absolute; top:-7px; right:-7px; font-size:7px; color:rgba(212,175,55,0.7); }
+.eid-orn.bl::after { content:'◆'; position:absolute; bottom:-7px; left:-7px;  font-size:7px; color:rgba(212,175,55,0.7); }
+.eid-orn.br::after { content:'◆'; position:absolute; bottom:-7px; right:-7px; font-size:7px; color:rgba(212,175,55,0.7); }
+
+/* ── Scene: crescent + goat + lanterns ── */
+.eid-scene {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 6px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Lanterns */
+.eid-lantern {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px rgba(212,175,55,0.7));
+  animation: eidLanternSwing 3s ease-in-out infinite;
+  display: block;
+  align-self: center;
+}
+.eid-lantern-r { animation-delay: -1.5s; }
+@keyframes eidLanternSwing {
+  0%, 100% { transform: rotate(-6deg) scale(1);    filter: drop-shadow(0 0 14px rgba(212,175,55,0.6)); }
+  50%       { transform: rotate(6deg)  scale(1.05); filter: drop-shadow(0 0 26px rgba(240,192,64,0.9)); }
+}
+
+/* Crescent wrap */
+.eid-crescent-wrap {
+  position: relative;
+  width: 140px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Large golden crescent */
+.eid-scene-moon {
+  font-size: 7rem;
+  line-height: 1;
+  filter:
+    drop-shadow(0 0 24px rgba(212,175,55,0.9))
+    drop-shadow(0 0 50px rgba(212,175,55,0.4));
+  animation: eidSceneMoonGlow 3s ease-in-out infinite;
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%) rotate(-20deg);
+}
+@keyframes eidSceneMoonGlow {
+  0%, 100% { filter: drop-shadow(0 0 22px rgba(212,175,55,0.85)) drop-shadow(0 0 44px rgba(212,175,55,0.35)); transform: translateX(-50%) rotate(-20deg) scale(1); }
+  50%       { filter: drop-shadow(0 0 36px rgba(240,192,64,1))    drop-shadow(0 0 70px rgba(240,192,64,0.5)); transform: translateX(-50%) rotate(-20deg) scale(1.06); }
+}
+
+/* Goat on the crescent */
+.eid-scene-goat {
+  font-size: 3rem;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6));
+  animation: eidGoatJump 2.4s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes eidGoatJump {
+  0%, 100% { transform: translateX(-50%) translateY(0)   rotate(-5deg) scale(1);    }
+  50%       { transform: translateX(-50%) translateY(-8px) rotate(5deg)  scale(1.08); }
+}
+
+/* Scene clouds */
+.eid-scene-cloud {
+  position: absolute;
+  font-size: 1.6rem;
+  opacity: 0.45;
+  filter: blur(0.5px);
+  animation: eidSceneCloud 4s ease-in-out infinite;
+}
+.eid-scene-cloud.cl1 { bottom: 24px; left: -4px;  animation-delay: 0s; }
+.eid-scene-cloud.cl2 { bottom: 16px; right: -4px; animation-delay: -2s; transform: scaleX(-1); }
+@keyframes eidSceneCloud {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+.eid-scene-cloud.cl2 {
+  animation-name: eidSceneCloud2;
+}
+@keyframes eidSceneCloud2 {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50%       { transform: scaleX(-1) translateY(-4px); }
+}
+
+/* Gold sparkles row */
+.eid-scene-sparkles {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: rgba(212,175,55,0.6);
+  letter-spacing: 4px;
+  white-space: nowrap;
+}
+
+/* ── Text block ── */
+.eid-text-block {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 6px;
+}
+
+.eid-arabic-sm {
+  font-family: 'Amiri', serif;
+  font-size: 13px;
+  color: rgba(240,192,64,0.85);
+  direction: rtl;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+/* "Eid" in Dancing Script */
+.eid-eid-script {
+  font-family: 'Dancing Script', cursive;
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  margin-bottom: -6px;
+}
+
+/* "Al Adha" big bold */
+.eid-aladha-bold {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(36px, 9vw, 48px);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, #f0c040 0%, #fff8c0 40%, #d4af37 70%, #f0c040 100%);
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: eidTitleFlow 3s linear infinite;
+  text-shadow: none;
+  letter-spacing: 2px;
+}
+@keyframes eidTitleFlow {
+  0%   { background-position: 0%; }
+  100% { background-position: 200%; }
+}
+
+/* "MUBARAK" spaced */
+.eid-spaced-mubarak {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: rgba(255,255,255,0.65);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+@keyframes eidMoonPulse {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(212,175,55,0.8)); transform: scale(1); }
+  50%       { filter: drop-shadow(0 0 22px rgba(240,192,64,1));   transform: scale(1.1); }
+}
+
+/* ── Ornate divider ── */
+.eid-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px auto;
+  width: 85%;
+}
+.eid-line span {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.55), transparent);
+}
+.eid-line em { font-style: normal; font-size: 10px; color: rgba(212,175,55,0.65); }
+
+/* ── 🐄 Cow ── */
+.eid-cow {
+  font-size: 4.5rem;
+  display: block;
+  margin: 8px 0 6px;
+  animation: eidCowBob 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.5));
+  line-height: 1;
+}
+@keyframes eidCowBob {
+  0%, 100% { transform: translateY(0)   rotate(-4deg) scale(1);    }
+  50%       { transform: translateY(-9px) rotate(4deg)  scale(1.06); }
+}
+
+/* ── Section label ── */
+.eid-section {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(212,175,55,0.45);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ── Takbir ── */
+.eid-takbir {
+  font-family: 'Amiri', 'Times New Roman', serif;
+  font-size: 13px;
+  color: rgba(212,175,55,0.6);
+  direction: rtl;
+  letter-spacing: 0.5px;
+  line-height: 2;
+  margin-bottom: 6px;
+  text-shadow: 0 0 12px rgba(212,175,55,0.2);
+}
+
+/* ── Dismiss button ── */
+.eid-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 13px 36px;
+  background: linear-gradient(135deg, #3d0f0f 0%, #8b1a1a 40%, #c9a227 100%);
+  border: 1px solid rgba(212,175,55,0.5);
+  border-radius: 2px;
+  color: #fff8e1;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+  box-shadow: 0 4px 28px rgba(44,8,8,0.5), inset 0 1px 0 rgba(212,175,55,0.2);
+  position: relative;
+  z-index: 1;
+}
+.eid-dismiss-btn:hover  {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 36px rgba(44,8,8,0.6), 0 0 20px rgba(212,175,55,0.3);
+}
+.eid-dismiss-btn:active { transform: translateY(0) scale(0.98); }
+
+/* ── Auto-dismiss timer bar ── */
+.eid-timer {
+  width: 50%;
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 100px;
+  margin: 12px auto 0;
+  overflow: hidden;
+}
+.eid-timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #1a7a3c, #c9a227, #f0c040);
+  border-radius: 100px;
+  animation: eidTimerDrain 6s linear forwards;
+}
+@keyframes eidTimerDrain {
+  from { width: 100%; }
+  to   { width: 0%;   }
+}
+
+/* ══════════════════════════════════════
+   SITE-WIDE OVERRIDES
+   ══════════════════════════════════════ */
+
+/* Body background — subtle diamond pattern */
+html.eid-active body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(45deg,  rgba(212,175,55,0.025) 0px, transparent 1px, transparent 28px, rgba(212,175,55,0.025) 29px),
+    repeating-linear-gradient(-45deg, rgba(212,175,55,0.025) 0px, transparent 1px, transparent 28px, rgba(212,175,55,0.025) 29px),
+    radial-gradient(ellipse at 10% 15%, rgba(44,8,8,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 90% 85%, rgba(201,162,39,0.08) 0%, transparent 55%);
+}
+
+/* Viewport dark maroon edge vignette */
+html.eid-active body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 120px rgba(28,4,4,0.40), inset 0 0 3px rgba(212,175,55,0.12);
+}
+
+/* Topbar / Navbar */
+html.eid-active .topbar,
+html.eid-active .navbar {
+  border-bottom: 1px solid rgba(212,175,55,0.12) !important;
+  box-shadow: 0 2px 32px rgba(44,8,8,0.30), 0 0 0 1px rgba(212,175,55,0.07) !important;
+}
+
+/* Portal brand name */
+html.eid-active .topbar-brand {
+  background: linear-gradient(90deg, #fca5a5, #f0c040) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Nav links */
+html.eid-active .topbar-links a.active,
+html.eid-active .topbar-links a:hover {
+  color: #f0c040 !important;
+}
+
+/* Hero badge */
+html.eid-active .hero-badge {
+  border-color: rgba(212,175,55,0.3) !important;
+  background: rgba(44,8,8,0.5) !important;
+  color: #fca5a5 !important;
+}
+
+/* Status dot */
+html.eid-active .badge-dot,
+html.eid-active .status-dot,
+html.eid-active .online-dot {
+  background: #f87171 !important;
+  box-shadow: 0 0 10px #f87171 !important;
+}
+
+/* Hero name */
+html.eid-active .hero-name {
+  background: linear-gradient(135deg, #ffffff 0%, #fca5a5 45%, #f0c040 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Hero tags */
+html.eid-active .tag {
+  border: 1px solid rgba(212,175,55,0.2) !important;
+  box-shadow: 0 0 12px rgba(212,175,55,0.08) !important;
+}
+
+/* Avatar ring */
+html.eid-active .avatar-ring,
+html.eid-active .profile-avatar-ring {
+  border-color: #c9a227 !important;
+  box-shadow: 0 0 28px rgba(201,162,39,0.5), 0 0 56px rgba(201,162,39,0.18) !important;
+}
+
+/* Graduation strip */
+html.eid-active .grad-strip {
+  border-color: rgba(212,175,55,0.18) !important;
+  box-shadow: 0 0 24px rgba(44,8,8,0.25) !important;
+}
+html.eid-active .grad-strip-fill {
+  background: linear-gradient(90deg, #3d0f0f, #8b1a1a, #c9a227, #f0c040) !important;
+  box-shadow: 0 0 12px rgba(139,26,26,0.6) !important;
+}
+html.eid-active .grad-strip-pct { color: #f0c040 !important; font-weight: 700 !important; }
+html.eid-active .grad-strip-icon { filter: drop-shadow(0 0 8px rgba(212,175,55,0.6)) !important; }
+
+/* Section headers */
+html.eid-active .section-label {
+  color: rgba(240,192,64,0.85) !important;
+}
+html.eid-active .section-line {
+  background: linear-gradient(90deg, rgba(212,175,55,0.35), transparent) !important;
+}
+html.eid-active .divider {
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent) !important;
+}
+
+/* Folder cards */
+html.eid-active .folder-card {
+  border: 1px solid rgba(212,175,55,0.12) !important;
+  box-shadow: 0 4px 20px rgba(44,8,8,0.22) !important;
+  transition: border-color 0.3s, box-shadow 0.3s !important;
+}
+html.eid-active .folder-card:hover {
+  border-color: rgba(212,175,55,0.3) !important;
+  box-shadow: 0 8px 36px rgba(60,10,10,0.30), 0 0 0 1px rgba(212,175,55,0.18) !important;
+}
+
+/* Generic cards */
+html.eid-active .card,
+html.eid-active .deadline-card,
+html.eid-active .section-card {
+  border-color: rgba(212,175,55,0.1) !important;
+}
+html.eid-active .card:hover,
+html.eid-active .deadline-card:hover,
+html.eid-active .section-card:hover {
+  border-color: rgba(212,175,55,0.25) !important;
+  box-shadow: 0 8px 36px rgba(60,10,10,0.22), 0 0 0 1px rgba(212,175,55,0.15) !important;
+}
+
+/* Buttons */
+html.eid-active .btn,
+html.eid-active .btn-primary {
+  background: linear-gradient(135deg, #3d0f0f, #8b1a1a) !important;
+  border: 1px solid rgba(212,175,55,0.3) !important;
+  box-shadow: 0 4px 20px rgba(44,8,8,0.45) !important;
+}
+html.eid-active .btn:hover,
+html.eid-active .btn-primary:hover {
+  background: linear-gradient(135deg, #8b1a1a, #c9a227) !important;
+  box-shadow: 0 6px 28px rgba(60,10,10,0.55), 0 0 18px rgba(212,175,55,0.2) !important;
+}
+
+/* Active chips / tabs */
+html.eid-active .info-chip.active,
+html.eid-active .chip.active {
+  background: rgba(44,8,8,0.35) !important;
+  border-color: rgba(212,175,55,0.45) !important;
+  color: #f0c040 !important;
+}
+
+/* Scrollbar */
+html.eid-active::-webkit-scrollbar-thumb {
+  background: rgba(139,26,26,0.5) !important;
+}
+
+/* bg-orbs — shift to maroon/gold */
+html.eid-active .bg-orb-1 { background: radial-gradient(circle, rgba(60,10,10,0.60) 0%, transparent 70%) !important; }
+html.eid-active .bg-orb-2 { background: radial-gradient(circle, rgba(201,162,39,0.22) 0%, transparent 70%) !important; }
+html.eid-active .bg-orb-3 { background: radial-gradient(circle, rgba(44,8,8,0.45) 0%, transparent 70%) !important; }
+
+/* ══════════════════════════════════════
+   IMAGE CORNER DECORATION
+   ══════════════════════════════════════ */
+.eid-corner-img {
+  width: 120px;
+  height: auto;
+  display: block;
+  opacity: 0.82;
+  filter: drop-shadow(0 0 10px rgba(212,175,55,0.45));
+  animation: eidCornerFloat 7s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+.eid-corner-img-flip {
+  transform: scaleX(-1);
+  animation: eidCornerFloatFlip 7s ease-in-out infinite;
+}
+@keyframes eidCornerFloat {
+  0%, 100% { transform: translateY(0)    scale(1);    opacity: 0.82; }
+  50%       { transform: translateY(-6px) scale(1.02); opacity: 0.92; }
+}
+@keyframes eidCornerFloatFlip {
+  0%, 100% { transform: scaleX(-1) translateY(0)    scale(1);    opacity: 0.82; }
+  50%       { transform: scaleX(-1) translateY(-6px) scale(1.02); opacity: 0.92; }
+}
