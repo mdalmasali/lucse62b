@@ -334,49 +334,23 @@
       </div>
     </section>
 
-    <!-- Graduation Countdown -->
-    <div class="grad-countdown fade-in delay-2">
-      <div class="grad-countdown-inner">
-        <div class="gc-header">
-          <span class="gc-icon">🎓</span>
-          <div>
-            <div class="gc-title">Countdown to Graduation</div>
-            <div class="gc-sub">Honours Programme &nbsp;·&nbsp; CSE Batch 62, Section B &nbsp;·&nbsp; August 2027</div>
-          </div>
-        </div>
-        <div class="gc-units">
-          <div class="gc-unit">
-            <div class="gc-num" id="gc-days">000</div>
-            <div class="gc-label">Days</div>
-          </div>
-          <div class="gc-sep">:</div>
-          <div class="gc-unit">
-            <div class="gc-num" id="gc-hrs">00</div>
-            <div class="gc-label">Hours</div>
-          </div>
-          <div class="gc-sep">:</div>
-          <div class="gc-unit">
-            <div class="gc-num" id="gc-min">00</div>
-            <div class="gc-label">Minutes</div>
-          </div>
-          <div class="gc-sep">:</div>
-          <div class="gc-unit">
-            <div class="gc-num" id="gc-sec">00</div>
-            <div class="gc-label">Seconds</div>
-          </div>
-        </div>
-        <div class="gc-progress-wrap">
-          <div class="gc-progress-track">
-            <div class="gc-progress-fill" id="gcFill"></div>
-            <div class="gc-progress-dot" id="gcDot"></div>
-          </div>
-          <div class="gc-progress-labels">
-            <span>Started · Aug 2023</span>
-            <span class="gc-pct" id="gcPct">0%</span>
-            <span>Graduation · Aug 2027</span>
-          </div>
-        </div>
+    <!-- Graduation Countdown Strip -->
+    <div class="grad-strip fade-in delay-2">
+      <span class="grad-strip-icon">🎓</span>
+      <span class="grad-strip-label">Graduation in</span>
+      <div class="grad-strip-nums">
+        <span id="gs-days">471</span><span class="gs-lbl">d</span>
+        <span class="gs-sep">·</span>
+        <span id="gs-hrs">08</span><span class="gs-lbl">h</span>
+        <span class="gs-sep">·</span>
+        <span id="gs-min">02</span><span class="gs-lbl">m</span>
+        <span class="gs-sep">·</span>
+        <span class="gs-sec-wrap"><span id="gs-sec">50</span></span><span class="gs-lbl">s</span>
       </div>
+      <div class="grad-strip-bar-wrap">
+        <div class="grad-strip-fill" id="gsFill"></div>
+      </div>
+      <span class="grad-strip-pct" id="gsPct">68.4%</span>
     </div>
 
     <!-- Upcoming Deadlines -->
@@ -612,10 +586,10 @@
   <script src="assets/js/script.js"></script>
   <script src="assets/js/auth.js"></script>
   <script>
-    /* -- Graduation Countdown Timer -- */
+    /* -- Graduation Countdown Strip -- */
     (function () {
-      const GRAD  = new Date(2027, 7, 31, 23, 59, 59); // Aug 31 2027
-      const START = new Date(2023, 7,  1,  0,  0,  0); // Aug  1 2023
+      const GRAD  = new Date(2027, 7, 31, 23, 59, 59);
+      const START = new Date(2023, 7,  1,  0,  0,  0);
       const TOTAL = GRAD - START;
 
       function pad(n, d) { return String(n).padStart(d || 2, '0'); }
@@ -631,29 +605,25 @@
         const mins  = Math.floor(diff /    60000); diff -= mins  *    60000;
         const secs  = Math.floor(diff /     1000);
 
-        document.getElementById('gc-days').textContent = pad(days, 3);
-        document.getElementById('gc-hrs').textContent  = pad(hours);
-        document.getElementById('gc-min').textContent  = pad(mins);
+        document.getElementById('gs-days').textContent = pad(days, 3);
+        document.getElementById('gs-hrs').textContent  = pad(hours);
+        document.getElementById('gs-min').textContent  = pad(mins);
 
-        const secEl = document.getElementById('gc-sec');
         if (secs !== prevSec) {
           prevSec = secs;
-          secEl.classList.remove('tick');
-          void secEl.offsetWidth;
-          secEl.classList.add('tick');
-          secEl.textContent = pad(secs);
-          setTimeout(function () { secEl.classList.remove('tick'); }, 130);
+          const wrap = document.querySelector('.gs-sec-wrap');
+          const secEl = document.getElementById('gs-sec');
+          if (wrap) { wrap.classList.remove('tick'); void wrap.offsetWidth; wrap.classList.add('tick'); }
+          if (secEl) secEl.textContent = pad(secs);
+          setTimeout(function () { if (wrap) wrap.classList.remove('tick'); }, 120);
         }
 
-        /* Progress bar */
         const elapsed = Math.max(0, now - START);
         const pct     = Math.min(100, (elapsed / TOTAL) * 100);
-        const fill    = document.getElementById('gcFill');
-        const dot     = document.getElementById('gcDot');
-        const pctEl   = document.getElementById('gcPct');
+        const fill    = document.getElementById('gsFill');
+        const pctEl   = document.getElementById('gsPct');
         if (fill)  fill.style.width = pct.toFixed(3) + '%';
-        if (dot)   dot.style.left   = pct.toFixed(3) + '%';
-        if (pctEl) pctEl.textContent = pct.toFixed(1) + '% complete';
+        if (pctEl) pctEl.textContent = pct.toFixed(1) + '%';
       }
 
       tick();

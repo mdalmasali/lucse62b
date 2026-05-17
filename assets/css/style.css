@@ -265,184 +265,91 @@ body {
 .tag-green  { background: rgba(16,185,129,0.1);  border-color: rgba(16,185,129,0.3);  color: #34d399; }
 .tag-rose   { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3); color: #fb7185; }
 
-/* ── Graduation Countdown ── */
-.grad-countdown {
-  position: relative;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  padding: 32px 40px;
-  margin-bottom: 32px;
-  overflow: hidden;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
-}
-.grad-countdown::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 15% 50%, rgba(139,92,246,0.1) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 50%, rgba(14,165,233,0.07) 0%, transparent 55%);
-  pointer-events: none;
-}
-.grad-countdown::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 10%; right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139,92,246,0.6), rgba(14,165,233,0.4), transparent);
-}
-.grad-countdown-inner {
-  position: relative;
+/* ── Graduation Countdown Strip ── */
+.grad-strip {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-}
-.gc-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.gc-icon { font-size: 2rem; line-height: 1; }
-.gc-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--accent-bright);
-  margin-bottom: 4px;
-}
-.gc-sub { font-size: 0.82rem; color: var(--text-secondary); }
-.gc-units {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.gc-unit {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 10px;
-  background: rgba(255,255,255,0.03);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 22px 28px;
-  min-width: 110px;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.3s;
+  padding: 11px 20px;
+  margin-bottom: 32px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  flex-wrap: wrap;
 }
-.gc-unit::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-}
-.gc-unit:hover { border-color: var(--border-light); }
-.gc-num {
-  font-family: 'Space Grotesk', monospace;
-  font-size: 3.4rem;
-  font-weight: 700;
-  letter-spacing: -3px;
-  line-height: 1;
-  background: linear-gradient(160deg, #ffffff 0%, #c4b5fd 45%, #38bdf8 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 0 18px rgba(139,92,246,0.55));
-  transition: transform 0.12s ease, opacity 0.12s ease;
-  min-width: 3ch;
-  text-align: center;
-}
-.gc-num.tick {
-  transform: scale(0.88) translateY(3px);
-  opacity: 0.6;
-}
-.gc-label {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.gc-sep {
+.grad-strip-icon { font-size: 1.05rem; line-height: 1; flex-shrink: 0; }
+.grad-strip-label {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 2.8rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.grad-strip-nums {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: 'Space Grotesk', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #c4b5fd 0%, #38bdf8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
-  opacity: 0.5;
-  align-self: flex-start;
-  margin-top: 16px;
-  animation: gcBlink 1s step-end infinite;
+  flex-shrink: 0;
 }
-@keyframes gcBlink { 50% { opacity: 0.1; } }
-.gc-progress-wrap { width: 100%; max-width: 580px; }
-.gc-progress-track {
+.grad-strip-nums .gs-sep {
+  font-size: 0.75rem;
+  opacity: 0.45;
+  margin: 0 2px;
+  background: none;
+  -webkit-text-fill-color: var(--muted);
+}
+.grad-strip-nums .gs-lbl {
+  font-size: 0.62rem;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.grad-strip-bar-wrap {
+  flex: 1;
+  min-width: 60px;
   position: relative;
-  height: 6px;
-  background: rgba(255,255,255,0.05);
+  height: 4px;
+  background: rgba(255,255,255,0.07);
   border-radius: 100px;
-  overflow: visible;
-  margin-bottom: 10px;
+  overflow: hidden;
 }
-.gc-progress-fill {
+[data-theme="light"] .grad-strip-bar-wrap { background: rgba(0,0,0,0.08); }
+.grad-strip-fill {
   position: absolute;
-  left: 0; top: 0;
-  height: 100%;
+  left: 0; top: 0; height: 100%;
   border-radius: 100px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-  box-shadow: 0 0 12px rgba(139,92,246,0.5);
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 8px rgba(139,92,246,0.45);
   transition: width 1.2s ease;
 }
-.gc-progress-dot {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(139,92,246,0.4), 0 0 20px rgba(139,92,246,0.7);
-  transition: left 1.2s ease;
-}
-.gc-progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.68rem;
-  color: var(--muted);
-  margin-top: 14px;
-}
-.gc-progress-labels .gc-pct {
-  color: var(--accent-bright);
-  font-weight: 600;
+.grad-strip-pct {
   font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-@media (max-width: 640px) {
-  .grad-countdown { padding: 20px 14px; border-radius: 20px; margin-bottom: 20px; }
-  .grad-countdown-inner { gap: 18px; }
-  .gc-header { flex-direction: column; text-align: center; gap: 6px; }
-  .gc-icon { font-size: 1.6rem; }
-  .gc-units { gap: 5px; }
-  .gc-unit { padding: 14px 12px; min-width: 66px; border-radius: 14px; gap: 6px; }
-  .gc-num { font-size: 1.9rem; letter-spacing: -1px; }
-  .gc-sep { font-size: 1.7rem; margin-top: 8px; }
-  .gc-label { font-size: 0.5rem; letter-spacing: 1.5px; }
-  .gc-progress-labels { font-size: 0.6rem; }
-}
-@media (min-width: 641px) and (max-width: 900px) {
-  .grad-countdown { padding: 24px 20px; }
-  .gc-unit { padding: 18px 20px; min-width: 90px; }
-  .gc-num { font-size: 2.6rem; }
-  .gc-sep { font-size: 2.2rem; }
+.gs-sec-wrap { transition: opacity 0.1s ease; }
+.gs-sec-wrap.tick { opacity: 0.5; }
+@media (max-width: 500px) {
+  .grad-strip { padding: 9px 14px; gap: 7px; border-radius: 14px; }
+  .grad-strip-nums { font-size: 0.9rem; }
+  .grad-strip-label { font-size: 0.6rem; }
+  .grad-strip-pct { font-size: 0.65rem; }
 }
 
 /* ── Hero Photo Showcase ── */
