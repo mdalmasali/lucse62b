@@ -1,4 +1,4 @@
-const CACHE = 'lu62b-v16';
+const CACHE = 'lu62b-v17';
 
 const STATIC = [
   '/',
@@ -25,11 +25,12 @@ const STATIC = [
   '/pages/gallery.html',
 ];
 
-// Install — cache static assets
+// Install — cache only non-HTML assets (images, JS, CSS)
 self.addEventListener('install', e => {
   self.skipWaiting();
+  const nonHTML = STATIC.filter(p => !p.endsWith('.html') && p !== '/');
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(STATIC).catch(() => {}))
+    caches.open(CACHE).then(c => c.addAll(nonHTML).catch(() => {}))
   );
 });
 
@@ -42,7 +43,7 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch — cache-first for static, network-first for API/sheets
+// Fetch
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
@@ -62,7 +63,21 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for local assets
+  // HTML pages — network-first so users always get fresh content after deploy
+  if (e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // Everything else (JS, CSS, images) — cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -71,10 +86,7 @@ self.addEventListener('fetch', e => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
-      }).catch(() => {
-        // Offline fallback for HTML pages
-        if (e.request.destination === 'document') return caches.match('/index.html');
-      });
+      }).catch(() => null);
     })
   );
 });
