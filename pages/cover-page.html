@@ -705,6 +705,10 @@
             ${members.length <= 1 ? 'disabled' : ''}>✕</button>
         </div>
       `).join('');
+      document.getElementById('membersWrap').querySelectorAll('.cg-member-row').forEach(row => {
+        const [nameInp, sidInp] = row.querySelectorAll('input');
+        attachStudentAC(nameInp, sidInp);
+      });
     }
 
     /* ── Escape HTML helper ── */
@@ -926,8 +930,9 @@
     });
 
     /* ── Autocomplete data — loaded via Worker proxy ── */
-    let TEACHERS = [];
-    let COURSES  = [];
+    let TEACHERS  = [];
+    let COURSES   = [];
+    let STUDENTS  = [];
 
     function loadCPGSheet(sheetName) {
       return fetchSheet(sheetName);
@@ -978,6 +983,74 @@
           })).filter(c => c.title);
 
       } catch(e) { /* fail silently — user can still type manually */ }
+    }
+
+    /* ── Student name parser (inline — script.js not loaded here) ── */
+    function parseStudentNames(rows) {
+      const result = [];
+      let nameIdx = -1, idIdx = -1, inData = false;
+      rows.forEach(row => {
+        const vals = (row.c || []).map(c => (c && c.v != null) ? String(c.f || c.v).trim() : '');
+        const filled = vals.filter(v => v);
+        if (!filled.length) return;
+        if (filled.length === 1) { inData = false; nameIdx = -1; idIdx = -1; return; }
+        if (!inData) {
+          nameIdx = vals.findIndex(h => /name/i.test(h));
+          idIdx   = vals.findIndex(h => /\bid\b/i.test(h));
+          inData  = nameIdx >= 0;
+          return;
+        }
+        const name = vals[nameIdx] || '';
+        const id   = idIdx >= 0 ? (vals[idIdx] || '') : '';
+        if (name) result.push({ name, id, _key: name });
+      });
+      return result;
+    }
+
+    /* ── Student autocomplete — fills name + student ID together ── */
+    function attachStudentAC(nameInput, sidInput) {
+      if (!nameInput || nameInput._studentAC) return;
+      nameInput._studentAC = true;
+
+      nameInput.addEventListener('input', () => {
+        const q = nameInput.value.toLowerCase().trim();
+        _acClose();
+        if (q.length < 2 || !STUDENTS.length) return;
+        const hits = STUDENTS.filter(s => s._key.toLowerCase().includes(q)).slice(0, 8);
+        if (!hits.length) return;
+
+        _acEl = document.createElement('div');
+        _acEl.className = 'ac-dropdown';
+        _acFocused = -1;
+
+        hits.forEach(s => {
+          const div = document.createElement('div');
+          div.className = 'ac-item';
+          div.innerHTML = `<strong>${escH(s.name)}</strong>${s.id ? `<br><small>${escH(s.id)}</small>` : ''}`;
+          div.addEventListener('mousedown', e => {
+            e.preventDefault();
+            nameInput.value = s.name;
+            if (sidInput) sidInput.value = s.id;
+            updatePreview();
+            _acClose();
+          });
+          _acEl.appendChild(div);
+        });
+        document.body.appendChild(_acEl);
+        _acPos(nameInput);
+      });
+
+      nameInput.addEventListener('keydown', e => {
+        if (!_acEl) return;
+        const els = _acEl.querySelectorAll('.ac-item');
+        if      (e.key === 'ArrowDown') { e.preventDefault(); _acFocused = Math.min(_acFocused + 1, els.length - 1); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); _acFocused = Math.max(_acFocused - 1, 0); }
+        else if (e.key === 'Enter' && _acFocused >= 0) { e.preventDefault(); els[_acFocused].dispatchEvent(new MouseEvent('mousedown')); }
+        else if (e.key === 'Escape') { _acClose(); return; }
+        els.forEach((el, i) => el.classList.toggle('ac-focused', i === _acFocused));
+      });
+
+      nameInput.addEventListener('blur', () => setTimeout(_acClose, 160));
     }
 
     /* ── Generic autocomplete engine ── */
@@ -1069,6 +1142,16 @@
 
     loadAutocompleteData();
 
+    /* ── Load student list for name autocomplete (logged-in only) ── */
+    if (_ud) {
+      loadCPGSheet('Student Info')
+        .then(data => {
+          STUDENTS = parseStudentNames(data.table?.rows || []);
+          attachStudentAC(document.getElementById('fName'), document.getElementById('fSID'));
+        })
+        .catch(() => {});
+    }
+
     /* ── Filename builder ── */
     function buildFilename() {
       const clean   = s => (s || '').trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-]/g, '');
@@ -1099,6 +1182,15 @@
       const clone = el.cloneNode(true);
       cloneWrap.appendChild(clone);
       document.body.appendChild(cloneWrap);
+
+      // Firefox: wait for all images in clone to fully paint before capture
+      await Promise.all([...clone.querySelectorAll('img')].map(img =>
+        img.complete ? Promise.resolve() : new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
+          setTimeout(resolve, 3000);
+        })
+      ));
 
       const canvas = await html2canvas(clone, {
         scale: 2,
@@ -1138,7 +1230,15 @@
         pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
         const fname = buildFilename();
-        pdf.save(`${fname}_CoverPage.pdf`);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } else {
+          pdf.save(`${fname}_CoverPage.pdf`);
+        }
         LU_ANALYTICS.trackPDF().then(() =>
           LU_ANALYTICS.getCounter('total_pdfs').then(n => {
             const el = document.getElementById('pdfCountVal');
@@ -1179,7 +1279,15 @@
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 210, 297);
-        pdf.save(`${fname}.pdf`);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } else {
+          pdf.save(`${fname}.pdf`);
+        }
 
         /* Step 2: open inbox after short delay so download triggers first */
         await new Promise(r => setTimeout(r, 500));

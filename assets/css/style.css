@@ -352,6 +352,7 @@ body {
   line-height: 1;
   background: linear-gradient(160deg, #ffffff 0%, #c4b5fd 45%, #38bdf8 90%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   filter: drop-shadow(0 0 18px rgba(139,92,246,0.55));
@@ -376,6 +377,7 @@ body {
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   opacity: 0.5;
@@ -1567,6 +1569,7 @@ footer {
   font-weight: 700;
   background: linear-gradient(to right, #fff, var(--accent-bright));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .footer-links {
@@ -1612,7 +1615,7 @@ footer {
 }
 .dl-title {
   font-size: 0.9rem; font-weight: 500; color: var(--text);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .dl-due { font-size: 0.71rem; color: var(--muted); margin-top: 3px; }
