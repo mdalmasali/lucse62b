@@ -267,12 +267,12 @@
     .cp2-logo { width: 160px; height: auto; display: block; margin: 0 auto; }
     .cp2-heading { font-size: 24px; font-weight: bold; text-align: center; margin: 18px 0 6px; }
     .cp2-course-line { font-size: 19px; text-align: center; line-height: 1.7; }
-    .cp2-gap  { margin-bottom: 14px; }
-    .cp2-sec  { font-size: 19px; font-weight: bold; margin-bottom: 2px; margin-top: 2px; }
-    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-family: 'Tinos', 'Times New Roman', Times, serif; }
-    .cp2-info-tbl td { padding: 1px 0; vertical-align: top; font-family: 'Tinos', 'Times New Roman', Times, serif; font-weight: normal; }
-    .cp2-info-tbl .cp2-k { font-weight: bold; white-space: nowrap; min-width: 115px; }
-    .cp2-info-tbl .cp2-c { padding: 0 10px; }
+    .cp2-gap  { margin-bottom: 28px; }
+    .cp2-sec  { font-size: 19px; font-weight: bold; margin-bottom: 3px; margin-top: 0; }
+    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-family: 'Tinos', 'Times New Roman', Times, serif; margin-bottom: 28px; }
+    .cp2-info-tbl td { padding: 2px 0; line-height: 1.6; vertical-align: top; font-family: 'Tinos', 'Times New Roman', Times, serif; font-weight: normal; }
+    .cp2-info-tbl .cp2-k { font-weight: bold; white-space: nowrap; width: 165px; }
+    .cp2-info-tbl .cp2-c { padding: 0 8px; }
     .cp2-date  { font-size: 19px; text-align: center; padding-top: 16px; }
     .cp2-group-tbl { width: 100%; border-collapse: collapse; font-size: 19px; font-family: 'Tinos', 'Times New Roman', Times, serif; margin-top: 4px; }
     .cp2-group-tbl th { border: 1px solid #444; padding: 5px 10px; font-weight: bold; text-align: center; background: #f0f0f0; }
@@ -718,7 +718,7 @@
       btn.classList.add('active');
       const isGroup  = type.includes('group');
       const isLab    = type.includes('lab');
-      const showNo   = isLab || type === 'asgn-single';
+      const showNo   = isLab || type.includes('asgn');
       document.getElementById('singleWrap').style.display  = isGroup  ? 'none'  : 'block';
       document.getElementById('groupWrap').style.display   = isGroup  ? 'block' : 'none';
       document.getElementById('fNoWrap').style.display     = showNo   ? 'block' : 'none';
@@ -790,7 +790,7 @@
       const heading = isLab ? 'Lab Report On' : 'Assignment On';
       const title   = v('fCourseTitle');
       const code    = v('fCourseCode');
-      const hasNo   = isLab || currentType === 'asgn-single';
+      const hasNo   = isLab || currentType.includes('asgn');
       const no      = hasNo ? v('fNo') : '';
       const noLabel = isLab ? 'Lab Report No' : 'Assignment No';
       const topic   = v('fTopic');
@@ -853,10 +853,10 @@
 
             <div class="cp2-gap"></div>
 
-            ${noTopicRows ? `<table class="cp2-info-tbl" style="margin-bottom:14px;">${noTopicRows}</table>` : ''}
+            ${noTopicRows ? `<table class="cp2-info-tbl">${noTopicRows}</table>` : ''}
 
             <div class="cp2-sec">Submitted To</div>
-            ${toRows ? `<table class="cp2-info-tbl" style="margin-bottom:14px;">${toRows}</table>` : '<div class="cp2-gap"></div>'}
+            ${toRows ? `<table class="cp2-info-tbl">${toRows}</table>` : '<div class="cp2-gap"></div>'}
 
             <div class="cp2-sec">Submitted From</div>
             ${fromBlock}
