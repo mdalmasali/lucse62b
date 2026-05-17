@@ -361,24 +361,24 @@ body {
 .bus-anim-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 9px;
+  gap: 4px;
+  margin-top: 7px;
+  padding-top: 6px;
   border-top: 1px solid rgba(255,255,255,0.06);
-  font-size: 0.82rem;
+  font-size: 0.65rem;
   line-height: 1;
 }
 [data-theme="light"] .bus-anim-strip { border-top-color: rgba(0,0,0,0.07); }
 .bus-anim-road {
   flex: 1;
-  height: 1.3rem;
+  height: 0.9rem;
   position: relative;
   overflow: hidden;
 }
 .bus-anim-icon {
   position: absolute;
   top: 50%;
-  font-size: 1rem;
+  font-size: 0.7rem;
 }
 .bus-anim-icon.to-lu   { animation: busGoRight 2.8s ease-in-out infinite; transform: translateY(-50%); }
 .bus-anim-icon.from-lu { animation: busGoLeft  2.8s ease-in-out infinite; transform: translateY(-50%) scaleX(-1); }
