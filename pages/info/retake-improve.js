@@ -361,11 +361,29 @@ async function loadRetakeImprove(body) {
     const retakeList  = [...new Set([...apiRetake,  ...manualRetake])].sort();
     const improveList = [...new Set([...apiImprove, ...manualImprove])].sort();
 
+    /* ── Name → Code reverse lookup (for name-based search) ── */
+    const nameToCode = {}; // lowercase name → uppercase code
+    if (cpgData) {
+      sheetRows(cpgData)
+        .filter(r => r[0] && r[1]
+          && !['name','title','course name','course'].includes((r[0] || '').toLowerCase().trim())
+          && !['code','course code'].includes((r[1] || '').toLowerCase().trim()))
+        .forEach(r => {
+          const name = (r[0] || '').trim().toLowerCase();
+          const code = (r[1] || '').trim().toUpperCase();
+          if (name && code) nameToCode[name] = code;
+        });
+    }
+    /* Also add from courseNameMap (includes LU_Course_Offer titles) */
+    Object.entries(courseNameMap).forEach(([code, name]) => {
+      if (name) nameToCode[name.toLowerCase()] = code;
+    });
+
     /* ── Store global data ── */
     window._riData = {
       apiRetake, apiImprove, manualRetake, manualImprove,
       retakeList, improveList,
-      getSectionsForCourse, courseNameMap, sem,
+      getSectionsForCourse, courseNameMap, nameToCode, sem,
       busy62BMap, userId: user?.id || null,
     };
 
@@ -397,12 +415,18 @@ async function loadRetakeImprove(body) {
           Improve <span class="ri-tab-count" id="ri-cnt-improve">${improveList.length}</span>
         </button>
         <div style="flex:1;min-width:160px;display:flex;gap:8px;align-items:center;margin-left:auto;">
-          <input type="text" id="ri-search-input" placeholder="Search any course code…"
-            style="flex:1;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.05);
-            border:1px solid var(--border);color:var(--text);font-size:0.82rem;
-            font-family:'Inter',sans-serif;outline:none;text-transform:uppercase;letter-spacing:0.04em;"
-            onkeydown="if(event.key==='Enter')_riDoSearch()"
-            oninput="this.value=this.value.toUpperCase()">
+          <div style="position:relative;flex:1;">
+            <input type="text" id="ri-search-input" placeholder="Course code or name…"
+              style="width:100%;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.05);
+              border:1px solid var(--border);color:var(--text);font-size:0.82rem;
+              font-family:'Inter',sans-serif;outline:none;box-sizing:border-box;"
+              onkeydown="if(event.key==='Enter'){_riDoSearch();document.getElementById('ri-sugg').style.display='none';}"
+              oninput="_riSearchInput(this.value)">
+            <div id="ri-sugg"
+              style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+              background:var(--card);border:1px solid var(--border);border-radius:10px;
+              box-shadow:0 8px 24px rgba(0,0,0,0.45);z-index:100;max-height:210px;overflow-y:auto;"></div>
+          </div>
           <button onclick="_riDoSearch()"
             style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
             color:#fff;font-size:0.8rem;font-weight:700;border:none;cursor:pointer;
@@ -442,12 +466,91 @@ async function loadRetakeImprove(body) {
       riSwitchTab(_riActiveTab);
     };
 
+    /* ── Autocomplete: show dropdown as user types ── */
+    window._riSearchInput = function(val) {
+      const sugg = document.getElementById('ri-sugg');
+      if (!sugg) return;
+      const q = val.trim().toLowerCase();
+      if (q.length < 2) { sugg.style.display = 'none'; return; }
+
+      const d = window._riData;
+      const seen = new Set();
+      const matches = [];
+
+      /* Match against courseNameMap (code → name) */
+      Object.entries(d.courseNameMap || {}).forEach(([code, name]) => {
+        if (seen.has(code)) return;
+        if (code.toLowerCase().includes(q) || (name || '').toLowerCase().includes(q)) {
+          matches.push({ code, name: name || '' });
+          seen.add(code);
+        }
+      });
+      /* Also check nameToCode for any remaining entries */
+      Object.entries(d.nameToCode || {}).forEach(([name, code]) => {
+        if (seen.has(code)) return;
+        if (name.includes(q) || code.toLowerCase().includes(q)) {
+          matches.push({ code, name: d.courseNameMap[code] || name });
+          seen.add(code);
+        }
+      });
+
+      if (!matches.length) { sugg.style.display = 'none'; return; }
+
+      sugg.innerHTML = matches.slice(0, 8).map(m => `
+        <div onclick="_riSelectSugg('${m.code}')"
+          style="padding:9px 14px;cursor:pointer;font-size:0.82rem;
+          border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.12s;"
+          onmouseover="this.style.background='rgba(124,58,237,0.12)'"
+          onmouseout="this.style.background=''">
+          <span style="font-weight:700;color:var(--accent-bright);font-family:monospace;
+            font-size:0.78rem;">${escH(m.code)}</span>
+          ${m.name ? `<span style="color:var(--text-secondary);margin-left:8px;font-size:0.78rem;">${escH(m.name)}</span>` : ''}
+        </div>`).join('');
+      sugg.style.display = 'block';
+    };
+
+    window._riSelectSugg = function(code) {
+      const input = document.getElementById('ri-search-input');
+      const sugg  = document.getElementById('ri-sugg');
+      if (input) input.value = code;
+      if (sugg)  sugg.style.display = 'none';
+      _riDoSearch();
+    };
+
+    /* Close dropdown on outside click */
+    document.addEventListener('click', function(e) {
+      const sugg = document.getElementById('ri-sugg');
+      if (sugg && !sugg.contains(e.target) && e.target.id !== 'ri-search-input') {
+        sugg.style.display = 'none';
+      }
+    }, { capture: true });
+
     /* ── Search handler ── */
     window._riDoSearch = function() {
       const input = document.getElementById('ri-search-input');
-      const code  = (input?.value || '').trim().toUpperCase();
-      if (!code) { if (input) input.style.borderColor = '#f43f5e'; return; }
+      const sugg  = document.getElementById('ri-sugg');
+      if (sugg) sugg.style.display = 'none';
+
+      const raw = (input?.value || '').trim();
+      if (!raw) { if (input) input.style.borderColor = '#f43f5e'; return; }
       if (input) input.style.borderColor = '';
+
+      const d = window._riData;
+      let code = raw.toUpperCase();
+
+      /* If input doesn't look like a code, try name lookup */
+      if (d?.nameToCode && !raw.includes('-') && !/^[A-Z]{2,4}\d{3,4}$/i.test(raw)) {
+        const exact = d.nameToCode[raw.toLowerCase()];
+        if (exact) {
+          code = exact;
+        } else {
+          const partials = Object.entries(d.nameToCode)
+            .filter(([name]) => name.includes(raw.toLowerCase()))
+            .map(([, c]) => c);
+          if (partials.length >= 1) code = partials[0];
+        }
+      }
+
       const srEl = document.getElementById('ri-search-result');
       if (!srEl) return;
       srEl.dataset.code = code;
