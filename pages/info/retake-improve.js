@@ -175,6 +175,10 @@ window._riToggleEnroll = async function(courseCode, batch, section, type) {
   /* Persist cache */
   try { localStorage.setItem(`lu62b_enrollments_${d.userId}`, JSON.stringify(d.enrollments)); } catch(e) {}
 
+  /* Update My List count badge */
+  const cntML = document.getElementById('ri-cnt-mylist');
+  if (cntML) cntML.textContent = Object.keys(d.enrollments || {}).length;
+
   /* Re-render */
   riSwitchTab(_riActiveTab);
   const srEl = document.getElementById('ri-search-result');
@@ -547,6 +551,16 @@ async function loadRetakeImprove(body) {
           <i class="fa-solid fa-arrow-trend-up"></i>
           Improve <span class="ri-tab-count" id="ri-cnt-improve">${improveList.length}</span>
         </button>
+        ${window._riData?.userId ? `
+        <button class="ri-tab ${_riActiveTab === 'mylist'  ? 'ri-tab-active' : ''}"
+          onclick="riSwitchTab('mylist')"  id="ri-tab-mylist"
+          style="border-color:rgba(99,102,241,.35);">
+          <i class="fa-solid fa-list-check"></i>
+          My List <span class="ri-tab-count" id="ri-cnt-mylist"
+            style="background:rgba(99,102,241,.25);color:#818cf8;">
+            ${Object.keys(window._riData.enrollments || {}).length}
+          </span>
+        </button>` : ''}
         <div style="flex:1;min-width:160px;display:flex;gap:8px;align-items:center;margin-left:auto;">
           <div style="position:relative;flex:1;">
             <input type="text" id="ri-search-input" placeholder="Course code or name…"
@@ -696,9 +710,14 @@ async function loadRetakeImprove(body) {
       _riActiveTab = tab;
       document.querySelectorAll('.ri-tab').forEach(t => t.classList.remove('ri-tab-active'));
       document.getElementById(`ri-tab-${tab}`)?.classList.add('ri-tab-active');
-      const d   = window._riData;
-      const list = tab === 'retake' ? d.retakeList : d.improveList;
-      _riRenderContent(document.getElementById('ri-content'), list, tab === 'retake');
+      const d = window._riData;
+      const el = document.getElementById('ri-content');
+      if (tab === 'mylist') {
+        _riRenderMyList(el);
+      } else {
+        const list = tab === 'retake' ? d.retakeList : d.improveList;
+        _riRenderContent(el, list, tab === 'retake');
+      }
     };
 
     riSwitchTab(_riActiveTab);
@@ -903,6 +922,87 @@ function _riRenderContent(el, codeList, isRetake) {
       </span>
     </div>
     ${cards.join('')}`;
+}
+
+/* ══════════════════════════════════════════════
+   MY LIST — enrolled retake/improve courses
+   ══════════════════════════════════════════════ */
+
+function _riRenderMyList(el) {
+  if (!el) return;
+  const d = window._riData;
+  const enrollments = Object.values(d?.enrollments || {});
+
+  if (!enrollments.length) {
+    el.innerHTML = `<div class="info-placeholder" style="padding:48px 20px;">
+      <i class="fa-solid fa-list-check" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
+      <p style="font-weight:700;">No courses enrolled yet</p>
+      <p style="font-size:0.78rem;margin-top:6px;color:var(--text-secondary);">
+        Switch to Retake or Improve tab and click <strong>Enroll</strong> on a section.
+      </p>
+    </div>`;
+    return;
+  }
+
+  const rows = enrollments.map(e => {
+    const isRetake   = e.type === 'retake';
+    const badgeColor = isRetake ? '#f43f5e' : '#fb923c';
+    const badgeBg    = isRetake ? 'rgba(244,63,94,.15)' : 'rgba(251,146,60,.15)';
+    const label      = isRetake ? 'RETAKE' : 'IMPROVE';
+    const codeColor  = courseColor(e.course_code || '');
+    const name       = d.courseNameMap[e.course_code] || e.course_name || '';
+
+    const slots      = (e.schedule || []);
+    const dayGroups  = {};
+    slots.forEach(s => {
+      if (!dayGroups[s.day]) dayGroups[s.day] = [];
+      dayGroups[s.day].push(s.time);
+    });
+    const scheduleStr = Object.entries(dayGroups)
+      .map(([day, times]) => `<strong>${escH(DAY_DISPLAY[day] || day)}</strong> ${times.map(escH).join(', ')}`)
+      .join(' &nbsp;·&nbsp; ');
+
+    const teacherFull = (d?.initialsMap || {})[e.teacher] || '';
+
+    return `<div style="display:flex;align-items:stretch;border-radius:13px;overflow:hidden;
+        border:1px solid var(--border);background:${badgeBg.replace('.15',',.04')};
+        margin-bottom:10px;">
+      <div style="width:4px;background:${badgeColor};flex-shrink:0;"></div>
+      <div style="padding:13px 16px;flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;">
+          <span style="font-family:monospace;font-size:0.78rem;font-weight:800;color:${codeColor};
+            background:${codeColor}1a;padding:2px 8px;border-radius:5px;">${escH(e.course_code || '')}</span>
+          <span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:5px;
+            background:${badgeBg};color:${badgeColor};letter-spacing:0.05em;">${label}</span>
+          ${name ? `<span style="font-size:0.85rem;font-weight:700;color:var(--text);">${escH(name)}</span>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.74rem;color:var(--text-secondary);">
+          <span><strong style="color:var(--accent-bright);">${escH(e.batch || '')}${escH(e.section || '')}</strong></span>
+          ${e.teacher ? `<span style="font-family:monospace;font-size:0.72rem;font-weight:700;color:#c4b5fd;
+            background:rgba(196,181,253,.1);padding:1px 7px;border-radius:5px;">${escH(e.teacher)}</span>
+            ${teacherFull ? `<span style="font-size:0.72rem;">${escH(teacherFull)}</span>` : ''}` : ''}
+          ${scheduleStr ? `<span>${scheduleStr}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 14px;flex-shrink:0;">
+        <button onclick="_riToggleEnroll('${escH(e.course_code)}','${escH(e.batch)}','${escH(e.section)}','${escH(e.type)}')"
+          style="font-size:0.68rem;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;
+          font-family:'Inter',sans-serif;white-space:nowrap;
+          background:rgba(244,63,94,.12);color:#f43f5e;border:1px solid rgba(244,63,94,.35);">
+          Remove
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div class="rt-sync" style="margin-bottom:12px;">
+        <div class="rt-sync-dot"></div>
+        <span>${enrollments.length} course${enrollments.length !== 1 ? 's' : ''} enrolled</span>
+      </div>
+      ${rows}
+    </div>`;
 }
 
 /* ══════════════════════════════════════════════
