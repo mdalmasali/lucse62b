@@ -976,7 +976,7 @@ footer {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: center;
 }
 .data-table th {
   padding: 20px;

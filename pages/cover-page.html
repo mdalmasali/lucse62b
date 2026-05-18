@@ -23,7 +23,7 @@
   <style>
     .cg-page {
       max-width: 1380px;
-      margin: 90px auto 60px;
+      margin: 20px auto 60px;
       padding: 0 24px;
       display: grid;
       grid-template-columns: 400px 1fr;
@@ -262,19 +262,19 @@
     .cp2-wrap { height: 100%; display: flex; flex-direction: column; font-family: 'Times New Roman', 'Tinos', Times, serif; }
     .cp2-top  { flex: 1; }
     .cp2-hd   { text-align: center; margin-bottom: 16px; }
-    .cp2-univ { font-size: 44px; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; }
-    .cp2-dept { font-size: 20px; font-weight: bold; margin-bottom: 14px; }
-    .cp2-logo { width: 160px; height: auto; display: block; margin: 0 auto; }
-    .cp2-heading { font-size: 24px; font-weight: bold; text-align: center; margin: 18px 0 6px; }
-    .cp2-course-line { font-size: 19px; text-align: center; line-height: 1.7; }
+    .cp2-univ { font-size: 35px; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
+    .cp2-dept { font-size: 21px; font-weight: bold; margin-bottom: 16px; }
+    .cp2-logo { width: 140px; height: auto; display: block; margin: 0 auto; }
+    .cp2-heading { font-size: 19px; font-weight: bold; text-align: left; margin: 18px 0 6px; margin-left: 70px; }
+    .cp2-course-line { font-size: 19px; text-align: left; line-height: 1.7; margin-left: 70px; }
     .cp2-gap  { margin-bottom: 28px; }
-    .cp2-sec  { font-size: 19px; font-weight: bold; margin-bottom: 3px; margin-top: 0; }
-    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-family: 'Times New Roman', 'Tinos', Times, serif; margin-bottom: 28px; }
+    .cp2-sec  { font-size: 19px; font-weight: bold; margin-bottom: 3px; margin-top: 0; margin-left: 70px; }
+    .cp2-info-tbl { border-collapse: collapse; font-size: 19px; font-family: 'Times New Roman', 'Tinos', Times, serif; margin-bottom: 28px; margin-left: 70px; }
     .cp2-info-tbl td { padding: 2px 0; line-height: 1.6; vertical-align: top; font-family: 'Times New Roman', 'Tinos', Times, serif; font-weight: normal; }
     .cp2-info-tbl .cp2-k { font-weight: bold; white-space: nowrap; width: 165px; }
     .cp2-info-tbl .cp2-c { padding: 0 8px; }
     .cp2-date  { font-size: 19px; text-align: center; padding-top: 16px; }
-    .cp2-group-tbl { width: 100%; border-collapse: collapse; font-size: 19px; font-family: 'Times New Roman', 'Tinos', Times, serif; margin-top: 4px; }
+    .cp2-group-tbl { width: calc(100% - 70px); border-collapse: collapse; font-size: 19px; font-family: 'Times New Roman', 'Tinos', Times, serif; margin-top: 4px; margin-left: 70px; }
     .cp2-group-tbl th { border: 1px solid #444; padding: 5px 10px; font-weight: bold; text-align: center; background: #f0f0f0; }
     .cp2-group-tbl td { border: 1px solid #444; padding: 5px 10px; text-align: center; font-weight: normal; }
 
@@ -1038,22 +1038,25 @@
       const wrap   = document.getElementById('previewScalerWrap');
       const scaler = document.getElementById('previewScaler');
       if (!outer || !wrap || !scaler) return;
-      const avail = outer.offsetWidth;
-      if (avail <= 0) return;
-      const scale = Math.min(1, avail / 794);
-      const vw    = Math.round(794  * scale);
-      const vh    = Math.round(1123 * scale);
-      /* scaler stays 794×1123, scales from top-left */
+      const availW = outer.offsetWidth;
+      if (availW <= 0) return;
+      const outerTop = outer.getBoundingClientRect().top;
+      const availH   = window.innerHeight - outerTop - 24;
+      const scaleW   = availW / 794;
+      const scaleH   = availH > 200 ? availH / 1123 : 1;
+      const scale    = Math.min(1, scaleW, scaleH);
+      const vw       = Math.round(794  * scale);
+      const vh       = Math.round(1123 * scale);
       scaler.style.transform       = `scale(${scale})`;
       scaler.style.transformOrigin = 'top left';
       scaler.style.width           = '794px';
       scaler.style.height          = '1123px';
-      /* wrap clips overflow and collapses to visual size, centered */
       wrap.style.width    = vw + 'px';
       wrap.style.height   = vh + 'px';
       wrap.style.overflow = 'hidden';
       wrap.style.margin   = '0 auto';
     }
+    window.addEventListener('resize', scalePreview);
 
     function toggleMobilePreview() {
       const panel = document.getElementById('previewPanel');
