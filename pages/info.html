@@ -454,6 +454,27 @@
     }
     .ac-dob-row button:hover { background: #818cf8; }
 
+    /* ── Retake & Improve: tabs ── */
+    .ri-tab {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 50px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-secondary);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.18s;
+    }
+    .ri-tab:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+    .ri-tab.ri-tab-active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+    .ri-tab .ri-tab-count {
+      font-size: 0.68rem; background: rgba(255,255,255,0.2);
+      padding: 1px 7px; border-radius: 10px; font-weight: 700;
+    }
+
     /* Retake / Improve badges in course table */
     .ac-retake-tag {
       display: inline-block; font-size: 0.62rem; font-weight: 700;
@@ -664,8 +685,9 @@
       { id: 'group-links',    label: 'All Course Group Link',  icon: 'fa-solid fa-link',                  color: '#818cf8' },
       { id: 'teachers',       label: 'Teacher Contact List',   icon: 'fa-solid fa-address-book',          color: '#fb923c' },
       { id: 'bkash',          label: 'bKash Payment / Fees',   icon: 'fa-solid fa-mobile-screen-button',  color: '#e879f9' },
-      { id: 'mid-routine',    label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
-      { id: 'final-routine',  label: 'Final Term Routine',     icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
+      { id: 'mid-routine',      label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
+      { id: 'final-routine',   label: 'Final Term Routine',    icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
+      { id: 'retake-improve',  label: 'Retake & Improve',      icon: 'fa-solid fa-rotate-right',          color: '#f43f5e' },
     ];
 
     let activeId = null;
@@ -803,7 +825,8 @@
       'course-offer':   'info/course-offer.js',
       'bus':             'info/bus.js',
       'semester':        'info/semester.js',
-      'all-course':      'info/all-course.js',
+      'all-course':       'info/all-course.js',
+      'retake-improve':  'info/retake-improve.js',
     };
 
     async function loadContent(item) {
@@ -822,7 +845,8 @@
       if (item.id === 'course-offer')   { loadCourseOffer(body);           return; }
       if (item.id === 'bus')            { loadBus(body);                   return; }
       if (item.id === 'semester')      { loadSemester(body);              return; }
-      if (item.id === 'all-course')   { loadAllCourse(body);             return; }
+      if (item.id === 'all-course')      { loadAllCourse(body);        return; }
+      if (item.id === 'retake-improve')  { loadRetakeImprove(body);    return; }
 
       const COMING = {
         'course-offer':  'Current semester course offer will be shown here.',
@@ -841,7 +865,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260516b';
+    const _BUILD = '20260518a';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
