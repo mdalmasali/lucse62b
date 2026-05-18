@@ -946,8 +946,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.35);">
               ⚠ Enroll
             </button>
-            <div style="font-size:0.58rem;color:#fbbf24;margin-top:3px;max-width:90px;
-              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            <div style="font-size:0.58rem;color:#fbbf24;margin-top:3px;line-height:1.35;"
               title="${escH(enrollConflict)}">${escH(enrollConflict)}</div>
            </td>`;
       } else {
