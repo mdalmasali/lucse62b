@@ -1335,6 +1335,51 @@
     /* Result course cards */
     html[data-theme="light"] .result-course-card { background: rgba(124,58,237,0.04); }
     html[data-theme="light"] .result-course-card:hover { border-color: rgba(124,58,237,0.3); }
+
+    /* ── My Courses card ── */
+    .my-courses-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      backdrop-filter: blur(12px);
+    }
+    .my-courses-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .my-courses-icon {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: rgba(99,102,241,.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: #818cf8; flex-shrink: 0;
+    }
+    .my-courses-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+    }
+    .my-courses-sub { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+    .mc-row {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .mc-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .mc-left { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+    .mc-code {
+      font-family: monospace; font-size: 0.75rem; font-weight: 800;
+      color: #818cf8; background: rgba(99,102,241,.12);
+      padding: 1px 6px; border-radius: 5px; display: inline-block;
+    }
+    .mc-name {
+      font-size: 0.78rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mc-meta { font-size: 0.67rem; color: var(--text-secondary); }
+    .mc-badge {
+      font-size: 0.6rem; font-weight: 800; padding: 2px 7px;
+      border-radius: 5px; letter-spacing: 0.05em; flex-shrink: 0; margin-top: 2px;
+    }
 </style>
 </head>
 <body>
@@ -1461,7 +1506,10 @@
         </div>
       </div>
 
-      <!-- Appearance Section (right column) -->
+      <!-- Right column: Appearance + My Courses -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Appearance Section -->
       <div class="appearance-card">
         <div class="appearance-card-header">
           <div class="appearance-card-icon"><i class="fa-solid fa-palette"></i></div>
@@ -1494,7 +1542,21 @@
             </div>
           </button>
         </div>
+      </div><!-- /.appearance-card -->
+
+      <!-- My Courses card -->
+      <div class="my-courses-card">
+        <div class="my-courses-header">
+          <div class="my-courses-icon"><i class="fa-solid fa-book-open"></i></div>
+          <div>
+            <div class="my-courses-title">My Courses</div>
+            <div class="my-courses-sub" id="myCoursesSub">Loading…</div>
+          </div>
+        </div>
+        <div id="myCoursesBody" style="min-height:40px;"></div>
       </div>
+
+      </div><!-- /.right-col -->
 
       </div><!-- /.profile-top-row -->
 
@@ -1867,6 +1929,54 @@
     let currentUser = null;
     let isDemoUser = false;
 
+    async function loadMyCourses() {
+      const sub  = document.getElementById('myCoursesSub');
+      const body = document.getElementById('myCoursesBody');
+      if (!sub || !body) return;
+
+      if (!currentUser?.id || isDemoUser) {
+        sub.textContent = 'Login as a student to view';
+        body.innerHTML = '';
+        return;
+      }
+
+      try {
+        const r = await fetch(
+          `${SUPA_URL}/rest/v1/student_retake_enrollments?student_id=eq.${encodeURIComponent(currentUser.id)}&select=course_code,course_name,batch,section,teacher,type&order=enrolled_at.asc`,
+          { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+        );
+        const list = r.ok ? await r.json() : [];
+
+        if (!list.length) {
+          sub.textContent = 'No courses enrolled';
+          body.innerHTML = `<div style="text-align:center;padding:18px 0;opacity:0.4;font-size:0.78rem;color:var(--text-secondary);">
+            Go to <strong>Retake &amp; Improve</strong> and enroll in a section.
+          </div>`;
+          return;
+        }
+
+        sub.textContent = `${list.length} course${list.length !== 1 ? 's' : ''} enrolled`;
+        body.innerHTML = list.map(e => {
+          const isRetake = e.type === 'retake';
+          const badgeColor = isRetake ? '#f43f5e' : '#fb923c';
+          const badgeBg    = isRetake ? 'rgba(244,63,94,.15)' : 'rgba(251,146,60,.15)';
+          const label      = isRetake ? 'RETAKE' : 'IMPROVE';
+          const secLabel   = `${e.batch || ''}${e.section || ''}${e.teacher ? ' · ' + e.teacher : ''}`;
+          return `<div class="mc-row">
+            <div class="mc-left">
+              <div><span class="mc-code">${e.course_code || ''}</span></div>
+              ${e.course_name ? `<div class="mc-name" title="${e.course_name}">${e.course_name}</div>` : ''}
+              ${secLabel ? `<div class="mc-meta">${secLabel}</div>` : ''}
+            </div>
+            <span class="mc-badge" style="background:${badgeBg};color:${badgeColor};">${label}</span>
+          </div>`;
+        }).join('');
+      } catch(err) {
+        sub.textContent = 'Could not load';
+        body.innerHTML = '';
+      }
+    }
+
     function showProfileDemoHint(message) {
       const el = document.getElementById('profileDemoHint');
       if (!el) return;
@@ -1883,6 +1993,7 @@
     function enableDemoProfileMode() {
       document.getElementById('dobGate').style.display = 'none';
       document.getElementById('profileContent').style.display = 'block';
+      loadMyCourses();
       document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
 
       [
@@ -2283,6 +2394,7 @@
     function showProfile(dob, prefetchedData = null) {
       document.getElementById('dobGate').style.display = 'none';
       document.getElementById('profileContent').style.display = 'block';
+      loadMyCourses();
       showSavedDob(dob);
       const [y, m, d] = dob.split('-');
       prefillDobSelects('resDobDay', 'resDobMonth', 'resDobYear', d, m, y);
