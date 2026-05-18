@@ -964,7 +964,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       }
 
       if (isEnrolledHere) {
-        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;">
+        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
@@ -973,7 +973,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
             </button>
            </td>`;
       } else if (enrollConflict) {
-        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;">
+        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
               title="Time clash with: ${escH(enrollConflict)}"
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
@@ -985,7 +985,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               title="${escH(enrollConflict)}">${escH(enrollConflict)}</div>
            </td>`;
       } else {
-        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;">
+        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
@@ -997,9 +997,9 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
     }
 
     return `<tr style="background:${rowBg};border-left:${borderLeft};">
-      <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);vertical-align:middle;">${escH(sec.batch)}</td>
-      <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;vertical-align:middle;">${escH(sec.section)}</td>
-      <td style="padding:9px 12px;vertical-align:middle;">
+      <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);vertical-align:middle;text-align:center;">${escH(sec.batch)}</td>
+      <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;vertical-align:middle;text-align:center;">${escH(sec.section)}</td>
+      <td style="padding:9px 12px;vertical-align:middle;text-align:left;">
         ${sec.initials ? (() => {
           const fullName = (d?.initialsMap || {})[sec.initials] || '';
           return `<span style="font-family:monospace;font-size:0.8rem;font-weight:700;color:#c4b5fd;
@@ -1007,25 +1007,30 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
             ${fullName ? `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;line-height:1.35;font-weight:500;">${escH(fullName)}</div>` : ''}`;
         })() : `<span style="opacity:0.3;font-size:0.78rem;">—</span>`}
       </td>
-      <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);vertical-align:middle;">${schedule}</td>
-      <td style="padding:9px 14px;vertical-align:middle;">${statusHtml}</td>
+      <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);vertical-align:middle;text-align:left;">${schedule}</td>
+      <td style="padding:9px 14px;vertical-align:middle;text-align:center;">${statusHtml}</td>
       ${enrollCell}
     </tr>`;
   }).join('');
 
-  const thStyle = `padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
+  const thStyleCenter = `padding:8px 12px;text-align:center;font-size:0.63rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
+    border-bottom:1px solid var(--border);white-space:nowrap;`;
+  const thStyleLeft = `padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
     text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
     border-bottom:1px solid var(--border);white-space:nowrap;`;
   const enrollHeader = showEnroll
-    ? `<th style="${thStyle}">Enroll</th>` : '';
+    ? `<th style="${thStyleCenter}">Enroll</th>` : '';
 
   return `<div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="background:rgba(255,255,255,0.03);">
-          ${['Batch','Sec','Teacher','Schedule','Status vs 62B'].map(h =>
-            `<th style="${thStyle}">${h}</th>`
-          ).join('')}
+          <th style="${thStyleCenter}">Batch</th>
+          <th style="${thStyleCenter}">Sec</th>
+          <th style="${thStyleLeft}">Teacher</th>
+          <th style="${thStyleLeft}">Schedule</th>
+          <th style="${thStyleCenter}">Status vs 62B</th>
           ${enrollHeader}
         </tr>
       </thead>
