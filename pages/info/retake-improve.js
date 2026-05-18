@@ -917,7 +917,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
               background:rgba(124,58,237,.1);color:#a78bfa;border:1px solid rgba(124,58,237,.25);">
-              <i class="fa-regular fa-circle-plus"></i> Enroll
+              <i class="fa-solid fa-plus"></i> Enroll
             </button>
            </td>`;
     }
