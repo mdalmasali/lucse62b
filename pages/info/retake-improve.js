@@ -967,7 +967,7 @@ function _riRenderMyList(el) {
         const offBadge = mlOffDays.has(day)
           ? `<span style="font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:4px;
               background:rgba(52,211,153,.15);color:#34d399;letter-spacing:0.04em;
-              vertical-align:middle;margin-left:3px;">OFF</span>`
+              vertical-align:middle;margin-left:3px;">Off Day</span>`
           : '';
         return `<strong>${escH(DAY_DISPLAY[day] || day)}</strong>${offBadge} ${times.map(escH).join(', ')}`;
       })
@@ -1037,7 +1037,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
         const offBadge = offDays.has(day)
           ? `<span style="font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:4px;
               background:rgba(52,211,153,.15);color:#34d399;letter-spacing:0.04em;
-              vertical-align:middle;margin-left:3px;">OFF</span>`
+              vertical-align:middle;margin-left:3px;">Off Day</span>`
           : '';
         return `<strong>${escH(DAY_DISPLAY[day] || day)}</strong>${offBadge} ${times.map(escH).join(', ')}`;
       })
