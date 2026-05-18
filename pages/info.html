@@ -688,6 +688,7 @@
       { id: 'mid-routine',      label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
       { id: 'final-routine',   label: 'Final Term Routine',    icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
       { id: 'retake-improve',  label: 'Retake & Improve',      icon: 'fa-solid fa-rotate-right',          color: '#f43f5e' },
+      { id: 'retake-routine',  label: 'My Routine',            icon: 'fa-solid fa-calendar-plus',         color: '#22d3ee' },
     ];
 
     let activeId = null;
@@ -827,6 +828,7 @@
       'semester':        'info/semester.js',
       'all-course':       'info/all-course.js',
       'retake-improve':  'info/retake-improve.js',
+      'retake-routine':  'info/retake-routine.js',
     };
 
     async function loadContent(item) {
@@ -847,6 +849,7 @@
       if (item.id === 'semester')      { loadSemester(body);              return; }
       if (item.id === 'all-course')      { loadAllCourse(body);        return; }
       if (item.id === 'retake-improve')  { loadRetakeImprove(body);    return; }
+      if (item.id === 'retake-routine')  { loadRetakeRoutine(body);    return; }
 
       const COMING = {
         'course-offer':  'Current semester course offer will be shown here.',
@@ -865,7 +868,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260518d';
+    const _BUILD = '20260518e';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {

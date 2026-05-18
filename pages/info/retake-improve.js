@@ -909,7 +909,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
               background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.4);">
-              <i class="fa-solid fa-check"></i> Enrolled
+              ✓ Enrolled
             </button>
            </td>`
         : `<td style="padding:7px 10px;">
@@ -917,7 +917,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
               background:rgba(124,58,237,.1);color:#a78bfa;border:1px solid rgba(124,58,237,.25);">
-              <i class="fa-solid fa-plus"></i> Enroll
+              Enroll
             </button>
            </td>`;
     }
