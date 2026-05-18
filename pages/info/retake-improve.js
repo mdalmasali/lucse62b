@@ -924,6 +924,24 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       .map(([day, times]) => `<strong>${escH(DAY_DISPLAY[day] || day)}</strong> ${times.map(escH).join(', ')}`)
       .join(' &nbsp;·&nbsp; ');
 
+    /* Check enrollment-vs-enrollment conflict first (needed for statusHtml) */
+    const enrolled       = showEnroll ? (d.enrollments || {})[courseCode] : null;
+    const isEnrolledHere = !!(enrolled && enrolled.batch === sec.batch && enrolled.section === sec.section);
+    let enrollConflict = null;
+    if (showEnroll && !isEnrolledHere) {
+      const others = Object.entries(d.enrollments || {}).filter(([c]) => c !== courseCode);
+      outer: for (const slot of sec.slots) {
+        const slotMin = timeToMin(slot.time);
+        for (const [c, enr] of others) {
+          if ((enr.schedule || []).some(s => s.day === slot.day && timeToMin(s.time) === slotMin)) {
+            enrollConflict = d.courseNameMap[c] || c;
+            break outer;
+          }
+        }
+      }
+    }
+
+    /* STATUS column — 62B clash takes priority, then enrollment conflict, then Free */
     let statusHtml;
     if (sec.hasConflict) {
       const clashWith = sec.clashCourseNames.length
@@ -934,35 +952,25 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       statusHtml = `<span style="color:#f43f5e;font-weight:700;font-size:0.72rem;white-space:nowrap;">
           <i class="fa-solid fa-triangle-exclamation"></i> Clash
         </span>${clashWith}`;
+    } else if (enrollConflict) {
+      statusHtml = `<span style="color:#fbbf24;font-weight:700;font-size:0.72rem;white-space:nowrap;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Clash
+        </span>
+        <span style="font-size:0.65rem;color:var(--text-secondary);display:block;margin-top:2px;line-height:1.3;">
+          ${escH(enrollConflict)}
+        </span>`;
     } else {
       statusHtml = `<span style="color:#34d399;font-weight:700;font-size:0.72rem;white-space:nowrap;">
           <i class="fa-solid fa-check-circle"></i> Free
         </span>`;
     }
 
-    const rowBg      = sec.hasConflict ? 'rgba(244,63,94,.04)' : 'rgba(52,211,153,.03)';
-    const borderLeft = sec.hasConflict ? '2px solid rgba(244,63,94,.3)' : '2px solid rgba(52,211,153,.25)';
+    const hasAnyConflict = sec.hasConflict || !!enrollConflict;
+    const rowBg      = hasAnyConflict ? 'rgba(244,63,94,.04)' : 'rgba(52,211,153,.03)';
+    const borderLeft = hasAnyConflict ? '2px solid rgba(244,63,94,.3)' : '2px solid rgba(52,211,153,.25)';
 
     let enrollCell = '';
     if (showEnroll) {
-      const enrolled       = (d.enrollments || {})[courseCode];
-      const isEnrolledHere = enrolled && enrolled.batch === sec.batch && enrolled.section === sec.section;
-
-      /* Check if this section's slots clash with an already-enrolled course */
-      let enrollConflict = null;
-      if (!isEnrolledHere) {
-        const others = Object.entries(d.enrollments || {}).filter(([c]) => c !== courseCode);
-        outer: for (const slot of sec.slots) {
-          const slotMin = timeToMin(slot.time);
-          for (const [c, enr] of others) {
-            if ((enr.schedule || []).some(s => s.day === slot.day && timeToMin(s.time) === slotMin)) {
-              enrollConflict = d.courseNameMap[c] || c;
-              break outer;
-            }
-          }
-        }
-      }
-
       if (isEnrolledHere) {
         enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
@@ -971,18 +979,6 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.4);">
               ✓ Enrolled
             </button>
-           </td>`;
-      } else if (enrollConflict) {
-        enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
-            <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
-              title="Time clash with: ${escH(enrollConflict)}"
-              style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
-              font-family:'Inter',sans-serif;white-space:nowrap;
-              background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.35);">
-              ⚠ Enroll
-            </button>
-            <div style="font-size:0.58rem;color:#fbbf24;margin-top:3px;line-height:1.35;"
-              title="${escH(enrollConflict)}">${escH(enrollConflict)}</div>
            </td>`;
       } else {
         enrollCell = `<td style="padding:7px 10px;vertical-align:middle;text-align:center;">
