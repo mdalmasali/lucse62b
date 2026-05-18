@@ -8,17 +8,111 @@ const _RI_SUPA   = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _RI_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
 let _riActiveTab = 'retake';
+window._riData   = null;
 
-/* ── Fetch retake/improve codes from result API (or use cache) ── */
+/* ══════════════════════════════════════════════
+   MANUAL COURSES — localStorage + Supabase
+   ══════════════════════════════════════════════ */
+
+function _riManualLocal() {
+  try {
+    return {
+      retake:  new Set(JSON.parse(localStorage.getItem('lu62b_manual_retake')  || '[]')),
+      improve: new Set(JSON.parse(localStorage.getItem('lu62b_manual_improve') || '[]')),
+    };
+  } catch(e) { return { retake: new Set(), improve: new Set() }; }
+}
+
+async function _riLoadManualFromSupa(userId) {
+  try {
+    const r = await fetch(
+      `${_RI_SUPA}/rest/v1/student_manual_courses?student_id=eq.${encodeURIComponent(userId)}&select=retake,improve`,
+      { headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    if (!rows.length) return null;
+    return { retake: rows[0].retake || [], improve: rows[0].improve || [] };
+  } catch(e) { return null; }
+}
+
+async function _riSaveManualToSupa(userId, retakeArr, improveArr) {
+  try {
+    await fetch(`${_RI_SUPA}/rest/v1/student_manual_courses`, {
+      method:  'POST',
+      headers: {
+        'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({
+        student_id: userId,
+        retake:     retakeArr,
+        improve:    improveArr,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch(e) {}
+}
+
+/* Shared helper — update localStorage, Supabase, _riData, re-render */
+function _riMutateManual(code, action, type) {
+  /* action: 'add' | 'remove'   type: 'retake' | 'improve' */
+  const codeUp = code.trim().toUpperCase();
+  const d = window._riData;
+  if (!d) return;
+
+  const retakeArr  = [...d.manualRetake];
+  const improveArr = [...d.manualImprove];
+
+  /* Remove from both first to avoid duplicates */
+  const rIdx = retakeArr.indexOf(codeUp);
+  if (rIdx > -1) retakeArr.splice(rIdx, 1);
+  const iIdx = improveArr.indexOf(codeUp);
+  if (iIdx > -1) improveArr.splice(iIdx, 1);
+
+  if (action === 'add') {
+    if (type === 'retake') retakeArr.push(codeUp);
+    else                   improveArr.push(codeUp);
+  }
+
+  localStorage.setItem('lu62b_manual_retake',  JSON.stringify(retakeArr));
+  localStorage.setItem('lu62b_manual_improve', JSON.stringify(improveArr));
+  if (d.userId) _riSaveManualToSupa(d.userId, retakeArr, improveArr);
+
+  d.manualRetake  = new Set(retakeArr);
+  d.manualImprove = new Set(improveArr);
+  d.retakeList    = [...new Set([...d.apiRetake,  ...d.manualRetake])].sort();
+  d.improveList   = [...new Set([...d.apiImprove, ...d.manualImprove])].sort();
+
+  /* Update tab count badges */
+  const cntR = document.getElementById('ri-cnt-retake');
+  const cntI = document.getElementById('ri-cnt-improve');
+  if (cntR) cntR.textContent = d.retakeList.length;
+  if (cntI) cntI.textContent = d.improveList.length;
+
+  /* Re-render active tab */
+  riSwitchTab(_riActiveTab);
+
+  /* Refresh search result if same code is visible */
+  const srEl = document.getElementById('ri-search-result');
+  if (srEl && srEl.dataset.code === codeUp) _riRenderSearchResult(srEl, codeUp);
+}
+
+window._riAddManual    = (code, type) => _riMutateManual(code, 'add',    type);
+window._riRemoveManual = (code, type) => _riMutateManual(code, 'remove', type);
+
+/* ══════════════════════════════════════════════
+   RESULT API — fetch retake/improve from grades
+   ══════════════════════════════════════════════ */
+
 async function _riGetCodes(userId, dob) {
-  /* Reuse all-course.js function if it's already loaded */
   if (typeof _acFetchRetakeCodes === 'function') return _acFetchRetakeCodes();
 
   const cached = () => ({
     retake:  new Set(JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]')),
     improve: new Set(JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]')),
   });
-
   if (!userId || !dob) return cached();
 
   try {
@@ -41,7 +135,6 @@ async function _riGetCodes(userId, dob) {
         if (!t.trimStart().startsWith('<')) { text = t; break; }
       } catch(e) {}
     }
-
     if (!text) return cached();
     const data = JSON.parse(text);
     if (!data?.success) return cached();
@@ -67,7 +160,10 @@ async function _riGetCodes(userId, dob) {
   } catch(e) { return cached(); }
 }
 
-/* ── Scan ALL day tabs → build section-course-slot map + 62B busy times ── */
+/* ══════════════════════════════════════════════
+   ROUTINE SCAN — all sections + 62B busy map
+   ══════════════════════════════════════════════ */
+
 async function _riBuildRoutineData(routineSheetId) {
   const dayResults = await Promise.all(
     ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null))
@@ -75,8 +171,8 @@ async function _riBuildRoutineData(routineSheetId) {
 
   /* sectionCourseSlots["62-A"]["CSE-3214"] = [{day, time, initials, room}] */
   const sectionCourseSlots = {};
-  /* busy62B["SATURDAY"] = Set of timeToMin values */
-  const busy62B = {};
+  /* busy62BMap["SATURDAY"][timeInMin] = { code: "CSE-3214" }  ← stores clash course */
+  const busy62BMap = {};
 
   ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
     const data = dayResults[idx];
@@ -85,7 +181,6 @@ async function _riBuildRoutineData(routineSheetId) {
     const cols = data.table.cols || [];
     if (!rows.length) return;
 
-    /* Detect time slot headers */
     let timeSlots = cols.slice(3).map(c => (c.label || '').trim());
     let dataStart = 0;
     if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
@@ -97,7 +192,7 @@ async function _riBuildRoutineData(routineSheetId) {
       }
     }
 
-    /* Find break slot by majority vote */
+    /* Break slot detection by majority vote */
     const breakCounts = {};
     for (let r = dataStart; r < rows.length; r++) {
       (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '').slice(3)
@@ -108,7 +203,6 @@ async function _riBuildRoutineData(routineSheetId) {
       if (cnt > maxBrk) { maxBrk = cnt; breakSlotIdx = parseInt(k); }
     });
 
-    /* Scan all rows */
     for (let r = dataStart; r < rows.length; r++) {
       const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
       const batch   = cells[1] || '';
@@ -122,15 +216,13 @@ async function _riBuildRoutineData(routineSheetId) {
         if (!parsed?.code) return;
         const time = timeSlots[i] || '';
         if (!time || !/\d+:\d+/.test(time)) return;
-
         const codeUp = parsed.code.toUpperCase();
+
+        /* Section course slots */
         if (!sectionCourseSlots[key]) sectionCourseSlots[key] = {};
         if (!sectionCourseSlots[key][codeUp]) sectionCourseSlots[key][codeUp] = [];
-
-        /* De-duplicate same day+time for same section+course */
-        const alreadyHas = sectionCourseSlots[key][codeUp]
-          .some(s => s.day === dayName && s.time === time);
-        if (!alreadyHas) {
+        const dup = sectionCourseSlots[key][codeUp].some(s => s.day === dayName && s.time === time);
+        if (!dup) {
           sectionCourseSlots[key][codeUp].push({
             day: dayName, time,
             initials: parsed.initials || '',
@@ -138,27 +230,35 @@ async function _riBuildRoutineData(routineSheetId) {
           });
         }
 
-        /* Build 62B busy map */
+        /* 62B busy map — stores the course code at each slot */
         if (batch === '62' && section === 'B') {
-          if (!busy62B[dayName]) busy62B[dayName] = new Set();
-          busy62B[dayName].add(timeToMin(time));
+          if (!busy62BMap[dayName]) busy62BMap[dayName] = {};
+          busy62BMap[dayName][timeToMin(time)] = { code: codeUp };
         }
       });
     }
   });
 
-  return { sectionCourseSlots, busy62B };
+  return { sectionCourseSlots, busy62BMap };
 }
 
-/* ── Main loader ── */
-async function loadRetakeImprove(body) {
-  body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Retake &amp; Improve data...</div>';
+/* ══════════════════════════════════════════════
+   MAIN LOADER
+   ══════════════════════════════════════════════ */
 
-  const user    = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
-  const dob     = user?.id ? localStorage.getItem(`lu62b_dob_${user.id}`) : null;
+async function loadRetakeImprove(body) {
+  body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Retake &amp; Improve...</div>';
+
+  const user     = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+  const dob      = user?.id ? localStorage.getItem(`lu62b_dob_${user.id}`) : null;
   const needsDob = user?.id && !dob;
 
   try {
+    /* Load manual courses: localStorage first, then sync from Supabase */
+    const localManual = _riManualLocal();
+    let manualRetake  = localManual.retake;
+    let manualImprove = localManual.improve;
+
     const [myCodes, courseOfferData, cpgData, routineSheetId, sem] = await Promise.all([
       _riGetCodes(user?.id, dob),
       fetchSheet('LU_Course_Offer').catch(() => null),
@@ -167,11 +267,35 @@ async function loadRetakeImprove(body) {
       getSemesterLabel(),
     ]);
 
-    const { sectionCourseSlots, busy62B } = await _riBuildRoutineData(routineSheetId);
+    /* Supabase sync for manual courses (background, non-blocking) */
+    if (user?.id) {
+      _riLoadManualFromSupa(user.id).then(supa => {
+        if (!supa) return;
+        /* Merge: Supabase wins (it may have data from another device) */
+        const merged = {
+          retake:  new Set([...manualRetake,  ...supa.retake]),
+          improve: new Set([...manualImprove, ...supa.improve]),
+        };
+        localStorage.setItem('lu62b_manual_retake',  JSON.stringify([...merged.retake]));
+        localStorage.setItem('lu62b_manual_improve', JSON.stringify([...merged.improve]));
+        if (window._riData) {
+          window._riData.manualRetake  = merged.retake;
+          window._riData.manualImprove = merged.improve;
+          window._riData.retakeList    = [...new Set([...window._riData.apiRetake,  ...merged.retake])].sort();
+          window._riData.improveList   = [...new Set([...window._riData.apiImprove, ...merged.improve])].sort();
+          const cntR = document.getElementById('ri-cnt-retake');
+          const cntI = document.getElementById('ri-cnt-improve');
+          if (cntR) cntR.textContent = window._riData.retakeList.length;
+          if (cntI) cntI.textContent = window._riData.improveList.length;
+          riSwitchTab(_riActiveTab);
+        }
+      });
+    }
 
-    /* ── Build course name map ── */
+    const { sectionCourseSlots, busy62BMap } = await _riBuildRoutineData(routineSheetId);
+
+    /* ── Course name map ── */
     const courseNameMap = {};
-
     if (cpgData) {
       sheetRows(cpgData)
         .filter(r => r[1] && !['code', 'title', 'course'].includes((r[1] || '').toLowerCase()))
@@ -180,7 +304,6 @@ async function loadRetakeImprove(body) {
           if (code) courseNameMap[code] = r[0]?.trim() || '';
         });
     }
-
     if (courseOfferData) {
       const offerRows = (courseOfferData.table?.rows || []).map(r =>
         (r.c || []).map(c => {
@@ -193,13 +316,13 @@ async function loadRetakeImprove(body) {
       const startIdx = (firstVal === 'batch' || firstVal === 'semester') ? 1 : 0;
       for (let i = startIdx; i < offerRows.length; i++) {
         const r = offerRows[i];
-        const code  = (r[1] || '').trim().toUpperCase();
+        const code = (r[1] || '').trim().toUpperCase();
         const title = (r[2] || '').trim();
         if (code && title) courseNameMap[code] = title;
       }
     }
 
-    /* ── For a given course, find all sections + conflict info ── */
+    /* ── Build section list for any course code ── */
     function getSectionsForCourse(codeUp) {
       const result = [];
       for (const [key, courses] of Object.entries(sectionCourseSlots)) {
@@ -209,18 +332,23 @@ async function loadRetakeImprove(body) {
         const section = key.slice(dashIdx + 1);
         const slots   = courses[codeUp];
 
-        /* Conflict: any slot's day+time is in 62B busy map */
-        const clashSlots = slots.filter(s => busy62B[s.day]?.has(timeToMin(s.time)));
+        const clashSlots = slots.filter(s => busy62BMap[s.day]?.[timeToMin(s.time)]);
         const hasConflict = clashSlots.length > 0;
 
-        /* Most common initials in this section's slots */
+        /* Which 62B courses clash (for display) */
+        const clashCourseNames = [...new Set(
+          clashSlots.map(s => {
+            const info = busy62BMap[s.day]?.[timeToMin(s.time)];
+            return courseNameMap[info?.code] || info?.code || '';
+          }).filter(Boolean)
+        )];
+
         const initCount = {};
         slots.forEach(s => { if (s.initials) initCount[s.initials] = (initCount[s.initials] || 0) + 1; });
         const initials = Object.entries(initCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 
-        result.push({ batch, section, slots, hasConflict, clashSlots, initials });
+        result.push({ batch, section, slots, hasConflict, clashCourseNames, initials });
       }
-      /* Sort: conflict-free first, then by batch, then section */
       result.sort((a, b) => {
         if (a.hasConflict !== b.hasConflict) return a.hasConflict ? 1 : -1;
         if (a.batch !== b.batch) return a.batch.localeCompare(b.batch);
@@ -229,17 +357,25 @@ async function loadRetakeImprove(body) {
       return result;
     }
 
-    const { retake: retakeCodes, improve: improveCodes } = myCodes;
-    const retakeList  = [...retakeCodes].sort();
-    const improveList = [...improveCodes].sort();
+    const { retake: apiRetake, improve: apiImprove } = myCodes;
+    const retakeList  = [...new Set([...apiRetake,  ...manualRetake])].sort();
+    const improveList = [...new Set([...apiImprove, ...manualImprove])].sort();
 
-    /* ── DOB prompt card ── */
+    /* ── Store global data ── */
+    window._riData = {
+      apiRetake, apiImprove, manualRetake, manualImprove,
+      retakeList, improveList,
+      getSectionsForCourse, courseNameMap, sem,
+      busy62BMap, userId: user?.id || null,
+    };
+
+    /* ── DOB prompt ── */
     const dobCard = needsDob ? `
       <div class="ac-dob-card" id="ri-dob-card" style="margin-bottom:18px;">
         <div class="ac-dob-icon"><i class="fa-solid fa-calendar-check"></i></div>
         <div class="ac-dob-text">
           <strong>Enter your date of birth</strong>
-          <span>Required to fetch your results and detect retake / improve courses.</span>
+          <span>Required to detect retake &amp; improve courses from your results.</span>
         </div>
         <div class="ac-dob-row">
           <input type="date" id="ri-dob-input" max="${new Date().toISOString().split('T')[0]}">
@@ -250,8 +386,8 @@ async function loadRetakeImprove(body) {
     body.innerHTML = `
       ${dobCard}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
-        <button class="ri-tab ${_riActiveTab === 'retake' ? 'ri-tab-active' : ''}"
-          onclick="riSwitchTab('retake')" id="ri-tab-retake">
+        <button class="ri-tab ${_riActiveTab === 'retake'  ? 'ri-tab-active' : ''}"
+          onclick="riSwitchTab('retake')"  id="ri-tab-retake">
           <i class="fa-solid fa-rotate-right"></i>
           Retake <span class="ri-tab-count" id="ri-cnt-retake">${retakeList.length}</span>
         </button>
@@ -260,13 +396,25 @@ async function loadRetakeImprove(body) {
           <i class="fa-solid fa-arrow-trend-up"></i>
           Improve <span class="ri-tab-count" id="ri-cnt-improve">${improveList.length}</span>
         </button>
+        <div style="flex:1;min-width:160px;display:flex;gap:8px;align-items:center;margin-left:auto;">
+          <input type="text" id="ri-search-input" placeholder="Search any course code…"
+            style="flex:1;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.05);
+            border:1px solid var(--border);color:var(--text);font-size:0.82rem;
+            font-family:'Inter',sans-serif;outline:none;text-transform:uppercase;letter-spacing:0.04em;"
+            onkeydown="if(event.key==='Enter')_riDoSearch()"
+            oninput="this.value=this.value.toUpperCase()">
+          <button onclick="_riDoSearch()"
+            style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+            color:#fff;font-size:0.8rem;font-weight:700;border:none;cursor:pointer;
+            font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;">
+            <i class="fa-solid fa-magnifying-glass"></i> Search
+          </button>
+        </div>
       </div>
+      <div id="ri-search-result" style="display:none;"></div>
       <div id="ri-content"></div>`;
 
-    /* Store for tab switching & DOB refresh */
-    window._riData = { retakeList, improveList, getSectionsForCourse, courseNameMap, sem, busy62B };
-
-    /* DOB submit handler */
+    /* ── DOB submit ── */
     window._riDobSubmit = async function() {
       const input = document.getElementById('ri-dob-input');
       const dobVal = input?.value;
@@ -277,16 +425,15 @@ async function loadRetakeImprove(body) {
       try {
         await fetch(`${_RI_SUPA}/rest/v1/rpc/set_student_dob`, {
           method: 'POST',
-          headers: {
-            'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ p_student_id: user.id, p_dob: dobVal }),
         });
       } catch(e) {}
       const newCodes = await _riGetCodes(user.id, dobVal);
-      window._riData.retakeList  = [...newCodes.retake].sort();
-      window._riData.improveList = [...newCodes.improve].sort();
+      window._riData.apiRetake  = newCodes.retake;
+      window._riData.apiImprove = newCodes.improve;
+      window._riData.retakeList  = [...new Set([...newCodes.retake,  ...window._riData.manualRetake])].sort();
+      window._riData.improveList = [...new Set([...newCodes.improve, ...window._riData.manualImprove])].sort();
       const cntR = document.getElementById('ri-cnt-retake');
       const cntI = document.getElementById('ri-cnt-improve');
       if (cntR) cntR.textContent = window._riData.retakeList.length;
@@ -295,21 +442,27 @@ async function loadRetakeImprove(body) {
       riSwitchTab(_riActiveTab);
     };
 
-    /* Tab switch handler */
+    /* ── Search handler ── */
+    window._riDoSearch = function() {
+      const input = document.getElementById('ri-search-input');
+      const code  = (input?.value || '').trim().toUpperCase();
+      if (!code) { if (input) input.style.borderColor = '#f43f5e'; return; }
+      if (input) input.style.borderColor = '';
+      const srEl = document.getElementById('ri-search-result');
+      if (!srEl) return;
+      srEl.dataset.code = code;
+      srEl.style.display = 'block';
+      _riRenderSearchResult(srEl, code);
+    };
+
+    /* ── Tab switch ── */
     window.riSwitchTab = function(tab) {
       _riActiveTab = tab;
       document.querySelectorAll('.ri-tab').forEach(t => t.classList.remove('ri-tab-active'));
       document.getElementById(`ri-tab-${tab}`)?.classList.add('ri-tab-active');
-      const d = window._riData;
+      const d   = window._riData;
       const list = tab === 'retake' ? d.retakeList : d.improveList;
-      _riRenderContent(
-        document.getElementById('ri-content'),
-        list,
-        tab === 'retake',
-        d.getSectionsForCourse,
-        d.courseNameMap,
-        d.sem
-      );
+      _riRenderContent(document.getElementById('ri-content'), list, tab === 'retake');
     };
 
     riSwitchTab(_riActiveTab);
@@ -324,77 +477,161 @@ async function loadRetakeImprove(body) {
   }
 }
 
-/* ── Render course cards for one tab ── */
-function _riRenderContent(el, codeList, isRetake, getSectionsForCourse, courseNameMap, sem) {
+/* ══════════════════════════════════════════════
+   SEARCH RESULT CARD
+   ══════════════════════════════════════════════ */
+
+function _riRenderSearchResult(el, code) {
+  const d = window._riData;
+  if (!d) return;
+  const codeUp   = code.toUpperCase();
+  const title    = d.courseNameMap[codeUp] || '';
+  const color    = courseColor(codeUp);
+  const sections = d.getSectionsForCourse(codeUp);
+
+  const inApiRetake   = d.apiRetake.has(codeUp);
+  const inApiImprove  = d.apiImprove.has(codeUp);
+  const inManualRetake  = d.manualRetake.has(codeUp);
+  const inManualImprove = d.manualImprove.has(codeUp);
+  const inRetake  = inApiRetake  || inManualRetake;
+  const inImprove = inApiImprove || inManualImprove;
+
+  /* Save / remove buttons */
+  function saveBtn(type) {
+    const isIn     = type === 'retake' ? inRetake  : inImprove;
+    const isManual = type === 'retake' ? inManualRetake : inManualImprove;
+    const isApi    = type === 'retake' ? inApiRetake    : inApiImprove;
+    const label    = type === 'retake' ? 'Retake' : 'Improve';
+    const clr      = type === 'retake' ? '#f43f5e' : '#fb923c';
+    const bg       = type === 'retake' ? 'rgba(244,63,94,.15)' : 'rgba(251,146,60,.15)';
+    const bord     = type === 'retake' ? 'rgba(244,63,94,.3)'  : 'rgba(251,146,60,.3)';
+
+    if (isApi) {
+      return `<span style="font-size:0.75rem;color:${clr};font-weight:600;padding:6px 12px;
+        border-radius:8px;background:${bg};border:1px solid ${bord};display:inline-flex;align-items:center;gap:5px;">
+        <i class="fa-solid fa-check-circle"></i> Already in ${label} (from results)
+      </span>`;
+    }
+    if (isManual) {
+      return `<button onclick="_riRemoveManual('${codeUp}','${type}')"
+        style="font-size:0.75rem;color:${clr};font-weight:600;padding:6px 12px;border-radius:8px;
+        background:${bg};border:1px solid ${bord};cursor:pointer;font-family:'Inter',sans-serif;
+        display:inline-flex;align-items:center;gap:5px;">
+        <i class="fa-solid fa-bookmark"></i> Saved in ${label}
+        &nbsp;<span style="opacity:0.6;font-size:0.7rem;">× Remove</span>
+      </button>`;
+    }
+    return `<button onclick="_riAddManual('${codeUp}','${type}')"
+      style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;padding:6px 12px;
+      border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+      cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;
+      transition:all 0.15s;" onmouseover="this.style.borderColor='${clr}';this.style.color='${clr}'"
+      onmouseout="this.style.borderColor='';this.style.color=''">
+      <i class="fa-solid fa-plus"></i> Add to ${label}
+    </button>`;
+  }
+
+  let tableHtml = '';
+  if (!sections.length) {
+    tableHtml = `<div style="font-size:0.8rem;color:var(--text-secondary);padding:10px 0;
+      font-style:italic;display:flex;align-items:center;gap:8px;">
+      <i class="fa-solid fa-circle-info" style="opacity:0.4;"></i>
+      Not found in the current routine — may not be offered this semester.
+    </div>`;
+  } else {
+    tableHtml = _riSectionTable(sections, d.courseNameMap);
+  }
+
+  el.innerHTML = `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(124,58,237,0.3);
+      border-left:3px solid ${color};border-radius:14px;padding:18px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:0.78rem;font-weight:800;padding:3px 10px;border-radius:6px;
+            background:${color}1a;color:${color};">${escH(codeUp)}</span>
+          ${title ? `<span style="font-size:0.9rem;font-weight:700;color:var(--text);">${escH(title)}</span>` : ''}
+        </div>
+        <button onclick="document.getElementById('ri-search-result').style.display='none'"
+          style="font-size:0.75rem;color:var(--text-secondary);background:none;border:none;
+          cursor:pointer;padding:4px 8px;border-radius:6px;">✕ Close</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        ${saveBtn('retake')}
+        ${saveBtn('improve')}
+      </div>
+      ${tableHtml}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   TAB CONTENT RENDERER
+   ══════════════════════════════════════════════ */
+
+function _riRenderContent(el, codeList, isRetake) {
   if (!el) return;
+  const d = window._riData;
 
   if (!codeList.length) {
-    const [icon, clr, msg, sub] = isRetake
-      ? ['circle-check', '#34d399', 'No retake courses — great job!', 'No failed courses detected. If you think this is wrong, make sure your date of birth is set correctly.']
-      : ['star',         '#fbbf24', 'No improve courses found.',       'No low-grade courses detected. If you think this is wrong, make sure your date of birth is set correctly.'];
+    const [icon, clr, msg] = isRetake
+      ? ['circle-check', '#34d399', 'No retake courses — great job!']
+      : ['star',         '#fbbf24', 'No improve courses found.'];
     el.innerHTML = `<div class="info-placeholder" style="padding:40px 20px;">
       <i class="fa-solid fa-${icon}" style="color:${clr};opacity:0.35;font-size:2.2rem;display:block;margin-bottom:14px;"></i>
       <p style="font-weight:700;color:var(--text);margin-bottom:6px;">${msg}</p>
-      <p style="font-size:0.78rem;max-width:340px;margin:0 auto;">${sub}</p>
+      <p style="font-size:0.78rem;max-width:340px;margin:0 auto;">
+        If you think this is wrong, make sure your date of birth is set correctly above.
+      </p>
     </div>`;
     return;
   }
 
   const cards = codeList.map(code => {
-    const title    = courseNameMap[code] || '';
-    const sections = getSectionsForCourse(code);
-    const color    = courseColor(code);
+    const codeUp   = code.toUpperCase();
+    const title    = d.courseNameMap[codeUp] || '';
+    const color    = courseColor(codeUp);
+    const sections = d.getSectionsForCourse(codeUp);
+
+    const isManual  = isRetake ? d.manualRetake.has(codeUp) : d.manualImprove.has(codeUp);
+    const isApiCode = isRetake ? d.apiRetake.has(codeUp)    : d.apiImprove.has(codeUp);
+
     const freeCount  = sections.filter(s => !s.hasConflict).length;
     const clashCount = sections.filter(s =>  s.hasConflict).length;
 
-    let bodyHtml = '';
+    const tagClass  = isRetake ? 'retake'  : 'improve';
+    const tagLabel  = isRetake ? 'RETAKE'  : 'IMPROVE';
+    const typeStr   = isRetake ? 'retake'  : 'improve';
 
+    const manualBadge = isManual
+      ? `<span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:5px;
+          background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);
+          display:inline-flex;align-items:center;gap:4px;">
+          <i class="fa-solid fa-pen-to-square" style="font-size:0.55rem;"></i> Manual
+        </span>` : '';
+
+    const removeBtn = isManual
+      ? `<button onclick="_riRemoveManual('${codeUp}','${typeStr}')"
+          style="margin-left:auto;font-size:0.7rem;color:var(--text-secondary);
+          background:rgba(255,255,255,0.04);border:1px solid var(--border);
+          border-radius:6px;padding:3px 9px;cursor:pointer;font-family:'Inter',sans-serif;
+          transition:all 0.15s;" title="Remove from ${tagLabel}"
+          onmouseover="this.style.color='#f43f5e';this.style.borderColor='rgba(244,63,94,0.4)'"
+          onmouseout="this.style.color='';this.style.borderColor=''">
+          × Remove
+        </button>` : '';
+
+    let bodyHtml = '';
     if (!sections.length) {
-      bodyHtml = `<div style="font-size:0.8rem;color:var(--text-secondary);padding:10px 0;font-style:italic;display:flex;align-items:center;gap:8px;">
+      bodyHtml = `<div style="font-size:0.8rem;color:var(--text-secondary);padding:10px 0;
+        font-style:italic;display:flex;align-items:center;gap:8px;">
         <i class="fa-solid fa-circle-info" style="opacity:0.4;"></i>
         Not found in the current routine — may not be offered this semester.
       </div>`;
     } else {
       const summaryBadges = [
         freeCount  ? `<span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(52,211,153,.14);color:#34d399;border:1px solid rgba(52,211,153,.28);">${freeCount} Free</span>` : '',
-        clashCount ? `<span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(244,63,94,.14);color:#f43f5e;border:1px solid rgba(244,63,94,.28);">${clashCount} Clash with 62B</span>` : '',
+        clashCount ? `<span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(244,63,94,.14);color:#f43f5e;border:1px solid rgba(244,63,94,.28);">${clashCount} Clash</span>` : '',
       ].filter(Boolean).join(' ');
-
-      const tableRows = sections.map(sec => {
-        /* Group slots by day */
-        const dayGroups = {};
-        sec.slots.forEach(s => {
-          if (!dayGroups[s.day]) dayGroups[s.day] = [];
-          dayGroups[s.day].push(s.time);
-        });
-        const schedule = Object.entries(dayGroups)
-          .map(([d, times]) => `<strong>${escH(DAY_DISPLAY[d] || d)}</strong> ${times.map(escH).join(', ')}`)
-          .join(' &nbsp;·&nbsp; ');
-
-        const statusHtml = sec.hasConflict
-          ? `<span style="color:#f43f5e;font-weight:700;font-size:0.72rem;white-space:nowrap;">
-               <i class="fa-solid fa-triangle-exclamation"></i> Clash
-             </span>`
-          : `<span style="color:#34d399;font-weight:700;font-size:0.72rem;white-space:nowrap;">
-               <i class="fa-solid fa-check-circle"></i> Free
-             </span>`;
-
-        const rowBg = sec.hasConflict ? 'rgba(244,63,94,.04)' : 'rgba(52,211,153,.03)';
-        const borderLeft = sec.hasConflict ? '2px solid rgba(244,63,94,.3)' : '2px solid rgba(52,211,153,.25)';
-
-        return `<tr style="background:${rowBg};border-left:${borderLeft};">
-          <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);">${escH(sec.batch)}</td>
-          <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;">${escH(sec.section)}</td>
-          <td style="padding:9px 12px;">
-            ${sec.initials
-              ? `<span style="font-family:monospace;font-size:0.82rem;font-weight:700;color:#c4b5fd;background:rgba(196,181,253,.1);padding:2px 7px;border-radius:6px;">${escH(sec.initials)}</span>`
-              : `<span style="opacity:0.3;font-size:0.78rem;">—</span>`}
-          </td>
-          <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);">${schedule}</td>
-          <td style="padding:9px 14px;">${statusHtml}</td>
-        </tr>`;
-      }).join('');
-
       bodyHtml = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
           <span style="font-size:0.72rem;color:var(--text-secondary);">
@@ -402,33 +639,19 @@ function _riRenderContent(el, codeList, isRetake, getSectionsForCourse, courseNa
           </span>
           ${summaryBadges}
         </div>
-        <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.03);">
-                ${['Batch','Section','Teacher','Schedule (vs 62B)','Status'].map(h =>
-                  `<th style="padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
-                    text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
-                    border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`
-                ).join('')}
-              </tr>
-            </thead>
-            <tbody>${tableRows}</tbody>
-          </table>
-        </div>`;
+        ${_riSectionTable(sections, d.courseNameMap)}`;
     }
-
-    const tagClass = isRetake ? 'retake' : 'improve';
-    const tagLabel = isRetake ? 'RETAKE' : 'IMPROVE';
 
     return `
       <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);
         border-top:3px solid ${color};border-radius:14px;padding:18px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
           <span style="font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:6px;
-            background:${color}1a;color:${color};letter-spacing:0.04em;">${escH(code)}</span>
+            background:${color}1a;color:${color};letter-spacing:0.04em;">${escH(codeUp)}</span>
           <span class="ac-retake-tag ${tagClass}">${tagLabel}</span>
+          ${manualBadge}
           ${title ? `<span style="font-size:0.92rem;font-weight:700;color:var(--text);">${escH(title)}</span>` : ''}
+          ${removeBtn}
         </div>
         ${bodyHtml}
       </div>`;
@@ -437,10 +660,75 @@ function _riRenderContent(el, codeList, isRetake, getSectionsForCourse, courseNa
   el.innerHTML = `
     <div class="rt-sync" style="margin-bottom:16px;">
       <div class="rt-sync-dot"></div>
-      <span>${escH(sem)} &nbsp;·&nbsp; ${isRetake ? 'Retake' : 'Improve'} sections &nbsp;·&nbsp;
+      <span>${escH(d.sem)} &nbsp;·&nbsp; ${isRetake ? 'Retake' : 'Improve'} sections &nbsp;·&nbsp;
         <i class="fa-solid fa-shield-check" style="color:#34d399;margin-right:3px;"></i>
-        Conflict checked against 62B schedule
+        Conflict checked vs 62B schedule
       </span>
     </div>
     ${cards.join('')}`;
+}
+
+/* ══════════════════════════════════════════════
+   SHARED: section table (used by both tab + search)
+   ══════════════════════════════════════════════ */
+
+function _riSectionTable(sections, courseNameMap) {
+  const rows = sections.map(sec => {
+    /* Group slots by day */
+    const dayGroups = {};
+    sec.slots.forEach(s => {
+      if (!dayGroups[s.day]) dayGroups[s.day] = [];
+      dayGroups[s.day].push(s.time);
+    });
+    const schedule = Object.entries(dayGroups)
+      .map(([d, times]) => `<strong>${escH(DAY_DISPLAY[d] || d)}</strong> ${times.map(escH).join(', ')}`)
+      .join(' &nbsp;·&nbsp; ');
+
+    let statusHtml;
+    if (sec.hasConflict) {
+      const clashWith = sec.clashCourseNames.length
+        ? `<span style="font-size:0.65rem;color:var(--text-secondary);display:block;margin-top:2px;line-height:1.3;">
+            ${escH(sec.clashCourseNames[0])}
+           </span>`
+        : '';
+      statusHtml = `<span style="color:#f43f5e;font-weight:700;font-size:0.72rem;white-space:nowrap;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Clash
+        </span>${clashWith}`;
+    } else {
+      statusHtml = `<span style="color:#34d399;font-weight:700;font-size:0.72rem;white-space:nowrap;">
+          <i class="fa-solid fa-check-circle"></i> Free
+        </span>`;
+    }
+
+    const rowBg      = sec.hasConflict ? 'rgba(244,63,94,.04)' : 'rgba(52,211,153,.03)';
+    const borderLeft = sec.hasConflict ? '2px solid rgba(244,63,94,.3)' : '2px solid rgba(52,211,153,.25)';
+
+    return `<tr style="background:${rowBg};border-left:${borderLeft};">
+      <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);">${escH(sec.batch)}</td>
+      <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;">${escH(sec.section)}</td>
+      <td style="padding:9px 12px;">
+        ${sec.initials
+          ? `<span style="font-family:monospace;font-size:0.82rem;font-weight:700;color:#c4b5fd;
+              background:rgba(196,181,253,.1);padding:2px 7px;border-radius:6px;">${escH(sec.initials)}</span>`
+          : `<span style="opacity:0.3;font-size:0.78rem;">—</span>`}
+      </td>
+      <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);">${schedule}</td>
+      <td style="padding:9px 14px;">${statusHtml}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:rgba(255,255,255,0.03);">
+          ${['Batch','Sec','Teacher','Schedule','Status vs 62B'].map(h =>
+            `<th style="padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
+              text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
+              border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`
+          ).join('')}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
