@@ -507,11 +507,14 @@ async function loadRetakeImprove(body) {
       if (cached && typeof cached === 'object') enrollments = cached;
     } catch(e) {}
 
+    /* Days with NO regular 62B class = student's off days */
+    const offDays = new Set(ROUTINE_DAY_NAMES.filter(d => !busy62BMap[d]));
+
     window._riData = {
       apiRetake, apiImprove, manualRetake, manualImprove,
       retakeList, improveList,
       getSectionsForCourse, courseNameMap, nameToCode, initialsMap, sem,
-      busy62BMap, userId: user?.id || null, enrollments,
+      busy62BMap, offDays, userId: user?.id || null, enrollments,
     };
 
     /* Background: fetch fresh enrollments from Supabase and re-render */
@@ -958,8 +961,16 @@ function _riRenderMyList(el) {
       if (!dayGroups[s.day]) dayGroups[s.day] = [];
       dayGroups[s.day].push(s.time);
     });
+    const mlOffDays   = d?.offDays || new Set();
     const scheduleStr = Object.entries(dayGroups)
-      .map(([day, times]) => `<strong>${escH(DAY_DISPLAY[day] || day)}</strong> ${times.map(escH).join(', ')}`)
+      .map(([day, times]) => {
+        const offBadge = mlOffDays.has(day)
+          ? `<span style="font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:4px;
+              background:rgba(52,211,153,.15);color:#34d399;letter-spacing:0.04em;
+              vertical-align:middle;margin-left:3px;">OFF</span>`
+          : '';
+        return `<strong>${escH(DAY_DISPLAY[day] || day)}</strong>${offBadge} ${times.map(escH).join(', ')}`;
+      })
       .join(' &nbsp;·&nbsp; ');
 
     const teacherFull = (d?.initialsMap || {})[e.teacher] || '';
@@ -1020,8 +1031,16 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       if (!dayGroups[s.day]) dayGroups[s.day] = [];
       dayGroups[s.day].push(s.time);
     });
+    const offDays  = d?.offDays || new Set();
     const schedule = Object.entries(dayGroups)
-      .map(([day, times]) => `<strong>${escH(DAY_DISPLAY[day] || day)}</strong> ${times.map(escH).join(', ')}`)
+      .map(([day, times]) => {
+        const offBadge = offDays.has(day)
+          ? `<span style="font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:4px;
+              background:rgba(52,211,153,.15);color:#34d399;letter-spacing:0.04em;
+              vertical-align:middle;margin-left:3px;">OFF</span>`
+          : '';
+        return `<strong>${escH(DAY_DISPLAY[day] || day)}</strong>${offBadge} ${times.map(escH).join(', ')}`;
+      })
       .join(' &nbsp;·&nbsp; ');
 
     /* Check enrollment-vs-enrollment conflict first (needed for statusHtml) */
