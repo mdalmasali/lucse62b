@@ -396,6 +396,18 @@ async function loadRoutine(body) {
     /* Load excluded courses from localStorage immediately */
     const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
     if (user?.id) {
+      /* Save full 62B course list for profile's My Courses card */
+      try {
+        const codeMap = new Map();
+        Object.values(schedule).forEach(slots =>
+          slots.forEach(s => { if (!s.isBreak && s.code) codeMap.set(s.code, courseInfo[s.code]?.name || ''); })
+        );
+        localStorage.setItem(
+          `lu62b_62bcourses_${user.id}`,
+          JSON.stringify(Array.from(codeMap.entries()).map(([code, name]) => ({ code, name })))
+        );
+      } catch(e) {}
+
       window._rtExcluded = _rtLocalExcluded(user.id);
       /* Sync from Supabase in background */
       _rtLoadExcludedFromSupa(user.id).then(() => {

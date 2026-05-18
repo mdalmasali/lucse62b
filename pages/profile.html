@@ -1941,23 +1941,45 @@
       }
 
       try {
+        /* Fetch retake/improve enrollments from Supabase */
         const r = await fetch(
           `${SUPA_URL}/rest/v1/student_retake_enrollments?student_id=eq.${encodeURIComponent(currentUser.id)}&select=course_code,course_name,batch,section,teacher,type&order=enrolled_at.asc`,
           { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
         );
-        const list = r.ok ? await r.json() : [];
+        const enrolled = r.ok ? await r.json() : [];
 
-        if (!list.length) {
-          sub.textContent = 'No courses enrolled';
-          body.innerHTML = `<div style="text-align:center;padding:18px 0;opacity:0.4;font-size:0.78rem;color:var(--text-secondary);">
-            Go to <strong>Retake &amp; Improve</strong> and enroll in a section.
+        /* Regular 62B courses from localStorage (saved by routine.js on load) */
+        let all62B = [];
+        try { all62B = JSON.parse(localStorage.getItem(`lu62b_62bcourses_${currentUser.id}`) || '[]'); } catch(e) {}
+        let excluded = new Set();
+        try { excluded = new Set(JSON.parse(localStorage.getItem(`lu62b_excl_${currentUser.id}`) || '[]')); } catch(e) {}
+        const enrolledCodes = new Set(enrolled.map(e => e.course_code));
+        const regularCourses = all62B.filter(c => !excluded.has(c.code) && !enrolledCodes.has(c.code));
+
+        const total = regularCourses.length + enrolled.length;
+
+        if (!total) {
+          sub.textContent = 'Visit Class Routine to see your courses';
+          body.innerHTML = `<div style="text-align:center;padding:18px 0;opacity:0.4;font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
+            Open <strong>Class Routine</strong> once to load your course list.
           </div>`;
           return;
         }
 
-        sub.textContent = `${list.length} course${list.length !== 1 ? 's' : ''} enrolled`;
-        body.innerHTML = list.map(e => {
-          const isRetake = e.type === 'retake';
+        sub.textContent = `${total} course${total !== 1 ? 's' : ''}`;
+
+        const regularHtml = regularCourses.map(c => `
+          <div class="mc-row">
+            <div class="mc-left">
+              <div><span class="mc-code">${c.code}</span></div>
+              ${c.name ? `<div class="mc-name" title="${c.name}">${c.name}</div>` : ''}
+              <div class="mc-meta">62B · Regular</div>
+            </div>
+            <span class="mc-badge" style="background:rgba(99,102,241,.15);color:#818cf8;">62B</span>
+          </div>`).join('');
+
+        const enrolledHtml = enrolled.map(e => {
+          const isRetake  = e.type === 'retake';
           const badgeColor = isRetake ? '#f43f5e' : '#fb923c';
           const badgeBg    = isRetake ? 'rgba(244,63,94,.15)' : 'rgba(251,146,60,.15)';
           const label      = isRetake ? 'RETAKE' : 'IMPROVE';
@@ -1971,6 +1993,8 @@
             <span class="mc-badge" style="background:${badgeBg};color:${badgeColor};">${label}</span>
           </div>`;
         }).join('');
+
+        body.innerHTML = regularHtml + enrolledHtml;
       } catch(err) {
         sub.textContent = 'Could not load';
         body.innerHTML = '';
