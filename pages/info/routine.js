@@ -432,16 +432,24 @@ async function loadRoutine(body) {
 
         const tabBar = document.getElementById('rt-tab-bar');
         if (!tabBar) return;
+
+        /* Default to Improved tab since the student has enrollments */
+        _routineTab = 'improved';
+
         tabBar.innerHTML = `
           <div style="display:flex;gap:8px;">
-            <button class="ri-tab ri-tab-active" onclick="routineSwitchTab('regular')" id="rt-tab-regular">
+            <button class="ri-tab" onclick="routineSwitchTab('regular')" id="rt-tab-regular">
               <i class="fa-solid fa-calendar-week"></i> Regular
             </button>
-            <button class="ri-tab" onclick="routineSwitchTab('improved')" id="rt-tab-improved">
+            <button class="ri-tab ri-tab-active" onclick="routineSwitchTab('improved')" id="rt-tab-improved">
               <i class="fa-solid fa-rotate-right"></i> Improved
               <span class="ri-tab-count">${enrollments.length}</span>
             </button>
           </div>`;
+
+        /* Re-render grid with improved data */
+        const mainContent = document.getElementById('rt-main-content');
+        if (mainContent) mainContent.innerHTML = buildGrid(todayName);
       });
     }
 
