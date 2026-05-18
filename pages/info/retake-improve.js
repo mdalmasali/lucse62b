@@ -340,10 +340,11 @@ async function loadRetakeImprove(body) {
     let manualRetake  = localManual.retake;
     let manualImprove = localManual.improve;
 
-    const [myCodes, courseOfferData, cpgData, routineSheetId, sem] = await Promise.all([
+    const [myCodes, courseOfferData, cpgData, teacherData, routineSheetId, sem] = await Promise.all([
       _riGetCodes(user?.id, dob),
       fetchSheet('LU_Course_Offer').catch(() => null),
       fetchSheet('CPG_Courses').catch(() => null),
+      fetchSheet('CPG_Teachers').catch(() => null),
       getRoutineSheetId(),
       getSemesterLabel(),
     ]);
@@ -400,6 +401,41 @@ async function loadRetakeImprove(body) {
         const code = (r[1] || '').trim().toUpperCase();
         const title = (r[2] || '').trim();
         if (code && title) courseNameMap[code] = title;
+      }
+    }
+
+    /* ── Initials → short teacher name map ── */
+    const initialsMap = {}; /* e.g. { "ABM": "Dr. Ahmed" } */
+    if (teacherData?.table) {
+      const tRows = teacherData.table.rows || [];
+      if (tRows.length > 1) {
+        const hCells = (tRows[0].c || []).map(c => (c?.v != null ? String(c.v).trim().toLowerCase() : ''));
+
+        /* Find initials column by header name, then fall back to content detection */
+        let initCol = hCells.findIndex(h => /initial|abbr|short|code/.test(h));
+        let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
+
+        if (initCol < 0 || nameCol < 0) {
+          /* Content-based: initials = 2-4 uppercase only; name = longer with space */
+          const sample = tRows.slice(1, 6).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+          for (let col = 0; col < (sample[0]?.length || 0); col++) {
+            const vals = sample.map(r => r[col]).filter(Boolean);
+            if (vals.length && vals.every(v => /^[A-Z]{2,5}$/.test(v)) && initCol < 0) initCol = col;
+            if (vals.length && vals.some(v => v.length > 5 && /\s/.test(v)) && nameCol < 0) nameCol = col;
+          }
+        }
+
+        if (initCol >= 0 && nameCol >= 0) {
+          tRows.slice(1).forEach(row => {
+            const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+            const init = cells[initCol]?.toUpperCase();
+            const fullName = cells[nameCol];
+            if (init && fullName) {
+              /* Keep first 2 words: "Dr. Ahmed Hossain" → "Dr. Ahmed" */
+              initialsMap[init] = fullName.split(/\s+/).slice(0, 2).join(' ');
+            }
+          });
+        }
       }
     }
 
@@ -471,7 +507,7 @@ async function loadRetakeImprove(body) {
     window._riData = {
       apiRetake, apiImprove, manualRetake, manualImprove,
       retakeList, improveList,
-      getSectionsForCourse, courseNameMap, nameToCode, sem,
+      getSectionsForCourse, courseNameMap, nameToCode, initialsMap, sem,
       busy62BMap, userId: user?.id || null, enrollments,
     };
 
@@ -965,10 +1001,12 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);">${escH(sec.batch)}</td>
       <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;">${escH(sec.section)}</td>
       <td style="padding:9px 12px;">
-        ${sec.initials
-          ? `<span style="font-family:monospace;font-size:0.82rem;font-weight:700;color:#c4b5fd;
-              background:rgba(196,181,253,.1);padding:2px 7px;border-radius:6px;">${escH(sec.initials)}</span>`
-          : `<span style="opacity:0.3;font-size:0.78rem;">—</span>`}
+        ${sec.initials ? (() => {
+          const shortName = (d?.initialsMap || {})[sec.initials] || '';
+          return `<span style="font-family:monospace;font-size:0.8rem;font-weight:700;color:#c4b5fd;
+              background:rgba(196,181,253,.1);padding:2px 7px;border-radius:6px;">${escH(sec.initials)}</span>
+            ${shortName ? `<div style="font-size:0.68rem;color:var(--text-secondary);margin-top:3px;line-height:1.3;">${escH(shortName)}</div>` : ''}`;
+        })() : `<span style="opacity:0.3;font-size:0.78rem;">—</span>`}
       </td>
       <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);">${schedule}</td>
       <td style="padding:9px 14px;">${statusHtml}</td>
