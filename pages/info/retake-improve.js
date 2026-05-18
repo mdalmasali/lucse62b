@@ -412,7 +412,7 @@ async function loadRetakeImprove(body) {
         const hCells = (tRows[0].c || []).map(c => (c?.v != null ? String(c.v).trim().toLowerCase() : ''));
 
         /* Find initials column by header name, then fall back to content detection */
-        let initCol = hCells.findIndex(h => /initial|abbr|short|code/.test(h));
+        let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
         let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
 
         if (initCol < 0 || nameCol < 0) {
