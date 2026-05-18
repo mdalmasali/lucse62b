@@ -55,6 +55,25 @@ async function _riSaveManualToSupa(userId, retakeArr, improveArr) {
   } catch(e) {}
 }
 
+/* ══════════════════════════════════════════════
+   ENROLLMENTS — Supabase + localStorage cache
+   ══════════════════════════════════════════════ */
+
+async function _riLoadEnrollments(userId) {
+  if (!userId) return {};
+  try {
+    const r = await fetch(
+      `${_RI_SUPA}/rest/v1/student_retake_enrollments?student_id=eq.${encodeURIComponent(userId)}&select=course_code,batch,section,teacher,type,schedule`,
+      { headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}` } }
+    );
+    if (!r.ok) return {};
+    const rows = await r.json();
+    const map = {};
+    rows.forEach(row => { map[row.course_code] = row; });
+    return map;
+  } catch(e) { return {}; }
+}
+
 /* Shared helper — update localStorage, Supabase, _riData, re-render */
 function _riMutateManual(code, action, type) {
   /* action: 'add' | 'remove'   type: 'retake' | 'improve' */
@@ -101,6 +120,59 @@ function _riMutateManual(code, action, type) {
 
 window._riAddManual    = (code, type) => _riMutateManual(code, 'add',    type);
 window._riRemoveManual = (code, type) => _riMutateManual(code, 'remove', type);
+
+window._riToggleEnroll = async function(courseCode, batch, section, type) {
+  const d = window._riData;
+  if (!d || !d.userId) return;
+  const codeUp   = courseCode.toUpperCase();
+  const existing = (d.enrollments || {})[codeUp];
+  const isSame   = existing && existing.batch === batch && existing.section === section;
+
+  if (isSame) {
+    /* Unenroll */
+    try {
+      await fetch(
+        `${_RI_SUPA}/rest/v1/student_retake_enrollments?student_id=eq.${encodeURIComponent(d.userId)}&course_code=eq.${encodeURIComponent(codeUp)}`,
+        { method: 'DELETE', headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`, 'Prefer': 'return=minimal' } }
+      );
+    } catch(e) {}
+    if (!d.enrollments) d.enrollments = {};
+    delete d.enrollments[codeUp];
+  } else {
+    /* Enroll (upsert — replaces any existing section for this course) */
+    const allSecs = d.getSectionsForCourse(codeUp);
+    const sec     = allSecs.find(s => s.batch === batch && s.section === section);
+    const slots   = sec?.slots || [];
+    try {
+      await fetch(`${_RI_SUPA}/rest/v1/student_retake_enrollments`, {
+        method:  'POST',
+        headers: {
+          'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify({
+          student_id: d.userId, course_code: codeUp,
+          course_name: d.courseNameMap[codeUp] || '',
+          batch, section, teacher: sec?.initials || '', type,
+          schedule: slots, enrolled_at: new Date().toISOString(),
+        }),
+      });
+    } catch(e) {}
+    if (!d.enrollments) d.enrollments = {};
+    d.enrollments[codeUp] = { course_code: codeUp, batch, section, teacher: sec?.initials || '', type, schedule: slots };
+  }
+
+  /* Persist cache */
+  try { localStorage.setItem(`lu62b_enrollments_${d.userId}`, JSON.stringify(d.enrollments)); } catch(e) {}
+
+  /* Re-render */
+  riSwitchTab(_riActiveTab);
+  const srEl = document.getElementById('ri-search-result');
+  if (srEl && srEl.style.display !== 'none' && srEl.dataset.code) {
+    _riRenderSearchResult(srEl, srEl.dataset.code);
+  }
+};
 
 /* ══════════════════════════════════════════════
    RESULT API — fetch retake/improve from grades
@@ -380,12 +452,29 @@ async function loadRetakeImprove(body) {
     });
 
     /* ── Store global data ── */
+    /* Quick local cache for enrollments (instant render before Supabase responds) */
+    let enrollments = {};
+    try {
+      const cached = JSON.parse(localStorage.getItem(`lu62b_enrollments_${user?.id}`) || 'null');
+      if (cached && typeof cached === 'object') enrollments = cached;
+    } catch(e) {}
+
     window._riData = {
       apiRetake, apiImprove, manualRetake, manualImprove,
       retakeList, improveList,
       getSectionsForCourse, courseNameMap, nameToCode, sem,
-      busy62BMap, userId: user?.id || null,
+      busy62BMap, userId: user?.id || null, enrollments,
     };
+
+    /* Background: fetch fresh enrollments from Supabase and re-render */
+    if (user?.id) {
+      _riLoadEnrollments(user.id).then(fresh => {
+        if (!window._riData) return;
+        window._riData.enrollments = fresh;
+        try { localStorage.setItem(`lu62b_enrollments_${user.id}`, JSON.stringify(fresh)); } catch(e) {}
+        riSwitchTab(_riActiveTab);
+      });
+    }
 
     /* ── DOB prompt ── */
     const dobCard = needsDob ? `
@@ -634,6 +723,7 @@ function _riRenderSearchResult(el, code) {
     </button>`;
   }
 
+  const srType = inRetake ? 'retake' : 'improve';
   let tableHtml = '';
   if (!sections.length) {
     tableHtml = `<div style="font-size:0.8rem;color:var(--text-secondary);padding:10px 0;
@@ -642,7 +732,7 @@ function _riRenderSearchResult(el, code) {
       Not found in the current routine — may not be offered this semester.
     </div>`;
   } else {
-    tableHtml = _riSectionTable(sections, d.courseNameMap);
+    tableHtml = _riSectionTable(sections, d.courseNameMap, codeUp, srType);
   }
 
   el.innerHTML = `
@@ -742,7 +832,7 @@ function _riRenderContent(el, codeList, isRetake) {
           </span>
           ${summaryBadges}
         </div>
-        ${_riSectionTable(sections, d.courseNameMap)}`;
+        ${_riSectionTable(sections, d.courseNameMap, codeUp, typeStr)}`;
     }
 
     return `
@@ -775,7 +865,10 @@ function _riRenderContent(el, codeList, isRetake) {
    SHARED: section table (used by both tab + search)
    ══════════════════════════════════════════════ */
 
-function _riSectionTable(sections, courseNameMap) {
+function _riSectionTable(sections, courseNameMap, courseCode, type) {
+  const d          = window._riData;
+  const showEnroll = !!(courseCode && d?.userId);
+
   const rows = sections.map(sec => {
     /* Group slots by day */
     const dayGroups = {};
@@ -784,7 +877,7 @@ function _riSectionTable(sections, courseNameMap) {
       dayGroups[s.day].push(s.time);
     });
     const schedule = Object.entries(dayGroups)
-      .map(([d, times]) => `<strong>${escH(DAY_DISPLAY[d] || d)}</strong> ${times.map(escH).join(', ')}`)
+      .map(([day, times]) => `<strong>${escH(DAY_DISPLAY[day] || day)}</strong> ${times.map(escH).join(', ')}`)
       .join(' &nbsp;·&nbsp; ');
 
     let statusHtml;
@@ -806,6 +899,29 @@ function _riSectionTable(sections, courseNameMap) {
     const rowBg      = sec.hasConflict ? 'rgba(244,63,94,.04)' : 'rgba(52,211,153,.03)';
     const borderLeft = sec.hasConflict ? '2px solid rgba(244,63,94,.3)' : '2px solid rgba(52,211,153,.25)';
 
+    let enrollCell = '';
+    if (showEnroll) {
+      const enrolled      = (d.enrollments || {})[courseCode];
+      const isEnrolledHere = enrolled && enrolled.batch === sec.batch && enrolled.section === sec.section;
+      enrollCell = isEnrolledHere
+        ? `<td style="padding:7px 10px;">
+            <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
+              style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
+              font-family:'Inter',sans-serif;white-space:nowrap;
+              background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.4);">
+              <i class="fa-solid fa-check"></i> Enrolled
+            </button>
+           </td>`
+        : `<td style="padding:7px 10px;">
+            <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
+              style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
+              font-family:'Inter',sans-serif;white-space:nowrap;
+              background:rgba(124,58,237,.1);color:#a78bfa;border:1px solid rgba(124,58,237,.25);">
+              <i class="fa-regular fa-circle-plus"></i> Enroll
+            </button>
+           </td>`;
+    }
+
     return `<tr style="background:${rowBg};border-left:${borderLeft};">
       <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);">${escH(sec.batch)}</td>
       <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;">${escH(sec.section)}</td>
@@ -817,18 +933,24 @@ function _riSectionTable(sections, courseNameMap) {
       </td>
       <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);">${schedule}</td>
       <td style="padding:9px 14px;">${statusHtml}</td>
+      ${enrollCell}
     </tr>`;
   }).join('');
+
+  const thStyle = `padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
+    border-bottom:1px solid var(--border);white-space:nowrap;`;
+  const enrollHeader = showEnroll
+    ? `<th style="${thStyle}">Enroll</th>` : '';
 
   return `<div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="background:rgba(255,255,255,0.03);">
           ${['Batch','Sec','Teacher','Schedule','Status vs 62B'].map(h =>
-            `<th style="padding:8px 12px;text-align:left;font-size:0.63rem;font-weight:700;
-              text-transform:uppercase;letter-spacing:0.07em;color:var(--text-secondary);
-              border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`
+            `<th style="${thStyle}">${h}</th>`
           ).join('')}
+          ${enrollHeader}
         </tr>
       </thead>
       <tbody>${rows}</tbody>

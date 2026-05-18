@@ -1,4 +1,4 @@
-const CACHE = 'lu62b-v21';
+const CACHE = 'lu62b-v22';
 
 const STATIC_IMAGES = [
   '/assets/images/hero.jpg',
