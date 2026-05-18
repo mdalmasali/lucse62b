@@ -10,6 +10,15 @@ const _RI_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 let _riActiveTab = 'retake';
 window._riData   = null;
 
+/* Read excluded 62B courses from localStorage (set by routine.js or My Courses panel) */
+function _riGetExcluded() {
+  if (window._rtExcluded instanceof Set) return window._rtExcluded;
+  const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+  if (!user?.id) return new Set();
+  try { return new Set(JSON.parse(localStorage.getItem(`lu62b_excl_${user.id}`) || '[]')); }
+  catch(e) { return new Set(); }
+}
+
 /* ══════════════════════════════════════════════
    MANUAL COURSES — localStorage + Supabase
    ══════════════════════════════════════════════ */
@@ -302,8 +311,8 @@ async function _riBuildRoutineData(routineSheetId) {
           });
         }
 
-        /* 62B busy map — stores the course code at each slot */
-        if (batch === '62' && section === 'B') {
+        /* 62B busy map — stores the course code at each slot (skip excluded courses) */
+        if (batch === '62' && section === 'B' && !_riGetExcluded().has(codeUp)) {
           if (!busy62BMap[dayName]) busy62BMap[dayName] = {};
           busy62BMap[dayName][timeToMin(time)] = { code: codeUp };
         }
@@ -901,18 +910,48 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
 
     let enrollCell = '';
     if (showEnroll) {
-      const enrolled      = (d.enrollments || {})[courseCode];
+      const enrolled       = (d.enrollments || {})[courseCode];
       const isEnrolledHere = enrolled && enrolled.batch === sec.batch && enrolled.section === sec.section;
-      enrollCell = isEnrolledHere
-        ? `<td style="padding:7px 10px;">
+
+      /* Check if this section's slots clash with an already-enrolled course */
+      let enrollConflict = null;
+      if (!isEnrolledHere) {
+        const others = Object.entries(d.enrollments || {}).filter(([c]) => c !== courseCode);
+        outer: for (const slot of sec.slots) {
+          const slotMin = timeToMin(slot.time);
+          for (const [c, enr] of others) {
+            if ((enr.schedule || []).some(s => s.day === slot.day && timeToMin(s.time) === slotMin)) {
+              enrollConflict = d.courseNameMap[c] || c;
+              break outer;
+            }
+          }
+        }
+      }
+
+      if (isEnrolledHere) {
+        enrollCell = `<td style="padding:7px 10px;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
               background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.4);">
               ✓ Enrolled
             </button>
-           </td>`
-        : `<td style="padding:7px 10px;">
+           </td>`;
+      } else if (enrollConflict) {
+        enrollCell = `<td style="padding:7px 10px;">
+            <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
+              title="Time clash with: ${escH(enrollConflict)}"
+              style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
+              font-family:'Inter',sans-serif;white-space:nowrap;
+              background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.35);">
+              ⚠ Enroll
+            </button>
+            <div style="font-size:0.58rem;color:#fbbf24;margin-top:3px;max-width:90px;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="${escH(enrollConflict)}">${escH(enrollConflict)}</div>
+           </td>`;
+      } else {
+        enrollCell = `<td style="padding:7px 10px;">
             <button onclick="_riToggleEnroll('${courseCode}','${sec.batch}','${sec.section}','${type}')"
               style="font-size:0.68rem;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;
               font-family:'Inter',sans-serif;white-space:nowrap;
@@ -920,6 +959,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
               Enroll
             </button>
            </td>`;
+      }
     }
 
     return `<tr style="background:${rowBg};border-left:${borderLeft};">
