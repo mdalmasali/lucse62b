@@ -1151,13 +1151,19 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
     const seKey     = `${courseCode}-${sec.batch}-${sec.section}`;
     const enrollees = (d?.sectionEnrollees || {})[seKey] || [];
     const enrolleeRow = enrollees.length ? `
-      <tr style="background:${rowBg};border-left:${borderLeft};">
-        <td colspan="${showEnroll ? 6 : 5}" style="padding:2px 12px 9px 36px;">
-          <span style="font-size:0.63rem;color:var(--text-secondary);opacity:0.7;margin-right:7px;font-weight:600;">
-            <i class="fa-solid fa-user-check" style="font-size:0.58rem;margin-right:3px;"></i>Already Enrolled:
-          </span>
-          ${enrollees.map(n => `<span style="background:rgba(99,102,241,.13);color:#a78bfa;
-            padding:2px 8px;border-radius:5px;font-size:0.65rem;font-weight:700;margin-right:4px;">${escH(n)}</span>`).join('')}
+      <tr style="background:${rowBg};">
+        <td colspan="${showEnroll ? 6 : 5}" style="padding:0 14px 9px 14px;">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+            padding:5px 10px 5px 11px;
+            background:rgba(99,102,241,.1);
+            border-left:3px solid rgba(167,139,250,.6);
+            border-radius:0 6px 6px 0;">
+            <span style="font-size:0.61rem;color:#a78bfa;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap;margin-right:2px;">
+              <i class="fa-solid fa-user-check" style="font-size:0.6rem;"></i>Already Enrolled:
+            </span>
+            ${enrollees.map(n => `<span style="background:rgba(167,139,250,.18);color:#c4b5fd;
+              padding:2px 9px;border-radius:4px;font-size:0.64rem;font-weight:700;">${escH(n)}</span>`).join('')}
+          </div>
         </td>
       </tr>` : '';
 
