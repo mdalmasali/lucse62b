@@ -4,45 +4,57 @@
    deduplicateTimes, courseColor, escH, DAY_DISPLAY,
    _doDownloadImg, _doDownloadPDF */
 
-let _teacherCache = null;
+let _teacherCache  = null;
+let _trInitialsMap = {};   /* initials (upper) → full name */
+let _trNameMap     = {};   /* normalised full name → initials */
+let _trCourseInfo  = null; /* cached CPG_Courses */
+let _trDayResults  = null; /* cached day tab results */
+let _trSheetId     = null; /* cached routine sheet id */
+let _trDataLoaded  = false;
 
+/* ── UI entry point ── */
 function loadTeacherRoutine(body) {
   body.innerHTML = `
     <div class="rt-tf-wrap">
-      <div class="rt-tf-heading"><i class="fa-solid fa-chalkboard-user" style="margin-right:6px;color:#34d399;"></i>Search by Teacher Initials</div>
+      <div class="rt-tf-heading">
+        <i class="fa-solid fa-chalkboard-user" style="margin-right:6px;color:#34d399;"></i>
+        Search Teacher Routine
+      </div>
       <div class="rt-tf-row">
         <input type="text" id="teacherInitialsInput" class="rt-tf-input"
-          placeholder="e.g. NJN, MSR, SAZ" maxlength="10" />
+          list="tr-teacher-datalist"
+          placeholder="Initials or Name — e.g. NJN, Md. Arif"
+          maxlength="80" style="min-width:220px;" />
+        <datalist id="tr-teacher-datalist"></datalist>
         <button class="rt-tf-btn" id="teacherSearchBtn" onclick="doTeacherSearch()">
           <i class="fa-solid fa-magnifying-glass"></i> Generate Routine
         </button>
       </div>
-      <div class="rt-tf-hint">Enter the teacher's initials exactly as shown in the class routine (e.g. NJN, MSR, RWA)</div>
+      <div class="rt-tf-hint">
+        Type initials <em>(e.g. NJN)</em> or teacher name — autocomplete appears after data loads.
+      </div>
     </div>
     <div id="teacherRoutineResult"></div>`;
+
   document.getElementById('teacherInitialsInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') doTeacherSearch();
   });
+
+  /* Load teacher map in background for autocomplete */
+  if (!_trDataLoaded) _trLoadTeacherData();
 }
 
-async function doTeacherSearch() {
-  const input     = document.getElementById('teacherInitialsInput');
-  const resultDiv = document.getElementById('teacherRoutineResult');
-  const btn       = document.getElementById('teacherSearchBtn');
-  if (!input || !resultDiv) return;
-
-  const initials = input.value.trim().toUpperCase();
-  if (!initials) { input.focus(); return; }
-
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...'; }
-  resultDiv.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Fetching routine...</div>';
-
+/* ── Background: build initials ↔ name maps + populate datalist ── */
+async function _trLoadTeacherData() {
   try {
-    const [routineSheetId, sem] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
+    const [sheetId] = await Promise.all([getRoutineSheetId()]);
+    _trSheetId = sheetId;
+
     const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
-    const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
+    const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(sheetId, d).catch(() => null));
     const [cpgData, ...dayResults] = await Promise.all([cpgFetch, ...dayFetches]);
 
+    /* Build courseInfo */
     const courseInfo = {};
     if (cpgData) {
       sheetRows(cpgData)
@@ -50,10 +62,128 @@ async function doTeacherSearch() {
         .forEach(r => {
           courseInfo[r[1].trim().toUpperCase()] = {
             name:    r[0]?.trim() || '',
-            teacher: r[4]?.trim() || '',   // Column E — Teacher Name
-            desig:   r[5]?.trim() || '',   // Column F — Designation
+            teacher: r[4]?.trim() || '',
+            desig:   r[5]?.trim() || '',
           };
         });
+    }
+
+    /* Scan every routine cell → build initials ↔ full name */
+    const initialsMap = {};
+    dayResults.forEach(data => {
+      if (!data?.table) return;
+      (data.table.rows || []).forEach(row => {
+        (row.c || []).forEach(c => {
+          if (!c?.v) return;
+          const parsed = parseClassCell(String(c.v).trim());
+          if (parsed?.initials && parsed?.code) {
+            const ini  = parsed.initials.toUpperCase();
+            const info = courseInfo[parsed.code.toUpperCase()];
+            if (info?.teacher && !initialsMap[ini]) {
+              initialsMap[ini] = info.teacher;
+            }
+          }
+        });
+      });
+    });
+
+    _trCourseInfo  = courseInfo;
+    _trDayResults  = dayResults;
+    _trInitialsMap = initialsMap;
+    _trNameMap     = {};
+    Object.entries(initialsMap).forEach(([ini, name]) => {
+      _trNameMap[name.toLowerCase()] = ini;
+    });
+    _trDataLoaded = true;
+
+    /* Populate datalist */
+    const dl = document.getElementById('tr-teacher-datalist');
+    if (dl) {
+      dl.innerHTML = '';
+      Object.entries(initialsMap)
+        .sort(([, a], [, b]) => a.localeCompare(b))
+        .forEach(([ini, name]) => {
+          const opt = document.createElement('option');
+          opt.value = `${name} (${ini})`;
+          dl.appendChild(opt);
+        });
+    }
+  } catch(e) {}
+}
+
+/* ── Resolve user input → initials ── */
+function _trResolveInitials(raw) {
+  /* Datalist selection format: "Full Name (INI)" */
+  const datalistHit = raw.match(/\(([A-Za-z]+)\)\s*$/);
+  if (datalistHit) return datalistHit[1].toUpperCase();
+
+  const upper = raw.toUpperCase();
+
+  /* Exact initials match */
+  if (_trInitialsMap[upper]) return upper;
+
+  /* Exact name match */
+  const lower = raw.toLowerCase().trim();
+  if (_trNameMap[lower]) return _trNameMap[lower];
+
+  /* Partial name match: starts-with, then contains */
+  for (const [name, ini] of Object.entries(_trNameMap)) {
+    if (name.startsWith(lower)) return ini;
+  }
+  for (const [name, ini] of Object.entries(_trNameMap)) {
+    if (name.includes(lower)) return ini;
+  }
+
+  /* Fall back: treat as raw initials */
+  return upper;
+}
+
+/* ── Main search ── */
+async function doTeacherSearch() {
+  const input     = document.getElementById('teacherInitialsInput');
+  const resultDiv = document.getElementById('teacherRoutineResult');
+  const btn       = document.getElementById('teacherSearchBtn');
+  if (!input || !resultDiv) return;
+
+  const raw = input.value.trim();
+  if (!raw) { input.focus(); return; }
+
+  const initials = _trResolveInitials(raw);
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...'; }
+  resultDiv.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Fetching routine...</div>';
+
+  try {
+    /* Reuse cached data if available; otherwise fresh fetch */
+    let courseInfo = _trCourseInfo;
+    let dayResults = _trDayResults;
+    let sem;
+
+    if (!courseInfo || !dayResults || !_trSheetId) {
+      const [routineSheetId, s] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
+      _trSheetId = routineSheetId;
+      sem = s;
+      const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
+      const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
+      const [cpgData, ...dr] = await Promise.all([cpgFetch, ...dayFetches]);
+
+      courseInfo = {};
+      if (cpgData) {
+        sheetRows(cpgData)
+          .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
+          .forEach(r => {
+            courseInfo[r[1].trim().toUpperCase()] = {
+              name:    r[0]?.trim() || '',
+              teacher: r[4]?.trim() || '',
+              desig:   r[5]?.trim() || '',
+            };
+          });
+      }
+      _trCourseInfo = courseInfo;
+      _trDayResults = dr;
+      dayResults    = dr;
+    } else {
+      sem = await getSemesterLabel();
     }
 
     const schedule = parseDayResults(dayResults, (cells, cell) => {
@@ -63,23 +193,37 @@ async function doTeacherSearch() {
     });
 
     const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
+
+    const teacherFullName = _trInitialsMap[initials] || '';
+
     if (!days.length) {
       resultDiv.innerHTML = `<div class="info-placeholder">
         <i class="fa-solid fa-user-slash" style="opacity:0.2;"></i>
-        <p style="font-weight:600;">No classes found for <span style="color:#34d399;">${escH(initials)}</span>.</p>
-        <p style="font-size:0.78rem;margin-top:6px;opacity:0.6;">Check initials and try again.</p>
+        <p style="font-weight:600;">No classes found for
+          <span style="color:#34d399;">${escH(teacherFullName || initials)}</span>
+          ${teacherFullName ? `<span style="opacity:0.5;font-size:0.8rem;">(${escH(initials)})</span>` : ''}.
+        </p>
+        <p style="font-size:0.78rem;margin-top:6px;opacity:0.6;">
+          ${teacherFullName ? 'This teacher may not have classes this semester.' : 'Check initials or name and try again.'}
+        </p>
       </div>`;
       return;
     }
 
     const { allTimes, breakTimesSet } = deduplicateTimes(schedule);
-    _teacherCache = { days, schedule, courseInfo, allTimes, breakTimesSet, initials, semester: sem };
+    _teacherCache = { days, schedule, courseInfo, allTimes, breakTimesSet, initials, teacherFullName, semester: sem };
 
     const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
+
+    const nameDisplay = teacherFullName
+      ? `<strong style="color:#34d399;">${escH(teacherFullName)}</strong>
+         <span style="opacity:0.5;font-size:0.78rem;margin-left:4px;">(${escH(initials)})</span>`
+      : `<strong style="color:#34d399;">${escH(initials)}</strong>`;
+
     resultDiv.innerHTML = `
       <div class="rt-sync" style="margin-top:4px;">
         <div class="rt-sync-dot"></div>
-        <span>Teacher: <strong style="color:#34d399;">${escH(initials)}</strong> &nbsp;·&nbsp; ${sem} &nbsp;·&nbsp; ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
+        <span>${nameDisplay} &nbsp;·&nbsp; ${sem} &nbsp;·&nbsp; ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
       </div>
       ${buildTeacherGrid(todayName)}
       <div class="rt-dl-bar">
@@ -90,6 +234,7 @@ async function doTeacherSearch() {
           <i class="fa-solid fa-file-pdf"></i> PDF Download
         </button>
       </div>`;
+
   } catch(e) {
     resultDiv.innerHTML = `<div class="info-placeholder">
       <i class="fa-solid fa-triangle-exclamation" style="color:#f87171;opacity:0.4;"></i>
@@ -101,6 +246,7 @@ async function doTeacherSearch() {
   }
 }
 
+/* ── Grid renderer ── */
 function buildTeacherGrid(todayName) {
   if (!_teacherCache) return '';
   const { allTimes, schedule, courseInfo, breakTimesSet } = _teacherCache;
@@ -126,7 +272,9 @@ function buildTeacherGrid(todayName) {
     const hasClass = schedule[day]?.some(s => !s.isBreak);
     const isToday  = day === todayName;
     html += `<tr class="${hasClass ? 'has-class' : 'no-class'}">
-      <td class="rt-grid-day-cell">${escH(DAY_DISPLAY[day] || day)}${isToday ? ' <span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;">Today</span>' : ''}</td>`;
+      <td class="rt-grid-day-cell">${escH(DAY_DISPLAY[day] || day)}${isToday
+        ? ' <span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;">Today</span>'
+        : ''}</td>`;
     allTimes.forEach(time => {
       const isBreak = breakTimesSet.has(time);
       const slot    = daySlots[time];
@@ -150,21 +298,35 @@ function buildTeacherGrid(todayName) {
   return html;
 }
 
+/* ── Download ── */
 function downloadTeacherImage(btn) {
   if (!_teacherCache) return;
-  const ini  = _teacherCache.initials;
-  const sem  = _teacherCache.semester || 'Routine';
-  const slug = sem.replace(/\s+/g, '');
-  _doDownloadImg(`Routine-Teacher-${ini}-${slug}.png`,
-    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · ${sem}`,
-    _teacherCache, (s) => `${s.batch||''}${s.section?'-'+s.section:''}`, btn);
+  const { initials, teacherFullName, semester } = _teacherCache;
+  const label    = teacherFullName ? `${teacherFullName} (${initials})` : initials;
+  const slug     = (semester || 'Routine').replace(/\s+/g, '');
+  const safeName = initials.replace(/[^A-Za-z0-9]/g, '');
+  _doDownloadImg(
+    `Routine-Teacher-${safeName}-${slug}.png`,
+    `Class Routine — ${label}`,
+    `Teacher: ${label} · ${semester}`,
+    _teacherCache,
+    s => `${s.batch || ''}${s.section ? '-' + s.section : ''}`,
+    btn
+  );
 }
+
 function downloadTeacherPDF(btn) {
   if (!_teacherCache) return;
-  const ini  = _teacherCache.initials;
-  const sem  = _teacherCache.semester || 'Routine';
-  const slug = sem.replace(/\s+/g, '');
-  _doDownloadPDF(`Routine-Teacher-${ini}-${slug}.pdf`,
-    `Class Routine — Teacher ${ini}`, `Teacher: ${ini} · ${sem}`,
-    _teacherCache, (s) => `${s.batch||''}${s.section?'-'+s.section:''}`, btn);
+  const { initials, teacherFullName, semester } = _teacherCache;
+  const label    = teacherFullName ? `${teacherFullName} (${initials})` : initials;
+  const slug     = (semester || 'Routine').replace(/\s+/g, '');
+  const safeName = initials.replace(/[^A-Za-z0-9]/g, '');
+  _doDownloadPDF(
+    `Routine-Teacher-${safeName}-${slug}.pdf`,
+    `Class Routine — ${label}`,
+    `Teacher: ${label} · ${semester}`,
+    _teacherCache,
+    s => `${s.batch || ''}${s.section ? '-' + s.section : ''}`,
+    btn
+  );
 }
