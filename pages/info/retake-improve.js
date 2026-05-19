@@ -165,6 +165,7 @@ window._riToggleEnroll = async function(courseCode, batch, section, type) {
           course_name: d.courseNameMap[codeUp] || '',
           batch, section, teacher: sec?.initials || '', type,
           schedule: slots, enrolled_at: new Date().toISOString(),
+          student_name: d.studentName || '',
         }),
       });
     } catch(e) {}
@@ -174,6 +175,23 @@ window._riToggleEnroll = async function(courseCode, batch, section, type) {
 
   /* Persist cache */
   try { localStorage.setItem(`lu62b_enrollments_${d.userId}`, JSON.stringify(d.enrollments)); } catch(e) {}
+
+  /* Update local sectionEnrollees map instantly */
+  if (!d.sectionEnrollees) d.sectionEnrollees = {};
+  const _seKey = `${codeUp}-${batch}-${section}`;
+  if (isSame) {
+    /* Removed — take out this student's name */
+    const myName = d.studentName || '';
+    if (d.sectionEnrollees[_seKey]) {
+      d.sectionEnrollees[_seKey] = d.sectionEnrollees[_seKey].filter(n => n !== myName);
+    }
+  } else {
+    /* Added — push this student's name */
+    if (!d.sectionEnrollees[_seKey]) d.sectionEnrollees[_seKey] = [];
+    const myName = d.studentName || '';
+    if (myName && !d.sectionEnrollees[_seKey].includes(myName))
+      d.sectionEnrollees[_seKey].push(myName);
+  }
 
   /* Update My List count badge */
   const cntML = document.getElementById('ri-cnt-mylist');
@@ -515,9 +533,11 @@ async function loadRetakeImprove(body) {
       retakeList, improveList,
       getSectionsForCourse, courseNameMap, nameToCode, initialsMap, sem,
       busy62BMap, offDays, userId: user?.id || null, enrollments,
+      studentName: user?.name || '',
+      sectionEnrollees: {},
     };
 
-    /* Background: fetch fresh enrollments from Supabase and re-render */
+    /* Background: fetch fresh enrollments + all section enrollees */
     if (user?.id) {
       _riLoadEnrollments(user.id).then(fresh => {
         if (!window._riData) return;
@@ -525,6 +545,23 @@ async function loadRetakeImprove(body) {
         try { localStorage.setItem(`lu62b_enrollments_${user.id}`, JSON.stringify(fresh)); } catch(e) {}
         riSwitchTab(_riActiveTab);
       });
+
+      /* Fetch ALL students' enrollments to build section enrollee map */
+      fetch(
+        `${_RI_SUPA}/rest/v1/student_retake_enrollments?select=course_code,batch,section,student_name,student_id`,
+        { headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}` } }
+      ).then(r => r.ok ? r.json() : []).then(rows => {
+        if (!window._riData) return;
+        const map = {};
+        rows.forEach(r => {
+          const key = `${r.course_code}-${r.batch}-${r.section}`;
+          if (!map[key]) map[key] = [];
+          const name = (r.student_name || '').trim() || r.student_id || '';
+          if (name && !map[key].includes(name)) map[key].push(name);
+        });
+        window._riData.sectionEnrollees = map;
+        riSwitchTab(_riActiveTab);
+      }).catch(() => {});
     }
 
     /* ── DOB prompt ── */
@@ -1111,6 +1148,17 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       }
     }
 
+    const seKey     = `${courseCode}-${sec.batch}-${sec.section}`;
+    const enrollees = (d?.sectionEnrollees || {})[seKey] || [];
+    const enrolleeRow = enrollees.length ? `
+      <tr style="background:${rowBg};">
+        <td colspan="${showEnroll ? 6 : 5}" style="padding:3px 12px 8px 28px;font-size:0.68rem;color:var(--text-secondary);">
+          <i class="fa-solid fa-users" style="font-size:0.6rem;opacity:0.6;margin-right:5px;"></i>
+          ${enrollees.map(n => `<span style="background:rgba(99,102,241,.12);color:#a78bfa;
+            padding:1px 7px;border-radius:4px;font-size:0.65rem;font-weight:600;margin-right:4px;">${escH(n)}</span>`).join('')}
+        </td>
+      </tr>` : '';
+
     return `<tr style="background:${rowBg};border-left:${borderLeft};">
       <td style="padding:9px 12px;font-size:0.8rem;font-weight:700;color:var(--accent-bright);vertical-align:middle;text-align:center;">${escH(sec.batch)}</td>
       <td style="padding:9px 12px;font-size:0.85rem;font-weight:800;vertical-align:middle;text-align:center;">${escH(sec.section)}</td>
@@ -1125,7 +1173,7 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
       <td style="padding:9px 12px;font-size:0.78rem;color:var(--text-secondary);vertical-align:middle;text-align:left;">${schedule}</td>
       <td style="padding:9px 14px;vertical-align:middle;text-align:center;">${statusHtml}</td>
       ${enrollCell}
-    </tr>`;
+    </tr>${enrolleeRow}`;
   }).join('');
 
   const thStyleCenter = `padding:8px 12px;text-align:center;font-size:0.63rem;font-weight:700;
