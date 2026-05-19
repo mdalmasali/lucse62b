@@ -372,6 +372,7 @@
         <div class="qi-content">
           <span class="qi-label">Next Class</span>
           <span class="qi-val" id="qi-class">—</span>
+          <span class="qi-countdown" id="qi-class-cd"></span>
         </div>
       </div>
       <div class="qi-sep"></div>
@@ -398,9 +399,11 @@
           <div class="qi-bus-row">
             <span class="qi-bus-dir">From LU</span>
             <span class="qi-val" id="qi-bus-from">—</span>
+            <span class="qi-countdown" id="qi-bus-from-cd"></span>
             <span class="qi-bus-pipe">|</span>
             <span class="qi-bus-dir">To LU</span>
             <span class="qi-val" id="qi-bus-to">—</span>
+            <span class="qi-countdown" id="qi-bus-to-cd"></span>
           </div>
         </div>
       </div>
@@ -703,6 +706,13 @@
         const n = new Date(); return n.getHours() * 60 + n.getMinutes();
       }
 
+      function fmtCountdown(diffMins) {
+        if (diffMins <= 0) return null;
+        if (diffMins < 60) return `in ${diffMins}m`;
+        const h = Math.floor(diffMins / 60), m = diffMins % 60;
+        return m > 0 ? `in ${h}h ${m}m` : `in ${h}h`;
+      }
+
       function parseCell(cell) {
         if (!cell) return null;
         cell = cell.trim();
@@ -714,6 +724,37 @@
       }
 
       function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+      /* Stored target times (in minutes from midnight) for live countdown ticks */
+      let _classMin = null, _busFromMin = null, _busToMin = null;
+
+      function tickCountdowns() {
+        const now = nowMin();
+        if (_classMin !== null) {
+          const cd = document.getElementById('qi-class-cd');
+          if (cd) cd.textContent = fmtCountdown(_classMin - now) || '';
+        }
+        if (_busFromMin !== null) {
+          const cd = document.getElementById('qi-bus-from-cd');
+          if (cd) cd.textContent = fmtCountdown(_busFromMin - now) || '';
+        }
+        if (_busToMin !== null) {
+          const cd = document.getElementById('qi-bus-to-cd');
+          if (cd) cd.textContent = fmtCountdown(_busToMin - now) || '';
+        }
+      }
+
+      /* ── Fetch course names from CPG_Courses ── */
+      const courseNames = {};
+      try {
+        const cpg = await fetchSheet('CPG_Courses').catch(() => null);
+        if (cpg) {
+          (cpg.table?.rows || []).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : '')).forEach(r => {
+            if (r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
+              courseNames[r[1].trim().toUpperCase()] = r[0]?.trim() || '';
+          });
+        }
+      } catch (_) {}
 
       /* ── Fetch routine for today ── */
       try {
@@ -764,9 +805,12 @@
               if (t > now && (!next || t < next.tMin)) next = { ...parsed, time, tMin: t };
             });
             if (next) {
-              set('qi-class', next.code);
+              const name = courseNames[next.code.toUpperCase()] || '';
+              const classEl = document.getElementById('qi-class');
+              if (classEl) classEl.textContent = name ? `${next.code} · ${name}` : next.code;
               set('qi-time', next.time);
               set('qi-room', next.room || '—');
+              _classMin = next.tMin;
             } else {
               set('qi-class', 'No more classes'); set('qi-time', '—'); set('qi-room', '—');
             }
@@ -832,8 +876,14 @@
           const nextTo   = toLU.filter(b => b.t >= now).sort((a, b) => a.t - b.t)[0];
           set('qi-bus-from', nextFrom ? nextFrom.time : 'No more');
           set('qi-bus-to',   nextTo   ? nextTo.time   : 'No more');
+          _busFromMin = nextFrom ? nextFrom.t : null;
+          _busToMin   = nextTo   ? nextTo.t   : null;
         }
       } catch (_) {}
+
+      /* Start live countdowns — tick every 30s */
+      tickCountdowns();
+      setInterval(tickCountdowns, 30000);
     })();
   </script>
   <script>
