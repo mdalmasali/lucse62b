@@ -452,11 +452,13 @@ body {
 }
 [data-theme="light"] .qi-bus-pipe { color: rgba(0,0,0,0.12); }
 .qi-countdown {
+  display: block;
   font-size: 0.6rem;
   font-weight: 600;
   color: #4ade80;
   letter-spacing: 0.03em;
   white-space: nowrap;
+  text-align: center;
 }
 [data-theme="light"] .qi-countdown { color: #16a34a; }
 @media (max-width: 600px) {
