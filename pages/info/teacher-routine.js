@@ -44,51 +44,28 @@ function loadTeacherRoutine(body) {
   if (!_trDataLoaded) _trLoadTeacherData();
 }
 
-/* ── Background: build initials ↔ name maps + populate datalist ── */
+/* ── Background: build initials ↔ name maps from CPG_Teachers + populate datalist ── */
 async function _trLoadTeacherData() {
   try {
-    const [sheetId] = await Promise.all([getRoutineSheetId()]);
+    const [sheetId, teacherData] = await Promise.all([
+      getRoutineSheetId(),
+      fetchSheet('CPG_Teachers').catch(() => null),
+    ]);
     _trSheetId = sheetId;
 
-    const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
-    const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(sheetId, d).catch(() => null));
-    const [cpgData, ...dayResults] = await Promise.all([cpgFetch, ...dayFetches]);
+    const initialsMap = {};  /* acronym → full name */
 
-    /* Build courseInfo */
-    const courseInfo = {};
-    if (cpgData) {
-      sheetRows(cpgData)
-        .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
-        .forEach(r => {
-          courseInfo[r[1].trim().toUpperCase()] = {
-            name:    r[0]?.trim() || '',
-            teacher: r[4]?.trim() || '',
-            desig:   r[5]?.trim() || '',
-          };
-        });
+    if (teacherData) {
+      /* CPG_Teachers columns: A=Name, B=Designation, C=Department, D=Acronym */
+      sheetRows(teacherData).forEach(r => {
+        const name    = (r[0] || '').trim();
+        const acronym = (r[3] || '').trim().toUpperCase();
+        if (name && acronym && !/^(name|acronym|initials)/i.test(name)) {
+          initialsMap[acronym] = name;
+        }
+      });
     }
 
-    /* Scan every routine cell → build initials ↔ full name */
-    const initialsMap = {};
-    dayResults.forEach(data => {
-      if (!data?.table) return;
-      (data.table.rows || []).forEach(row => {
-        (row.c || []).forEach(c => {
-          if (!c?.v) return;
-          const parsed = parseClassCell(String(c.v).trim());
-          if (parsed?.initials && parsed?.code) {
-            const ini  = parsed.initials.toUpperCase();
-            const info = courseInfo[parsed.code.toUpperCase()];
-            if (info?.teacher && !initialsMap[ini]) {
-              initialsMap[ini] = info.teacher;
-            }
-          }
-        });
-      });
-    });
-
-    _trCourseInfo  = courseInfo;
-    _trDayResults  = dayResults;
     _trInitialsMap = initialsMap;
     _trNameMap     = {};
     Object.entries(initialsMap).forEach(([ini, name]) => {
