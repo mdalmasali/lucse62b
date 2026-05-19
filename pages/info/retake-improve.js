@@ -1151,11 +1151,13 @@ function _riSectionTable(sections, courseNameMap, courseCode, type) {
     const seKey     = `${courseCode}-${sec.batch}-${sec.section}`;
     const enrollees = (d?.sectionEnrollees || {})[seKey] || [];
     const enrolleeRow = enrollees.length ? `
-      <tr style="background:${rowBg};">
-        <td colspan="${showEnroll ? 6 : 5}" style="padding:3px 12px 8px 28px;font-size:0.68rem;color:var(--text-secondary);">
-          <i class="fa-solid fa-users" style="font-size:0.6rem;opacity:0.6;margin-right:5px;"></i>
-          ${enrollees.map(n => `<span style="background:rgba(99,102,241,.12);color:#a78bfa;
-            padding:1px 7px;border-radius:4px;font-size:0.65rem;font-weight:600;margin-right:4px;">${escH(n)}</span>`).join('')}
+      <tr style="background:${rowBg};border-left:${borderLeft};">
+        <td colspan="${showEnroll ? 6 : 5}" style="padding:2px 12px 9px 36px;">
+          <span style="font-size:0.63rem;color:var(--text-secondary);opacity:0.7;margin-right:7px;font-weight:600;">
+            <i class="fa-solid fa-user-check" style="font-size:0.58rem;margin-right:3px;"></i>Already Enrolled:
+          </span>
+          ${enrollees.map(n => `<span style="background:rgba(99,102,241,.13);color:#a78bfa;
+            padding:2px 8px;border-radius:5px;font-size:0.65rem;font-weight:700;margin-right:4px;">${escH(n)}</span>`).join('')}
         </td>
       </tr>` : '';
 
