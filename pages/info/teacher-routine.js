@@ -22,16 +22,14 @@ function loadTeacherRoutine(body) {
       </div>
       <div class="rt-tf-row">
         <input type="text" id="teacherInitialsInput" class="rt-tf-input"
-          list="tr-teacher-datalist"
-          placeholder="Initials or Name — e.g. NJN, Md. Arif"
+          placeholder="Initials or Name — e.g. NJN, Nargis Jahan"
           maxlength="80" style="min-width:220px;" />
-        <datalist id="tr-teacher-datalist"></datalist>
         <button class="rt-tf-btn" id="teacherSearchBtn" onclick="doTeacherSearch()">
           <i class="fa-solid fa-magnifying-glass"></i> Generate Routine
         </button>
       </div>
       <div class="rt-tf-hint">
-        Type initials <em>(e.g. NJN)</em> or teacher name — autocomplete appears after data loads.
+        Type initials <em>(e.g. NJN)</em> or teacher name <em>(e.g. Nargis Jahan)</em> and press Search.
       </div>
     </div>
     <div id="teacherRoutineResult"></div>`;
@@ -72,28 +70,11 @@ async function _trLoadTeacherData() {
       _trNameMap[name.toLowerCase()] = ini;
     });
     _trDataLoaded = true;
-
-    /* Populate datalist */
-    const dl = document.getElementById('tr-teacher-datalist');
-    if (dl) {
-      dl.innerHTML = '';
-      Object.entries(initialsMap)
-        .sort(([, a], [, b]) => a.localeCompare(b))
-        .forEach(([ini, name]) => {
-          const opt = document.createElement('option');
-          opt.value = `${name} (${ini})`;
-          dl.appendChild(opt);
-        });
-    }
   } catch(e) {}
 }
 
 /* ── Resolve user input → initials ── */
 function _trResolveInitials(raw) {
-  /* Datalist selection format: "Full Name (INI)" */
-  const datalistHit = raw.match(/\(([A-Za-z]+)\)\s*$/);
-  if (datalistHit) return datalistHit[1].toUpperCase();
-
   const upper = raw.toUpperCase();
 
   /* Exact initials match */
