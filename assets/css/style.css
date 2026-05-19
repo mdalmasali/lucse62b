@@ -374,6 +374,89 @@ body {
   .grad-strip-row2 { flex-basis: 100%; min-width: 0; }
 }
 
+/* ── Quick Info Strip ── */
+.qi-strip {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 10px 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 0;
+}
+[data-theme="light"] .qi-strip {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+.qi-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 110px;
+  padding: 6px 14px;
+}
+.qi-item-bus { flex: 1.5; }
+.qi-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1; }
+.qi-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qi-label {
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.qi-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="light"] .qi-val { color: var(--accent); }
+.qi-sep {
+  width: 1px;
+  height: 34px;
+  background: rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  align-self: center;
+}
+[data-theme="light"] .qi-sep { background: rgba(0,0,0,0.08); }
+.qi-bus-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.qi-bus-dir {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.qi-bus-pipe {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.15);
+  margin: 0 1px;
+}
+[data-theme="light"] .qi-bus-pipe { color: rgba(0,0,0,0.12); }
+@media (max-width: 600px) {
+  .qi-strip { padding: 8px 4px; border-radius: 14px; }
+  .qi-item { padding: 5px 10px; min-width: 90px; }
+  .qi-val { font-size: 0.78rem; }
+  .qi-sep { height: 28px; }
+}
+@media (max-width: 400px) {
+  .qi-strip { flex-direction: column; align-items: stretch; }
+  .qi-sep { width: 100%; height: 1px; }
+  .qi-item { justify-content: center; }
+}
+
 /* ── Hero Photo Showcase ── */
 .hero-photo-showcase {
   flex-shrink: 0;

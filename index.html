@@ -365,6 +365,47 @@
       </div>
     </div>
 
+    <!-- Quick Info Strip: Next Class · Time · Room · Next Bus -->
+    <div class="qi-strip fade-in delay-2" id="qiStrip">
+      <div class="qi-item">
+        <span class="qi-icon">📚</span>
+        <div class="qi-content">
+          <span class="qi-label">Next Class</span>
+          <span class="qi-val" id="qi-class">—</span>
+        </div>
+      </div>
+      <div class="qi-sep"></div>
+      <div class="qi-item">
+        <span class="qi-icon">🕐</span>
+        <div class="qi-content">
+          <span class="qi-label">Time</span>
+          <span class="qi-val" id="qi-time">—</span>
+        </div>
+      </div>
+      <div class="qi-sep"></div>
+      <div class="qi-item">
+        <span class="qi-icon">🚪</span>
+        <div class="qi-content">
+          <span class="qi-label">Room</span>
+          <span class="qi-val" id="qi-room">—</span>
+        </div>
+      </div>
+      <div class="qi-sep"></div>
+      <div class="qi-item qi-item-bus">
+        <span class="qi-icon">🚌</span>
+        <div class="qi-content">
+          <span class="qi-label">Next Bus</span>
+          <div class="qi-bus-row">
+            <span class="qi-bus-dir">From LU</span>
+            <span class="qi-val" id="qi-bus-from">—</span>
+            <span class="qi-bus-pipe">|</span>
+            <span class="qi-bus-dir">To LU</span>
+            <span class="qi-val" id="qi-bus-to">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Upcoming Deadlines -->
     <div class="deadlines-wrap fade-in delay-2" id="deadlinesWrap" style="display:none;margin-bottom:44px;">
       <div class="section-header" style="margin-bottom:16px;">
@@ -642,6 +683,157 @@
 
       tick();
       setInterval(tick, 1000);
+    })();
+  </script>
+  <script>
+    /* -- Quick Info Strip: Next Class · Time · Room · Next Bus -- */
+    (async function loadQuickInfo() {
+      const DAY_NAMES = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+      const todayName = DAY_NAMES[new Date().getDay()];
+
+      function timeToMin(t) {
+        const m = (t || '').match(/(\d{1,2}):(\d{2})/);
+        if (!m) return 9999;
+        let h = parseInt(m[1]), min = parseInt(m[2]);
+        if (h < 8) h += 12;
+        return h * 60 + min;
+      }
+
+      function nowMin() {
+        const n = new Date(); return n.getHours() * 60 + n.getMinutes();
+      }
+
+      function parseCell(cell) {
+        if (!cell) return null;
+        cell = cell.trim();
+        if (!cell || cell === '--' || cell === '–') return null;
+        const parts = cell.split(/\s+/).filter(Boolean);
+        if (parts.length >= 3) return { code: parts[0], room: parts.slice(2).join(' ') };
+        if (parts.length >= 1) return { code: parts[0], room: '' };
+        return null;
+      }
+
+      function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+      /* ── Fetch routine for today ── */
+      try {
+        const routineData = await fetchSheet('Routine').catch(() => null);
+        let sheetId = '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+        if (routineData) {
+          const rows = (routineData.table?.rows || []).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+          for (const row of rows) {
+            if (row[0]?.toLowerCase().includes('class routine') && row[1]) {
+              const m = row[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+              if (m) { sheetId = m[1]; break; }
+            }
+          }
+        }
+
+        const data = await fetchSheetById(sheetId, todayName).catch(() => null);
+        if (data?.table) {
+          const rows = data.table.rows || [];
+          const cols = data.table.cols || [];
+          let timeSlots = cols.slice(3).map(c => (c.label || '').trim());
+          let dataStart = 0;
+          if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+            for (let r = 0; r < Math.min(rows.length, 3); r++) {
+              const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+              if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
+                timeSlots = cells.slice(3); dataStart = r + 1; break;
+              }
+            }
+          }
+          let breakSlotIdx = -1;
+          const targetRows = [];
+          for (let r = dataStart; r < rows.length; r++) {
+            const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+            cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
+            if (cells[1] === '62' && cells[2] === 'B') targetRows.push(cells);
+          }
+          if (targetRows.length) {
+            const merged = targetRows[0].slice(3).map((_, i) =>
+              targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
+            );
+            const now = nowMin();
+            let next = null;
+            timeSlots.forEach((time, i) => {
+              if (!time || i === breakSlotIdx) return;
+              const parsed = parseCell(merged[i]);
+              if (!parsed) return;
+              const t = timeToMin(time);
+              if (t > now && (!next || t < next.tMin)) next = { ...parsed, time, tMin: t };
+            });
+            if (next) {
+              set('qi-class', next.code);
+              set('qi-time', next.time);
+              set('qi-room', next.room || '—');
+            } else {
+              set('qi-class', 'No more classes'); set('qi-time', '—'); set('qi-room', '—');
+            }
+          } else {
+            set('qi-class', 'No class today'); set('qi-time', '—'); set('qi-room', '—');
+          }
+        }
+      } catch (_) {}
+
+      /* ── Fetch bus schedule ── */
+      try {
+        const busData = await fetchSheet('Bus').catch(() => null);
+        if (busData) {
+          const rows = (busData.table?.rows || []).map(r =>
+            (r.c || []).map(c => {
+              if (!c) return '';
+              if (c.f != null && c.f !== '') return String(c.f).trim();
+              if (c.v == null) return '';
+              const s = String(c.v).trim();
+              const dm = s.match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+)/);
+              if (dm) {
+                let h = parseInt(dm[4]), mn = parseInt(dm[5]);
+                const ap = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${h}:${String(mn).padStart(2, '0')} ${ap}`;
+              }
+              return s;
+            })
+          );
+
+          function toMins(str) {
+            const m = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!m) return -1;
+            let h = parseInt(m[1]), mn = parseInt(m[2]);
+            if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+            if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+            return h * 60 + mn;
+          }
+
+          const now = nowMin();
+          const day = new Date().getDay();
+          const fromLU = [], toLU = [];
+          const firstVal = (rows[0]?.[0] || '').toLowerCase().trim();
+          const startIdx = firstVal === 'schedule' ? 1 : 0;
+
+          for (let i = startIdx; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row[0] || !row[3]) continue;
+            const sched = row[0].trim(), dayGrp = row[1].trim(), dir = row[2].trim(), time = row[3].trim();
+            if (sched !== 'Regular') continue;
+            const gl = dayGrp.toLowerCase();
+            const isFri = day === 5, isSat = day === 6;
+            const match = (isFri && gl.includes('fri'))
+              || (isSat && gl === 'saturday')
+              || (!isFri && !isSat && (gl.includes('sun') || gl.includes('sat') || gl.includes('mon')));
+            if (!match) continue;
+            const t = toMins(time); if (t < 0) continue;
+            if (dir === 'From LU') fromLU.push({ time, t });
+            else if (dir === 'To LU') toLU.push({ time, t });
+          }
+
+          const nextFrom = fromLU.filter(b => b.t >= now).sort((a, b) => a.t - b.t)[0];
+          const nextTo   = toLU.filter(b => b.t >= now).sort((a, b) => a.t - b.t)[0];
+          set('qi-bus-from', nextFrom ? nextFrom.time : 'No more');
+          set('qi-bus-to',   nextTo   ? nextTo.time   : 'No more');
+        }
+      } catch (_) {}
     })();
   </script>
   <script>
