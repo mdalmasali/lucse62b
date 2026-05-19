@@ -418,6 +418,12 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+#qi-class {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  line-height: 1.3;
+}
 [data-theme="light"] .qi-val { color: var(--accent); }
 .qi-sep {
   width: 1px;
