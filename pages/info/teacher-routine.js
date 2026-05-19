@@ -7,10 +7,94 @@
 let _teacherCache  = null;
 let _trInitialsMap = {};   /* initials (upper) → full name */
 let _trNameMap     = {};   /* normalised full name → initials */
+let _trTeacherList = [];   /* [{name, desig, acronym}] for autocomplete */
 let _trCourseInfo  = null; /* cached CPG_Courses */
 let _trDayResults  = null; /* cached day tab results */
 let _trSheetId     = null; /* cached routine sheet id */
 let _trDataLoaded  = false;
+
+/* ── Autocomplete engine ── */
+let _trAcEl = null, _trAcFocused = -1;
+
+function _trAcInjectCSS() {
+  if (document.getElementById('tr-ac-style')) return;
+  const s = document.createElement('style');
+  s.id = 'tr-ac-style';
+  s.textContent = `
+    .tr-ac-dropdown{position:fixed;background:#12122a;border:1px solid var(--accent);
+      border-radius:10px;max-height:220px;overflow-y:auto;z-index:9999;
+      box-shadow:0 10px 36px rgba(0,0,0,0.6);animation:trAcIn 0.12s ease;}
+    @keyframes trAcIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+    .tr-ac-item{padding:9px 13px;cursor:pointer;font-size:0.83rem;color:var(--text);
+      transition:background 0.1s;line-height:1.45;}
+    .tr-ac-item:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.05);}
+    .tr-ac-item:hover,.tr-ac-item.tr-ac-focused{background:rgba(124,58,237,0.22);}
+    .tr-ac-item strong{color:#c4b5fd;}
+    .tr-ac-item small{color:var(--text-secondary);font-size:0.74rem;}`;
+  document.head.appendChild(s);
+}
+
+function _trAcClose() {
+  if (_trAcEl) { _trAcEl.remove(); _trAcEl = null; _trAcFocused = -1; }
+}
+
+function _trAcPos(inp) {
+  if (!_trAcEl) return;
+  const r = inp.getBoundingClientRect();
+  _trAcEl.style.top   = (r.bottom + 2) + 'px';
+  _trAcEl.style.left  = r.left + 'px';
+  _trAcEl.style.width = r.width + 'px';
+}
+
+function _trAcSetup(inp) {
+  _trAcInjectCSS();
+
+  inp.addEventListener('input', () => {
+    const q = inp.value.toLowerCase().trim();
+    _trAcClose();
+    if (q.length < 1) return;
+    const hits = _trTeacherList
+      .filter(t => t.name.toLowerCase().includes(q) || t.acronym.toLowerCase().startsWith(q))
+      .slice(0, 8);
+    if (!hits.length) return;
+
+    _trAcEl = document.createElement('div');
+    _trAcEl.className = 'tr-ac-dropdown';
+    _trAcFocused = -1;
+
+    hits.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'tr-ac-item';
+      div.innerHTML = `<strong>${escH(t.name)}</strong> <small style="color:#6366f1;font-weight:700;">(${escH(t.acronym)})</small>`
+        + (t.desig ? `<br><small>${escH(t.desig)}</small>` : '');
+      div.addEventListener('mousedown', e => {
+        e.preventDefault();
+        inp.value = t.name;
+        _trAcClose();
+        /* Auto-trigger search on selection */
+        doTeacherSearch();
+      });
+      _trAcEl.appendChild(div);
+    });
+
+    document.body.appendChild(_trAcEl);
+    _trAcPos(inp);
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (!_trAcEl) return;
+    const els = _trAcEl.querySelectorAll('.tr-ac-item');
+    if      (e.key === 'ArrowDown') { e.preventDefault(); _trAcFocused = Math.min(_trAcFocused + 1, els.length - 1); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); _trAcFocused = Math.max(_trAcFocused - 1, 0); }
+    else if (e.key === 'Enter' && _trAcFocused >= 0) { e.preventDefault(); els[_trAcFocused].dispatchEvent(new MouseEvent('mousedown')); return; }
+    else if (e.key === 'Escape')    { _trAcClose(); return; }
+    els.forEach((el, i) => el.classList.toggle('tr-ac-focused', i === _trAcFocused));
+  });
+
+  inp.addEventListener('blur', () => setTimeout(_trAcClose, 160));
+  window.addEventListener('scroll', () => _trAcPos(inp), true);
+  window.addEventListener('resize', () => _trAcPos(inp));
+}
 
 /* ── UI entry point ── */
 function loadTeacherRoutine(body) {
@@ -29,20 +113,20 @@ function loadTeacherRoutine(body) {
         </button>
       </div>
       <div class="rt-tf-hint">
-        Type initials <em>(e.g. NJN)</em> or teacher name <em>(e.g. Nargis Jahan)</em> and press Search.
+        Type initials or teacher name — suggestions will appear as you type.
       </div>
     </div>
     <div id="teacherRoutineResult"></div>`;
 
-  document.getElementById('teacherInitialsInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doTeacherSearch();
-  });
+  const inp = document.getElementById('teacherInitialsInput');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') doTeacherSearch(); });
 
-  /* Load teacher map in background for autocomplete */
-  if (!_trDataLoaded) _trLoadTeacherData();
+  /* Wire autocomplete if data already loaded; otherwise load+wire */
+  if (_trDataLoaded) _trAcSetup(inp);
+  else _trLoadTeacherData();
 }
 
-/* ── Background: build initials ↔ name maps from CPG_Teachers + populate datalist ── */
+/* ── Background: build initials ↔ name maps from CPG_Teachers ── */
 async function _trLoadTeacherData() {
   try {
     const [sheetId, teacherData] = await Promise.all([
@@ -51,25 +135,33 @@ async function _trLoadTeacherData() {
     ]);
     _trSheetId = sheetId;
 
-    const initialsMap = {};  /* acronym → full name */
+    const initialsMap = {};
+    const teacherList = [];
 
     if (teacherData) {
       /* CPG_Teachers columns: A=Name, B=Designation, C=Department, D=Acronym */
       sheetRows(teacherData).forEach(r => {
         const name    = (r[0] || '').trim();
+        const desig   = (r[1] || '').trim();
         const acronym = (r[3] || '').trim().toUpperCase();
         if (name && acronym && !/^(name|acronym|initials)/i.test(name)) {
           initialsMap[acronym] = name;
+          teacherList.push({ name, desig, acronym });
         }
       });
     }
 
     _trInitialsMap = initialsMap;
+    _trTeacherList = teacherList.sort((a, b) => a.name.localeCompare(b.name));
     _trNameMap     = {};
     Object.entries(initialsMap).forEach(([ini, name]) => {
       _trNameMap[name.toLowerCase()] = ini;
     });
     _trDataLoaded = true;
+
+    /* Wire autocomplete to input (may already be in DOM) */
+    const inp = document.getElementById('teacherInitialsInput');
+    if (inp) _trAcSetup(inp);
   } catch(e) {}
 }
 
