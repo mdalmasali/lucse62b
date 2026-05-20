@@ -123,11 +123,9 @@
     .memories-track {
       display: flex;
       gap: 14px;
-      animation: memScroll 55s linear infinite;
       width: max-content;
       align-items: center;
     }
-    .memories-track:hover { animation-play-state: paused; }
     .mem-photo-card {
       flex-shrink: 0;
       width: 175px; height: 215px;
@@ -152,10 +150,6 @@
     }
     .mem-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
     .mem-photo-card:hover img { transform: scale(1.06); }
-    @keyframes memScroll {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
     @media (max-width: 640px) {
       .mem-photo-card { width: 130px; height: 162px; border-radius: 11px; }
     }
@@ -951,6 +945,18 @@
           frag.appendChild(el);
         });
         frame.appendChild(frag);
+
+        // JS-driven slideshow — not affected by prefers-reduced-motion CSS overrides
+        const slides = Array.from(frame.querySelectorAll('.photo-slide'));
+        slides[0].style.opacity = '1';
+        let cur = 0;
+        setInterval(() => {
+          slides[cur].style.opacity = '0';
+          slides[cur].style.transform = 'scale(0.96)';
+          cur = (cur + 1) % slides.length;
+          slides[cur].style.opacity = '1';
+          slides[cur].style.transform = 'scale(1)';
+        }, 4000);
       } catch (e) { /* fail silently */ }
     })();
   </script>
@@ -1009,10 +1015,31 @@
         [...images, ...images].forEach(img => frag.appendChild(makeCard(img.id)));
         track.appendChild(frag);
 
-        /* Scale speed to image count */
-        track.style.animationDuration = Math.max(40, images.length * 3) + 's';
-
         document.getElementById('memoriesSection').style.display = 'block';
+
+        // JS-driven scroll — not affected by prefers-reduced-motion CSS overrides
+        track.style.willChange = 'transform';
+        const cycleDuration = Math.max(40, images.length * 3) * 1000;
+        let halfPx = 0, scrollPos = 0, paused = false, lastTs = null;
+
+        track.addEventListener('mouseenter', () => { paused = true; });
+        track.addEventListener('mouseleave', () => { paused = false; });
+
+        function scrollStep(ts) {
+          if (!halfPx) halfPx = track.scrollWidth / 2;
+          if (!paused && halfPx > 0) {
+            if (lastTs !== null) {
+              scrollPos += (halfPx / cycleDuration) * (ts - lastTs);
+              if (scrollPos >= halfPx) scrollPos -= halfPx;
+              track.style.transform = `translateX(${-scrollPos}px)`;
+            }
+            lastTs = ts;
+          } else {
+            lastTs = null;
+          }
+          requestAnimationFrame(scrollStep);
+        }
+        requestAnimationFrame(scrollStep);
       } catch (e) { /* fail silently */ }
     })();
   </script>
