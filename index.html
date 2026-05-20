@@ -887,6 +887,16 @@
     })();
   </script>
   <script>
+    /* Shared helper — fetches image list from the Cloudflare Worker /gallery endpoint */
+    async function fetchDriveGallery(folderId, limit) {
+      const res = await fetch(
+        `https://lucse62b-api.sy164425.workers.dev/gallery?folder=${encodeURIComponent(folderId)}&limit=${limit}`
+      );
+      if (!res.ok) throw new Error('Gallery API ' + res.status);
+      return res.json();
+    }
+  </script>
+  <script>
     /* -- Hero photo frame — Drive images -- */
     (async function loadHeroPhotos() {
       const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
