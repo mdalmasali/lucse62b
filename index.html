@@ -881,6 +881,17 @@
     })();
   </script>
   <script>
+    /* Ring spin via rAF — bypasses prefers-reduced-motion CSS overrides */
+    (function() {
+      const ring = document.querySelector('.photo-frame-ring');
+      if (!ring) return;
+      const degPerFrame = 360 / (8 * 60); // 8s per full rotation at 60fps
+      let angle = 0;
+      function spin() { ring.style.transform = `rotate(${angle = (angle + degPerFrame) % 360}deg)`; requestAnimationFrame(spin); }
+      requestAnimationFrame(spin);
+    })();
+  </script>
+  <script>
     /* Shared helper — fetches image list from the Cloudflare Worker /gallery endpoint */
     async function fetchDriveGallery(folderId, limit) {
       const res = await fetch(
@@ -946,16 +957,28 @@
         });
         frame.appendChild(frag);
 
-        // JS-driven slideshow — not affected by prefers-reduced-motion CSS overrides
+        // JS-driven slideshow using rAF — bypasses prefers-reduced-motion CSS overrides
         const slides = Array.from(frame.querySelectorAll('.photo-slide'));
         slides[0].style.opacity = '1';
-        let cur = 0;
+        let cur = 0, busy = false;
+
+        function fadeBetween(fromEl, toEl, cb) {
+          const start = performance.now(), dur = 800;
+          function step(now) {
+            const t = Math.min((now - start) / dur, 1);
+            const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+            fromEl.style.opacity = String(1 - e);
+            toEl.style.opacity   = String(e);
+            t < 1 ? requestAnimationFrame(step) : (fromEl.style.opacity = '0', toEl.style.opacity = '1', cb && cb());
+          }
+          requestAnimationFrame(step);
+        }
+
         setInterval(() => {
-          slides[cur].style.opacity = '0';
-          slides[cur].style.transform = 'scale(0.96)';
-          cur = (cur + 1) % slides.length;
-          slides[cur].style.opacity = '1';
-          slides[cur].style.transform = 'scale(1)';
+          if (busy) return;
+          busy = true;
+          const next = (cur + 1) % slides.length;
+          fadeBetween(slides[cur], slides[next], () => { cur = next; busy = false; });
         }, 4000);
       } catch (e) { /* fail silently */ }
     })();

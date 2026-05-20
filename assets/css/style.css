@@ -497,6 +497,7 @@ body {
   position: absolute;
   inset: -5px;
   border-radius: 50%;
+  will-change: transform;
   background: conic-gradient(from 0deg,
     var(--accent)       0%,
     var(--accent2)      25%,
@@ -507,10 +508,7 @@ body {
     transparent         96%,
     var(--accent)       100%
   );
-  animation: spinRing 8s linear infinite;
-  will-change: transform;
 }
-@keyframes spinRing { to { transform: rotate(360deg); } }
 .photo-frame-inner {
   position: absolute;
   inset: 6px;
@@ -527,8 +525,7 @@ body {
   object-fit: cover;
   border-radius: 50%;
   opacity: 0;
-  transform: scale(1);
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  will-change: opacity;
 }
 .photo-gallery-badge {
   position: absolute;
@@ -1936,8 +1933,7 @@ html[data-theme="light"] .theme-opt { background: rgba(0,0,0,0.03); }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .bg-orb, .particle, .avatar-glow, .photo-frame-ring,
-  .memories-track, .bday-flame { animation: none !important; }
+  .bg-orb, .particle, .avatar-glow, .bday-flame { animation: none !important; }
 }
 
 /* ── Scrollbar styling ── */
