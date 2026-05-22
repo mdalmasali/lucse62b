@@ -41,23 +41,37 @@ async function loadTeachers(body) {
 
             let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
             let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
-            const deCol = hCells.findIndex(h => /designation/.test(h));
-            const dpCol = hCells.findIndex(h => /department/.test(h));
-            const phCol = hCells.findIndex(h => /phone|cell/.test(h));
-            const emCol = hCells.findIndex(h => /email/.test(h));
+            let deCol   = hCells.findIndex(h => /designation/.test(h));
+            let dpCol   = hCells.findIndex(h => /department/.test(h));
+            let phCol   = hCells.findIndex(h => /phone|cell/.test(h));
+            let emCol   = hCells.findIndex(h => /email/.test(h));
 
-            if (initCol < 0 || nameCol < 0) {
-                const sample = tRows.slice(0, 5).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+            /* Content-based fallback for ANY undetected column */
+            if (initCol < 0 || nameCol < 0 || phCol < 0 || emCol < 0) {
+                const sample = tRows.slice(0, 10).map(r =>
+                    (r.c || []).map(c => c?.v != null ? String(c.v).trim() : (c?.f != null ? String(c.f).trim() : ''))
+                );
                 for (let col = 0; col < (sample[0]?.length || 0); col++) {
-                    const vals = sample.map(r => r[col]).filter(Boolean);
-                    if (vals.length && vals.every(v => /^[A-Z]{2,5}$/.test(v)) && initCol < 0) initCol = col;
-                    if (vals.length && vals.some(v => v.length > 5 && /\s/.test(v)) && nameCol < 0) nameCol = col;
+                    const vals = sample.map(r => r[col] || '').filter(Boolean);
+                    if (!vals.length) continue;
+                    if (initCol < 0 && vals.every(v => /^[A-Z]{2,5}$/.test(v)))                            initCol = col;
+                    if (nameCol < 0 && vals.some(v => v.length > 5 && /\s/.test(v)))                       nameCol = col;
+                    if (deCol   < 0 && vals.some(v => /professor|lecturer|adjunct|instructor/i.test(v)))    deCol   = col;
+                    if (dpCol   < 0 && vals.some(v => /cse|engineering|department|math|sust/i.test(v)))     dpCol   = col;
+                    if (phCol   < 0 && vals.some(v => /^\d{7,}$/.test(v.replace(/[\s\-\+\(\)]/g, ''))))    phCol   = col;
+                    if (emCol   < 0 && vals.some(v => /@/.test(v)))                                         emCol   = col;
                 }
             }
 
             if (initCol >= 0 && nameCol >= 0) {
                 tRows.forEach(row => {
-                    const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                    /* prefer formatted value (c.f) so phone/email display as user typed */
+                    const cells = (row.c || []).map(c => {
+                        if (!c) return '';
+                        if (c.v != null) return String(c.v).trim();
+                        if (c.f != null) return String(c.f).trim();
+                        return '';
+                    });
                     const init  = cells[initCol]?.toUpperCase();
                     const name  = cells[nameCol];
                     if (!init || !name) return;
@@ -147,9 +161,9 @@ async function loadTeachers(body) {
                             const existing   = teacherMap.get(key);
                             const alreadyHas = existing.courses.some(c => c.code === enr.course_code);
                             if (!alreadyHas && enrolledCourse.code) existing.courses.push(enrolledCourse);
-                            /* Fill contact from CPG_Teachers if CPG_Courses had blank/N/A */
-                            if (_tcEmpty(existing.phone) && info.phone) existing.phone = info.phone;
-                            if (_tcEmpty(existing.email) && info.email) existing.email = info.email;
+                            /* Always use CPG_Teachers contact — it is the authoritative source */
+                            if (!_tcEmpty(info.phone)) existing.phone = info.phone;
+                            if (!_tcEmpty(info.email)) existing.email = info.email;
                         } else {
                             teacherMap.set(key, {
                                 name:        info.name,
