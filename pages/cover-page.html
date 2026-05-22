@@ -1106,39 +1106,50 @@
 
         const cells = row => (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '');
 
-        const getHeaders = (rows) => {
-          if (!rows || !rows.length) return {};
-          const headers = {};
-          cells(rows[0]).forEach((h, i) => {
-            if (h) headers[h.toLowerCase().trim()] = i;
+        /* Read headers from table.cols[i].label — rows array contains only data */
+        const colHeaders = (tableObj) => {
+          const h = {};
+          (tableObj?.cols || []).forEach((col, i) => {
+            const label = col?.label != null ? String(col.label).trim().toLowerCase() : '';
+            if (label) h[label] = i;
           });
-          return headers;
+          return h;
         };
 
-        const tRows = tData.table?.rows || [];
-        const tHeaders = getHeaders(tRows);
+        const tRows    = tData.table?.rows || [];
+        const tHeaders = colHeaders(tData.table);
+
+        const tNameCol  = tHeaders['name']        ?? tHeaders['teacher']     ?? 1;
+        const tDesigCol = tHeaders['designation']  ?? tHeaders['desig']       ?? 2;
+        const tDeptCol  = tHeaders['department']   ?? tHeaders['dept']        ?? 3;
 
         TEACHERS = tRows
           .map(r => cells(r))
-          .filter((c, i) => i > 0 && c.some(val => val)) // Skip header row
+          .filter(c => c.some(val => val))
           .map(c => ({
-            name:  c[tHeaders['name'] ?? tHeaders['teacher'] ?? 0] || '',
-            desig: c[tHeaders['designation'] ?? tHeaders['desig'] ?? 1] || '',
-            dept:  c[tHeaders['department'] ?? tHeaders['dept'] ?? 2] || 'Department of Computer Science & Engineering'
+            name:  c[tNameCol]  || '',
+            desig: c[tDesigCol] || '',
+            dept:  c[tDeptCol]  || ''
           })).filter(t => t.name);
 
-        const cRows = cData.table?.rows || [];
-        const cHeaders = getHeaders(cRows);
+        const cRows    = cData.table?.rows || [];
+        const cHeaders = colHeaders(cData.table);
+
+        const cTitleCol   = cHeaders['title']       ?? cHeaders['course title'] ?? cHeaders['course'] ?? 0;
+        const cCodeCol    = cHeaders['code']        ?? cHeaders['course code']  ?? 1;
+        const cTeachCol   = cHeaders['teacher name'] ?? cHeaders['teacher']     ?? 2;
+        const cDesigCol   = cHeaders['designation'] ?? cHeaders['desig']        ?? 3;
+        const cDeptCol    = cHeaders['department']  ?? cHeaders['dept']         ?? 4;
 
         COURSES = cRows
           .map(r => cells(r))
-          .filter((c, i) => i > 0 && c.some(val => val)) // Skip header row
+          .filter(c => c.some(val => val))
           .map(c => ({
-            title:    c[cHeaders['title'] ?? cHeaders['course title'] ?? cHeaders['course'] ?? 0] || '',
-            code:     c[cHeaders['code'] ?? cHeaders['course code'] ?? 1] || '',
-            teacher:  c[cHeaders['teacher'] ?? cHeaders['course teacher'] ?? 4] || '',
-            desig:    c[cHeaders['designation'] ?? cHeaders['desig'] ?? 5] || '',
-            dept:     c[cHeaders['department'] ?? cHeaders['dept'] ?? 6] || ''
+            title:    c[cTitleCol]  || '',
+            code:     c[cCodeCol]   || '',
+            teacher:  c[cTeachCol]  || '',
+            desig:    c[cDesigCol]  || '',
+            dept:     c[cDeptCol]   || ''
           })).filter(c => c.title);
 
       } catch(e) { /* fail silently — user can still type manually */ }
