@@ -137,6 +137,9 @@ async function loadTeachers(body) {
                             if (!alreadyHas && enrolledCourse.code) {
                                 existing.courses.push(enrolledCourse);
                             }
+                            /* Fill missing phone/email from CPG_Teachers if CPG_Courses had them blank */
+                            if (!existing.phone && info.phone) existing.phone = info.phone;
+                            if (!existing.email && info.email) existing.email = info.email;
                         } else {
                             /* New teacher — add from CPG_Teachers info */
                             teacherMap.set(key, {
