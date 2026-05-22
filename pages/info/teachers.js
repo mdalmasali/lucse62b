@@ -199,15 +199,7 @@ async function loadTeachers(body) {
                     </a>`;
             }
 
-            /* Badge shown on the card if teacher is only here due to enrollment */
-            const enrolledOnlyBadge = t.isEnrolledOnly
-                ? `<span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:5px;
-                    background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);
-                    letter-spacing:0.04em;display:inline-flex;align-items:center;gap:4px;margin-left:6px;
-                    vertical-align:middle;">
-                    <i class="fa-solid fa-list-check" style="font-size:0.55rem;"></i> Enrolled
-                  </span>`
-                : '';
+            const enrolledOnlyBadge = '';
 
             html += `
                 <div class="info-item-card" style="display:flex;flex-direction:column;">
