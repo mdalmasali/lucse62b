@@ -3,69 +3,20 @@
 const _TC_SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _TC_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
-/* Returns true if contact value is blank/placeholder */
-const _tcEmpty = v => !v || v.trim() === '' || v.trim() === '-' || v.trim().toLowerCase() === 'n/a';
+const _tcEmpty = v => !v || String(v).trim() === '' || String(v).trim() === '-' || String(v).trim().toLowerCase() === 'n/a';
 
 async function loadTeachers(body) {
     body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Teachers & Courses...</div>';
     try {
-        /* Load CPG_Courses and CPG_Teachers sheets in parallel */
-        const [data, cpgTeacherData] = await Promise.all([
+        const [cpgCourseData, cpgTeacherData] = await Promise.all([
             fetchSheet('CPG_Courses'),
             fetchSheet('CPG_Teachers').catch(() => null),
         ]);
 
-        const rows = sheetRows(data);
-        if (rows.length === 0) {
-            body.innerHTML = '<div class="info-placeholder"><p>No data found.</p></div>';
-            return;
-        }
+        /* ── Step 1: Build teacher map from CPG_Teachers (primary — has correct phone/email) ── */
+        const teacherMap  = new Map(); /* key: lowercase name */
+        const initialsMap = {};        /* key: uppercase initials → lowercase name key */
 
-        /* ── Detect column indices from CPG_Courses ── */
-        let headers = (data.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
-        let startIndex = 0;
-
-        if (!headers.some(h => h.includes('title') || h.includes('code') || h.includes('name'))) {
-            headers = rows[0].map(h => (h || '').toLowerCase().trim());
-            startIndex = 1;
-        }
-
-        const tI  = headers.findIndex(h => h.includes('title'))       > -1 ? headers.findIndex(h => h.includes('title'))       : 0;
-        const cI  = headers.findIndex(h => h.includes('code'))        > -1 ? headers.findIndex(h => h.includes('code'))        : 1;
-        const nI  = headers.findIndex(h => h.includes('teacher name') || h === 'name') > -1 ? headers.findIndex(h => h.includes('teacher name') || h === 'name') : 2;
-        const deI = headers.findIndex(h => h.includes('designation')) > -1 ? headers.findIndex(h => h.includes('designation')) : 3;
-        const dpI = headers.findIndex(h => h.includes('department'))  > -1 ? headers.findIndex(h => h.includes('department'))  : 4;
-        const pI  = headers.findIndex(h => h.includes('phone'))       > -1 ? headers.findIndex(h => h.includes('phone'))       : 5;
-        const eI  = headers.findIndex(h => h.includes('email'))       > -1 ? headers.findIndex(h => h.includes('email'))       : 6;
-
-        /* ── Build teacher map from CPG_Courses ── */
-        const teacherMap = new Map(); /* key: lowercase name */
-
-        for (let i = startIndex; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0) continue;
-            const name = row[nI] || '';
-            if (!name || name.toLowerCase() === 'tba' || name.toLowerCase() === 'tb a') continue;
-            const key = name.toLowerCase().trim();
-            const courseInfo = { title: row[tI] || '', code: row[cI] || '' };
-            if (!teacherMap.has(key)) {
-                teacherMap.set(key, {
-                    name,
-                    designation: row[deI] || '',
-                    department:  row[dpI] || '',
-                    phone:       row[pI]  || '',
-                    email:       row[eI]  || '',
-                    courses: courseInfo.code ? [courseInfo] : [],
-                });
-            } else if (courseInfo.code) {
-                teacherMap.get(key).courses.push(courseInfo);
-            }
-        }
-
-        /* ── Build initials → teacher details map from CPG_Teachers ── */
-        /* Google Visualization API puts headers in table.cols[i].label,
-           NOT in rows[0] — so we read cols for header detection.        */
-        const initialsInfoMap = {};
         if (cpgTeacherData?.table) {
             const tRows  = cpgTeacherData.table.rows || [];
             const hCells = (cpgTeacherData.table.cols || [])
@@ -78,7 +29,7 @@ async function loadTeachers(body) {
             const phCol = hCells.findIndex(h => /phone|cell/.test(h));
             const emCol = hCells.findIndex(h => /email/.test(h));
 
-            /* Content-based fallback for initials/name if cols labels are empty */
+            /* Content-based fallback if cols labels are empty */
             if (initCol < 0 || nameCol < 0) {
                 const sample = tRows.slice(0, 5).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
                 for (let col = 0; col < (sample[0]?.length || 0); col++) {
@@ -91,22 +42,79 @@ async function loadTeachers(body) {
             if (initCol >= 0 && nameCol >= 0) {
                 tRows.forEach(row => {
                     const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-                    const init = cells[initCol]?.toUpperCase();
-                    const name = cells[nameCol];
-                    if (init && name) {
-                        initialsInfoMap[init] = {
-                            name,
-                            designation: deCol >= 0 ? (cells[deCol] || '') : '',
-                            department:  dpCol >= 0 ? (cells[dpCol] || '') : '',
-                            phone:       phCol >= 0 ? (cells[phCol] || '') : '',
-                            email:       emCol >= 0 ? (cells[emCol] || '') : '',
-                        };
-                    }
+                    const init  = cells[initCol]?.toUpperCase();
+                    const name  = cells[nameCol];
+                    if (!init || !name) return;
+
+                    const key = name.toLowerCase().trim();
+                    teacherMap.set(key, {
+                        name,
+                        designation: deCol >= 0 ? (cells[deCol] || '') : '',
+                        department:  dpCol >= 0 ? (cells[dpCol] || '') : '',
+                        phone:       phCol >= 0 ? (cells[phCol] || '') : '',
+                        email:       emCol >= 0 ? (cells[emCol] || '') : '',
+                        initials:    init,
+                        courses:     [],
+                    });
+                    initialsMap[init] = key;
                 });
             }
         }
 
-        /* ── Merge enrolled retake/improve teachers ── */
+        /* ── Step 2: Detect CPG_Courses columns and add courses to teachers ── */
+        const rows = sheetRows(cpgCourseData);
+        if (rows.length > 0 || teacherMap.size > 0) {
+            let headers   = (cpgCourseData.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
+            let startIndex = 0;
+
+            if (!headers.some(h => h.includes('title') || h.includes('code') || h.includes('name'))) {
+                headers    = rows[0]?.map(h => (h || '').toLowerCase().trim()) || [];
+                startIndex = 1;
+            }
+
+            const tI  = headers.findIndex(h => h.includes('title'))       > -1 ? headers.findIndex(h => h.includes('title'))       : 0;
+            const cI  = headers.findIndex(h => h.includes('code'))        > -1 ? headers.findIndex(h => h.includes('code'))        : 1;
+            const nI  = headers.findIndex(h => h.includes('teacher name') || h === 'name') > -1 ? headers.findIndex(h => h.includes('teacher name') || h === 'name') : 2;
+            const deI = headers.findIndex(h => h.includes('designation')) > -1 ? headers.findIndex(h => h.includes('designation')) : 3;
+            const dpI = headers.findIndex(h => h.includes('department'))  > -1 ? headers.findIndex(h => h.includes('department'))  : 4;
+            const pI  = headers.findIndex(h => h.includes('phone'))       > -1 ? headers.findIndex(h => h.includes('phone'))       : 5;
+            const eI  = headers.findIndex(h => h.includes('email'))       > -1 ? headers.findIndex(h => h.includes('email'))       : 6;
+
+            for (let i = startIndex; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                const name = row[nI] || '';
+                if (!name || name.toLowerCase() === 'tba' || name.toLowerCase() === 'tb a') continue;
+
+                const key        = name.toLowerCase().trim();
+                const courseInfo = { title: row[tI] || '', code: row[cI] || '' };
+                if (!courseInfo.code) continue;
+
+                if (teacherMap.has(key)) {
+                    /* Already in map from CPG_Teachers — just add course */
+                    const existing = teacherMap.get(key);
+                    const dup = existing.courses.some(c => c.code === courseInfo.code);
+                    if (!dup) existing.courses.push(courseInfo);
+                } else {
+                    /* Teacher not in CPG_Teachers — add from CPG_Courses data */
+                    teacherMap.set(key, {
+                        name,
+                        designation: row[deI] || '',
+                        department:  row[dpI] || '',
+                        phone:       row[pI]  || '',
+                        email:       row[eI]  || '',
+                        courses:     [courseInfo],
+                    });
+                }
+            }
+        }
+
+        if (teacherMap.size === 0) {
+            body.innerHTML = '<div class="info-placeholder"><p>No teacher data found.</p></div>';
+            return;
+        }
+
+        /* ── Step 3: Merge enrolled retake/improve courses for logged-in student ── */
         const user = JSON.parse(
             localStorage.getItem('lu62b_student') ||
             sessionStorage.getItem('lu62b_student') ||
@@ -122,51 +130,36 @@ async function loadTeachers(body) {
                     const enrollments = await r.json();
                     enrollments.forEach(enr => {
                         if (!enr.teacher) return;
-                        const initials = enr.teacher.toUpperCase();
-                        const info = initialsInfoMap[initials];
-                        if (!info) return;
+                        const key = initialsMap[enr.teacher.toUpperCase()];
+                        if (!key) return;
 
                         const enrolledCourse = {
                             title:    enr.course_name || enr.course_code || '',
                             code:     enr.course_code || '',
-                            enrolled: enr.type, /* 'retake' | 'improve' — triggers badge */
+                            enrolled: enr.type,
                         };
 
-                        const key = info.name.toLowerCase().trim();
                         if (teacherMap.has(key)) {
-                            /* Teacher already in list — add course if not duplicate */
-                            const existing = teacherMap.get(key);
+                            const existing  = teacherMap.get(key);
                             const alreadyHas = existing.courses.some(c => c.code === enr.course_code);
-                            if (!alreadyHas && enrolledCourse.code) {
-                                existing.courses.push(enrolledCourse);
-                            }
-                            /* Fill phone/email from CPG_Teachers if CPG_Courses has blank/N/A/dash */
-                            if (_tcEmpty(existing.phone) && info.phone) existing.phone = info.phone;
-                            if (_tcEmpty(existing.email) && info.email) existing.email = info.email;
-                        } else {
-                            /* New teacher — add from CPG_Teachers info */
-                            teacherMap.set(key, {
-                                name:        info.name,
-                                designation: info.designation,
-                                department:  info.department,
-                                phone:       info.phone,
-                                email:       info.email,
-                                courses:     enrolledCourse.code ? [enrolledCourse] : [],
-                                isEnrolledOnly: true,
-                                initials,
-                            });
+                            if (!alreadyHas && enrolledCourse.code) existing.courses.push(enrolledCourse);
                         }
                     });
                 }
             } catch(e) { /* network error — silently skip */ }
         }
 
-        /* ── Render ── */
+        /* ── Step 4: Render ── */
         const teachers = Array.from(teacherMap.values());
-        if (!teachers.length) {
-            body.innerHTML = '<div class="info-placeholder"><p>No teacher data found.</p></div>';
-            return;
-        }
+
+        /* Build suggestion list for autocomplete */
+        const tcSuggestions = [];
+        teachers.forEach(t => {
+            tcSuggestions.push({ label: t.name, sub: t.designation || '', value: t.name });
+            t.courses.forEach(c => {
+                if (c.code) tcSuggestions.push({ label: c.code, sub: c.title, value: c.code });
+            });
+        });
 
         let cardsHtml = '';
         teachers.forEach(t => {
@@ -174,7 +167,6 @@ async function loadTeachers(body) {
                 .join(' ').toLowerCase();
 
             const coursesHtml = t.courses.map(c => {
-                /* Badge for retake/improve enrolled courses */
                 let badge = '';
                 if (c.enrolled === 'retake') {
                     badge = `<span style="margin-left:6px;font-size:0.58rem;font-weight:800;padding:1px 6px;
@@ -211,20 +203,16 @@ async function loadTeachers(body) {
             cardsHtml += `
                 <div class="info-item-card tc-card" data-search="${escH(searchText)}" style="display:flex;flex-direction:column;">
                     <div style="margin-bottom:12px;">
-                        <div style="font-size:1.05rem;font-weight:700;color:var(--text);">
-                            ${escH(t.name)}
-                        </div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text);">${escH(t.name)}</div>
                         ${t.designation ? `<div style="font-size:0.78rem;color:var(--accent-bright);font-weight:600;margin-bottom:2px;">${escH(t.designation)}</div>` : ''}
                         ${t.department  ? `<div style="font-size:0.7rem;color:var(--text-secondary);opacity:0.8;">${escH(t.department)}</div>` : ''}
                     </div>
-
                     ${coursesHtml ? `
                     <div style="margin-bottom:12px;">
                         <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;
                             color:var(--text-secondary);margin-bottom:6px;font-weight:700;">Assigned Courses</div>
                         ${coursesHtml}
                     </div>` : ''}
-
                     <div style="margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">
                         <div style="font-size:0.8rem;margin-bottom:5px;">
                             <i class="fa-solid fa-phone" style="width:18px;opacity:0.5;"></i> ${phoneHtml}
@@ -237,15 +225,6 @@ async function loadTeachers(body) {
                         </div>
                     </div>
                 </div>`;
-        });
-
-        /* ── Build suggestion list (teacher names + course codes) ── */
-        const tcSuggestions = [];
-        teachers.forEach(t => {
-            tcSuggestions.push({ label: t.name, sub: t.designation || '', value: t.name });
-            t.courses.forEach(c => {
-                if (c.code) tcSuggestions.push({ label: c.code, sub: c.title, value: c.code });
-            });
         });
 
         body.innerHTML = `
@@ -274,7 +253,7 @@ async function loadTeachers(body) {
             <div id="tcNoResult" style="display:none;padding:40px;text-align:center;
                 color:var(--text-secondary);font-size:0.9rem;">No teachers found.</div>`;
 
-        /* ── Search + autocomplete logic ── */
+        /* ── Search + autocomplete ── */
         const searchInput = body.querySelector('#tcSearchInput');
         const countLabel  = body.querySelector('#tcCountLabel');
         const grid        = body.querySelector('#tcGrid');
@@ -306,7 +285,7 @@ async function loadTeachers(body) {
 
         function tcShowDrop(q) {
             if (!q || q.length < 1) { tcCloseDrop(); return; }
-            const lq = q.toLowerCase();
+            const lq   = q.toLowerCase();
             const hits = tcSuggestions.filter(s =>
                 s.label.toLowerCase().includes(lq) || s.sub.toLowerCase().includes(lq)
             ).slice(0, 8);
@@ -338,9 +317,8 @@ async function loadTeachers(body) {
         }
 
         searchInput.addEventListener('input', () => {
-            const q = searchInput.value;
-            tcApplyFilter(q);
-            tcShowDrop(q.trim());
+            tcApplyFilter(searchInput.value);
+            tcShowDrop(searchInput.value.trim());
         });
 
         searchInput.addEventListener('keydown', e => {
