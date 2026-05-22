@@ -63,6 +63,8 @@ async function loadTeachers(body) {
                 }
             }
 
+            console.log('[TC] cols detected → initCol:', initCol, 'nameCol:', nameCol, 'phCol:', phCol, 'emCol:', emCol, '| hCells:', hCells);
+
             if (initCol >= 0 && nameCol >= 0) {
                 tRows.forEach(row => {
                     /* prefer formatted value (c.f) so phone/email display as user typed */
@@ -86,6 +88,9 @@ async function loadTeachers(body) {
                     initialsMap[init] = key;
                 });
             }
+
+            console.log('[TC] directory SBT:', directory['sudipta banik trisha']);
+            console.log('[TC] initialsMap SBT:', initialsMap['SBT']);
         }
 
         /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
