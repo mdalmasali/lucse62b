@@ -69,7 +69,7 @@ async function loadTeachers(body) {
                 let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
                 const deCol = hCells.findIndex(h => /designation/.test(h));
                 const dpCol = hCells.findIndex(h => /department/.test(h));
-                const phCol = hCells.findIndex(h => /phone/.test(h));
+                const phCol = hCells.findIndex(h => /phone|cell/.test(h));
                 const emCol = hCells.findIndex(h => /email/.test(h));
 
                 /* Content-based fallback */
