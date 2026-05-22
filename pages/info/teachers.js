@@ -239,47 +239,135 @@ async function loadTeachers(body) {
                 </div>`;
         });
 
+        /* ── Build suggestion list (teacher names + course codes) ── */
+        const tcSuggestions = [];
+        teachers.forEach(t => {
+            tcSuggestions.push({ label: t.name, sub: t.designation || '', value: t.name });
+            t.courses.forEach(c => {
+                if (c.code) tcSuggestions.push({ label: c.code, sub: c.title, value: c.code });
+            });
+        });
+
         body.innerHTML = `
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
                 <span id="tcCountLabel" style="flex:1;font-size:0.78rem;color:var(--text-secondary);">
                     ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}
                 </span>
-                <div style="position:relative;">
+                <div style="position:relative;" id="tcSearchWrap">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;
-                        transform:translateY(-50%);opacity:0.4;font-size:0.78rem;pointer-events:none;"></i>
+                        transform:translateY(-50%);opacity:0.4;font-size:0.78rem;pointer-events:none;z-index:1;"></i>
                     <input id="tcSearchInput" type="text" placeholder="Search teachers or courses…"
+                        autocomplete="off"
                         style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
                         border-radius:8px;padding:7px 12px 7px 30px;color:var(--text);font-size:0.82rem;
                         outline:none;width:230px;transition:border-color .2s;"
                         onfocus="this.style.borderColor='var(--accent-bright)'"
                         onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+                    <div id="tcDropdown" style="display:none;position:absolute;top:calc(100% + 5px);right:0;
+                        min-width:260px;max-height:260px;overflow-y:auto;
+                        background:#1a1a2e;border:1px solid rgba(124,58,237,0.35);
+                        border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;">
+                    </div>
                 </div>
             </div>
             <div class="info-card-grid" id="tcGrid">${cardsHtml}</div>
             <div id="tcNoResult" style="display:none;padding:40px;text-align:center;
                 color:var(--text-secondary);font-size:0.9rem;">No teachers found.</div>`;
 
-        /* ── Search filter ── */
+        /* ── Search + autocomplete logic ── */
         const searchInput = body.querySelector('#tcSearchInput');
         const countLabel  = body.querySelector('#tcCountLabel');
         const grid        = body.querySelector('#tcGrid');
         const noResult    = body.querySelector('#tcNoResult');
+        const dropdown    = body.querySelector('#tcDropdown');
         const cards       = grid.querySelectorAll('.tc-card');
+        let acFocused = -1;
 
-        searchInput.addEventListener('input', () => {
-            const q = searchInput.value.toLowerCase().trim();
+        function tcApplyFilter(q) {
+            const lq = q.toLowerCase().trim();
             let visible = 0;
             cards.forEach(card => {
-                const match = !q || card.dataset.search.includes(q);
+                const match = !lq || card.dataset.search.includes(lq);
                 card.style.display = match ? '' : 'none';
                 if (match) visible++;
             });
-            countLabel.textContent = q
+            countLabel.textContent = lq
                 ? `${visible} of ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`
                 : `${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`;
             noResult.style.display = visible === 0 ? '' : 'none';
             grid.style.display     = visible === 0 ? 'none' : '';
+        }
+
+        function tcCloseDrop() {
+            dropdown.style.display = 'none';
+            dropdown.innerHTML = '';
+            acFocused = -1;
+        }
+
+        function tcShowDrop(q) {
+            if (!q || q.length < 1) { tcCloseDrop(); return; }
+            const lq = q.toLowerCase();
+            const hits = tcSuggestions.filter(s =>
+                s.label.toLowerCase().includes(lq) || s.sub.toLowerCase().includes(lq)
+            ).slice(0, 8);
+            if (!hits.length) { tcCloseDrop(); return; }
+
+            dropdown.innerHTML = hits.map((s, i) => `
+                <div class="tc-ac-item" data-idx="${i}" data-value="${escH(s.value)}"
+                    style="padding:8px 12px;cursor:pointer;display:flex;flex-direction:column;gap:1px;
+                    border-bottom:1px solid rgba(255,255,255,0.05);transition:background .15s;">
+                    <span style="font-size:0.83rem;font-weight:600;color:var(--text);">${escH(s.label)}</span>
+                    ${s.sub ? `<span style="font-size:0.7rem;color:var(--text-secondary);opacity:0.75;">${escH(s.sub)}</span>` : ''}
+                </div>`).join('');
+            dropdown.style.display = 'block';
+            acFocused = -1;
+
+            dropdown.querySelectorAll('.tc-ac-item').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    dropdown.querySelectorAll('.tc-ac-item').forEach(el => el.style.background = '');
+                    item.style.background = 'rgba(124,58,237,0.18)';
+                });
+                item.addEventListener('mouseleave', () => { item.style.background = ''; });
+                item.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    searchInput.value = item.dataset.value;
+                    tcApplyFilter(item.dataset.value);
+                    tcCloseDrop();
+                });
+            });
+        }
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value;
+            tcApplyFilter(q);
+            tcShowDrop(q.trim());
         });
+
+        searchInput.addEventListener('keydown', e => {
+            const items = dropdown.querySelectorAll('.tc-ac-item');
+            if (!items.length) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                acFocused = Math.min(acFocused + 1, items.length - 1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                acFocused = Math.max(acFocused - 1, 0);
+            } else if (e.key === 'Enter' && acFocused >= 0) {
+                e.preventDefault();
+                items[acFocused].dispatchEvent(new MouseEvent('mousedown'));
+                return;
+            } else if (e.key === 'Escape') {
+                tcCloseDrop(); return;
+            } else { return; }
+            items.forEach((el, i) => {
+                el.style.background = i === acFocused ? 'rgba(124,58,237,0.18)' : '';
+            });
+        });
+
+        searchInput.addEventListener('blur', () => setTimeout(tcCloseDrop, 150));
+        document.addEventListener('click', e => {
+            if (!body.querySelector('#tcSearchWrap')?.contains(e.target)) tcCloseDrop();
+        }, { capture: true });
 
     } catch (err) {
         console.error(err);
