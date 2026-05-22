@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
@@ -14,64 +14,317 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
   <style>
-    .login-container {
-      max-width: 400px; margin: 80px auto 40px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 24px; padding: 40px;
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      box-shadow: 0 24px 50px rgba(0,0,0,0.5);
-      text-align: center; box-sizing: border-box;
+    /* ══════════════════════════════════════
+       AsmrProg-style split-panel login card
+       ══════════════════════════════════════ */
+
+    .lu-login-wrap {
+      display: flex;
+      align-items: stretch;
+      max-width: 840px;
+      min-height: 520px;
+      margin: 52px auto 48px;
+      background: rgba(12,12,22,0.85);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
-    .login-icon { font-size: 3rem; color: var(--accent); margin-bottom: 20px; }
-    .login-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
-    .login-desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px; }
-    .input-group { margin-bottom: 20px; text-align: left; }
-    .input-group label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
-    .input-group input {
-      width: 100%; padding: 14px 16px;
-      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text);
-      font-family: 'Inter', sans-serif; font-size: 1rem;
-      transition: border-color 0.3s; box-sizing: border-box;
+
+    /* ── Form Side (left) ── */
+    .lu-form-side {
+      flex: 1;
+      min-width: 0;
+      padding: 44px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    .input-group input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.05); }
+
+    /* Mobile brand header (hidden on desktop) */
+    .lu-mobile-brand {
+      display: none;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .lu-mobile-brand img {
+      width: 60px; height: 60px;
+      border-radius: 16px; margin-bottom: 10px;
+    }
+    .lu-mobile-brand-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem; font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--accent-bright));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Step title shown inside form */
+    .step-heading {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .step-sub {
+      font-size: 0.85rem; color: var(--text-secondary);
+      margin-bottom: 24px; line-height: 1.5;
+    }
+
+    /* Step animation */
+    @keyframes stepSlideIn {
+      from { opacity: 0; transform: translateX(18px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .step-animate { animation: stepSlideIn 0.32s ease; }
+
+    /* Icon-wrapped inputs */
+    .iw { margin-bottom: 14px; }
+    .iw label {
+      display: block;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.7px; text-transform: uppercase;
+    }
+    .iw-field {
+      position: relative; display: flex; align-items: center;
+    }
+    .iw-field .fi {
+      position: absolute; left: 13px;
+      color: var(--muted); font-size: 0.85rem;
+      pointer-events: none; transition: color 0.25s; z-index: 1;
+    }
+    .iw-field input {
+      width: 100%;
+      padding: 12px 15px 12px 38px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 0.92rem;
+      transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+      box-sizing: border-box;
+    }
+    .iw-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(124,58,237,0.07);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.14);
+    }
+    .iw-field:focus-within .fi { color: var(--accent-bright); }
+
+    /* Password toggle */
+    .pwd-eye {
+      position: absolute; right: 11px;
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 0.82rem; padding: 4px; z-index: 1;
+      transition: color 0.2s;
+    }
+    .pwd-eye:hover { color: var(--accent-bright); }
+
+    /* OTP special */
+    .otp-wrap .iw-field input {
+      text-align: center; letter-spacing: 10px;
+      font-size: 1.25rem; font-weight: 700;
+      padding-left: 15px;
+    }
+
+    /* Keep logged-in row */
+    .keep-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px;
+      font-size: 0.83rem; color: var(--text-secondary);
+      cursor: pointer; user-select: none;
+    }
+    .keep-row input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+
+    /* Button */
     .btn {
-      display: inline-block; width: 100%; padding: 14px 24px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; font-weight: 600; font-size: 1rem;
-      border: none; border-radius: 12px; cursor: pointer;
-      transition: transform 0.3s, box-shadow 0.3s;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%;
+      padding: 13px 24px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff; font-weight: 600; font-size: 0.92rem;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     }
-    .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(124,58,237,0.4); }
-    .btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
-    .error-msg { color: #f43f5e; font-size: 0.85rem; margin-top: 10px; margin-bottom: 14px; display: none; font-weight: 500; }
-    .success-msg { color: #10b981; font-size: 0.85rem; margin-top: 10px; display: none; font-weight: 500; }
-    .demo-session-note { margin-top: -8px; margin-bottom: 14px; text-align: left; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(124,58,237,0.42); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.48; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Messages */
+    .error-msg {
+      display: none; margin-bottom: 12px;
+      padding: 9px 13px;
+      background: rgba(244,63,94,0.09);
+      border: 1px solid rgba(244,63,94,0.22);
+      border-radius: 9px;
+      color: #f43f5e; font-size: 0.8rem; font-weight: 500;
+    }
+    .success-msg {
+      display: none; margin-bottom: 12px;
+      color: var(--green); font-size: 0.8rem; font-weight: 500;
+    }
+    .demo-session-note {
+      padding: 9px 13px;
+      background: rgba(16,185,129,0.07);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 9px;
+    }
     .otp-sent-badge {
-      background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 10px; padding: 10px 14px; color: var(--green);
-      font-size: 0.85rem; margin-bottom: 16px; text-align: left;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 9px; padding: 9px 13px;
+      color: var(--green); font-size: 0.82rem;
+      margin-bottom: 14px;
     }
-    .link-row { margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary); }
-    .link-row a { color: var(--accent-bright); text-decoration: none; }
+
+    /* Welcome badge */
     .welcome-badge {
-      background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);
-      border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
-      text-align: left; display: flex; align-items: center; gap: 12px;
+      background: rgba(124,58,237,0.09);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 12px; padding: 11px 14px;
+      margin-bottom: 18px;
+      display: flex; align-items: center; gap: 11px;
     }
     .welcome-badge-avatar {
-      width: 40px; height: 40px; border-radius: 12px;
+      width: 40px; height: 40px; border-radius: 11px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 1rem; flex-shrink: 0;
+      color: #fff; font-weight: 700; font-size: 0.95rem; flex-shrink: 0;
     }
-    .welcome-badge-name { font-weight: 600; color: var(--text); font-size: 0.9rem; }
-    .welcome-badge-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-    @media (max-width: 640px) {
-      .login-container { margin: 16px; padding: 28px 20px; border-radius: 20px; max-width: 100%; }
-      .login-icon { font-size: 2.4rem; margin-bottom: 14px; }
-      .login-title { font-size: 1.5rem; }
-      #otpCode { letter-spacing: 12px; font-size: 1.4rem; padding: 14px 10px; }
+    .welcome-badge-name { font-weight: 600; color: var(--text); font-size: 0.88rem; }
+    .welcome-badge-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+    /* Login desc */
+    .login-desc {
+      color: var(--text-secondary); font-size: 0.86rem;
+      line-height: 1.6; margin-bottom: 18px;
+    }
+
+    /* Link row */
+    .link-row {
+      text-align: center; margin-top: 14px;
+      font-size: 0.81rem; color: var(--text-secondary);
+    }
+    .link-row a {
+      color: var(--accent-bright); text-decoration: none;
+      font-weight: 500; transition: color 0.2s;
+    }
+    .link-row a:hover { color: #fff; }
+
+    /* Back to home */
+    .back-home {
+      text-align: center; margin-top: 18px;
+    }
+    .back-home a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.8rem; transition: color 0.2s;
+    }
+    .back-home a:hover { color: var(--text-secondary); }
+
+
+    /* ══════════════════════════════════════
+       AsmrProg Toggle Panel (right side)
+       ══════════════════════════════════════ */
+    .lu-toggle-panel {
+      width: 340px;
+      flex-shrink: 0;
+      background: linear-gradient(145deg, #5b21b6 0%, #7c3aed 40%, #0891b2 100%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 32px;
+      text-align: center;
+      /* AsmrProg curved left edge */
+      border-radius: 150px 0 0 120px;
+      transition: border-radius 0.6s ease-in-out;
+    }
+
+    /* Decorative circles (AsmrProg style) */
+    .tp-circle {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+      pointer-events: none;
+    }
+    .tp-c1 { width: 280px; height: 280px; top: -80px; right: -80px; }
+    .tp-c2 { width: 200px; height: 200px; bottom: -60px; left: -60px; }
+    .tp-c3 { width: 120px; height: 120px; top: 50%; left: 20px; transform: translateY(-50%); background: rgba(255,255,255,0.04); }
+
+    .tp-logo {
+      width: 80px; height: 80px;
+      border-radius: 22px;
+      border: 3px solid rgba(255,255,255,0.3);
+      object-fit: cover;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+      position: relative; z-index: 1;
+      margin-bottom: 20px;
+    }
+    .tp-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.55rem; font-weight: 700;
+      color: #fff; letter-spacing: -0.3px;
+      position: relative; z-index: 1;
+      margin-bottom: 10px;
+    }
+    .tp-batch {
+      font-size: 0.82rem; color: rgba(255,255,255,0.75);
+      position: relative; z-index: 1;
+      line-height: 1.6; margin-bottom: 28px;
+    }
+
+    /* Feature list */
+    .tp-features {
+      display: flex; flex-direction: column; gap: 12px;
+      width: 100%; position: relative; z-index: 1;
+    }
+    .tp-feat {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 10px 14px;
+      text-align: left;
+    }
+    .tp-feat i {
+      font-size: 0.9rem; color: rgba(255,255,255,0.9);
+      width: 16px; flex-shrink: 0;
+    }
+    .tp-feat span {
+      font-size: 0.8rem; color: rgba(255,255,255,0.85);
+      font-weight: 500;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      .lu-login-wrap {
+        flex-direction: column;
+        margin: 10px 10px 40px;
+        border-radius: 22px;
+        min-height: unset;
+      }
+      .lu-toggle-panel {
+        width: 100%;
+        border-radius: 22px 22px 0 0;
+        padding: 28px 24px;
+        flex-direction: row;
+        gap: 14px;
+        justify-content: flex-start;
+        text-align: left;
+      }
+      .tp-logo { width: 52px; height: 52px; border-radius: 14px; margin-bottom: 0; flex-shrink: 0; }
+      .tp-title { font-size: 1.1rem; margin-bottom: 2px; }
+      .tp-batch { font-size: 0.74rem; margin-bottom: 0; }
+      .tp-features { display: none; }
+      .tp-circle { display: none; }
+      .lu-form-side { padding: 28px 22px 32px; }
+      .lu-mobile-brand { display: none; }
+      .otp-wrap .iw-field input { letter-spacing: 6px; font-size: 1.05rem; }
     }
   </style>
 </head>
@@ -105,6 +358,7 @@
         <span></span><span></span><span></span>
       </button>
     </nav>
+
     <!-- Mobile Nav Overlay -->
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
@@ -118,121 +372,184 @@
       <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
     </div>
 
-    <div class="login-container fade-in delay-1">
-      <img src="../assets/images/icon-512.png" alt="Portal Icon" class="login-icon" style="width:72px;height:72px;border-radius:18px;object-fit:cover;">
-      <h2 class="login-title">Student Portal</h2>
+    <!-- ══ AsmrProg Split-Panel Card ══ -->
+    <div class="lu-login-wrap fade-in delay-1">
 
-      <!-- Step 1: Student ID -->
-      <div id="stepId">
-        <p class="login-desc">Enter your Student ID to continue.</p>
-        <div class="input-group">
-          <label for="studentIdInput">Student ID</label>
-          <input type="text" id="studentIdInput" placeholder="e.g. 0182320012101001 or DEMO" inputmode="text">
-        </div>
-        <div class="error-msg" id="idError"></div>
-        <button class="btn" id="continueBtn" onclick="checkStudentId()">Continue <i class="fa-solid fa-arrow-right"></i></button>
-      </div>
+      <!-- LEFT: Form Side -->
+      <div class="lu-form-side">
 
-      <!-- Step 2a: Password login -->
-      <div id="stepPassword" style="display:none;">
-        <div class="welcome-badge">
-          <div class="welcome-badge-avatar" id="pwdAvatar"></div>
-          <div>
-            <div class="welcome-badge-name" id="pwdName"></div>
-            <div class="welcome-badge-sub">Returning student</div>
+        <!-- Step 1: Student ID -->
+        <div id="stepId">
+          <h2 class="step-heading">Welcome Back</h2>
+          <p class="step-sub">Enter your Student ID to sign in to the portal.</p>
+          <div class="iw">
+            <label for="studentIdInput">Student ID</label>
+            <div class="iw-field">
+              <i class="fa-solid fa-id-card fi"></i>
+              <input type="text" id="studentIdInput" placeholder="e.g. 0182320012101001 or DEMO" inputmode="text">
+            </div>
           </div>
+          <div class="error-msg" id="idError"></div>
+          <button class="btn" id="continueBtn" onclick="checkStudentId()">Continue <i class="fa-solid fa-arrow-right"></i></button>
         </div>
-        <div class="input-group">
-          <label for="passwordInput">Password</label>
-          <input type="password" id="passwordInput" placeholder="Enter your password">
-        </div>
-        <div style="text-align:left; margin-bottom:20px;">
-          <label style="color:var(--text-secondary);font-size:0.85rem;display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="keepLoggedIn" checked style="width:auto;accent-color:var(--accent);">
+
+        <!-- Step 2a: Password -->
+        <div id="stepPassword" style="display:none;">
+          <div class="welcome-badge">
+            <div class="welcome-badge-avatar" id="pwdAvatar"></div>
+            <div>
+              <div class="welcome-badge-name" id="pwdName"></div>
+              <div class="welcome-badge-sub">Returning student</div>
+            </div>
+          </div>
+          <div class="iw">
+            <label for="passwordInput">Password</label>
+            <div class="iw-field">
+              <i class="fa-solid fa-lock fi"></i>
+              <input type="password" id="passwordInput" placeholder="Enter your password">
+              <button class="pwd-eye" type="button" onclick="togglePwd('passwordInput',this)" tabindex="-1">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <label class="keep-row">
+            <input type="checkbox" id="keepLoggedIn" checked>
             Keep me logged in
           </label>
-        </div>
-        <div class="success-msg demo-session-note" id="demoSessionNote">Demo mode uses a temporary browser session and will clear when the browser closes.</div>
-        <div class="error-msg" id="passwordError"></div>
-        <button class="btn" id="loginBtn" onclick="loginWithPassword()">Login <i class="fa-solid fa-right-to-bracket"></i></button>
-        <div class="link-row">
-          <a href="#" onclick="showForgotPassword();return false;">Forgot password?</a>
-          &ensp;·&ensp;
-          <a href="#" onclick="goBack();return false;">Back</a>
-        </div>
-      </div>
-
-      <!-- Step 2b: First-time OTP -->
-      <div id="stepOtp" style="display:none;">
-        <div class="welcome-badge">
-          <div class="welcome-badge-avatar" id="otpAvatar"></div>
-          <div>
-            <div class="welcome-badge-name" id="otpName"></div>
-            <div class="welcome-badge-sub">New account setup</div>
+          <div class="success-msg demo-session-note" id="demoSessionNote">Demo mode uses a temporary browser session and will clear when the browser closes.</div>
+          <div class="error-msg" id="passwordError"></div>
+          <button class="btn" id="loginBtn" onclick="loginWithPassword()">Sign In <i class="fa-solid fa-right-to-bracket"></i></button>
+          <div class="link-row">
+            <a href="#" onclick="showForgotPassword();return false;">Forgot password?</a>
+            &ensp;·&ensp;
+            <a href="#" onclick="goBack();return false;">Back</a>
           </div>
         </div>
-        <p class="login-desc" style="margin-bottom:16px;">We'll send an OTP to your registered number to verify and set up your account.</p>
-        <div class="error-msg" id="otpStepError"></div>
-        <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
-        <div class="link-row"><a href="#" onclick="goBack();return false;">Back</a></div>
+
+        <!-- Step 2b: First-time OTP -->
+        <div id="stepOtp" style="display:none;">
+          <div class="welcome-badge">
+            <div class="welcome-badge-avatar" id="otpAvatar"></div>
+            <div>
+              <div class="welcome-badge-name" id="otpName"></div>
+              <div class="welcome-badge-sub">New account setup</div>
+            </div>
+          </div>
+          <p class="login-desc">We'll send an OTP to your registered number to verify and set up your account.</p>
+          <div class="error-msg" id="otpStepError"></div>
+          <button class="btn" id="sendOtpBtn" onclick="requestOTP()">Send OTP <i class="fa-solid fa-paper-plane"></i></button>
+          <div class="link-row"><a href="#" onclick="goBack();return false;">Back</a></div>
+        </div>
+
+        <!-- Step 3: OTP verification -->
+        <div id="stepVerify" style="display:none;">
+          <h2 class="step-heading">Verify OTP</h2>
+          <p class="login-desc">OTP sent to <strong id="maskedPhone"></strong>.</p>
+          <div class="success-msg" id="otpSuccess" style="display:block;margin-bottom:10px;">
+            <i class="fa-solid fa-circle-check" style="color:#10b981;"></i> OTP sent successfully!
+          </div>
+          <div class="iw otp-wrap">
+            <label for="otpCode">6-Digit OTP</label>
+            <div class="iw-field">
+              <input type="text" id="otpCode" placeholder="XXXXXX" maxlength="6">
+            </div>
+          </div>
+          <div class="error-msg" id="otpError"></div>
+          <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify &amp; Continue <i class="fa-solid fa-check"></i></button>
+          <div class="link-row">
+            <a href="#" onclick="goBack();return false;">Try again</a>
+          </div>
+        </div>
+
+        <!-- Forgot Password -->
+        <div id="stepForgot" style="display:none;">
+          <h2 class="step-heading">Reset Password</h2>
+          <p class="login-desc">Enter your Student ID to receive a password reset OTP.</p>
+          <div class="iw">
+            <label for="forgotStudentId">Student ID</label>
+            <div class="iw-field">
+              <i class="fa-solid fa-id-card fi"></i>
+              <input type="text" id="forgotStudentId" placeholder="e.g. 0182320012101001">
+            </div>
+          </div>
+          <div class="error-msg" id="forgotError"></div>
+          <button class="btn" id="sendResetOtpBtn" onclick="requestPasswordResetOTP()">Send Reset OTP <i class="fa-solid fa-paper-plane"></i></button>
+          <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Sign In</a></div>
+        </div>
+
+        <!-- Reset Password -->
+        <div id="stepReset" style="display:none;">
+          <h2 class="step-heading">New Password</h2>
+          <div class="otp-sent-badge">
+            <i class="fa-solid fa-circle-check"></i> OTP sent to <strong id="resetMaskedPhone"></strong>
+          </div>
+          <div class="iw otp-wrap">
+            <label for="resetOtp">OTP</label>
+            <div class="iw-field">
+              <input type="text" id="resetOtp" placeholder="XXXXXX" maxlength="6">
+            </div>
+          </div>
+          <div class="iw">
+            <label for="newPassword">New Password</label>
+            <div class="iw-field">
+              <i class="fa-solid fa-lock fi"></i>
+              <input type="password" id="newPassword" placeholder="At least 6 characters">
+              <button class="pwd-eye" type="button" onclick="togglePwd('newPassword',this)" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="iw">
+            <label for="confirmPassword">Confirm Password</label>
+            <div class="iw-field">
+              <i class="fa-solid fa-lock fi"></i>
+              <input type="password" id="confirmPassword" placeholder="Re-enter password">
+              <button class="pwd-eye" type="button" onclick="togglePwd('confirmPassword',this)" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="error-msg" id="resetError"></div>
+          <button class="btn" id="resetPasswordBtn" onclick="resetPassword()">Reset Password <i class="fa-solid fa-check"></i></button>
+          <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Sign In</a></div>
+        </div>
+
+        <div class="back-home">
+          <a href="../index.html"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+        </div>
+      </div><!-- /lu-form-side -->
+
+      <!-- RIGHT: AsmrProg Toggle Panel -->
+      <div class="lu-toggle-panel">
+        <div class="tp-circle tp-c1"></div>
+        <div class="tp-circle tp-c2"></div>
+        <div class="tp-circle tp-c3"></div>
+
+        <img src="../assets/images/icon-512.png" alt="Portal" class="tp-logo">
+        <div class="tp-title">CSE 62B Portal</div>
+        <div class="tp-batch">
+          Batch 62 · Section B<br>Leading University, Sylhet
+        </div>
+
+        <div class="tp-features">
+          <div class="tp-feat">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Results &amp; Grade Dashboard</span>
+          </div>
+          <div class="tp-feat">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Classwork &amp; Study Materials</span>
+          </div>
+          <div class="tp-feat">
+            <i class="fa-solid fa-users"></i>
+            <span>Student Directory</span>
+          </div>
+          <div class="tp-feat">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>Routine &amp; Exam Schedule</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Step 3: OTP verification -->
-      <div id="stepVerify" style="display:none;">
-        <p class="login-desc">OTP sent to <strong id="maskedPhone"></strong>.</p>
-        <div class="success-msg" id="otpSuccess" style="display:block;margin-bottom:12px;"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i> OTP sent successfully!</div>
-        <div class="input-group">
-          <label for="otpCode">6-Digit OTP</label>
-          <input type="text" id="otpCode" placeholder="XXXXXX" maxlength="6" style="text-align:center;letter-spacing:8px;font-size:1.2rem;font-weight:bold;">
-        </div>
-        <div class="error-msg" id="otpError"></div>
-        <button class="btn" id="verifyOtpBtn" onclick="verifyOTP()">Verify & Continue <i class="fa-solid fa-check"></i></button>
-        <div class="link-row">
-          <a href="#" onclick="goBack();return false;">Try again</a>
-        </div>
-      </div>
+    </div><!-- /lu-login-wrap -->
 
-      <!-- Forgot Password -->
-      <div id="stepForgot" style="display:none;">
-        <p class="login-desc">Enter your Student ID to receive a password reset OTP.</p>
-        <div class="input-group">
-          <label for="forgotStudentId">Student ID</label>
-          <input type="text" id="forgotStudentId" placeholder="e.g. 0182320012101001">
-        </div>
-        <div class="error-msg" id="forgotError"></div>
-        <button class="btn" id="sendResetOtpBtn" onclick="requestPasswordResetOTP()">Send Reset OTP <i class="fa-solid fa-paper-plane"></i></button>
-        <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Login</a></div>
-      </div>
-
-      <!-- Reset Password -->
-      <div id="stepReset" style="display:none;">
-        <div class="otp-sent-badge">
-          <i class="fa-solid fa-circle-check"></i> OTP sent to <strong id="resetMaskedPhone"></strong>
-        </div>
-        <div class="input-group">
-          <label for="resetOtp">OTP</label>
-          <input type="text" id="resetOtp" placeholder="XXXXXX" maxlength="6" style="text-align:center;letter-spacing:8px;font-size:1.2rem;font-weight:bold;">
-        </div>
-        <div class="input-group">
-          <label for="newPassword">New Password</label>
-          <input type="password" id="newPassword" placeholder="At least 6 characters">
-        </div>
-        <div class="input-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <input type="password" id="confirmPassword" placeholder="Re-enter password">
-        </div>
-        <div class="error-msg" id="resetError"></div>
-        <button class="btn" id="resetPasswordBtn" onclick="resetPassword()">Reset Password <i class="fa-solid fa-check"></i></button>
-        <div class="link-row"><a href="#" onclick="showOnly('stepPassword');return false;">Back to Login</a></div>
-      </div>
-
-      <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.85rem;display:inline-block;margin-top:24px;">
-        <i class="fa-solid fa-arrow-left"></i> Back to Home
-      </a>
-    </div>
-
-    
-      <footer>
+    <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
         <a href="../index.html">Home</a>
@@ -260,12 +577,19 @@
     }
 
     let studentData = null;
-
     const ALL_STEPS = ['stepId','stepPassword','stepOtp','stepVerify','stepForgot','stepReset'];
 
     function showOnly(id) {
       ALL_STEPS.forEach(s => {
-        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+        const el = document.getElementById(s);
+        if (s === id) {
+          el.style.display = 'block';
+          el.classList.remove('step-animate');
+          void el.offsetWidth; // reflow to restart animation
+          el.classList.add('step-animate');
+        } else {
+          el.style.display = 'none';
+        }
       });
     }
 
@@ -304,12 +628,19 @@
     }
 
     function buildStudentSession(student) {
-      return {
-        id: student.id,
-        name: student.name,
-        loginTime: Date.now(),
-        isDemo: !!student.isDemo
-      };
+      return { id: student.id, name: student.name, loginTime: Date.now(), isDemo: !!student.isDemo };
+    }
+
+    function togglePwd(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon  = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
     }
 
     /* -- Supabase helpers -- */
@@ -343,7 +674,6 @@
       if (!res.ok) throw new Error('Save failed');
     }
 
-    /* -- Fetch student via Worker lookup (server-side, never exposes full sheet) -- */
     async function fetchStudentData(studentId) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
@@ -360,7 +690,6 @@
       }
     }
 
-    /* -- OTP helpers -- */
     function checkOTPLimit() {
       const today = new Date().toDateString();
       let d = JSON.parse(localStorage.getItem('lu62b_otpLimit')||'{}');
@@ -376,25 +705,21 @@
     }
     function sendOtpForStudent(studentId) {
       return fetch(WORKER_URL + '/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId }),
       }).then(r => r.json());
     }
-
     function verifyOtpWithServer(studentId, otp) {
       return fetch(WORKER_URL + '/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, otp }),
       }).then(r => r.json());
     }
 
-    /* -- Step 1: Check Student ID -- */
     async function checkStudentId() {
-      const sid    = normalizeStudentId(document.getElementById('studentIdInput').value);
-      const errEl  = document.getElementById('idError');
-      const btn    = document.getElementById('continueBtn');
+      const sid   = normalizeStudentId(document.getElementById('studentIdInput').value);
+      const errEl = document.getElementById('idError');
+      const btn   = document.getElementById('continueBtn');
       document.getElementById('studentIdInput').value = sid;
       errEl.style.display = 'none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
@@ -423,20 +748,19 @@
         errEl.innerHTML = message==='Student not found'
           ? '🚫 Student ID not found in our section.<br><small style="opacity:0.8;font-size:0.8em;">This portal is only for CSE Batch 62, Section B students.</small>'
           : message==='Demo login unavailable'
-            ? 'Demo login is not configured right now. Please add a password hash for <code>DEMO</code> in Supabase.'
+            ? 'Demo login is not configured right now.'
             : 'Connection error. Please try again.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
     }
 
-    /* -- Password login -- */
     async function loginWithPassword() {
       const pwd   = document.getElementById('passwordInput').value;
       const errEl = document.getElementById('passwordError');
       const btn   = document.getElementById('loginBtn');
       errEl.style.display='none';
       if (!pwd) { errEl.innerText='Please enter your password.'; errEl.style.display='block'; return; }
-      btn.innerText='Logging in...'; btn.disabled=true;
+      btn.innerText='Signing in...'; btn.disabled=true;
       try {
         const valid = await verifyPassword(studentData.id, pwd);
         if (valid) {
@@ -454,24 +778,20 @@
         } else {
           errEl.innerText='Incorrect password. Try again or use Forgot Password.';
           errEl.style.display='block';
-          btn.innerText='Login'; btn.disabled=false;
+          btn.innerText='Sign In'; btn.disabled=false;
         }
       } catch(e) {
         errEl.innerText='Login error. Please try again.';
         errEl.style.display='block';
-        btn.innerText='Login'; btn.disabled=false;
+        btn.innerText='Sign In'; btn.disabled=false;
       }
     }
 
-    /* -- OTP: first-time setup -- */
     function requestOTP() {
       const errEl = document.getElementById('otpStepError');
       const btn   = document.getElementById('sendOtpBtn');
       errEl.style.display='none';
-      if (!checkOTPLimit()) {
-        errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.';
-        errEl.style.display='block'; return;
-      }
+      if (!checkOTPLimit()) { errEl.innerText='Daily OTP limit reached (5/day). Try tomorrow.'; errEl.style.display='block'; return; }
       btn.innerText='Sending...'; btn.disabled=true;
       sendOtpForStudent(studentData.id).then(data => {
         if (!data.ok) throw new Error(data.error || 'Failed');
@@ -486,7 +806,6 @@
       });
     }
 
-    /* -- OTP: verify -- */
     async function verifyOTP() {
       const code  = document.getElementById('otpCode').value.trim();
       const errEl = document.getElementById('otpError');
@@ -518,7 +837,6 @@
       }
     }
 
-    /* -- Forgot password -- */
     function showForgotPassword() {
       if (studentData?.isDemo) {
         const errEl = document.getElementById('passwordError');
@@ -549,7 +867,7 @@
         showOnly('stepReset');
       } catch(e) {
         const msg = e?.message || String(e);
-        errEl.innerText = msg.includes('not found') ? 'Student not found.' : msg.includes('phone') ? 'No phone registered for this student.' : 'Failed to send OTP.';
+        errEl.innerText = msg.includes('not found') ? 'Student not found.' : msg.includes('phone') ? 'No phone registered.' : 'Failed to send OTP.';
         errEl.style.display='block';
         btn.innerText='Send Reset OTP'; btn.disabled=false;
       }
@@ -588,12 +906,12 @@
   </script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/theme.js"></script>
-<script src="../assets/js/analytics.js"></script>
-<script>
+  <script src="../assets/js/analytics.js"></script>
+  <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register(/sw.js, { updateViaCache: 'none' }).then(reg => reg.update());
     }
   </script>
-<script src="/assets/js/eid.js"></script>
+  <script src="/assets/js/eid.js"></script>
 </body>
 </html>
