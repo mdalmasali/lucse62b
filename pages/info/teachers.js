@@ -60,44 +60,46 @@ async function loadTeachers(body) {
         }
 
         /* ── Build initials → teacher details map from CPG_Teachers ── */
-        const initialsInfoMap = {}; /* initials → { name, designation, department, phone, email } */
+        /* Google Visualization API puts headers in table.cols[i].label,
+           NOT in rows[0] — so we read cols for header detection.        */
+        const initialsInfoMap = {};
         if (cpgTeacherData?.table) {
-            const tRows = cpgTeacherData.table.rows || [];
-            if (tRows.length > 1) {
-                const hCells = (tRows[0].c || []).map(c => (c?.v != null ? String(c.v).trim().toLowerCase() : ''));
-                let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
-                let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
-                const deCol = hCells.findIndex(h => /designation/.test(h));
-                const dpCol = hCells.findIndex(h => /department/.test(h));
-                const phCol = hCells.findIndex(h => /phone|cell/.test(h));
-                const emCol = hCells.findIndex(h => /email/.test(h));
+            const tRows  = cpgTeacherData.table.rows || [];
+            const hCells = (cpgTeacherData.table.cols || [])
+                .map(c => (c?.label != null ? String(c.label).trim().toLowerCase() : ''));
 
-                /* Content-based fallback */
-                if (initCol < 0 || nameCol < 0) {
-                    const sample = tRows.slice(1, 6).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
-                    for (let col = 0; col < (sample[0]?.length || 0); col++) {
-                        const vals = sample.map(r => r[col]).filter(Boolean);
-                        if (vals.length && vals.every(v => /^[A-Z]{2,5}$/.test(v)) && initCol < 0) initCol = col;
-                        if (vals.length && vals.some(v => v.length > 5 && /\s/.test(v)) && nameCol < 0) nameCol = col;
+            let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
+            let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
+            const deCol = hCells.findIndex(h => /designation/.test(h));
+            const dpCol = hCells.findIndex(h => /department/.test(h));
+            const phCol = hCells.findIndex(h => /phone|cell/.test(h));
+            const emCol = hCells.findIndex(h => /email/.test(h));
+
+            /* Content-based fallback for initials/name if cols labels are empty */
+            if (initCol < 0 || nameCol < 0) {
+                const sample = tRows.slice(0, 5).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+                for (let col = 0; col < (sample[0]?.length || 0); col++) {
+                    const vals = sample.map(r => r[col]).filter(Boolean);
+                    if (vals.length && vals.every(v => /^[A-Z]{2,5}$/.test(v)) && initCol < 0) initCol = col;
+                    if (vals.length && vals.some(v => v.length > 5 && /\s/.test(v)) && nameCol < 0) nameCol = col;
+                }
+            }
+
+            if (initCol >= 0 && nameCol >= 0) {
+                tRows.forEach(row => {
+                    const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                    const init = cells[initCol]?.toUpperCase();
+                    const name = cells[nameCol];
+                    if (init && name) {
+                        initialsInfoMap[init] = {
+                            name,
+                            designation: deCol >= 0 ? (cells[deCol] || '') : '',
+                            department:  dpCol >= 0 ? (cells[dpCol] || '') : '',
+                            phone:       phCol >= 0 ? (cells[phCol] || '') : '',
+                            email:       emCol >= 0 ? (cells[emCol] || '') : '',
+                        };
                     }
-                }
-
-                if (initCol >= 0 && nameCol >= 0) {
-                    tRows.slice(1).forEach(row => {
-                        const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-                        const init = cells[initCol]?.toUpperCase();
-                        const name = cells[nameCol];
-                        if (init && name) {
-                            initialsInfoMap[init] = {
-                                name,
-                                designation: deCol >= 0 ? (cells[deCol] || '') : '',
-                                department:  dpCol >= 0 ? (cells[dpCol] || '') : '',
-                                phone:       phCol >= 0 ? (cells[phCol] || '') : '',
-                                email:       emCol >= 0 ? (cells[emCol] || '') : '',
-                            };
-                        }
-                    });
-                }
+                });
             }
         }
 
