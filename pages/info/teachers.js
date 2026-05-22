@@ -3,6 +3,9 @@
 const _TC_SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _TC_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
+/* Returns true if contact value is blank/placeholder */
+const _tcEmpty = v => !v || v.trim() === '' || v.trim() === '-' || v.trim().toLowerCase() === 'n/a';
+
 async function loadTeachers(body) {
     body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Teachers & Courses...</div>';
     try {
@@ -137,9 +140,9 @@ async function loadTeachers(body) {
                             if (!alreadyHas && enrolledCourse.code) {
                                 existing.courses.push(enrolledCourse);
                             }
-                            /* Fill missing phone/email from CPG_Teachers if CPG_Courses had them blank */
-                            if (!existing.phone && info.phone) existing.phone = info.phone;
-                            if (!existing.email && info.email) existing.email = info.email;
+                            /* Fill phone/email from CPG_Teachers if CPG_Courses has blank/N/A/dash */
+                            if (_tcEmpty(existing.phone) && info.phone) existing.phone = info.phone;
+                            if (_tcEmpty(existing.email) && info.email) existing.email = info.email;
                         } else {
                             /* New teacher — add from CPG_Teachers info */
                             teacherMap.set(key, {
@@ -165,8 +168,11 @@ async function loadTeachers(body) {
             return;
         }
 
-        let html = '<div class="info-card-grid">';
+        let cardsHtml = '';
         teachers.forEach(t => {
+            const searchText = [t.name, t.designation, t.department, ...t.courses.map(c => c.code + ' ' + c.title)]
+                .join(' ').toLowerCase();
+
             const coursesHtml = t.courses.map(c => {
                 /* Badge for retake/improve enrolled courses */
                 let badge = '';
@@ -190,7 +196,7 @@ async function loadTeachers(body) {
             }).join('');
 
             let phoneHtml = '<span style="color:#64748b;font-size:0.82rem;">N/A</span>';
-            if (t.phone && t.phone !== '-' && t.phone.toLowerCase() !== 'n/a') {
+            if (!_tcEmpty(t.phone)) {
                 let cleanPhone = t.phone.replace(/[^0-9+]/g, '');
                 if (cleanPhone.startsWith('01')) cleanPhone = '88' + cleanPhone;
                 cleanPhone = cleanPhone.replace('+', '');
@@ -202,13 +208,11 @@ async function loadTeachers(body) {
                     </a>`;
             }
 
-            const enrolledOnlyBadge = '';
-
-            html += `
-                <div class="info-item-card" style="display:flex;flex-direction:column;">
+            cardsHtml += `
+                <div class="info-item-card tc-card" data-search="${escH(searchText)}" style="display:flex;flex-direction:column;">
                     <div style="margin-bottom:12px;">
                         <div style="font-size:1.05rem;font-weight:700;color:var(--text);">
-                            ${escH(t.name)}${enrolledOnlyBadge}
+                            ${escH(t.name)}
                         </div>
                         ${t.designation ? `<div style="font-size:0.78rem;color:var(--accent-bright);font-weight:600;margin-bottom:2px;">${escH(t.designation)}</div>` : ''}
                         ${t.department  ? `<div style="font-size:0.7rem;color:var(--text-secondary);opacity:0.8;">${escH(t.department)}</div>` : ''}
@@ -227,14 +231,55 @@ async function loadTeachers(body) {
                         </div>
                         <div style="font-size:0.8rem;word-break:break-all;">
                             <i class="fa-solid fa-envelope" style="width:18px;opacity:0.5;"></i>
-                            ${t.email && t.email !== '-'
+                            ${!_tcEmpty(t.email)
                                 ? `<a href="mailto:${t.email}" style="color:var(--accent-bright);text-decoration:none;">${escH(t.email)}</a>`
                                 : '<span style="color:#64748b;">N/A</span>'}
                         </div>
                     </div>
                 </div>`;
         });
-        body.innerHTML = html + '</div>';
+
+        body.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                <span id="tcCountLabel" style="flex:1;font-size:0.78rem;color:var(--text-secondary);">
+                    ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}
+                </span>
+                <div style="position:relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;
+                        transform:translateY(-50%);opacity:0.4;font-size:0.78rem;pointer-events:none;"></i>
+                    <input id="tcSearchInput" type="text" placeholder="Search teachers or courses…"
+                        style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+                        border-radius:8px;padding:7px 12px 7px 30px;color:var(--text);font-size:0.82rem;
+                        outline:none;width:230px;transition:border-color .2s;"
+                        onfocus="this.style.borderColor='var(--accent-bright)'"
+                        onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+                </div>
+            </div>
+            <div class="info-card-grid" id="tcGrid">${cardsHtml}</div>
+            <div id="tcNoResult" style="display:none;padding:40px;text-align:center;
+                color:var(--text-secondary);font-size:0.9rem;">No teachers found.</div>`;
+
+        /* ── Search filter ── */
+        const searchInput = body.querySelector('#tcSearchInput');
+        const countLabel  = body.querySelector('#tcCountLabel');
+        const grid        = body.querySelector('#tcGrid');
+        const noResult    = body.querySelector('#tcNoResult');
+        const cards       = grid.querySelectorAll('.tc-card');
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase().trim();
+            let visible = 0;
+            cards.forEach(card => {
+                const match = !q || card.dataset.search.includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            countLabel.textContent = q
+                ? `${visible} of ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`
+                : `${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`;
+            noResult.style.display = visible === 0 ? '' : 'none';
+            grid.style.display     = visible === 0 ? 'none' : '';
+        });
 
     } catch (err) {
         console.error(err);
