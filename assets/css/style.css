@@ -173,6 +173,7 @@ body {
 .lu62b-logged-in .auth-only { display: block !important; }
 .lu62b-logged-in .topbar-links .auth-only { display: list-item !important; }
 .lu62b-logged-in .mobile-nav-overlay .auth-only { display: flex !important; }
+.lu62b-logged-in .qi-strip.auth-only { display: flex !important; }
 
 /* ── Hero / Profile ── */
 .hero {
