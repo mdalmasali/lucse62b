@@ -1801,20 +1801,8 @@
       document.getElementById('dobGate').style.display = 'none';
       document.getElementById('profileContent').style.display = 'block';
       loadMyCourses();
-      document.getElementById('compareS1IdDisplay').textContent = currentUser.id;
-
-      [
-        'btnChangePassword',
-        'gDobDay', 'gDobMonth', 'gDobYear', 'dobGateBtn',
-        'btnShowDobEdit', 'btnSaveDob', 'cancelDobBtn',
-        'resDobDay', 'resDobMonth', 'resDobYear',
-        'cmpS1Day', 'cmpS1Month', 'cmpS1Year',
-        'cmpS2Id', 'cmpS2Day', 'cmpS2Month', 'cmpS2Year',
-        'btnLoadResults', 'btnCompare'
-      ].forEach(setDemoControlDisabled);
-
+      ['btnChangePassword'].forEach(setDemoControlDisabled);
       showProfileDemoHint();
-      showResError('Personal results, DOB setup, and comparison tools are unavailable in demo mode.', false);
     }
 
     const userData = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
@@ -1859,6 +1847,81 @@
           document.getElementById('statusIcon').innerText = '🔓';
         }
       }).catch(() => {});
+
+      initProfileView();
+    }
+
+    function populateGateDropdowns() {
+      const dayEl  = document.getElementById('gDobDay');
+      const yearEl = document.getElementById('gDobYear');
+      for (let d = 1; d <= 31; d++) {
+        const o = document.createElement('option');
+        o.value = String(d).padStart(2, '0');
+        o.textContent = d;
+        dayEl.appendChild(o);
+      }
+      const now = new Date().getFullYear();
+      for (let y = now - 15; y >= now - 35; y--) {
+        const o = document.createElement('option');
+        o.value = String(y);
+        o.textContent = y;
+        yearEl.appendChild(o);
+      }
+    }
+
+    function showProfileContent() {
+      document.getElementById('dobGate').style.display = 'none';
+      document.getElementById('profileContent').style.display = 'block';
+      loadMyCourses();
+    }
+
+    async function submitDobGate() {
+      const day   = document.getElementById('gDobDay').value;
+      const month = document.getElementById('gDobMonth').value;
+      const year  = document.getElementById('gDobYear').value;
+      const errEl = document.getElementById('dobGateError');
+      const btn   = document.getElementById('dobGateBtn');
+
+      errEl.textContent = '';
+      if (!day || !month || !year) {
+        errEl.textContent = 'Please select your full date of birth.';
+        return;
+      }
+
+      const dob = `${year}-${month}-${day}`;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying…';
+
+      try {
+        const r = await fetch(`${WORKER_URL_SMS}/result`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: currentUser.id, birth_date: dob }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const text = await r.text();
+        if (!text || (text.trimStart().startsWith('{') && JSON.parse(text).error)) throw new Error('Invalid');
+        localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
+        showProfileContent();
+      } catch {
+        errEl.textContent = 'Date of birth did not match. Please try again.';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Profile';
+      }
+    }
+
+    function initProfileView() {
+      if (isDemoUser) {
+        enableDemoProfileMode();
+        return;
+      }
+      populateGateDropdowns();
+      const savedDob = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (savedDob) {
+        showProfileContent();
+      } else {
+        document.getElementById('dobGate').style.display = 'flex';
+      }
     }
 
     function openChangePasswordModal() {
