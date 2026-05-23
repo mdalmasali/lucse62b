@@ -40,60 +40,51 @@ async function loadTeachers(body) {
                 .map(c => (c?.label != null ? String(c.label).trim().toLowerCase() : ''));
 
             let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
-            let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
+            let nameCol = hCells.findIndex(h => /^name$|teacher/.test(h));
             let deCol   = hCells.findIndex(h => /designation/.test(h));
             let dpCol   = hCells.findIndex(h => /department/.test(h));
             let phCol   = hCells.findIndex(h => /phone|cell/.test(h));
             let emCol   = hCells.findIndex(h => /email/.test(h));
 
-            /* Content-based fallback for ANY undetected column */
-            if (initCol < 0 || nameCol < 0 || phCol < 0 || emCol < 0) {
-                const sample = tRows.slice(0, 10).map(r =>
-                    (r.c || []).map(c => c?.v != null ? String(c.v).trim() : (c?.f != null ? String(c.f).trim() : ''))
-                );
-                for (let col = 0; col < (sample[0]?.length || 0); col++) {
-                    const vals = sample.map(r => r[col] || '').filter(Boolean);
-                    if (!vals.length) continue;
-                    if (initCol < 0 && vals.every(v => /^[A-Z]{2,5}$/.test(v)))                            initCol = col;
-                    if (nameCol < 0 && vals.some(v => v.length > 5 && /\s/.test(v)))                       nameCol = col;
-                    if (deCol   < 0 && vals.some(v => /professor|lecturer|adjunct|instructor/i.test(v)))    deCol   = col;
-                    if (dpCol   < 0 && vals.some(v => /cse|engineering|department|math|sust/i.test(v)))     dpCol   = col;
-                    if (phCol   < 0 && vals.some(v => /^\d{7,}$/.test(v.replace(/[\s\-\+\(\)]/g, ''))))    phCol   = col;
-                    if (emCol   < 0 && vals.some(v => /@/.test(v)))                                         emCol   = col;
-                }
-            }
+            /* Fallback: known CPG_Teachers column layout A=Acronym B=Name C=Designation D=Department E=Cell F=Email */
+            if (initCol < 0) initCol = 0;
+            if (nameCol < 0) nameCol = 1;
+            if (deCol   < 0) deCol   = 2;
+            if (dpCol   < 0) dpCol   = 3;
+            if (phCol   < 0) phCol   = 4;
+            if (emCol   < 0) emCol   = 5;
 
-            console.log('[TC] cols detected → initCol:', initCol, 'nameCol:', nameCol, 'phCol:', phCol, 'emCol:', emCol, '| hCells:', hCells);
+            console.log('[TC] cols → initCol:', initCol, 'nameCol:', nameCol, 'phCol:', phCol, 'emCol:', emCol, '| headers:', JSON.stringify(hCells.slice(0, 8)));
 
             if (initCol >= 0 && nameCol >= 0) {
                 tRows.forEach(row => {
-                    /* prefer formatted value (c.f) so phone/email display as user typed */
+                    /* prefer c.f (formatted) so numbers keep leading zeros */
                     const cells = (row.c || []).map(c => {
                         if (!c) return '';
-                        if (c.v != null) return String(c.v).trim();
-                        if (c.f != null) return String(c.f).trim();
-                        return '';
+                        const fv = c.f != null ? String(c.f).trim() : '';
+                        const vv = c.v != null ? String(c.v).trim() : '';
+                        return fv || vv;
                     });
-                    const init  = cells[initCol]?.toUpperCase();
+                    const init  = cells[initCol]?.toUpperCase().trim();
                     const name  = cells[nameCol];
                     if (!init || !name) return;
                     const key = name.toLowerCase().trim();
                     directory[key] = {
                         name,
-                        designation: deCol >= 0 ? (cells[deCol] || '') : '',
-                        department:  dpCol >= 0 ? (cells[dpCol] || '') : '',
-                        phone:       phCol >= 0 ? (cells[phCol] || '') : '',
-                        email:       emCol >= 0 ? (cells[emCol] || '') : '',
+                        designation: cells[deCol] || '',
+                        department:  cells[dpCol] || '',
+                        phone:       cells[phCol] || '',
+                        email:       cells[emCol] || '',
                     };
                     initialsMap[init] = key;
                 });
             }
 
-            console.log('[TC] SBT full:', JSON.stringify(directory['sudipta banik trisha']));
-            console.log('[TC] initialsMap SBT key:', initialsMap['SBT']);
-            /* Log raw row data for SBT */
-            const _sbtRow = tRows.find(r => (r.c || [])[initCol]?.v === 'SBT');
-            if (_sbtRow) console.log('[TC] SBT raw row c[4]:', JSON.stringify(_sbtRow.c?.[4]), 'c[5]:', JSON.stringify(_sbtRow.c?.[5]));
+            /* Debug: show exact values for known enrolled teachers */
+            ['SBT','NIR','AMD'].forEach(acr => {
+                const k = initialsMap[acr];
+                console.log(`[TC] ${acr} → key:${k} phone:"${directory[k]?.phone}" email:"${directory[k]?.email}"`);
+            });
         }
 
         /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
