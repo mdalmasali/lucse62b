@@ -425,7 +425,7 @@ Important: Always reply in the same language the student uses — if they write 
           { role: 'user', content: message.trim() },
         ];
 
-        const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        const aiRes = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
           messages,
           max_tokens: 600,
           temperature: 0.7,
