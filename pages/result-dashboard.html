@@ -507,6 +507,12 @@
         <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:20px;">
           <i class="fa-solid fa-arrow-left"></i> Back to Home
         </a>
+
+        <div id="myResultBanner" style="display:none;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+          <button onclick="backToMyResult()" style="width:100%;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.3);color:#a78bfa;border-radius:10px;padding:11px 20px;cursor:pointer;font-size:0.88rem;font-family:inherit;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.22)'" onmouseout="this.style.background='rgba(124,58,237,0.12)'">
+            <i class="fa-solid fa-rotate-left"></i> Back to My Results
+          </button>
+        </div>
       </div>
     </div>
 
@@ -526,7 +532,9 @@
           <div class="res-profile-meta" id="dMeta">—</div>
         </div>
         <button class="res-summary-btn" onclick="showSummaryCard()"><i class="fa-solid fa-id-card"></i> Summary</button>
-        <button class="res-logout" onclick="resLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        <button class="res-logout" id="btnSearchOther" onclick="searchOtherStudent()" style="display:none;background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.3);color:#38bdf8;"><i class="fa-solid fa-magnifying-glass"></i> Search Another</button>
+        <button class="res-logout" id="btnBackToMine"  onclick="backToMyResult()"     style="display:none;background:rgba(52,211,153,0.12);border-color:rgba(52,211,153,0.3);color:#34d399;"><i class="fa-solid fa-rotate-left"></i> My Results</button>
+        <button class="res-logout" id="btnResLogout"   onclick="resLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
       <div class="res-extra-info" id="dExtraInfo"></div>
 
@@ -705,6 +713,7 @@
     ];
 
     let resData = null, gradeChart = null, gpaChart = null;
+    let isViewingOwnResult = false, _myId = null, _myDob = null;
 
     /* ── Init ── */
     (function init() {
@@ -724,16 +733,70 @@
           o.value = y; o.textContent = y; el.appendChild(o);
         }
       });
+
+      // Auto-load own result if user is logged in with a saved DOB
+      try {
+        const _raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (_raw) {
+          const _u = JSON.parse(_raw);
+          if (_u.id && !_u.isDemo && String(_u.id).toUpperCase() !== 'DEMO') {
+            const _savedDob = localStorage.getItem('lu62b_dob_' + _u.id);
+            if (_savedDob) { _myId = _u.id; _myDob = _savedDob; setTimeout(autoLoadMyResult, 0); }
+          }
+        }
+      } catch(e) {}
     })();
 
+    async function autoLoadMyResult() {
+      const [yr, mo, day] = _myDob.split('-');
+      document.getElementById('rStudentId').value = _myId;
+      document.getElementById('rDay').value   = day;
+      document.getElementById('rMonth').value = mo;
+      document.getElementById('rYear').value  = yr;
+      isViewingOwnResult = true;
+      await fetchResults(true);
+    }
+
+    function updateOwnResultUI() {
+      const btnSearch  = document.getElementById('btnSearchOther');
+      const btnBack    = document.getElementById('btnBackToMine');
+      const btnLogout  = document.getElementById('btnResLogout');
+      const banner     = document.getElementById('myResultBanner');
+      const loginShown = document.getElementById('loginView').style.display !== 'none';
+
+      if (btnSearch) btnSearch.style.display = (isViewingOwnResult && _myId) ? '' : 'none';
+      if (btnBack)   btnBack.style.display   = (!isViewingOwnResult && _myId && !loginShown) ? '' : 'none';
+      if (btnLogout) btnLogout.style.display = isViewingOwnResult ? 'none' : '';
+      if (banner)    banner.style.display    = (_myId && !isViewingOwnResult && loginShown) ? '' : 'none';
+    }
+
+    function searchOtherStudent() {
+      isViewingOwnResult = false;
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('loginView').style.display     = 'block';
+      document.getElementById('rStudentId').value = '';
+      document.getElementById('rDay').value   = '';
+      document.getElementById('rMonth').value = '';
+      document.getElementById('rYear').value  = '';
+      hideErr();
+      updateOwnResultUI();
+    }
+
+    async function backToMyResult() {
+      if (!_myId || !_myDob) return;
+      isViewingOwnResult = true;
+      await autoLoadMyResult();
+    }
+
     /* ── Fetch ── */
-    async function fetchResults() {
+    async function fetchResults(isOwn = false) {
       const id    = document.getElementById('rStudentId').value.trim();
       const day   = document.getElementById('rDay').value;
       const month = document.getElementById('rMonth').value;
       const year  = document.getElementById('rYear').value;
 
       if (!id || !day || !month || !year) { showErr('Please fill in all fields.'); return; }
+      if (!isOwn) isViewingOwnResult = false;
 
       const dob = `${year}-${month}-${day}`;
       const btn = document.getElementById('rLoginBtn');
@@ -744,12 +807,15 @@
       try {
         resData = await callAPI(id, dob);
         renderDashboard();
-        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('loginView').style.display    = 'none';
         document.getElementById('dashboardView').style.display = 'block';
+        updateOwnResultUI();
       } catch (e) {
+        if (isOwn) isViewingOwnResult = false;
         const isLocal = location.protocol === 'file:';
         const localNote = isLocal ? '<br><small style="color:#94a3b8;font-size:0.8em;">You are on a local file. Try from the live site instead.</small>' : '';
         showErr(`${e.message}${localNote} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →</a>`);
+        updateOwnResultUI();
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart"></i> Access Results';
@@ -1134,10 +1200,12 @@
     /* ── Helpers ── */
     function resLogout() {
       resData = null;
+      isViewingOwnResult = false;
       document.getElementById('dashboardView').style.display = 'none';
-      document.getElementById('loginView').style.display = 'block';
+      document.getElementById('loginView').style.display     = 'block';
       document.getElementById('rStudentId').value = '';
       document.getElementById('rError').classList.remove('show');
+      updateOwnResultUI();
     }
 
     function closeSemModal() {
