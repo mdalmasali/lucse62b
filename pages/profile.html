@@ -1854,6 +1854,7 @@
 
   <script src="../assets/js/bcrypt.min.js"></script>
   <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/sheets.js"></script>
   <script>
     const SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
@@ -1951,6 +1952,23 @@
         /* Regular 62B courses from localStorage (saved by routine.js on load) */
         let all62B = [];
         try { all62B = JSON.parse(localStorage.getItem(`lu62b_62bcourses_${currentUser.id}`) || '[]'); } catch(e) {}
+
+        /* Fallback: fetch from CPG_Courses sheet if localStorage is empty */
+        if (!all62B.length && typeof window.fetchSheet === 'function') {
+          try {
+            const cpgData = await window.fetchSheet('CPG_Courses');
+            const rows = (cpgData.table?.rows || []).map(r =>
+              (r.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '')
+            );
+            all62B = rows
+              .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
+              .map(r => ({ code: r[1].trim().toUpperCase(), name: r[0]?.trim() || '' }));
+            if (all62B.length) {
+              try { localStorage.setItem(`lu62b_62bcourses_${currentUser.id}`, JSON.stringify(all62B)); } catch(e) {}
+            }
+          } catch(e) {}
+        }
+
         let excluded = new Set();
         try { excluded = new Set(JSON.parse(localStorage.getItem(`lu62b_excl_${currentUser.id}`) || '[]')); } catch(e) {}
         const enrolledCodes = new Set(enrolled.map(e => e.course_code));
