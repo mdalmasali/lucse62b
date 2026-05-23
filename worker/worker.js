@@ -373,10 +373,13 @@ export default {
 function v4ToTable(values) {
   if (!values || values.length < 1) return { cols: [], rows: [] };
   const headers = values[0] || [];
+  /* find max columns across ALL rows so trailing empty header cells don't truncate data */
+  const maxCols = values.reduce((m, row) => Math.max(m, row.length), 0);
+  const paddedHeaders = Array.from({ length: maxCols }, (_, i) => String(headers[i] || ''));
   return {
-    cols: headers.map(h => ({ label: String(h || ''), type: 'string' })),
+    cols: paddedHeaders.map(h => ({ label: h, type: 'string' })),
     rows: values.slice(1).map(row => ({
-      c: headers.map((_, i) => {
+      c: paddedHeaders.map((_, i) => {
         const v = row[i];
         return (v != null && v !== '') ? { v: String(v) } : null;
       }),
