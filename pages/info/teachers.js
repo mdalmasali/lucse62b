@@ -89,8 +89,11 @@ async function loadTeachers(body) {
                 });
             }
 
-            console.log('[TC] directory SBT:', directory['sudipta banik trisha']);
-            console.log('[TC] initialsMap SBT:', initialsMap['SBT']);
+            console.log('[TC] SBT full:', JSON.stringify(directory['sudipta banik trisha']));
+            console.log('[TC] initialsMap SBT key:', initialsMap['SBT']);
+            /* Log raw row data for SBT */
+            const _sbtRow = tRows.find(r => (r.c || [])[initCol]?.v === 'SBT');
+            if (_sbtRow) console.log('[TC] SBT raw row c[4]:', JSON.stringify(_sbtRow.c?.[4]), 'c[5]:', JSON.stringify(_sbtRow.c?.[5]));
         }
 
         /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
