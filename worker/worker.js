@@ -409,10 +409,11 @@ async function gvizProxy(sheetId, tab, cors, env) {
       headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
-  // CPG_Teachers: use CSV export so GVIZ doesn't drop text-format phone numbers
-  // (GVIZ JSON infers the phone column as NUMBER and silently returns null for "01700-835172" etc.)
+  // CPG_Teachers: use raw Sheets export (not GVIZ) so text-format phones survive
+  // GVIZ JSON *and* GVIZ CSV both apply type inference — dropping "01772-757936" etc.
+  // The raw /export?format=csv endpoint returns actual cell values without inference.
   if (tab === 'CPG_Teachers') {
-    const csvTable = await tryGvizCsv(sheetId, tab);
+    const csvTable = await tryGvizCsv(sheetId, tab, env);
     if (csvTable) {
       return new Response(JSON.stringify({ table: csvTable }), {
         headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -432,10 +433,17 @@ async function gvizProxy(sheetId, tab, cors, env) {
   }
 }
 
-async function tryGvizCsv(sheetId, tab) {
+async function tryGvizCsv(sheetId, tab, env) {
   try {
-    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&_t=${Date.now()}`;
-    if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+    let u;
+    const gid = env?.CPG_TEACHERS_GID;
+    if (tab === 'CPG_Teachers' && gid) {
+      // Raw /export bypasses GVIZ type inference — returns exact cell text (dashes, leading zeros)
+      u = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_t=${Date.now()}`;
+    } else {
+      u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&_t=${Date.now()}`;
+      if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+    }
     const r = await fetch(u);
     if (!r.ok) return null;
     const csv = await r.text();

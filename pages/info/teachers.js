@@ -7,14 +7,14 @@ const _tcEmpty = v => !v || String(v).trim() === '' || String(v).trim() === '-' 
 
 function _tcPhoneHtml(phone) {
     if (_tcEmpty(phone)) return '<span style="color:#64748b;font-size:0.82rem;">N/A</span>';
-    let clean = String(phone).replace(/[\s\-\(\)\.]/g, ''); // strip separators
-    clean = clean.replace(/^\+/, '');                        // remove leading +
-    if (!clean.startsWith('880')) {
-        if (clean.startsWith('01') && clean.length === 11)   clean = '88' + clean;   // 01XXXXXXXXX
-        else if (clean.startsWith('1') && clean.length === 10) clean = '880' + clean; // 1XXXXXXXXX (no leading 0)
-    }
-    return `<span style="font-size:0.85rem;font-weight:600;">${escH(phone)}</span>
-            <a href="https://wa.me/${clean}" target="_blank"
+    // Normalize: strip separators, remove country prefix, restore leading zero
+    let norm = String(phone).replace(/[\s\-\(\)\.]/g, '').replace(/^\+/, '');
+    if      (norm.startsWith('880') && norm.length === 13) norm = '0' + norm.slice(3); // +8801X → 01X
+    else if (norm.startsWith('88')  && norm.length === 12) norm = '0' + norm.slice(2); // 8801X → 01X
+    else if (norm.startsWith('1')   && norm.length === 10) norm = '0' + norm;          // 1XXXXXXXXX → 01X (GVIZ drops leading 0)
+    const waNum = norm.startsWith('01') && norm.length === 11 ? '88' + norm : norm;
+    return `<span style="font-size:0.85rem;font-weight:600;">${escH(norm)}</span>
+            <a href="https://wa.me/${waNum}" target="_blank"
                 style="margin-left:6px;color:#25D366;font-size:1rem;" title="WhatsApp">
                 <i class="fa-brands fa-whatsapp"></i></a>`;
 }

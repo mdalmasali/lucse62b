@@ -6,6 +6,7 @@ compatibility_date = "2024-01-01"
 # Non-secret env vars (if any) go here.
 # Secrets (SUPA_KEY, DRIVE_API_KEY, etc.) are stored in Cloudflare dashboard
 # under Workers → lucse62b-api → Settings → Variables → Secrets.
+CPG_TEACHERS_GID = "1051481415"   # gid of the CPG_Teachers tab (from sheet URL ?gid=)
 
 [[kv_namespaces]]
 binding  = "SMS_RATE"
