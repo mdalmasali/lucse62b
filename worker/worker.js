@@ -409,11 +409,19 @@ async function gvizProxy(sheetId, tab, cors, env) {
       headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
+  // CPG_Teachers: use CSV export so GVIZ doesn't drop text-format phone numbers
+  // (GVIZ JSON infers the phone column as NUMBER and silently returns null for "01700-835172" etc.)
+  if (tab === 'CPG_Teachers') {
+    const csvTable = await tryGvizCsv(sheetId, tab);
+    if (csvTable) {
+      return new Response(JSON.stringify({ table: csvTable }), {
+        headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+  }
   try {
     let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
-    // CPG_Teachers: force phone column (E) as text — GVIZ infers NUMBER type and drops dash-format numbers
-    if (tab === 'CPG_Teachers') u += `&tq=${encodeURIComponent("select A,B,C,D,text(E,'@'),F")}`;
     const r    = await fetch(u);
     const text = await r.text();
     const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
@@ -422,6 +430,46 @@ async function gvizProxy(sheetId, tab, cors, env) {
   } catch (e) {
     return errResp(cors, 502, 'Upstream fetch failed');
   }
+}
+
+async function tryGvizCsv(sheetId, tab) {
+  try {
+    let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&_t=${Date.now()}`;
+    if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+    const r = await fetch(u);
+    if (!r.ok) return null;
+    const csv = await r.text();
+    return parseCsvToTable(csv);
+  } catch (e) { return null; }
+}
+
+function parseCsvToTable(csv) {
+  const parseRow = (line) => {
+    const result = []; let field = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { if (inQ && line[i + 1] === '"') { field += '"'; i++; } else inQ = !inQ; }
+      else if (ch === ',' && !inQ) { result.push(field); field = ''; }
+      else field += ch;
+    }
+    result.push(field);
+    return result;
+  };
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
+    if (ch === '"') { if (inQ && csv[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if ((ch === '\n' || ch === '\r') && !inQ) { if (cur || ch === '\n') { lines.push(cur); cur = ''; } }
+    else cur += ch;
+  }
+  if (cur.trim()) lines.push(cur);
+  if (lines.length < 2) return null;
+  const headers = parseRow(lines[0]);
+  const rows = lines.slice(1).filter(l => l.trim()).map(line => ({
+    c: parseRow(line).map(v => v !== '' ? { v } : null),
+  }));
+  return rows.length > 0 ? { cols: headers.map(h => ({ label: h, type: 'string' })), rows } : null;
 }
 
 async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
