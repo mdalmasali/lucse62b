@@ -80,10 +80,20 @@ async function loadTeachers(body) {
                 });
             }
 
-            /* Debug: show exact values for known enrolled teachers */
+            /* Debug: show exact values for known enrolled teachers + raw row */
             ['SBT','NIR','AMD'].forEach(acr => {
                 const k = initialsMap[acr];
                 console.log(`[TC] ${acr} → key:${k} phone:"${directory[k]?.phone}" email:"${directory[k]?.email}"`);
+                const rawRow = tRows.find(r => {
+                    const cv = r.c?.[initCol];
+                    return cv && (cv.v === acr || cv.f === acr);
+                });
+                if (rawRow) {
+                    const rawCells = (rawRow.c || []).map((c,i) => `[${i}]v=${JSON.stringify(c?.v)} f=${JSON.stringify(c?.f)}`);
+                    console.log(`[TC] ${acr} raw:`, rawCells.slice(0, 8).join(' | '));
+                } else {
+                    console.log(`[TC] ${acr} raw row NOT FOUND in tRows`);
+                }
             });
         }
 
