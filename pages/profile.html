@@ -92,25 +92,30 @@
     .pac-label { font-size: 0.63rem; color: var(--text-secondary); opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
     .pac-value { font-size: 0.8rem; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* DOB Change */
+    /* DOB row — styled like a pac-item */
     .dob-saved-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2);
-      border-radius: 12px; padding: 11px 16px; margin: 14px 0 4px; gap: 10px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 11px 14px; margin: 0 0 8px;
     }
-    .dob-saved-info { display: flex; align-items: center; gap: 10px; }
-    .dob-saved-info span { font-size: 1.1rem; }
-    .dob-saved-label { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
-    .dob-saved-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .dob-saved-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .dob-cake-icon { width: 16px; text-align: center; flex-shrink: 0; font-size: 0.8rem; color: #c084fc; }
+    .dob-saved-label { font-size: 0.63rem; color: var(--text-secondary); opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .dob-saved-val { font-size: 0.8rem; font-weight: 500; color: var(--text); }
     .btn-change-dob {
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      color: var(--text-secondary); padding: 6px 13px; border-radius: 9px;
-      cursor: pointer; font-size: 0.78rem; font-weight: 600; font-family: 'Inter', sans-serif;
-      transition: all 0.2s; white-space: nowrap;
+      width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); color: var(--text-secondary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; transition: all 0.2s; flex-shrink: 0;
     }
-    .btn-change-dob:hover { background: rgba(255,255,255,0.11); color: var(--text); }
-    .dob-edit-row { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 14px 0 4px; }
-    .dob-edit-title { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 10px; }
+    .btn-change-dob:hover { background: rgba(255,255,255,0.12); color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    /* DOB edit form */
+    .dob-edit-row {
+      background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.22);
+      border-radius: 12px; padding: 14px; margin: 0 0 8px;
+    }
+    .dob-edit-title { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
     .dob-edit-selects { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .dob-edit-selects select {
       width: 100%; padding: 9px 10px; background: rgba(255,255,255,0.04);
@@ -123,16 +128,38 @@
     .dob-edit-actions { display: flex; gap: 8px; }
     .btn-dob-save {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; border: none; padding: 9px 18px; border-radius: 9px;
-      font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.84rem; transition: all 0.2s;
+      color: #fff; border: none; padding: 8px 18px; border-radius: 9px;
+      font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.82rem; transition: all 0.2s;
     }
     .btn-dob-save:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(124,58,237,0.3); }
     .btn-dob-save:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-dob-cancel {
-      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-      color: var(--text-secondary); padding: 9px 14px; border-radius: 9px;
-      font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.84rem;
+      background: transparent; border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary); padding: 8px 14px; border-radius: 9px;
+      font-weight: 500; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.82rem; transition: all 0.2s;
     }
+    .btn-dob-cancel:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    /* Profile action strip */
+    .profile-action-strip {
+      display: flex; gap: 10px; margin-top: 20px; padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .btn-action-primary {
+      flex: 1; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; padding: 11px 16px; border-radius: 12px;
+      font-weight: 600; font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      cursor: pointer; transition: all 0.25s; display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-action-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
+    .btn-action-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-action-danger {
+      flex: 1; background: rgba(244,63,94,0.09); color: #f87171;
+      border: 1px solid rgba(244,63,94,0.25); padding: 11px 16px; border-radius: 12px;
+      font-weight: 600; font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      cursor: pointer; transition: all 0.25s; display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-action-danger:hover { background: rgba(244,63,94,0.18); border-color: rgba(244,63,94,0.45); color: #fff; }
 
     .avatar {
       width: 100px;
@@ -1538,16 +1565,19 @@
         <!-- DOB Management -->
         <div id="dobSavedRow" class="dob-saved-row" style="display:none;">
           <div class="dob-saved-info">
-            <span>🎂</span>
+            <i class="dob-cake-icon fa-solid fa-cake-candles"></i>
             <div>
-              <div class="dob-saved-label">Saved Date of Birth</div>
+              <div class="dob-saved-label">Date of Birth</div>
               <div class="dob-saved-val" id="dobSavedText">--</div>
             </div>
           </div>
-          <button class="btn-change-dob" onclick="showDobEditForm()"><i class="fa-solid fa-pen-to-square"></i> Change</button>
+          <button class="btn-change-dob" onclick="showDobEditForm()" title="Change date of birth"><i class="fa-solid fa-pen-to-square"></i></button>
         </div>
         <div id="dobEditRow" class="dob-edit-row" style="display:none;">
-          <div class="dob-edit-title"><i class="fa-solid fa-calendar-days" style="color:var(--accent-bright);margin-right:6px;"></i>Enter your new Date of Birth</div>
+          <div class="dob-edit-title">
+            <i class="fa-solid fa-calendar-days" style="color:var(--accent-bright);"></i>
+            Change Date of Birth
+          </div>
           <div class="dob-edit-selects">
             <select id="dobEditDay"><option value="">Day</option></select>
             <select id="dobEditMonth">
@@ -1563,21 +1593,22 @@
           </div>
           <div class="dob-edit-error" id="dobEditError"></div>
           <div class="dob-edit-actions">
-            <button class="btn-dob-save" id="btnDobSave" onclick="saveDob()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-            <button class="btn-dob-cancel" onclick="cancelDobEdit()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            <button class="btn-dob-save" id="btnDobSave" onclick="saveDob()"><i class="fa-solid fa-check"></i> Verify & Save</button>
+            <button class="btn-dob-cancel" onclick="cancelDobEdit()">Cancel</button>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn-change-password" id="btnChangePassword" onclick="openChangePasswordModal()">
+        <!-- Action Buttons -->
+        <div class="profile-action-strip">
+          <button class="btn-action-primary" id="btnChangePassword" onclick="openChangePasswordModal()">
             <i class="fa-solid fa-key"></i> Change Password
           </button>
-          <button class="btn-logout" onclick="logout()">
+          <button class="btn-action-danger" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
           </button>
         </div>
-        <div id="profileDemoHint" style="display:none;margin-top:14px;color:#fbbf24;font-size:0.85rem;line-height:1.5;text-align:center;">
-          Demo mode can browse the portal, but password changes and personal result tools are unavailable.
+        <div id="profileDemoHint" style="display:none;margin-top:12px;color:#fbbf24;font-size:0.82rem;line-height:1.5;text-align:center;padding:10px 14px;background:rgba(251,191,36,0.08);border-radius:10px;border:1px solid rgba(251,191,36,0.2);">
+          Demo mode — password changes and personal result tools are unavailable.
         </div>
       </div>
 
@@ -1954,7 +1985,16 @@
         father_name: rs.Father_Name || '',
         mother_name: rs.Mother_Name || '',
         address:     rs.Present_Add || '',
+        phone:       rs.Student_Tel || '',
       };
+    }
+
+    function applyStudentInfo(info) {
+      renderProfileAcademicBar(info);
+      if (info.phone) {
+        document.getElementById('userPhone').innerText = info.phone;
+        currentUser.phone = info.phone;
+      }
     }
 
     function renderProfileAcademicBar(info) {
@@ -1992,7 +2032,11 @@
       if (!dob) return;
       try {
         const cached = localStorage.getItem('lu62b_info_' + currentUser.id);
-        if (cached) { renderProfileAcademicBar(JSON.parse(cached)); return; }
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.phone !== undefined) { applyStudentInfo(parsed); return; }
+          // old cache without phone — fall through to re-fetch
+        }
       } catch {}
       try {
         const r = await fetch(`${WORKER_URL_SMS}/result`, {
@@ -2007,7 +2051,7 @@
         if (data.error) return;
         const info = extractStudentInfo(data);
         try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
-        renderProfileAcademicBar(info);
+        applyStudentInfo(info);
       } catch {}
     }
 
@@ -2051,7 +2095,7 @@
         const info = extractStudentInfo(data);
         try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
         localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
-        renderProfileAcademicBar(info);
+        applyStudentInfo(info);
         showProfileContent(); // also calls showSavedDob internally
       } catch {
         errEl.textContent = 'Date of birth did not match. Please try again.';
@@ -2151,7 +2195,7 @@
         localStorage.removeItem('lu62b_info_' + currentUser.id);
         const info = extractStudentInfo(data);
         try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
-        renderProfileAcademicBar(info);
+        applyStudentInfo(info);
         showSavedDob(dob);
       } catch {
         errEl.textContent = 'Date of birth did not match. Please try again.';
