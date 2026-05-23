@@ -7,9 +7,12 @@ const _tcEmpty = v => !v || String(v).trim() === '' || String(v).trim() === '-' 
 
 function _tcPhoneHtml(phone) {
     if (_tcEmpty(phone)) return '<span style="color:#64748b;font-size:0.82rem;">N/A</span>';
-    let clean = phone.replace(/[^0-9+]/g, '');
-    if (clean.startsWith('01')) clean = '88' + clean;
-    clean = clean.replace('+', '');
+    let clean = String(phone).replace(/[\s\-\(\)\.]/g, ''); // strip separators
+    clean = clean.replace(/^\+/, '');                        // remove leading +
+    if (!clean.startsWith('880')) {
+        if (clean.startsWith('01') && clean.length === 11)   clean = '88' + clean;   // 01XXXXXXXXX
+        else if (clean.startsWith('1') && clean.length === 10) clean = '880' + clean; // 1XXXXXXXXX (no leading 0)
+    }
     return `<span style="font-size:0.85rem;font-weight:600;">${escH(phone)}</span>
             <a href="https://wa.me/${clean}" target="_blank"
                 style="margin-left:6px;color:#25D366;font-size:1rem;" title="WhatsApp">
@@ -33,7 +36,6 @@ async function loadTeachers(body) {
         /* ── Build full teacher directory from CPG_Teachers (for search + phone/email) ── */
         const directory   = {}; /* key: lowercase name → teacher info */
         const initialsMap = {}; /* key: uppercase initials → lowercase name */
-
         if (cpgTeacherData?.table) {
             const tRows  = cpgTeacherData.table.rows || [];
             const hCells = (cpgTeacherData.table.cols || [])
@@ -54,8 +56,6 @@ async function loadTeachers(body) {
             if (phCol   < 0) phCol   = 4;
             if (emCol   < 0) emCol   = 5;
 
-            console.log('[TC] cols → initCol:', initCol, 'nameCol:', nameCol, 'phCol:', phCol, 'emCol:', emCol, '| headers:', JSON.stringify(hCells.slice(0, 8)));
-
             if (initCol >= 0 && nameCol >= 0) {
                 tRows.forEach(row => {
                     /* prefer c.f (formatted) so numbers keep leading zeros */
@@ -69,32 +69,18 @@ async function loadTeachers(body) {
                     const name  = cells[nameCol];
                     if (!init || !name) return;
                     const key = name.toLowerCase().trim();
+                    const prev = directory[key];
                     directory[key] = {
                         name,
-                        designation: cells[deCol] || '',
-                        department:  cells[dpCol] || '',
-                        phone:       cells[phCol] || '',
-                        email:       cells[emCol] || '',
+                        designation: cells[deCol] || prev?.designation || '',
+                        department:  cells[dpCol] || prev?.department  || '',
+                        phone:       cells[phCol] || prev?.phone       || '',
+                        email:       cells[emCol] || prev?.email       || '',
                     };
                     initialsMap[init] = key;
                 });
             }
 
-            /* Debug: show exact values for known enrolled teachers + raw row */
-            ['SBT','NIR','AMD'].forEach(acr => {
-                const k = initialsMap[acr];
-                console.log(`[TC] ${acr} → key:${k} phone:"${directory[k]?.phone}" email:"${directory[k]?.email}"`);
-                const rawRow = tRows.find(r => {
-                    const cv = r.c?.[initCol];
-                    return cv && (cv.v === acr || cv.f === acr);
-                });
-                if (rawRow) {
-                    const rawCells = (rawRow.c || []).map((c,i) => `[${i}]v=${JSON.stringify(c?.v)} f=${JSON.stringify(c?.f)}`);
-                    console.log(`[TC] ${acr} raw:`, rawCells.slice(0, 8).join(' | '));
-                } else {
-                    console.log(`[TC] ${acr} raw row NOT FOUND in tRows`);
-                }
-            });
         }
 
         /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
@@ -166,20 +152,22 @@ async function loadTeachers(body) {
                             enrolled: enr.type,
                         };
 
+                        const bestPhone = info.phone || '';
+                        const bestEmail = info.email || '';
+
                         if (teacherMap.has(key)) {
                             const existing   = teacherMap.get(key);
                             const alreadyHas = existing.courses.some(c => c.code === enr.course_code);
                             if (!alreadyHas && enrolledCourse.code) existing.courses.push(enrolledCourse);
-                            /* Always use CPG_Teachers contact — it is the authoritative source */
-                            if (!_tcEmpty(info.phone)) existing.phone = info.phone;
-                            if (!_tcEmpty(info.email)) existing.email = info.email;
+                            if (!_tcEmpty(bestPhone)) existing.phone = bestPhone;
+                            if (!_tcEmpty(bestEmail)) existing.email = bestEmail;
                         } else {
                             teacherMap.set(key, {
                                 name:        info.name,
                                 designation: info.designation,
                                 department:  info.department,
-                                phone:       info.phone,
-                                email:       info.email,
+                                phone:       bestPhone,
+                                email:       bestEmail,
                                 courses:     enrolledCourse.code ? [enrolledCourse] : [],
                                 isEnrolledOnly: true,
                             });

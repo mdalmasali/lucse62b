@@ -412,6 +412,8 @@ async function gvizProxy(sheetId, tab, cors, env) {
   try {
     let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+    // CPG_Teachers: force phone column (E) as text — GVIZ infers NUMBER type and drops dash-format numbers
+    if (tab === 'CPG_Teachers') u += `&tq=${encodeURIComponent("select A,B,C,D,text(E,'@'),F")}`;
     const r    = await fetch(u);
     const text = await r.text();
     const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
