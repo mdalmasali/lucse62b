@@ -20,7 +20,7 @@
     document.querySelectorAll('.theme-toggle-btn').forEach(function (btn) {
       btn.innerHTML = theme === 'light'
         ? '<i class="fa-solid fa-moon"></i>'
-        : '<i class="fa-solid fa-sun"></i>';
+        : '<i class="fa-solid fa-circle-half-stroke"></i>';
       btn.title = theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode';
     });
 
