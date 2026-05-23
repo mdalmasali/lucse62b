@@ -1154,9 +1154,9 @@
         const orderedChips = MARK_ORDER
           .filter(k => em[k] > 0 && !seenKeys.has(markLabel(k)) && seenKeys.add(markLabel(k)))
           .map(k => `<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${em[k]}</strong></span>`);
-        // Any remaining fields not in MARK_ORDER
+        // Any remaining fields not in MARK_ORDER (skip Total — already shown as XX/100)
         Object.entries(em).forEach(([k, v]) => {
-          if (v > 0 && !MARK_ORDER.includes(k) && !seenKeys.has(markLabel(k))) {
+          if (v > 0 && k !== 'Total' && !MARK_ORDER.includes(k) && !seenKeys.has(markLabel(k))) {
             seenKeys.add(markLabel(k));
             orderedChips.push(`<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${v}</strong></span>`);
           }
