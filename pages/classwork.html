@@ -229,7 +229,10 @@
         );
       }
       if (!filtered.length) {
-        container.innerHTML = '<div class="info-empty">😕 No results found.</div>';
+        const msg = searchQuery || activeTab !== 'all'
+          ? '😕 No results found.'
+          : '😎 No deadlines right now. Chill koro!';
+        container.innerHTML = `<div class="info-empty">${msg}</div>`;
         return;
       }
       container.innerHTML = '';
@@ -271,7 +274,6 @@
         const data  = await fetchSheet('Deadlines');
         const rows  = data.table?.rows || [];
         const items = parseRows(rows);
-        if (!items.length) throw new Error('No data');
         allItems = items;
         buildTabs(items);
         renderCards();
@@ -280,7 +282,7 @@
         setSyncText('Sync failed · retrying shortly...', false);
         if (!allItems.length) {
           document.getElementById('infoCards').innerHTML =
-            '<div class="info-empty">⚠️ Could not load data from Google Sheet. Please refresh.</div>';
+            '<div class="info-empty">⚠️ Could not connect to Google Sheet. Please refresh.</div>';
         }
       }
     }
