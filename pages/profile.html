@@ -92,6 +92,48 @@
     .pac-label { font-size: 0.63rem; color: var(--text-secondary); opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
     .pac-value { font-size: 0.8rem; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+    /* DOB Change */
+    .dob-saved-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 12px; padding: 11px 16px; margin: 14px 0 4px; gap: 10px; flex-wrap: wrap;
+    }
+    .dob-saved-info { display: flex; align-items: center; gap: 10px; }
+    .dob-saved-info span { font-size: 1.1rem; }
+    .dob-saved-label { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dob-saved-val { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .btn-change-dob {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--text-secondary); padding: 6px 13px; border-radius: 9px;
+      cursor: pointer; font-size: 0.78rem; font-weight: 600; font-family: 'Inter', sans-serif;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-change-dob:hover { background: rgba(255,255,255,0.11); color: var(--text); }
+    .dob-edit-row { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 14px 0 4px; }
+    .dob-edit-title { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 10px; }
+    .dob-edit-selects { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .dob-edit-selects select {
+      width: 100%; padding: 9px 10px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 9px; color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 0.85rem; cursor: pointer;
+    }
+    .dob-edit-selects select:focus { outline: none; border-color: var(--accent); }
+    .dob-edit-selects select option { background: #1a1a2e; }
+    .dob-edit-error { color: #f87171; font-size: 0.78rem; margin-bottom: 8px; min-height: 16px; }
+    .dob-edit-actions { display: flex; gap: 8px; }
+    .btn-dob-save {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; border: none; padding: 9px 18px; border-radius: 9px;
+      font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.84rem; transition: all 0.2s;
+    }
+    .btn-dob-save:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(124,58,237,0.3); }
+    .btn-dob-save:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-dob-cancel {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      color: var(--text-secondary); padding: 9px 14px; border-radius: 9px;
+      font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; font-size: 0.84rem;
+    }
+
     .avatar {
       width: 100px;
       height: 100px;
@@ -1493,6 +1535,39 @@
         <!-- Academic Info (shown when LUS data loaded) -->
         <div id="profileAcademicBar" style="display:none;"></div>
 
+        <!-- DOB Management -->
+        <div id="dobSavedRow" class="dob-saved-row" style="display:none;">
+          <div class="dob-saved-info">
+            <span>🎂</span>
+            <div>
+              <div class="dob-saved-label">Saved Date of Birth</div>
+              <div class="dob-saved-val" id="dobSavedText">--</div>
+            </div>
+          </div>
+          <button class="btn-change-dob" onclick="showDobEditForm()"><i class="fa-solid fa-pen-to-square"></i> Change</button>
+        </div>
+        <div id="dobEditRow" class="dob-edit-row" style="display:none;">
+          <div class="dob-edit-title"><i class="fa-solid fa-calendar-days" style="color:var(--accent-bright);margin-right:6px;"></i>Enter your new Date of Birth</div>
+          <div class="dob-edit-selects">
+            <select id="dobEditDay"><option value="">Day</option></select>
+            <select id="dobEditMonth">
+              <option value="">Month</option>
+              <option value="01">January</option><option value="02">February</option>
+              <option value="03">March</option><option value="04">April</option>
+              <option value="05">May</option><option value="06">June</option>
+              <option value="07">July</option><option value="08">August</option>
+              <option value="09">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="dobEditYear"><option value="">Year</option></select>
+          </div>
+          <div class="dob-edit-error" id="dobEditError"></div>
+          <div class="dob-edit-actions">
+            <button class="btn-dob-save" id="btnDobSave" onclick="saveDob()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+            <button class="btn-dob-cancel" onclick="cancelDobEdit()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
           <button class="btn-change-password" id="btnChangePassword" onclick="openChangePasswordModal()">
             <i class="fa-solid fa-key"></i> Change Password
@@ -1941,6 +2016,8 @@
       document.getElementById('profileContent').style.display = 'block';
       loadMyCourses();
       loadProfileAcademicBar();
+      const saved = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (saved) showSavedDob(saved);
     }
 
     async function submitDobGate() {
@@ -1975,7 +2052,7 @@
         try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
         localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
         renderProfileAcademicBar(info);
-        showProfileContent();
+        showProfileContent(); // also calls showSavedDob internally
       } catch {
         errEl.textContent = 'Date of birth did not match. Please try again.';
         btn.disabled = false;
@@ -1989,12 +2066,99 @@
         return;
       }
       populateGateDropdowns();
+      populateDobEditDropdowns();
       const savedDob = localStorage.getItem('lu62b_dob_' + currentUser.id);
       if (savedDob) {
         showProfileContent();
       } else {
         document.getElementById('dobGate').style.display = 'flex';
       }
+    }
+
+    function populateDobEditDropdowns() {
+      const dayEl  = document.getElementById('dobEditDay');
+      const yearEl = document.getElementById('dobEditYear');
+      for (let d = 1; d <= 31; d++) {
+        const o = document.createElement('option');
+        o.value = String(d).padStart(2, '0');
+        o.textContent = d;
+        dayEl.appendChild(o);
+      }
+      const now = new Date().getFullYear();
+      for (let y = now - 15; y >= now - 35; y--) {
+        const o = document.createElement('option');
+        o.value = String(y);
+        o.textContent = y;
+        yearEl.appendChild(o);
+      }
+    }
+
+    function showSavedDob(dobStr) {
+      const [y, m, d] = dobStr.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      document.getElementById('dobSavedText').textContent = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+      document.getElementById('dobSavedRow').style.display = 'flex';
+      document.getElementById('dobEditRow').style.display  = 'none';
+    }
+
+    function showDobEditForm() {
+      if (isDemoUser) { showProfileDemoHint(); return; }
+      const saved = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (saved) {
+        const [y, m, d] = saved.split('-');
+        document.getElementById('dobEditDay').value   = d;
+        document.getElementById('dobEditMonth').value = m;
+        document.getElementById('dobEditYear').value  = y;
+      }
+      document.getElementById('dobEditError').textContent = '';
+      document.getElementById('dobSavedRow').style.display = 'none';
+      document.getElementById('dobEditRow').style.display  = 'block';
+    }
+
+    function cancelDobEdit() {
+      const saved = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (saved) showSavedDob(saved);
+      else { document.getElementById('dobSavedRow').style.display = 'none'; document.getElementById('dobEditRow').style.display = 'none'; }
+    }
+
+    async function saveDob() {
+      if (isDemoUser) { showProfileDemoHint(); return; }
+      const day   = document.getElementById('dobEditDay').value;
+      const month = document.getElementById('dobEditMonth').value;
+      const year  = document.getElementById('dobEditYear').value;
+      const errEl = document.getElementById('dobEditError');
+      const btn   = document.getElementById('btnDobSave');
+
+      errEl.textContent = '';
+      if (!day || !month || !year) { errEl.textContent = 'Please select your full date of birth.'; return; }
+
+      const dob = `${year}-${month}-${day}`;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying…';
+
+      try {
+        const r = await fetch(`${WORKER_URL_SMS}/result`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: currentUser.id, birth_date: dob }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const text = await r.text();
+        if (text.trimStart().startsWith('<')) throw new Error('LUS blocked');
+        const data = JSON.parse(text);
+        if (data.error) throw new Error(data.error);
+
+        localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
+        localStorage.removeItem('lu62b_info_' + currentUser.id);
+        const info = extractStudentInfo(data);
+        try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
+        renderProfileAcademicBar(info);
+        showSavedDob(dob);
+      } catch {
+        errEl.textContent = 'Date of birth did not match. Please try again.';
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save';
     }
 
     function openChangePasswordModal() {
