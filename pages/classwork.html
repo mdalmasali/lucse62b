@@ -104,47 +104,94 @@
   <script src="../assets/js/sheets.js"></script>
   <script src="../assets/js/script.js"></script>
   <script>
-    const BOT_SHEET_NAME = 'AutoBOT';
     const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
     const CAT_META = {
-      'assignment':   { icon: '<i class="fa-solid fa-pencil" style="color:#a78bfa;"></i>', color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
-      'tutorial':    { icon: '<i class="fa-solid fa-book-open" style="color:#38bdf8;"></i>', color: 'rgba(14,165,233,0.12)',  border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
-      'lab report':  { icon: '<i class="fa-solid fa-flask" style="color:#34d399;"></i>', color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', tag: '#34d399', label: 'Lab Report' },
-      'viva':        { icon: '<i class="fa-solid fa-microphone" style="color:#fbbf24;"></i>', color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
-      'lab final':   { icon: '<i class="fa-solid fa-fire-flame-curved" style="color:#f87171;"></i>', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
-      'project':     { icon: '<i class="fa-solid fa-diagram-project" style="color:#f472b6;"></i>', color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
-      'presentation':{ icon: '<i class="fa-solid fa-chalkboard-user" style="color:#818cf8;"></i>', color: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)', tag: '#818cf8', label: 'Presentation' },
-      'default':     { icon: '<i class="fa-solid fa-file" style="color:#94a3b8;"></i>', color: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.25)', tag: '#94a3b8', label: 'Other' },
+      'assignment':   { icon: 'fa-pencil',           color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
+      'tutorial':     { icon: 'fa-book-open',         color: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
+      'lab report':   { icon: 'fa-flask',             color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)',  tag: '#34d399', label: 'Lab Report' },
+      'viva':         { icon: 'fa-microphone',        color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
+      'lab final':    { icon: 'fa-fire-flame-curved', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
+      'project':      { icon: 'fa-diagram-project',   color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
+      'presentation': { icon: 'fa-chalkboard-user',   color: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.3)',  tag: '#818cf8', label: 'Presentation' },
+      'default':      { icon: 'fa-file',              color: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.25)', tag: '#94a3b8', label: 'Other' },
     };
-
-    const ALLOWED_CATS = new Set(['assignment', 'tutorial', 'lab report', 'viva', 'lab final', 'project', 'presentation']);
-
-    const KEYWORD_MAP = [
-      { keys: ['assignment'], cat: 'assignment' },
-      { keys: ['tutorial', 'lab test', 'quiz'], cat: 'tutorial' },
-      { keys: ['lab report'], cat: 'lab report' },
-      { keys: ['viva'], cat: 'viva' },
-      { keys: ['lab final', 'lab exam'], cat: 'lab final' },
-      { keys: ['project'], cat: 'project' },
-      { keys: ['presentation'], cat: 'presentation' },
-    ];
 
     let allItems = [];
     let activeTab = 'all';
     let searchQuery = '';
 
-    function resolveCategory(keyword) {
-      const kl = keyword.toLowerCase().trim();
-      for (const mapping of KEYWORD_MAP) {
-        for (const k of mapping.keys) {
-          if (kl === k || kl.includes(k)) return mapping.cat;
-        }
-      }
+    function resolveCategory(type) {
+      const t = (type || '').toLowerCase().trim();
+      if (CAT_META[t]) return t;
+      if (t.includes('lab report')) return 'lab report';
+      if (t.includes('lab final') || t.includes('lab exam')) return 'lab final';
+      if (t.includes('tutorial') || t.includes('quiz') || t.includes('lab test')) return 'tutorial';
+      if (t.includes('viva')) return 'viva';
+      if (t.includes('project')) return 'project';
+      if (t.includes('presentation')) return 'presentation';
+      if (t.includes('assignment')) return 'assignment';
       return 'default';
     }
 
     function getMeta(cat) { return CAT_META[cat] || CAT_META['default']; }
+
+    function parseDate(s) {
+      if (!s) return null;
+      const gm = s.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+)(?:,(\d+))?)?\)$/);
+      if (gm) return new Date(+gm[1], +gm[2], +gm[3], +(gm[4] || 23), +(gm[5] || 59), 0);
+      const dt = new Date(s.trim().replace(/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})$/, '$1T$2:00'));
+      return isNaN(dt) ? null : dt;
+    }
+
+    function formatDeadline(date) {
+      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) +
+             ', ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function urgency(ms) {
+      if (ms < 0)          return { color: '#94a3b8', bg: 'rgba(148,163,184,0.07)', border: 'rgba(148,163,184,0.25)' };
+      if (ms < 86400000)   return { color: '#f87171', bg: 'rgba(239,68,68,0.09)',   border: 'rgba(239,68,68,0.35)'   };
+      if (ms < 259200000)  return { color: '#fbbf24', bg: 'rgba(245,158,11,0.09)',  border: 'rgba(245,158,11,0.35)'  };
+      return                      { color: '#34d399', bg: 'rgba(16,185,129,0.07)',  border: 'rgba(16,185,129,0.25)'  };
+    }
+
+    function timeLeft(date) {
+      const ms = date - Date.now();
+      if (ms < 0) return 'Past due';
+      const days = Math.floor(ms / 86400000);
+      const hrs  = Math.floor((ms % 86400000) / 3600000);
+      if (days > 0) return `${days}d ${hrs}h left`;
+      if (hrs  > 0) return `${hrs}h left`;
+      return 'Due very soon!';
+    }
+
+    function parseRows(rows) {
+      const items = [];
+      rows.forEach(row => {
+        const cells = (row.c || []).map(c => {
+          if (!c || c.v == null) return '';
+          return c.f ? String(c.f).trim() : String(c.v).trim();
+        });
+        const course = cells[0] || '';
+        const type   = cells[1] || '';
+        const title  = cells[2] || '';
+        if (!title) return;
+        if (course.toLowerCase() === 'course' || type.toLowerCase() === 'type') return;
+        const deadline = parseDate(cells[3] || '');
+        items.push({ course, type, title, deadline, cat: resolveCategory(type) });
+      });
+      const now = Date.now();
+      items.sort((a, b) => {
+        const aMs = a.deadline ? a.deadline - now : Infinity;
+        const bMs = b.deadline ? b.deadline - now : Infinity;
+        if (aMs >= 0 && bMs >= 0) return aMs - bMs;
+        if (aMs >= 0) return -1;
+        if (bMs >= 0) return 1;
+        return bMs - aMs;
+      });
+      return items;
+    }
 
     function buildTabs(items) {
       const tabsEl = document.getElementById('infoTabs');
@@ -165,8 +212,8 @@
       });
     }
 
-    function linkify(text) {
-      return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function renderCards() {
@@ -176,8 +223,8 @@
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         filtered = filtered.filter(i =>
-          i.keyword.toLowerCase().includes(q) ||
-          i.reply.toLowerCase().includes(q) ||
+          i.title.toLowerCase().includes(q) ||
+          i.course.toLowerCase().includes(q) ||
           i.cat.toLowerCase().includes(q)
         );
       }
@@ -186,57 +233,43 @@
         return;
       }
       container.innerHTML = '';
+      const now = Date.now();
       filtered.forEach(item => {
         const meta = getMeta(item.cat);
+        const ms   = item.deadline ? item.deadline - now : null;
+        const urg  = ms !== null ? urgency(ms) : null;
         const card = document.createElement('div');
         card.className = 'info-card';
         card.innerHTML = `
           <div class="info-card-header">
-            <div class="info-card-icon" style="background:${meta.color};border:1px solid ${meta.border};">${meta.icon}</div>
-            <div class="info-card-title">${escapeHtml(item.keyword)}</div>
+            <div class="info-card-icon" style="background:${meta.color};border:1px solid ${meta.border};"><i class="fa-solid ${meta.icon}" style="color:${meta.tag};"></i></div>
+            <div class="info-card-title">${escapeHtml(item.title)}</div>
             <span class="info-card-tag" style="color:${meta.tag};border-color:${meta.border};background:${meta.color};">${meta.label}</span>
           </div>
-          <div class="info-card-body">${linkify(escapeHtml(item.reply))}</div>
+          <div class="info-card-body" style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
+            ${item.course ? `<div style="font-size:0.82rem;color:var(--text-secondary);"><i class="fa-solid fa-book" style="font-size:0.75rem;margin-right:5px;opacity:0.7;"></i>${escapeHtml(item.course)}</div>` : ''}
+            ${item.deadline ? `
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;">
+                <span style="font-size:0.82rem;color:${urg.color};font-weight:600;"><i class="fa-regular fa-clock" style="font-size:0.75rem;margin-right:4px;"></i>${escapeHtml(formatDeadline(item.deadline))}</span>
+                <span style="font-size:0.73rem;padding:2px 9px;border-radius:100px;background:${urg.bg};border:1px solid ${urg.border};color:${urg.color};font-weight:600;">${timeLeft(item.deadline)}</span>
+              </div>` : '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">No deadline set</div>'}
+          </div>
         `;
         container.appendChild(card);
       });
     }
 
-    function escapeHtml(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function loadSheet(sheetName) {
-      return fetchBotSheet(sheetName);
-    }
-
-    function parseRows(rows) {
-      const items = [];
-      rows.forEach(row => {
-        const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.v).trim() : '');
-        if (cells.length >= 2 && cells[0] && cells[1]) {
-          const keyword = cells[0];
-          const reply = cells[1];
-          if (['keyword','keywords','key'].includes(keyword.toLowerCase())) return;
-          const cat = resolveCategory(keyword);
-          if (!ALLOWED_CATS.has(cat)) return;
-          items.push({ keyword, reply, cat });
-        }
-      });
-      return items;
-    }
-
     function setSyncText(text, ok = true) {
-      const el = document.getElementById('syncText');
+      const el  = document.getElementById('syncText');
       const dot = document.querySelector('.sync-badge .sync-dot');
-      if (el) el.textContent = text;
+      if (el)  el.textContent = text;
       if (dot) dot.style.background = ok ? 'var(--green)' : '#f87171';
     }
 
     async function syncData() {
       try {
-        const data = await loadSheet(BOT_SHEET_NAME);
-        const rows = data.table?.rows || [];
+        const data  = await fetchSheet('Deadlines');
+        const rows  = data.table?.rows || [];
         const items = parseRows(rows);
         if (!items.length) throw new Error('No data');
         allItems = items;
@@ -252,7 +285,7 @@
       }
     }
 
-    document.getElementById('searchInput').addEventListener('input', (e) => {
+    document.getElementById('searchInput').addEventListener('input', e => {
       searchQuery = e.target.value.trim();
       renderCards();
     });
