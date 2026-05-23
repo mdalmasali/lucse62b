@@ -303,13 +303,13 @@
           <span class="badge-dot"></span>
           <span>Leading University</span>
         </div>
-        <h1 class="hero-name">CSE 62B</h1>
+        <h1 class="hero-name"><span class="typewriter-text" id="heroTypewriter"></span><span class="typewriter-cursor">|</span></h1>
         <p class="hero-sub">Welcome to the official digital portal for the Department of Computer Science & Engineering, Batch 62, Section B. Access all class materials, essential resources, and important notices securely from one place.</p>
         <div class="hero-tags">
           <span class="tag tag-purple">💻 Dept. of CSE</span>
-          <span class="tag tag-cyan">🎓 Batch 62</span>
-          <span class="tag tag-amber">👥 Section B</span>
-          <span class="tag tag-green">🏛️ Leading University</span>
+          <span class="tag tag-purple">🎓 Batch 62</span>
+          <span class="tag tag-purple">👥 Section B</span>
+          <span class="tag tag-purple">🏛️ Leading University</span>
         </div>
       </div>
 
@@ -1645,5 +1645,24 @@
     })();
   </script>
 <script src="/assets/js/eid.js"></script>
+<script>
+  (function() {
+    var text = 'CSE 62B';
+    var el = document.getElementById('heroTypewriter');
+    var cursor = document.querySelector('.typewriter-cursor');
+    if (!el || !cursor) return;
+    var i = 0;
+    var delay = 120;
+    function type() {
+      if (i < text.length) {
+        el.textContent += text[i++];
+        setTimeout(type, delay);
+      } else {
+        setTimeout(function() { cursor.classList.add('done'); }, 800);
+      }
+    }
+    setTimeout(type, 400);
+  })();
+</script>
 </body>
 </html>
