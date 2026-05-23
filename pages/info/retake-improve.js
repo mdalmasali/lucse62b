@@ -426,38 +426,29 @@ async function loadRetakeImprove(body) {
       }
     }
 
-    /* ── Initials → short teacher name map ── */
-    const initialsMap = {}; /* e.g. { "ABM": "Dr. Ahmed" } */
+    /* ── Initials → full teacher name map ── */
+    const initialsMap = {};
     if (teacherData?.table) {
-      const tRows = teacherData.table.rows || [];
-      if (tRows.length > 1) {
-        const hCells = (tRows[0].c || []).map(c => (c?.v != null ? String(c.v).trim().toLowerCase() : ''));
+      const tRows  = teacherData.table.rows || [];
+      const hCells = (teacherData.table.cols || [])
+        .map(c => (c?.label != null ? String(c.label).trim().toLowerCase() : ''));
 
-        /* Find initials column by header name, then fall back to content detection */
-        let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
-        let nameCol = hCells.findIndex(h => /name|teacher/.test(h));
+      let initCol = hCells.findIndex(h => /initial|abbr|short|code|acronym/.test(h));
+      let nameCol = hCells.findIndex(h => /^name$|teacher/.test(h));
 
-        if (initCol < 0 || nameCol < 0) {
-          /* Content-based: initials = 2-4 uppercase only; name = longer with space */
-          const sample = tRows.slice(1, 6).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
-          for (let col = 0; col < (sample[0]?.length || 0); col++) {
-            const vals = sample.map(r => r[col]).filter(Boolean);
-            if (vals.length && vals.every(v => /^[A-Z]{2,5}$/.test(v)) && initCol < 0) initCol = col;
-            if (vals.length && vals.some(v => v.length > 5 && /\s/.test(v)) && nameCol < 0) nameCol = col;
-          }
-        }
+      /* Fallback: known CPG_Teachers layout A=Acronym B=Name */
+      if (initCol < 0) initCol = 0;
+      if (nameCol < 0) nameCol = 1;
 
-        if (initCol >= 0 && nameCol >= 0) {
-          tRows.slice(1).forEach(row => {
-            const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-            const init = cells[initCol]?.toUpperCase();
-            const fullName = cells[nameCol];
-            if (init && fullName) {
-              initialsMap[init] = fullName;
-            }
-          });
-        }
-      }
+      tRows.forEach(row => {
+        const cells = (row.c || []).map(c => {
+          if (!c) return '';
+          return (c.f != null ? String(c.f).trim() : '') || (c.v != null ? String(c.v).trim() : '');
+        });
+        const init     = cells[initCol]?.toUpperCase().trim();
+        const fullName = cells[nameCol];
+        if (init && fullName) initialsMap[init] = fullName;
+      });
     }
 
     /* ── Build section list for any course code ── */
