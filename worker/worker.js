@@ -358,6 +358,82 @@ export default {
         return jsonResp(cors, { dob: dob || null });
       }
 
+      // ── POST /chat  { message, history } ─────────────────────────────────
+      if (p === '/chat' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        if (!env.AI) return errResp(cors, 500, 'AI binding not configured');
+
+        const { message, history = [] } = await request.json();
+        if (!message?.trim()) return errResp(cors, 400, 'Empty message');
+
+        const sheetId = env.MAIN_SHEET_ID;
+
+        async function getSheetRows(tab) {
+          const v4 = await tryV4(sheetId, tab, env);
+          if (v4) return (v4.rows || []).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+          try {
+            let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
+            if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+            const r = await fetch(u);
+            const text = await r.text();
+            const m = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+            if (!m) return [];
+            const parsed = JSON.parse(m[1]);
+            return (parsed.table?.rows || []).map(r => (r.c || []).map(c => c?.v != null ? String(c.v).trim() : ''));
+          } catch(e) { return []; }
+        }
+
+        const [courseRows, deadlineRows] = await Promise.all([
+          getSheetRows('CPG_Courses'),
+          getSheetRows('Deadlines'),
+        ]);
+
+        // Bangladesh time (UTC+6)
+        const now = new Date(Date.now() + 6 * 3600000);
+        const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const today = dayNames[now.getUTCDay()];
+        const dateStr = now.toISOString().slice(0, 10);
+
+        let ctx = `Current date: ${today}, ${dateStr} (Bangladesh time)\n\n`;
+
+        const courses = courseRows.filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()));
+        if (courses.length) {
+          ctx += 'COURSES THIS SEMESTER (CSE Batch 62, Section B):\n';
+          courses.forEach(r => { ctx += `• ${r[1]}: ${r[0]}${r[4] ? ' | Teacher: ' + r[4] : ''}\n`; });
+          ctx += '\n';
+        }
+
+        const deadlines = deadlineRows.filter(r => r[0] && !['course','type','title','deadline'].includes(r[0].toLowerCase()));
+        if (deadlines.length) {
+          ctx += 'ASSIGNMENTS & DEADLINES:\n';
+          deadlines.forEach(r => { ctx += `• [${r[0]}] ${r[1] || ''}: ${r[2] || ''} — Due: ${r[3] || 'TBA'}\n`; });
+          ctx += '\n';
+        } else {
+          ctx += 'ASSIGNMENTS: No upcoming deadlines found.\n\n';
+        }
+
+        const systemPrompt = `You are 62B Bot, the AI assistant of the student portal lucse62b.xyz for CSE Batch 62, Section B at Leading University, Sylhet, Bangladesh.
+
+${ctx}
+Help students with questions about assignments, deadlines, courses, teachers, class routine, and study materials. For PDFs and resources, tell them to check the Info or Resources section of the portal.
+
+Important: Always reply in the same language the student uses — if they write in Bangla, reply in Bangla; if English, reply in English. Be friendly, concise, and helpful. If you don't have specific info, say so honestly.`;
+
+        const messages = [
+          { role: 'system', content: systemPrompt },
+          ...history.slice(-8),
+          { role: 'user', content: message.trim() },
+        ];
+
+        const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages,
+          max_tokens: 600,
+          temperature: 0.7,
+        });
+
+        return jsonResp(cors, { reply: aiRes.response });
+      }
+
       return new Response('Not found', { status: 404, headers: cors });
 
     } catch (e) {
