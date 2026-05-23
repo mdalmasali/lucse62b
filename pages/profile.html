@@ -1869,10 +1869,78 @@
       }
     }
 
+    function extractStudentInfo(raw) {
+      const s  = raw.student || {};
+      const rs = raw.row_data?.student || {};
+      return {
+        degree:      rs.Degree      || s.degree || '',
+        blood_group: rs.Blood_group || '',
+        waiver:      rs.Waiver      || '',
+        father_name: rs.Father_Name || '',
+        mother_name: rs.Mother_Name || '',
+        address:     rs.Present_Add || '',
+      };
+    }
+
+    function renderProfileAcademicBar(info) {
+      const bar = document.getElementById('profileAcademicBar');
+      if (!bar || !info) return;
+      function item(icon, color, label, value, full) {
+        return `<div class="pac-item${full ? ' full' : ''}">
+          <i class="pac-icon fa-solid ${icon}" style="color:${color};"></i>
+          <div class="pac-text">
+            <div class="pac-label">${label}</div>
+            <div class="pac-value">${value}</div>
+          </div>
+        </div>`;
+      }
+      const rows = [];
+      if (info.degree) rows.push(item('fa-graduation-cap', 'var(--accent-bright)', 'Programme', info.degree, true));
+      if (info.blood_group && info.waiver) {
+        rows.push(item('fa-droplet', '#f87171', 'Blood Group', info.blood_group, false));
+        rows.push(item('fa-percent', 'var(--green)', 'Waiver', info.waiver, false));
+      } else {
+        if (info.blood_group) rows.push(item('fa-droplet', '#f87171', 'Blood Group', info.blood_group, true));
+        if (info.waiver)      rows.push(item('fa-percent', 'var(--green)', 'Waiver', info.waiver, true));
+      }
+      if (info.father_name) rows.push(item('fa-person', '#a78bfa', "Father's Name", info.father_name, true));
+      if (info.mother_name) rows.push(item('fa-person-dress', '#f472b6', "Mother's Name", info.mother_name, true));
+      if (info.address)     rows.push(item('fa-location-dot', '#38bdf8', 'Address', info.address, true));
+      if (!rows.length) return;
+      bar.innerHTML = `<div class="pac-divider"><span>Academic Information</span></div><div class="pac-grid">${rows.join('')}</div>`;
+      bar.style.display = 'block';
+    }
+
+    async function loadProfileAcademicBar() {
+      if (isDemoUser) return;
+      const dob = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (!dob) return;
+      try {
+        const cached = localStorage.getItem('lu62b_info_' + currentUser.id);
+        if (cached) { renderProfileAcademicBar(JSON.parse(cached)); return; }
+      } catch {}
+      try {
+        const r = await fetch(`${WORKER_URL_SMS}/result`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: currentUser.id, birth_date: dob }),
+        });
+        if (!r.ok) return;
+        const text = await r.text();
+        if (text.trimStart().startsWith('<')) return;
+        const data = JSON.parse(text);
+        if (data.error) return;
+        const info = extractStudentInfo(data);
+        try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
+        renderProfileAcademicBar(info);
+      } catch {}
+    }
+
     function showProfileContent() {
       document.getElementById('dobGate').style.display = 'none';
       document.getElementById('profileContent').style.display = 'block';
       loadMyCourses();
+      loadProfileAcademicBar();
     }
 
     async function submitDobGate() {
@@ -1900,8 +1968,13 @@
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const text = await r.text();
-        if (!text || (text.trimStart().startsWith('{') && JSON.parse(text).error)) throw new Error('Invalid');
+        if (text.trimStart().startsWith('<')) throw new Error('LUS blocked');
+        const data = JSON.parse(text);
+        if (data.error) throw new Error(data.error);
+        const info = extractStudentInfo(data);
+        try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
         localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
+        renderProfileAcademicBar(info);
         showProfileContent();
       } catch {
         errEl.textContent = 'Date of birth did not match. Please try again.';
