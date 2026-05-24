@@ -644,22 +644,27 @@
     }
 
     /* -- Supabase helpers -- */
-    async function supaRpc(fn, params) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      });
-      if (!res.ok) throw new Error('Supabase RPC error');
-      return res.json();
-    }
+    const _SB_HDR = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
 
     async function hasPassword(studentId) {
-      return supaRpc('student_has_password', { p_student_id: studentId });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/student_passwords?select=student_id&student_id=eq.${encodeURIComponent(studentId)}&limit=1`,
+        { headers: _SB_HDR }
+      );
+      if (!res.ok) throw new Error('Supabase error');
+      const rows = await res.json();
+      return rows.length > 0;
     }
 
     async function verifyPassword(studentId, plainPassword) {
-      return supaRpc('verify_student_password', { p_student_id: studentId, p_password: plainPassword });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/student_passwords?select=password_hash&student_id=eq.${encodeURIComponent(studentId)}&limit=1`,
+        { headers: _SB_HDR }
+      );
+      if (!res.ok) throw new Error('Supabase error');
+      const rows = await res.json();
+      if (!rows.length) return false;
+      return bcrypt.compare(plainPassword, rows[0].password_hash);
     }
 
     async function savePasswordHash(studentId, passwordHash) {
@@ -680,7 +685,10 @@
       try {
         const r    = await fetch(WORKER_URL + '/lookup?id=' + encodeURIComponent(studentId), { signal: controller.signal });
         clearTimeout(timer);
-        if (!r.ok) throw new Error('Lookup failed');
+        if (!r.ok) {
+          if (r.status === 429) throw new Error('rate_limited');
+          throw new Error('Lookup failed');
+        }
         const data = await r.json();
         if (!data.found) throw new Error('Student not found');
         return { id: studentId, name: data.name||'Student' };
@@ -724,12 +732,28 @@
       errEl.style.display = 'none';
       if (!sid) { errEl.innerText='Please enter your Student ID.'; errEl.style.display='block'; return; }
       btn.innerText='Checking...'; btn.disabled=true;
+
+      // Step 1: look up student in the sheet
       try {
         if (sid === DEMO_STUDENT_ID) {
           studentData = { id: DEMO_STUDENT_ID, name: 'Demo Student', phone: null, isDemo: true };
         } else {
           studentData = await fetchStudentData(sid);
         }
+      } catch(e) {
+        const message = e && e.message ? e.message : e;
+        errEl.innerHTML = message === 'Student not found'
+          ? '🚫 Student ID not found in our section.<br><small style="opacity:0.8;font-size:0.8em;">This portal is only for CSE Batch 62, Section B students.</small>'
+          : message === 'rate_limited'
+            ? '⏳ Too many login attempts. Please wait a few minutes and try again.'
+            : 'Connection error. Please try again.';
+        errEl.style.display='block';
+        btn.innerText='Continue'; btn.disabled=false;
+        return;
+      }
+
+      // Step 2: check if student has a password set (Supabase)
+      try {
         const hasPwd = await hasPassword(sid);
         if (sid === DEMO_STUDENT_ID && !hasPwd) throw new Error('Demo login unavailable');
         const inits = initials(studentData.name);
@@ -745,11 +769,9 @@
         }
       } catch(e) {
         const message = e && e.message ? e.message : e;
-        errEl.innerHTML = message==='Student not found'
-          ? '🚫 Student ID not found in our section.<br><small style="opacity:0.8;font-size:0.8em;">This portal is only for CSE Batch 62, Section B students.</small>'
-          : message==='Demo login unavailable'
-            ? 'Demo login is not configured right now.'
-            : 'Connection error. Please try again.';
+        errEl.innerHTML = message === 'Demo login unavailable'
+          ? 'Demo login is not configured right now.'
+          : 'Server error. Please try again in a moment.';
         errEl.style.display='block';
       } finally { btn.innerText='Continue'; btn.disabled=false; }
     }
