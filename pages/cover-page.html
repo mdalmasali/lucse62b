@@ -723,6 +723,7 @@
       document.getElementById('groupWrap').style.display   = isGroup  ? 'block' : 'none';
       document.getElementById('fNoWrap').style.display     = showNo   ? 'block' : 'none';
       document.getElementById('fNoLabel').textContent      = isLab    ? 'Lab Report No' : 'Assignment No';
+      if (typeof _tsInvalidate === 'function') _tsInvalidate();
       updatePreview();
     }
 
@@ -1313,6 +1314,111 @@
 
     loadAutocompleteData();
 
+    /* ── Topic Suggestions (logged-in users only) ── */
+    const _TS_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+    const _TS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+
+    let _tsCacheKey = '';
+    let _tsCache    = null;
+
+    function _tsInvalidate() { _tsCacheKey = ''; _tsCache = null; _acClose(); }
+
+    async function _tsFetch() {
+      if (!_ud) return [];
+      const courseCode = v('fCourseCode');
+      const docNo      = v('fNo');
+      const docType    = currentType.includes('lab') ? 'lab' : 'assignment';
+      if (!courseCode || !docNo) return [];
+      const key = `${courseCode}|${docType}|${docNo}`;
+      if (key === _tsCacheKey && _tsCache !== null) return _tsCache;
+      try {
+        const r = await fetch(
+          `${_TS_URL}/rest/v1/cover_page_topics?course_code=eq.${encodeURIComponent(courseCode)}&doc_type=eq.${encodeURIComponent(docType)}&doc_no=eq.${encodeURIComponent(docNo)}&select=topic&order=created_at.desc&limit=80`,
+          { headers: { 'apikey': _TS_KEY, 'Authorization': `Bearer ${_TS_KEY}` } }
+        );
+        if (!r.ok) return [];
+        const rows = await r.json();
+        const countMap = {};
+        rows.forEach(({ topic }) => { const t = (topic||'').trim(); if (t) countMap[t] = (countMap[t]||0)+1; });
+        const topics = Object.entries(countMap).sort((a,b) => b[1]-a[1]).map(([topic,count]) => ({ topic, count }));
+        _tsCacheKey = key; _tsCache = topics;
+        return topics;
+      } catch(e) { return []; }
+    }
+
+    async function _tsShow() {
+      if (!_ud) return;
+      const topicInp = document.getElementById('fTopic');
+      const q = topicInp.value.trim().toLowerCase();
+      _acClose();
+      const topics = await _tsFetch();
+      if (!topics.length) return;
+      const filtered = q ? topics.filter(t => t.topic.toLowerCase().includes(q)) : topics;
+      if (!filtered.length) return;
+
+      _acEl = document.createElement('div');
+      _acEl.className = 'ac-dropdown';
+      _acFocused = -1;
+
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'padding:7px 13px 5px;font-size:0.68rem;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid rgba(255,255,255,0.06);';
+      hdr.innerHTML = '<i class="fa-solid fa-lightbulb" style="margin-right:5px;color:#fbbf24;font-size:0.75em;"></i>Others used:';
+      _acEl.appendChild(hdr);
+
+      filtered.slice(0, 7).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'ac-item';
+        div.innerHTML = `<strong>${escH(item.topic)}</strong>${item.count > 1 ? ` <small>(${item.count} জন)</small>` : ''}`;
+        div.addEventListener('mousedown', e => {
+          e.preventDefault();
+          topicInp.value = item.topic;
+          topicInp.dispatchEvent(new Event('input'));
+          _acClose();
+        });
+        _acEl.appendChild(div);
+      });
+      document.body.appendChild(_acEl);
+      _acPos(topicInp);
+
+      topicInp.addEventListener('keydown', function _tsKeyNav(e) {
+        if (!_acEl) { topicInp.removeEventListener('keydown', _tsKeyNav); return; }
+        const els = _acEl.querySelectorAll('.ac-item');
+        if      (e.key === 'ArrowDown') { e.preventDefault(); _acFocused = Math.min(_acFocused+1, els.length-1); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); _acFocused = Math.max(_acFocused-1, 0); }
+        else if (e.key === 'Enter' && _acFocused >= 0) { e.preventDefault(); els[_acFocused].dispatchEvent(new MouseEvent('mousedown')); }
+        else if (e.key === 'Escape') { _acClose(); }
+        els.forEach((el, i) => el.classList.toggle('ac-focused', i === _acFocused));
+      }, { once: false });
+    }
+
+    async function _tsSave() {
+      if (!_ud) return;
+      const courseCode = v('fCourseCode');
+      const docNo      = v('fNo');
+      const topic      = v('fTopic');
+      const docType    = currentType.includes('lab') ? 'lab' : 'assignment';
+      if (!courseCode || !docNo || !topic) return;
+      const user = JSON.parse(_ud);
+      try {
+        await fetch(`${_TS_URL}/rest/v1/cover_page_topics`, {
+          method: 'POST',
+          headers: { 'apikey': _TS_KEY, 'Authorization': `Bearer ${_TS_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ course_code: courseCode, doc_type: docType, doc_no: docNo, topic, student_id: user.id || '' }),
+        });
+        _tsInvalidate();
+      } catch(e) {}
+    }
+
+    if (_ud) {
+      const topicInp = document.getElementById('fTopic');
+      let _tsTimer;
+      topicInp.addEventListener('focus', _tsShow);
+      topicInp.addEventListener('input', () => { clearTimeout(_tsTimer); _tsTimer = setTimeout(_tsShow, 250); });
+      topicInp.addEventListener('blur',  () => setTimeout(_acClose, 160));
+      document.getElementById('fCourseCode').addEventListener('input', _tsInvalidate);
+      document.getElementById('fNo').addEventListener('input', _tsInvalidate);
+    }
+
     /* ── Load student list for name autocomplete (logged-in only) ── */
     if (_ud) {
       loadCPGSheet('Student Info')
@@ -1410,6 +1516,7 @@
         } else {
           pdf.save(`${fname}_CoverPage.pdf`);
         }
+        _tsSave();
         LU_ANALYTICS.trackPDF().then(() =>
           LU_ANALYTICS.getCounter('total_pdfs').then(n => {
             const el = document.getElementById('pdfCountVal');
