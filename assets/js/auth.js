@@ -131,6 +131,43 @@
     }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
 
+  // Verifies DOB against LU portal via worker /result endpoint.
+  // Returns 'ok' | 'wrong' | 'error'
+  async function _luVerifyDob(sid, dob) {
+    try {
+      var res = await fetch(WORKER_URL + '/result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: sid, birth_date: dob }),
+      });
+      if (!res.ok) return 'error';
+      var data = await res.json();
+      if (data && data.success) {
+        try {
+          var IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
+          var retake = [], improve = [];
+          Object.values(data.results || {}).forEach(function (ys) {
+            var sems = Array.isArray(ys) ? ys : Object.values(ys);
+            sems.forEach(function (sem) {
+              (sem.courses || []).forEach(function (c) {
+                var code = (c.course_code || '').trim().toUpperCase();
+                if (!code) return;
+                if (c.grade === 'F') retake.push(code);
+                else if (IMPROVE.has(c.grade)) improve.push(code);
+              });
+            });
+          });
+          localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
+          localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
+        } catch (e) {}
+        return 'ok';
+      }
+      return 'wrong';
+    } catch (e) {
+      return 'error';
+    }
+  }
+
   function _showDobGate(sid) {
     var style = document.createElement('style');
     style.textContent = `
@@ -177,33 +214,52 @@
     `;
     document.head.appendChild(style);
 
-    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    var dayOpts = '<option value="">Day</option>' + Array.from({length:31},function(_,i){var d=String(i+1).padStart(2,'0');return '<option value="'+d+'">'+(i+1)+'</option>';}).join('');
-    var moOpts  = '<option value="">Month</option>' + months.map(function(m,i){var v=String(i+1).padStart(2,'0');return '<option value="'+v+'">'+m+'</option>';}).join('');
-    var curYear = new Date().getFullYear();
-    var yrOpts  = '<option value="">Year</option>' + Array.from({length:curYear-1959},function(_,i){var y=curYear-i;return '<option value="'+y+'">'+y+'</option>';}).join('');
-
     var gate = document.createElement('div');
     gate.id = '_lu-dob-gate';
+    // Start with a loading/checking state — gate is blocking from the very first moment
     gate.innerHTML =
       '<div class="_dob-card">' +
         '<div class="_dob-icon">🎂</div>' +
         '<div class="_dob-brand">CSE 62B · PORTAL</div>' +
-        '<h2 class="_dob-title">One Quick Step</h2>' +
-        '<p class="_dob-desc">Enter your <strong style="color:var(--accent-bright,#a78bfa);">Date of Birth</strong> as written on your certificate.<br>Used to personalise your experience.</p>' +
-        '<div class="_dob-selects">' +
-          '<select id="_dobDay">' + dayOpts + '</select>' +
-          '<select id="_dobMonth">' + moOpts + '</select>' +
-          '<select id="_dobYear">' + yrOpts + '</select>' +
+        '<h2 class="_dob-title">Checking Profile…</h2>' +
+        '<p class="_dob-desc" style="margin-bottom:8px;">Please wait a moment.</p>' +
+        '<div style="display:flex;justify-content:center;padding:18px 0;">' +
+          '<span class="_dob-spin" style="width:24px;height:24px;border-width:3px;"></span>' +
         '</div>' +
-        '<div class="_dob-err" id="_dobErr"></div>' +
-        '<button class="_dob-btn" id="_dobBtn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Continue</button>' +
-        '<p class="_dob-note"><i class="fa-solid fa-lock" style="font-size:0.65rem;"></i> Stored securely · Used only for your portal experience</p>' +
       '</div>';
 
-    var inject = function () {
-      document.body.appendChild(gate);
-      document.getElementById('_dobBtn').addEventListener('click', function () {
+    // Switch the card to the DOB input form
+    function _toInputForm(prefillDob, errMsg) {
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var dayOpts = '<option value="">Day</option>'   + Array.from({length:31},function(_,i){var d=String(i+1).padStart(2,'0');return '<option value="'+d+'">'+(i+1)+'</option>';}).join('');
+      var moOpts  = '<option value="">Month</option>' + months.map(function(m,i){var v=String(i+1).padStart(2,'0');return '<option value="'+v+'">'+m+'</option>';}).join('');
+      var curYear = new Date().getFullYear();
+      var yrOpts  = '<option value="">Year</option>'  + Array.from({length:curYear-1959},function(_,i){var y=curYear-i;return '<option value="'+y+'">'+y+'</option>';}).join('');
+
+      gate.querySelector('._dob-card').innerHTML =
+        '<div class="_dob-icon">🎂</div>' +
+        '<div class="_dob-brand">CSE 62B · PORTAL</div>' +
+        '<h2 class="_dob-title">One Quick Step</h2>' +
+        '<p class="_dob-desc">Enter your <strong style="color:var(--accent-bright,#a78bfa);">Date of Birth</strong> exactly as written on your certificate.<br>This verifies your identity with the LU portal.</p>' +
+        '<div class="_dob-selects">' +
+          '<select id="_dobDay">'   + dayOpts + '</select>' +
+          '<select id="_dobMonth">' + moOpts  + '</select>' +
+          '<select id="_dobYear">'  + yrOpts  + '</select>' +
+        '</div>' +
+        '<div class="_dob-err" id="_dobErr">' + (errMsg || '') + '</div>' +
+        '<button class="_dob-btn" id="_dobBtn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Verify &amp; Continue</button>' +
+        '<p class="_dob-note"><i class="fa-solid fa-lock" style="font-size:0.65rem;"></i> Verified with LU portal · Stored securely</p>';
+
+      if (prefillDob) {
+        var p = prefillDob.split('-');
+        if (p.length === 3) {
+          document.getElementById('_dobYear').value  = p[0];
+          document.getElementById('_dobMonth').value = p[1];
+          document.getElementById('_dobDay').value   = p[2];
+        }
+      }
+
+      document.getElementById('_dobBtn').addEventListener('click', async function () {
         var day   = document.getElementById('_dobDay').value;
         var month = document.getElementById('_dobMonth').value;
         var year  = document.getElementById('_dobYear').value;
@@ -213,19 +269,61 @@
         if (!day || !month || !year) { err.textContent = 'Please select your complete date of birth.'; return; }
         var dob = year + '-' + month + '-' + day;
         btn.disabled = true;
-        btn.innerHTML = '<span class="_dob-spin"></span> Saving…';
-        _workerPost('/dob-sync', { student_id: sid, dob: dob })
-          .then(function () {
-            localStorage.setItem('lu62b_dob_' + sid, dob);
-            document.getElementById('_lu-dob-gate').remove();
-          })
-          .catch(function () {
-            err.textContent = 'Connection error. Please try again.';
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Continue';
-          });
+        btn.innerHTML = '<span class="_dob-spin"></span> Verifying with LU portal…';
+
+        var result = await _luVerifyDob(sid, dob);
+        if (result === 'ok') {
+          localStorage.setItem('lu62b_dob_'    + sid, dob);
+          localStorage.setItem('lu62b_dob_ok_' + sid, '1');
+          _workerPost('/dob-sync', { student_id: sid, dob: dob }).catch(function () {});
+          gate.remove();
+        } else if (result === 'wrong') {
+          err.textContent = 'Date of Birth is incorrect. Please check your certificate and try again.';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify &amp; Continue';
+        } else {
+          err.textContent = 'Connection error. Please check your internet and try again.';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify &amp; Continue';
+        }
       });
+    }
+
+    var inject = async function () {
+      document.body.appendChild(gate);
+
+      // 1. Try localStorage DOB first
+      var storedDob = localStorage.getItem('lu62b_dob_' + sid);
+
+      // 2. If not in localStorage, try worker/Supabase
+      if (!storedDob) {
+        try {
+          var chk = await _workerPost('/dob-check', { student_id: sid });
+          if (chk && chk.has_dob) {
+            var got = await _workerPost('/dob-get', { student_id: sid });
+            if (got && got.dob) storedDob = got.dob;
+          }
+        } catch (e) {}
+      }
+
+      // 3. If we have a candidate DOB, silently verify it with the LU API
+      if (storedDob) {
+        var result = await _luVerifyDob(sid, storedDob);
+        if (result === 'ok') {
+          localStorage.setItem('lu62b_dob_'    + sid, storedDob);
+          localStorage.setItem('lu62b_dob_ok_' + sid, '1');
+          _workerPost('/dob-sync', { student_id: sid, dob: storedDob }).catch(function () {});
+          gate.remove();
+          return;
+        }
+        // Wrong DOB — clear it so user starts fresh; network error — pre-fill so they can retry
+        if (result === 'wrong') { localStorage.removeItem('lu62b_dob_' + sid); storedDob = null; }
+      }
+
+      // 4. Show input form (pre-fill if available for easy retry on network error)
+      _toInputForm(storedDob || null, null);
     };
+
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', inject);
     } else {
@@ -233,22 +331,10 @@
     }
   }
 
+  // Gate fires whenever DOB has not been LU-verified in this browser
   if (isLoggedIn && session && session.id && !isDemoSession && !SKIP_DOB.includes(_curPage)) {
-    var _dobKey   = 'lu62b_dob_' + session.id;
-    var _localDob = localStorage.getItem(_dobKey);
-    if (_localDob) {
-      _workerPost('/dob-sync', { student_id: session.id, dob: _localDob }).catch(function () {});
-    } else {
-      _workerPost('/dob-check', { student_id: session.id })
-        .then(function (res) {
-          if (res.has_dob) {
-            return _workerPost('/dob-get', { student_id: session.id })
-              .then(function (res2) { if (res2.dob) localStorage.setItem(_dobKey, res2.dob); });
-          } else {
-            _showDobGate(session.id);
-          }
-        })
-        .catch(function () {});
+    if (localStorage.getItem('lu62b_dob_ok_' + session.id) !== '1') {
+      _showDobGate(session.id);
     }
   }
 
