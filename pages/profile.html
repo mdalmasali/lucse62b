@@ -29,6 +29,7 @@
     }
     @media (max-width: 780px) {
       .profile-top-row { grid-template-columns: 1fr; }
+      .profile-header { padding: 28px 20px 32px; }
     }
     
     .profile-header {
@@ -1283,6 +1284,9 @@
       }
       .modal-actions { flex-direction: column-reverse; }
       .btn-primary, .btn-secondary { padding: 13px 20px; }
+      .profile-action-strip { flex-direction: column; gap: 8px; }
+      .btn-action-primary, .btn-action-danger { flex: none; width: 100%; padding: 13px 16px; }
+      .my-courses-card { padding: 16px 14px; border-radius: 16px; }
     }
 
     /* ---- DOB Gate ---- */
@@ -1824,21 +1828,6 @@
         let all62B = [];
         try { all62B = JSON.parse(localStorage.getItem(`lu62b_62bcourses_${currentUser.id}`) || '[]'); } catch(e) {}
 
-        /* Fallback: fetch from CPG_Courses sheet if localStorage is empty */
-        if (!all62B.length && typeof window.fetchSheet === 'function') {
-          try {
-            const cpgData = await window.fetchSheet('CPG_Courses');
-            const rows = (cpgData.table?.rows || []).map(r =>
-              (r.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : '')
-            );
-            all62B = rows
-              .filter(r => r[1] && !['code','title','course'].includes(r[1].toLowerCase()))
-              .map(r => ({ code: r[1].trim().toUpperCase(), name: r[0]?.trim() || '' }));
-            if (all62B.length) {
-              try { localStorage.setItem(`lu62b_62bcourses_${currentUser.id}`, JSON.stringify(all62B)); } catch(e) {}
-            }
-          } catch(e) {}
-        }
 
         let excluded = new Set();
         try { excluded = new Set(JSON.parse(localStorage.getItem(`lu62b_excl_${currentUser.id}`) || '[]')); } catch(e) {}
