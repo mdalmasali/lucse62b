@@ -1617,7 +1617,7 @@
 </script>
 <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register(/sw.js, { updateViaCache: 'none' }).then(reg => reg.update());
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => reg.update());
     }
   </script>
 <script src="/assets/js/eid.js"></script>
