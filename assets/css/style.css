@@ -121,9 +121,7 @@ body {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700; font-size: 1.3rem;
   letter-spacing: 1.5px;
-  background: linear-gradient(to right, #fff, var(--accent-bright));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-bright);
   text-decoration: none;
 }
 .topbar-links {
@@ -243,9 +241,7 @@ body {
   letter-spacing: -3px;
   line-height: 0.95;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, var(--accent2) 80%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-bright);
 }
 
 .typewriter-cursor {
@@ -1740,9 +1736,7 @@ html[data-theme="light"] .topbar {
   border-bottom: 1px solid rgba(109,40,217,0.1);
 }
 html[data-theme="light"] .topbar-brand {
-  background: linear-gradient(to right, #3b0764, var(--accent));
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 html[data-theme="light"] .theme-toggle-btn {
   background: rgba(109,40,217,0.07);
@@ -1760,11 +1754,8 @@ html[data-theme="light"] .footer-brand {
   -webkit-text-fill-color: transparent;
 }
 
-/* Hero name (white start invisible on light bg) */
 html[data-theme="light"] .hero-name {
-  background: linear-gradient(135deg, #0f172a 0%, var(--accent) 45%, var(--accent2) 85%);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 
 /* Countdown */
