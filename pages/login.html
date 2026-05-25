@@ -242,9 +242,7 @@
       justify-content: center;
       padding: 40px 32px;
       text-align: center;
-      /* AsmrProg curved left edge */
-      border-radius: 150px 0 0 120px;
-      transition: border-radius 0.6s ease-in-out;
+        border-radius: 28px 0 0 28px;
     }
 
     /* Decorative circles (AsmrProg style) */
@@ -299,6 +297,31 @@
       font-size: 0.8rem; color: rgba(255,255,255,0.85);
       font-weight: 500;
     }
+
+    /* ── Light mode: card left side is always dark, force light text ── */
+    html[data-theme="light"] .lu-login-wrap {
+      background: rgba(18,12,30,0.92);
+    }
+    html[data-theme="light"] .step-heading { color: #f1f0ff; }
+    html[data-theme="light"] .step-sub,
+    html[data-theme="light"] .login-desc { color: rgba(220,214,255,0.7); }
+    html[data-theme="light"] .iw label { color: rgba(200,194,255,0.6); }
+    html[data-theme="light"] .iw-field input {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.15);
+      color: #f1f0ff;
+    }
+    html[data-theme="light"] .iw-field input::placeholder { color: rgba(200,194,255,0.4); }
+    html[data-theme="light"] .iw-field .fi { color: rgba(200,194,255,0.5); }
+    html[data-theme="light"] .keep-row { color: rgba(200,194,255,0.65); }
+    html[data-theme="light"] .back-home a { color: rgba(200,194,255,0.45); }
+    html[data-theme="light"] .back-home a:hover { color: rgba(220,214,255,0.8); }
+    html[data-theme="light"] .link-row { color: rgba(200,194,255,0.55); }
+    html[data-theme="light"] .link-row a { color: var(--accent-bright); }
+    html[data-theme="light"] .welcome-badge { background: rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.35); }
+    html[data-theme="light"] .welcome-badge-name { color: #f1f0ff; }
+    html[data-theme="light"] .welcome-badge-sub { color: rgba(200,194,255,0.6); }
+    html[data-theme="light"] .lu-mobile-brand-title { color: #f1f0ff; -webkit-text-fill-color: #f1f0ff; }
 
     /* ── Responsive ── */
     @media (max-width: 680px) {
