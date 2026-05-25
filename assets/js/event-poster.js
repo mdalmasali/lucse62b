@@ -5,7 +5,7 @@
    Set to '' or null to disable.
    ═══════════════════════════════════════════════ */
 
-const POSTER_IMAGE = '/assets/images/Eid Poster.jpg';
+/*const POSTER_IMAGE = '/assets/images/Eid Poster.jpg';*/
 
 if (POSTER_IMAGE) {
   /* ── Inject CSS ── */
