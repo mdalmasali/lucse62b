@@ -823,9 +823,7 @@ footer {
 .footer-brand {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700; font-size: 1.1rem;
-  background: linear-gradient(135deg, var(--accent-bright), var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-bright);
 }
 .footer-note { font-size: 0.78rem; color: var(--muted); }
 
@@ -1591,10 +1589,7 @@ footer {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(to right, #fff, var(--accent-bright));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent-bright);
 }
 .footer-links {
   display: flex;
@@ -1749,9 +1744,7 @@ html[data-theme="light"] footer {
   border-top: 1px solid rgba(109,40,217,0.12);
 }
 html[data-theme="light"] .footer-brand {
-  background: linear-gradient(to right, #3b0764, var(--accent-bright));
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 
 html[data-theme="light"] .hero-name {
