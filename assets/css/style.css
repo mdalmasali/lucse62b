@@ -449,9 +449,19 @@ body {
 [data-theme="light"] .qi-sep { background: rgba(0,0,0,0.08); }
 .qi-bus-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
-  flex-wrap: wrap;
+}
+.qi-bus-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.qi-bus-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .qi-bus-dir {
   font-size: 0.62rem;
@@ -463,6 +473,7 @@ body {
   font-size: 0.7rem;
   color: rgba(255,255,255,0.15);
   margin: 0 1px;
+  align-self: center;
 }
 [data-theme="light"] .qi-bus-pipe { color: rgba(0,0,0,0.12); }
 .qi-countdown {

@@ -6,14 +6,16 @@
 
 (function () {
   const FALLBACK_LAT = 24.8949, FALLBACK_LON = 91.8687;
-  const CACHE_TTL = 10 * 60 * 1000;
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const OWM_KEY = '15fdb9e1c444934d41b09d5d2160be2f';
 
   function buildAPI(lat, lon) {
-    return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,precipitation,wind_speed_10m,temperature_2m,apparent_temperature,relative_humidity_2m,is_day&timezone=auto`;
+    return `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric`;
   }
 
   function cacheKey(lat, lon) {
-    return `wx_${lat.toFixed(1)}_${lon.toFixed(1)}_v4`;
+    return `wx_${lat.toFixed(1)}_${lon.toFixed(1)}_v6`;
   }
 
   function getLocation() {
@@ -40,41 +42,51 @@
     } catch (_) { return 'Sylhet'; }
   }
 
-  /* ── WMO code → effect ───────────────────────── */
+  /* ── OWM code → effect ───────────────────────── */
   function codeToEffect(code, precip, temp, isDay) {
-    if (code === 0 || code <= 3) {
-      if (!isDay)      return 'stars';
-      if (temp >= 38)  return 'heat';
+    if (code === 800) {
+      if (!isDay)     return 'stars';
+      if (temp >= 38) return 'heat';
       return 'none';
     }
-    if (code === 45 || code === 48)               return 'fog';
-    if (code >= 51 && code <= 57)                 return 'drizzle';
-    if (code === 61 || code === 80)               return 'rain-light';
-    if (code === 63 || code === 81)               return 'rain-medium';
-    if (code === 65 || code === 82)               return 'rain-heavy';
-    if (code === 95 || code === 96 || code === 99) return 'storm';
-    if (code >= 71 && code <= 77)                 return 'snow';
-    if (code === 85 || code === 86)               return 'snow';
-    if (precip > 3)                               return 'rain-heavy';
-    if (precip > 0.5)                             return 'rain-medium';
+    if (code >= 801 && code <= 804) { return !isDay ? 'stars' : 'none'; }
+    if (code >= 700 && code <= 762)  return 'fog';
+    if (code >= 300 && code <= 321)  return 'drizzle';
+    if (code === 500 || code === 520) return 'rain-light';
+    if (code === 501 || code === 521 || code === 531) return 'rain-medium';
+    if (code === 502 || code === 503 || code === 504 || code === 522) return 'rain-heavy';
+    if (code === 511) return 'rain-light';
+    if (code >= 200 && code <= 232)  return 'storm';
+    if (code >= 600 && code <= 622)  return 'snow';
+    if (precip > 3)   return 'rain-heavy';
+    if (precip > 0.5) return 'rain-medium';
     return 'none';
   }
 
   function codeToMeta(code, isDay) {
     const night = !isDay;
-    if (code === 0) return night
+    if (code === 800) return night
       ? { icon: 'fa-moon',       label: 'Clear Night' }
       : { icon: 'fa-sun',        label: 'Clear Sky' };
-    if (code <= 3) return night
+    if (code <= 802) return night
       ? { icon: 'fa-cloud-moon', label: 'Partly Cloudy' }
       : { icon: 'fa-cloud-sun',  label: 'Partly Cloudy' };
-    if (code <= 48)  return { icon: 'fa-smog',                  label: 'Foggy' };
-    if (code <= 57)  return { icon: 'fa-cloud-drizzle',         label: 'Drizzle' };
-    if (code <= 67)  return { icon: 'fa-cloud-rain',            label: 'Rain' };
-    if (code <= 77)  return { icon: 'fa-snowflake',             label: 'Snow' };
-    if (code <= 82)  return { icon: 'fa-cloud-showers-heavy',   label: 'Rain Showers' };
-    if (code <= 86)  return { icon: 'fa-snowflake',             label: 'Snow Showers' };
-    return { icon: 'fa-cloud-bolt', label: 'Thunderstorm' };
+    if (code <= 804)  return { icon: 'fa-cloud',                label: 'Cloudy' };
+    if (code >= 700 && code <= 762)
+                      return { icon: 'fa-smog',                 label: 'Foggy' };
+    if (code >= 300 && code <= 321)
+                      return { icon: 'fa-cloud-drizzle',        label: 'Drizzle' };
+    if (code === 500 || code === 520)
+                      return { icon: 'fa-cloud-rain',           label: 'Light Rain' };
+    if (code === 501 || code === 521 || code === 531)
+                      return { icon: 'fa-cloud-showers-heavy',  label: 'Rain' };
+    if (code >= 502 && code <= 522)
+                      return { icon: 'fa-cloud-showers-heavy',  label: 'Heavy Rain' };
+    if (code >= 200 && code <= 232)
+                      return { icon: 'fa-cloud-bolt',           label: 'Thunderstorm' };
+    if (code >= 600 && code <= 622)
+                      return { icon: 'fa-snowflake',            label: 'Snow' };
+    return { icon: 'fa-cloud-rain', label: 'Rain' };
   }
 
   function tempAccent(temp) {
@@ -470,14 +482,14 @@
       ]);
       if (!res.ok) return;
       const data = await res.json();
-      const cur  = data.current || {};
-      const code      = cur.weather_code          ?? 0;
-      const precip    = cur.precipitation         ?? 0;
-      const temp      = cur.temperature_2m        ?? 30;
-      const feelsLike = cur.apparent_temperature  ?? temp;
-      const humidity  = cur.relative_humidity_2m  ?? null;
-      const wind      = cur.wind_speed_10m        ?? 0;
-      const isDay     = cur.is_day                !== 0;
+      const code      = data.weather?.[0]?.id             ?? 800;
+      const precip    = data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0;
+      const temp      = data.main?.temp                   ?? 30;
+      const feelsLike = data.main?.feels_like             ?? temp;
+      const humidity  = data.main?.humidity               ?? null;
+      const wind      = (data.wind?.speed ?? 0) * 3.6;
+      const nowSec    = Date.now() / 1000;
+      const isDay     = nowSec >= (data.sys?.sunrise ?? 0) && nowSec < (data.sys?.sunset ?? 86400);
       const effect    = codeToEffect(code, precip, temp, isDay);
       try {
         sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), code, temp, effect, city, feelsLike, humidity, wind, isDay }));
