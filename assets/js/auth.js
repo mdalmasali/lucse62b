@@ -197,7 +197,9 @@
         border-radius:10px;color:var(--text,#e2d9f3);font-family:'Inter',sans-serif;
         font-size:0.88rem;cursor:pointer;transition:border-color 0.2s;appearance:auto;}
       ._dob-selects select:focus{outline:none;border-color:var(--accent,#7c3aed);}
-      ._dob-selects select option{background:#13111f;}
+      ._dob-selects select option{background:#13111f;color:#e2d9f3;}
+      html[data-theme="light"] ._dob-selects select{background:rgba(0,0,0,0.04);color:#1a1a2e;}
+      html[data-theme="light"] ._dob-selects select option{background:#ffffff;color:#1a1a2e;}
       ._dob-err{color:#f43f5e;font-size:0.8rem;font-weight:500;margin-bottom:10px;min-height:16px;text-align:left;}
       ._dob-btn{width:100%;padding:13px 20px;
         background:linear-gradient(135deg,var(--accent,#7c3aed),var(--accent2,#a855f7));
@@ -282,7 +284,7 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify &amp; Continue';
         } else {
-          err.textContent = 'Connection error. Please check your internet and try again.';
+          err.textContent = 'LU portal is temporarily unavailable. Please try again in a few minutes.';
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify &amp; Continue';
         }
