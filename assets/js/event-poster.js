@@ -5,7 +5,7 @@
    Set to '' or null to disable.
    ═══════════════════════════════════════════════ */
 
-const POSTER_IMAGE = null; /* Set image path like '/assets/images/poster.jpg' to enable */
+const POSTER_IMAGE = '/assets/images/Eid Poster.jpg'
 
 if (POSTER_IMAGE) {
   /* ── Inject CSS ── */
