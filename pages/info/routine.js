@@ -155,7 +155,9 @@ function _scanBatchSections(dayResults) {
 
 /* ── Build a schedule object for any batch/section from stored day results ── */
 function _buildScheduleFor(batch, section) {
-  const schedule = {};
+  const schedule   = {};
+  const sheetTimes = new Map(); /* all time slots from sheet, including empty ones */
+
   ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
     const data = _allDayResults[idx];
     if (!data?.table) return;
@@ -194,17 +196,28 @@ function _buildScheduleFor(batch, section) {
       const parsed = parseClassCell(mergedCells[i]);
       if (parsed) daySchedule.push({ time, ...parsed, source: '62b' });
     });
-    if (daySchedule.some(s => !s.isBreak)) schedule[dayName] = daySchedule;
+
+    /* Only collect time slots from days where this section actually has classes */
+    if (daySchedule.some(s => !s.isBreak)) {
+      schedule[dayName] = daySchedule;
+      timeSlots.forEach(t => {
+        if (t && /\d+:\d+/.test(t)) {
+          const k = timeToMin(t);
+          if (!sheetTimes.has(k)) sheetTimes.set(k, t);
+        }
+      });
+    }
   });
-  return schedule;
+  return { schedule, sheetTimes };
 }
 
 /* ── Build a full cache object from a schedule ── */
-function _scheduleToCacheWith(schedule, courseInfo, sem) {
+function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes) {
   const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
   if (!days.length) return null;
 
-  const timeKeyMap    = new Map();
+  /* Seed with ALL sheet time slots so empty columns still appear */
+  const timeKeyMap    = new Map(sheetTimes || []);
   const breakTimeKeys = new Set();
   Object.values(schedule).forEach(slots => {
     slots.forEach(s => {
@@ -382,8 +395,8 @@ window._rtApplyBatchSection = function() {
     }
   } else {
     /* Build a fresh cache for the selected batch/section */
-    const schedule = _buildScheduleFor(batch, section);
-    const newCache = _scheduleToCacheWith(schedule, _allCourseInfo, _semLabel);
+    const { schedule, sheetTimes } = _buildScheduleFor(batch, section);
+    const newCache = _scheduleToCacheWith(schedule, _allCourseInfo, _semLabel, sheetTimes);
     if (!newCache) {
       const el = document.getElementById('rt-main-content');
       if (el) el.innerHTML = `<div class="rt-grid-empty-msg">No schedule found for Batch ${escH(batch)}, Section ${escH(section)}.</div>`;
@@ -561,11 +574,11 @@ async function loadRoutine(body) {
     _availableBatchSections = _scanBatchSections(dayResults);
 
     /* Build 62B schedule */
-    const schedule = _buildScheduleFor('62', 'B');
+    const { schedule, sheetTimes } = _buildScheduleFor('62', 'B');
     const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
     if (!days.length) throw new Error('No classes found for Batch 62, Section B');
 
-    const cache62b = _scheduleToCacheWith(schedule, courseInfo, sem);
+    const cache62b = _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes);
     if (!cache62b) throw new Error('No classes found for Batch 62, Section B');
 
     _62bCache      = cache62b;

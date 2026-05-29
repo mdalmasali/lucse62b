@@ -357,11 +357,60 @@ export default {
         return jsonResp(cors, { dob: dob || null });
       }
 
+      // ── POST /push-subscribe { endpoint, p256dh, auth, student_id? } ──
+      if (p === '/push-subscribe' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { endpoint, p256dh, auth, student_id } = await request.json();
+        if (!endpoint || !p256dh || !auth) return errResp(cors, 400, 'Missing fields');
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const row = { endpoint, p256dh, auth };
+        if (student_id) row.student_id = String(student_id);
+        const r = await fetch(`${SUPA_URL}/rest/v1/push_subscriptions`, {
+          method: 'POST',
+          headers: {
+            'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+            'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify(row),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 500, 'Failed to save subscription');
+        return jsonResp(cors, { ok: true });
+      }
+
+      // ── DELETE /push-subscribe { endpoint } ──────────────────────────
+      if (p === '/push-subscribe' && request.method === 'DELETE') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { endpoint } = await request.json();
+        if (!endpoint || !env.SUPA_KEY) return errResp(cors, 400, 'Missing fields');
+        await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`, {
+          method: 'DELETE',
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+        }).catch(() => {});
+        return jsonResp(cors, { ok: true });
+      }
+
+      // ── GET /notifications ────────────────────────────────────────────
+      if (p === '/notifications') {
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const since = url.searchParams.get('since') || '';
+        let supaUrl = `${SUPA_URL}/rest/v1/notifications?order=created_at.desc&limit=20`;
+        if (since) supaUrl += `&created_at=gt.${encodeURIComponent(since)}`;
+        const r = await fetch(supaUrl, {
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 500, 'Failed to fetch');
+        return jsonResp(cors, await r.json());
+      }
+
       return new Response('Not found', { status: 404, headers: cors });
 
     } catch (e) {
       return errResp(cors, 500, 'Internal error');
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runMonitor(env));
   },
 };
 
@@ -522,4 +571,392 @@ function errResp(cors, status, msg) {
     status,
     headers: { ...cors, 'Content-Type': 'application/json' },
   });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   NOTIFICATION MONITOR  (runs via Cloudflare Cron every hour)
+   ════════════════════════════════════════════════════════════════════ */
+
+const MONITOR_DAYS = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
+
+async function runMonitor(env) {
+  if (!env.SUPA_KEY) return;
+  await Promise.allSettled([
+    checkClassRoutine(env).catch(() => {}),
+    checkExamRoutine(env, 'mid').catch(() => {}),
+    checkExamRoutine(env, 'final').catch(() => {}),
+  ]);
+  /* Result check every 3 hours — per-student via push_subscriptions */
+  if (new Date().getUTCHours() % 3 === 0) {
+    await checkResult(env).catch(() => {});
+  }
+}
+
+/* ── SHA-256 hash ── */
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ── Supabase monitor_state helpers ── */
+async function supabaseGetState(env, key) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/monitor_state?key=eq.${key}&limit=1`, {
+    headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+  }).catch(() => null);
+  if (!r || !r.ok) return null;
+  const rows = await r.json();
+  return rows[0] || null;
+}
+
+async function supabaseUpsertState(env, key, hash, data) {
+  await fetch(`${SUPA_URL}/rest/v1/monitor_state`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+      'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({
+      key, state_hash: hash, state_data: data,
+      last_checked: new Date().toISOString(),
+      last_changed: new Date().toISOString(),
+    }),
+  }).catch(() => {});
+}
+
+async function insertNotification(env, type, title, body, link) {
+  await fetch(`${SUPA_URL}/rest/v1/notifications`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ type, title, body, link }),
+  }).catch(() => {});
+}
+
+/* ── Sheet fetch helper (no CORS needed for scheduled) ── */
+async function fetchSheetGviz(sheetId, tab) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}&_t=${Date.now()}`;
+  const r = await fetch(url);
+  const text = await r.text();
+  const m = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  return m ? JSON.parse(m[1]).table : null;
+}
+
+/* ── Get routine sheet ID from main sheet ── */
+async function getRoutineSheetIdByKeyword(env, keyword) {
+  const mainId = env.MAIN_SHEET_ID;
+  if (!mainId) return null;
+  try {
+    const table = await fetchSheetGviz(mainId, 'Routine');
+    for (const row of (table?.rows || [])) {
+      const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+      if (cells[0]?.toLowerCase().includes(keyword) && cells[1]) {
+        const m = cells[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (m) return m[1];
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/* ── Parse 62B slots from a single day tab ── */
+function parse62BSlots(table, dayName) {
+  if (!table) return [];
+  const rows = table.rows || [];
+  const cols = table.cols || [];
+
+  let timeSlots = cols.slice(3).map(c => (c.label || '').trim());
+  let dataStart = 0;
+  if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+    for (let r = 0; r < Math.min(rows.length, 3); r++) {
+      const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+      if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
+        timeSlots = cells.slice(3); dataStart = r + 1; break;
+      }
+    }
+  }
+
+  let breakSlotIdx = -1;
+  const targetRows = [];
+  for (let r = dataStart; r < rows.length; r++) {
+    const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+    cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
+    if (cells[1]?.trim() === '62' && cells[2]?.trim().toUpperCase() === 'B') targetRows.push(cells);
+  }
+  if (!targetRows.length) return [];
+
+  const merged = targetRows[0].slice(3).map((_, i) =>
+    targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
+  );
+
+  const slots = [];
+  timeSlots.forEach((time, i) => {
+    if (!time || i === breakSlotIdx || !merged[i]) return;
+    const parts = merged[i].trim().split(/\s+/).filter(Boolean);
+    if (!parts[0]) return;
+    slots.push({ day: dayName, time: time.trim(), code: parts[0], teacher: parts[1] || '', room: parts.slice(2).join(' ') });
+  });
+  return slots;
+}
+
+/* ── Compute slot diff ── */
+function computeSlotDiff(oldSlots, newSlots) {
+  const toMap = arr => Object.fromEntries(arr.map(s => [`${s.day}|${s.time}|${s.code}`, s]));
+  const oldMap = toMap(oldSlots), newMap = toMap(newSlots);
+  const changes = [];
+
+  for (const [k, o] of Object.entries(oldMap)) {
+    if (!newMap[k]) changes.push(`• ${o.code}: Removed from ${o.day}`);
+  }
+  for (const [k, n] of Object.entries(newMap)) {
+    if (!oldMap[k]) { changes.push(`• ${n.code}: Added on ${n.day} at ${n.time}`); continue; }
+    const o = oldMap[k];
+    const fc = [];
+    if (o.teacher !== n.teacher && (o.teacher || n.teacher)) fc.push(`Teacher: ${o.teacher||'?'} → ${n.teacher||'?'}`);
+    if (o.room    !== n.room    && (o.room    || n.room   )) fc.push(`Room: ${o.room||'?'} → ${n.room||'?'}`);
+    if (fc.length) changes.push(`• ${n.code} (${n.day}): ${fc.join(', ')}`);
+  }
+  return changes;
+}
+
+/* ── Class Routine Monitor ── */
+async function checkClassRoutine(env) {
+  const sheetId = (await getRoutineSheetIdByKeyword(env, 'class routine')) || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+  const dayTabs = await Promise.all(MONITOR_DAYS.map(d => fetchSheetGviz(sheetId, d).catch(() => null)));
+  const allSlots = MONITOR_DAYS.flatMap((day, i) => parse62BSlots(dayTabs[i], day));
+  if (!allSlots.length) return;
+
+  const sorted = [...allSlots].sort((a, b) => `${a.day}${a.time}${a.code}`.localeCompare(`${b.day}${b.time}${b.code}`));
+  const hash   = await sha256(JSON.stringify(sorted));
+  const stored = await supabaseGetState(env, 'class_routine');
+
+  if (!stored) { await supabaseUpsertState(env, 'class_routine', hash, { slots: sorted }); return; }
+  if (stored.state_hash === hash) return;
+
+  const changes = computeSlotDiff(stored.state_data?.slots || [], sorted);
+  if (!changes.length) { await supabaseUpsertState(env, 'class_routine', hash, { slots: sorted }); return; }
+
+  const body = changes.slice(0, 8).join('\n') + (changes.length > 8 ? `\n…and ${changes.length - 8} more` : '');
+  await insertNotification(env, 'class_routine', '📅 Class Routine Updated', body, '/pages/info.html');
+  await supabaseUpsertState(env, 'class_routine', hash, { slots: sorted });
+  await sendPushToAll(env);
+}
+
+/* ── Exam Routine Monitor ── */
+async function checkExamRoutine(env, type) {
+  const keyword = type === 'mid' ? 'mid term' : 'final term';
+  const label   = type === 'mid' ? 'Mid Term' : 'Final Term';
+  const stateKey = `${type}_routine`;
+
+  const sheetId = await getRoutineSheetIdByKeyword(env, keyword);
+  if (!sheetId) return;
+
+  const dayTabs = await Promise.all(MONITOR_DAYS.map(d => fetchSheetGviz(sheetId, d).catch(() => null)));
+  const allSlots = MONITOR_DAYS.flatMap((day, i) => parse62BSlots(dayTabs[i], day));
+
+  if (!allSlots.length) {
+    const stored = await supabaseGetState(env, stateKey);
+    if (!stored) await supabaseUpsertState(env, stateKey, 'empty', { slots: [] });
+    return;
+  }
+
+  const sorted = [...allSlots].sort((a, b) => `${a.day}${a.time}${a.code}`.localeCompare(`${b.day}${b.time}${b.code}`));
+  const hash   = await sha256(JSON.stringify(sorted));
+  const stored = await supabaseGetState(env, stateKey);
+
+  if (!stored || !stored.state_data?.slots?.length) {
+    const preview = sorted.slice(0, 5).map(s => `• ${s.code}: ${s.day} at ${s.time}`).join('\n');
+    await insertNotification(env, stateKey, `📋 ${label} Routine Published`, preview, '/pages/info.html');
+    await supabaseUpsertState(env, stateKey, hash, { slots: sorted });
+    await sendPushToAll(env);
+    return;
+  }
+  if (stored.state_hash === hash) return;
+
+  const changes = computeSlotDiff(stored.state_data?.slots || [], sorted);
+  if (!changes.length) { await supabaseUpsertState(env, stateKey, hash, { slots: sorted }); return; }
+
+  const body = changes.slice(0, 8).join('\n') + (changes.length > 8 ? `\n…and ${changes.length - 8} more` : '');
+  await insertNotification(env, stateKey, `📋 ${label} Routine Updated`, body, '/pages/info.html');
+  await supabaseUpsertState(env, stateKey, hash, { slots: sorted });
+  await sendPushToAll(env);
+}
+
+/* ── Result Monitor — per-student ── */
+async function checkResult(env) {
+  if (!env.SUPA_KEY) return;
+
+  /* Get all subscriptions that have student_id */
+  const r = await fetch(
+    `${SUPA_URL}/rest/v1/push_subscriptions?select=endpoint,student_id&student_id=not.is.null`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  if (!r || !r.ok) return;
+  const subs = await r.json();
+  if (!subs.length) return;
+
+  /* Group endpoints by student_id */
+  const byStudent = {};
+  subs.forEach(s => {
+    if (!byStudent[s.student_id]) byStudent[s.student_id] = [];
+    byStudent[s.student_id].push(s.endpoint);
+  });
+
+  /* Check each student (rate limit: sequential with small delay) */
+  for (const [studentId, endpoints] of Object.entries(byStudent)) {
+    await checkStudentResult(env, studentId, endpoints).catch(() => {});
+    await new Promise(r => setTimeout(r, 500)); /* avoid hammering LU portal */
+  }
+}
+
+async function checkStudentResult(env, studentId, endpoints) {
+  /* Get DOB from Supabase */
+  const dobR = await fetch(`${SUPA_URL}/rest/v1/rpc/get_student_dob`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_student_id: studentId }),
+  }).catch(() => null);
+  if (!dobR || !dobR.ok) return;
+  const dob = await dobR.json();
+  if (!dob) return;
+
+  /* Fetch result from LU portal */
+  const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: dob });
+  const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', {
+    method: 'POST', body,
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-requested-with': 'XMLHttpRequest' },
+  }).catch(() => null);
+  if (!r || !r.ok) return;
+  const text = await r.text();
+  if (text.trimStart().startsWith('<')) return;
+
+  let data;
+  try { data = JSON.parse(text); } catch { return; }
+  if (!Array.isArray(data?.result)) return;
+
+  /* Find latest semester */
+  const semesters = [...new Set(data.result.map(x => x.semester || ''))].filter(Boolean);
+  if (!semesters.length) return;
+  const latestSem = semesters[0];
+
+  const courses = data.result
+    .filter(x => x.semester === latestSem)
+    .map(x => ({ code: x.course_code || x.code || '', name: x.course_title || x.course_name || '' }))
+    .filter(c => c.code)
+    .sort((a, b) => a.code.localeCompare(b.code));
+  if (!courses.length) return;
+
+  /* Compare with stored state for this student */
+  const stateKey = `result_${studentId}`;
+  const hash     = await sha256(JSON.stringify(courses));
+  const stored   = await supabaseGetState(env, stateKey);
+
+  if (!stored) {
+    await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+    return;
+  }
+  if (stored.state_hash === hash) return;
+
+  const storedCodes = new Set((stored.state_data?.courses || []).map(c => c.code));
+  const newCourses  = courses.filter(c => !storedCodes.has(c.code));
+  if (!newCourses.length) {
+    await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+    return;
+  }
+
+  /* Insert personalized notification (student_id set → only that student sees it) */
+  const count = newCourses.length;
+  const title = `🎓 ${count === 1 ? 'New Result Available!' : `${count} New Results Available!`}`;
+  const nbody = newCourses.map(c => `• ${c.code}${c.name ? ' · ' + c.name : ''}`).join('\n') + `\n${latestSem}`;
+  await insertPersonalNotification(env, studentId, 'result', title, nbody, '/pages/result-dashboard.html');
+
+  /* Send push only to this student's endpoints */
+  const expired = [];
+  for (const ep of endpoints) {
+    const status = await sendWebPush(ep, env);
+    if (status === 410) expired.push(ep);
+  }
+  for (const ep of expired) {
+    await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(ep)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+    }).catch(() => {});
+  }
+
+  await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+}
+
+async function insertPersonalNotification(env, studentId, type, title, body, link) {
+  await fetch(`${SUPA_URL}/rest/v1/notifications`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ type, title, body, link, student_id: studentId }),
+  }).catch(() => {});
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   VAPID + WEB PUSH
+   ════════════════════════════════════════════════════════════════════ */
+
+function b64urlEncode(data) {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  let str = '';
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function b64urlDecode(str) {
+  const s = str.replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(s + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+}
+
+async function signVapidJwt(endpoint, env) {
+  const { protocol, host } = new URL(endpoint);
+  const now = Math.floor(Date.now() / 1000);
+  const hdr = b64urlEncode(new TextEncoder().encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+  const pld = b64urlEncode(new TextEncoder().encode(JSON.stringify({ aud: `${protocol}//${host}`, exp: now + 43200, sub: env.VAPID_SUBJECT })));
+
+  const pub = b64urlDecode(env.VAPID_PUBLIC_KEY);
+  const jwk = { kty: 'EC', crv: 'P-256', x: b64urlEncode(pub.slice(1, 33)), y: b64urlEncode(pub.slice(33, 65)), d: env.VAPID_PRIVATE_KEY, key_ops: ['sign'] };
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(`${hdr}.${pld}`));
+  return `vapid t=${hdr}.${pld}.${b64urlEncode(new Uint8Array(sig))},k=${env.VAPID_PUBLIC_KEY}`;
+}
+
+async function sendWebPush(endpoint, env) {
+  try {
+    const auth = await signVapidJwt(endpoint, env);
+    const res  = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': auth, 'TTL': '86400', 'Content-Length': '0' },
+    });
+    return res.status;
+  } catch { return 0; }
+}
+
+async function sendPushToAll(env) {
+  if (!env.SUPA_KEY || !env.VAPID_PRIVATE_KEY) return;
+  const r = await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?select=endpoint`, {
+    headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+  }).catch(() => null);
+  if (!r || !r.ok) return;
+  const subs = await r.json();
+  const expired = [];
+  await Promise.allSettled(subs.map(async sub => {
+    const status = await sendWebPush(sub.endpoint, env);
+    if (status === 410) expired.push(sub.endpoint);
+  }));
+  for (const ep of expired) {
+    await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(ep)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+    }).catch(() => {});
+  }
 }

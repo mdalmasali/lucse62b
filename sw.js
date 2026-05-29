@@ -1,4 +1,6 @@
-const CACHE = 'lu62b-v44';
+const CACHE     = 'lu62b-v45';
+const _SW_SUPA  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+const _SW_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
 const STATIC_IMAGES = [
   '/assets/images/hero.jpg',
@@ -22,6 +24,54 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
+  );
+});
+
+/* Store student_id sent from page via postMessage */
+let _swStudentId = null;
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SET_STUDENT_ID') _swStudentId = e.data.studentId || null;
+});
+
+/* Push notification received */
+self.addEventListener('push', e => {
+  const sid = _swStudentId;
+  let url = `${_SW_SUPA}/rest/v1/notifications?order=created_at.desc&limit=1`;
+  if (sid) url += `&or=(student_id.is.null,student_id.eq.${encodeURIComponent(sid)})`;
+  else     url += '&student_id=is.null';
+
+  e.waitUntil(
+    fetch(url, { headers: { 'apikey': _SW_ANON, 'Authorization': `Bearer ${_SW_ANON}` } })
+    .then(r => r.json())
+    .then(([n]) => {
+      if (!n) return;
+      return self.registration.showNotification(n.title, {
+        body: n.body,
+        icon: '/assets/images/icon-192.png',
+        badge: '/assets/images/icon-192.png',
+        tag: n.id,
+        data: { link: n.link || '/' },
+      });
+    })
+    .catch(() => self.registration.showNotification('CSE 62B Portal', {
+      body: 'New update available. Tap to view.',
+      icon: '/assets/images/icon-192.png',
+    }))
+  );
+});
+
+// Notification click → open/focus relevant page
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const link = e.notification.data?.link || '/';
+  const url  = new URL(link, self.location.origin).href;
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+      for (const c of cs) {
+        if (c.url === url && 'focus' in c) return c.focus();
+      }
+      return clients.openWindow(url);
+    })
   );
 });
 

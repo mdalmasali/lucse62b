@@ -1,0 +1,297 @@
+/* ── CSE 62B · Notification System ────────────────────────────────── */
+(function () {
+  const SUPA_URL  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+  const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+  const WORKER    = 'https://lucse62b-api.sy164425.workers.dev';
+  const VAPID_PUB = 'BKvTLWhriB6TC5zTPHg7ueOTkPuscWWohuFAshrCCigaT1cKm_vUTrFYtV6x8yDgmQZiOjPIjxf5sMdYErfFPK4';
+  const LS_SEEN   = 'lu62b_notif_last_seen';
+
+  let _notifs = [];
+
+  /* ── Boot ── */
+  function boot() {
+    renderBell();
+    fetchNotifs().then(ns => { _notifs = ns; updateBadge(); });
+    /* Tell SW the logged-in student_id so push shows personalized notification */
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.active?.postMessage({ type: 'SET_STUDENT_ID', studentId: getStudentId() });
+      }).catch(() => {});
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+
+  /* ── Bell button injection ── */
+  function renderBell() {
+    const bar = document.querySelector('.topbar');
+    if (!bar || document.getElementById('notifBellBtn')) return;
+    injectStyles();
+    const btn = document.createElement('button');
+    btn.id = 'notifBellBtn';
+    btn.className = 'notif-bell-btn';
+    btn.setAttribute('aria-label', 'Notifications');
+    btn.innerHTML = '<i class="fa-solid fa-bell"></i><span class="notif-badge" id="notifBadge" style="display:none"></span>';
+    btn.onclick = toggleDropdown;
+    const themeBtn = bar.querySelector('.theme-toggle-btn');
+    bar.insertBefore(btn, themeBtn || null);
+  }
+
+  function injectStyles() {
+    if (document.getElementById('notif-css')) return;
+    const s = document.createElement('style');
+    s.id = 'notif-css';
+    s.textContent = `
+      .notif-bell-btn{position:relative;background:none;border:none;color:var(--text-secondary);
+        cursor:pointer;padding:7px;border-radius:9px;transition:background .15s;font-size:1rem;
+        display:flex;align-items:center;flex-shrink:0;}
+      .notif-bell-btn:hover{background:rgba(255,255,255,.08);}
+      .notif-badge{position:absolute;top:3px;right:3px;min-width:15px;height:15px;border-radius:8px;
+        background:#f43f5e;color:#fff;font-size:0.58rem;font-weight:800;line-height:1;
+        display:flex;align-items:center;justify-content:center;padding:0 3px;
+        font-family:'Inter',sans-serif;border:2px solid var(--bg,#0d0d1b);pointer-events:none;}
+      #notif-dropdown{position:fixed;background:var(--card,#1a1825);
+        border:1px solid var(--border,rgba(255,255,255,.08));border-radius:14px;
+        box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:99990;width:320px;overflow:hidden;
+        font-family:'Inter',sans-serif;}
+      .nd-header{padding:12px 16px;border-bottom:1px solid var(--border,rgba(255,255,255,.08));
+        display:flex;align-items:center;justify-content:space-between;}
+      .nd-title{font-size:.82rem;font-weight:700;color:var(--text,#e2d9f3);}
+      .nd-mark{font-size:.68rem;color:var(--accent-bright,#a78bfa);background:none;border:none;
+        cursor:pointer;font-family:'Inter',sans-serif;padding:0;}
+      .nd-list{max-height:360px;overflow-y:auto;}
+      .nd-item{padding:11px 16px;border-bottom:1px solid var(--border,rgba(255,255,255,.05));
+        cursor:pointer;transition:background .12s;display:block;text-decoration:none;color:inherit;}
+      .nd-item:hover{background:rgba(99,102,241,.08);}
+      .nd-item.unread{background:rgba(99,102,241,.04);}
+      .nd-item-title{font-size:.78rem;font-weight:700;color:var(--text,#e2d9f3);
+        margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+      .nd-item.unread .nd-item-title::before{content:'';width:6px;height:6px;border-radius:50%;
+        background:#a78bfa;flex-shrink:0;}
+      .nd-item-body{font-size:.68rem;color:var(--text-secondary,#94a3b8);line-height:1.55;
+        white-space:pre-wrap;margin-bottom:3px;}
+      .nd-item-time{font-size:.62rem;color:var(--text-secondary,#64748b);}
+      .nd-empty{padding:36px 16px;text-align:center;color:var(--text-secondary,#64748b);
+        font-size:.78rem;line-height:1.8;}
+      .nd-push-row{padding:10px 14px;border-top:1px solid var(--border,rgba(255,255,255,.08));}
+      .nd-push-btn{width:100%;padding:8px 12px;border-radius:9px;font-weight:700;font-size:.75rem;
+        border:none;cursor:pointer;font-family:'Inter',sans-serif;
+        background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+        display:flex;align-items:center;justify-content:center;gap:6px;}
+      .nd-push-btn.unsub{background:rgba(255,255,255,.06);color:var(--text-secondary,#94a3b8);}
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* ── Get logged-in student ID ── */
+  function getStudentId() {
+    try { return JSON.parse(localStorage.getItem('lu62b_student') || 'null')?.id || null; }
+    catch { return null; }
+  }
+
+  /* ── Fetch public + personal notifications ── */
+  async function fetchNotifs() {
+    try {
+      const studentId = getStudentId();
+      let url = `${SUPA_URL}/rest/v1/notifications?order=created_at.desc&limit=20`;
+      if (studentId) {
+        url += `&or=(student_id.is.null,student_id.eq.${encodeURIComponent(studentId)})`;
+      } else {
+        url += '&student_id=is.null';
+      }
+      const r = await fetch(url, {
+        headers: { 'apikey': SUPA_ANON, 'Authorization': `Bearer ${SUPA_ANON}` },
+      });
+      return r.ok ? await r.json() : [];
+    } catch { return []; }
+  }
+
+  function getLastSeen() { return localStorage.getItem(LS_SEEN) || '1970-01-01T00:00:00Z'; }
+
+  function updateBadge() {
+    const seen  = getLastSeen();
+    const count = _notifs.filter(n => n.created_at > seen).length;
+    const badge = document.getElementById('notifBadge');
+    if (!badge) return;
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+
+  /* ── Dropdown ── */
+  function toggleDropdown() {
+    const existing = document.getElementById('notif-dropdown');
+    if (existing) { existing.remove(); return; }
+    showDropdown();
+  }
+
+  async function showDropdown() {
+    const btn = document.getElementById('notifBellBtn');
+    if (!btn) return;
+
+    const seen = getLastSeen();
+    const drop = document.createElement('div');
+    drop.id = 'notif-dropdown';
+
+    const isPushSupported = ('Notification' in window) && ('PushManager' in window) && ('serviceWorker' in navigator);
+    let isSubscribed = false;
+    if (isPushSupported) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        isSubscribed = !!(await reg.pushManager.getSubscription());
+      } catch {}
+    }
+
+    const items = _notifs.length
+      ? _notifs.map(n => {
+          const isNew = n.created_at > seen;
+          return `<a class="nd-item${isNew ? ' unread' : ''}" href="${escH(n.link || '/')}">
+            <div class="nd-item-title">${escH(n.title)}</div>
+            <div class="nd-item-body">${escH(n.body)}</div>
+            <div class="nd-item-time">${relTime(n.created_at)}</div>
+          </a>`;
+        }).join('')
+      : `<div class="nd-empty"><i class="fa-solid fa-bell-slash" style="font-size:1.4rem;opacity:.4;display:block;margin-bottom:8px;"></i>No notifications yet</div>`;
+
+    let pushRow = '';
+    if (isPushSupported) {
+      if (!isSubscribed) {
+        pushRow = `<div class="nd-push-row"><button class="nd-push-btn" onclick="window._notifSubscribe()"><i class="fa-solid fa-bell"></i> Enable Push Notifications</button></div>`;
+      } else {
+        pushRow = `<div class="nd-push-row"><button class="nd-push-btn unsub" onclick="window._notifUnsubscribe()"><i class="fa-solid fa-bell-slash"></i> Disable Notifications</button></div>`;
+      }
+    }
+
+    drop.innerHTML = `
+      <div class="nd-header">
+        <span class="nd-title"><i class="fa-solid fa-bell" style="color:var(--accent-bright);margin-right:6px;font-size:.8rem;"></i>Notifications</span>
+        <button class="nd-mark" onclick="window._notifMarkAll()">Mark all read</button>
+      </div>
+      <div class="nd-list">${items}</div>
+      ${pushRow}`;
+
+    document.body.appendChild(drop);
+    positionDrop(drop, btn);
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function _h(e) {
+        if (!drop.contains(e.target) && !btn.contains(e.target)) {
+          drop.remove();
+          document.removeEventListener('click', _h);
+        }
+      });
+    }, 10);
+
+    // Mark all as read
+    localStorage.setItem(LS_SEEN, new Date().toISOString());
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  function positionDrop(drop, btn) {
+    const rect = btn.getBoundingClientRect();
+    const w    = 320;
+    let left   = rect.right - w;
+    if (left < 8) left = 8;
+    if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+    drop.style.left = `${left}px`;
+    drop.style.top  = `${rect.bottom + 8}px`;
+  }
+
+  window._notifMarkAll = function () {
+    localStorage.setItem(LS_SEEN, new Date().toISOString());
+    const badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = 'none';
+    document.getElementById('notif-dropdown')?.remove();
+  };
+
+  /* ── Push Subscribe ── */
+  window._notifSubscribe = async function () {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { _toast('Notification permission denied.'); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlB64ToUint8(VAPID_PUB),
+      });
+      const studentId = getStudentId();
+      await fetch(`${WORKER}/push-subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint:   sub.endpoint,
+          p256dh:     _abToB64url(sub.getKey('p256dh')),
+          auth:       _abToB64url(sub.getKey('auth')),
+          student_id: studentId || undefined,
+        }),
+      });
+      document.getElementById('notif-dropdown')?.remove();
+      _toast('Push notifications enabled!');
+    } catch (e) {
+      _toast('Could not enable notifications.');
+      console.error(e);
+    }
+  };
+
+  /* ── Push Unsubscribe ── */
+  window._notifUnsubscribe = async function () {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch(`${WORKER}/push-subscribe`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+      document.getElementById('notif-dropdown')?.remove();
+      _toast('Push notifications disabled.');
+    } catch (e) {
+      _toast('Could not disable notifications.');
+      console.error(e);
+    }
+  };
+
+  /* ── Helpers ── */
+  function relTime(iso) {
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (s < 60)    return 'Just now';
+    if (s < 3600)  return `${Math.floor(s / 60)} min ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)} hr ago`;
+    const d = Math.floor(s / 86400);
+    return `${d} day${d > 1 ? 's' : ''} ago`;
+  }
+
+  function escH(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function _urlB64ToUint8(b64) {
+    const raw = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from({ length: raw.length }, (_, i) => raw.charCodeAt(i));
+  }
+
+  function _abToB64url(buf) {
+    if (!buf) return '';
+    let str = '';
+    new Uint8Array(buf).forEach(b => { str += String.fromCharCode(b); });
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
+  function _toast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'background:#6366f1;color:#fff;padding:10px 20px;border-radius:10px;font-size:.82rem;' +
+      'font-weight:600;z-index:99999;font-family:Inter,sans-serif;white-space:nowrap;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+})();

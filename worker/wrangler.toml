@@ -1,12 +1,19 @@
-name            = "lucse62b-api"
-main            = "worker.js"
+name               = "lucse62b-api"
+main               = "worker.js"
 compatibility_date = "2024-01-01"
 
+[triggers]
+crons = ["0 * * * *"]
+
 [vars]
-# Non-secret env vars (if any) go here.
-# Secrets (SUPA_KEY, DRIVE_API_KEY, etc.) are stored in Cloudflare dashboard
-# under Workers → lucse62b-api → Settings → Variables → Secrets.
-CPG_TEACHERS_GID = "1051481415"   # gid of the CPG_Teachers tab (from sheet URL ?gid=)
+CPG_TEACHERS_GID = "1051481415"
+VAPID_PUBLIC_KEY = "BKvTLWhriB6TC5zTPHg7ueOTkPuscWWohuFAshrCCigaT1cKm_vUTrFYtV6x8yDgmQZiOjPIjxf5sMdYErfFPK4"
+VAPID_SUBJECT    = "mailto:sy164425@gmail.com"
+# Secrets stored in Cloudflare dashboard → Workers → lucse62b-api → Settings → Variables:
+#   SUPA_KEY, DRIVE_API_KEY, SMS_API_KEY, SMS_SENDER_ID, MAIN_SHEET_ID, CPG_TEACHERS_GID
+#   VAPID_PRIVATE_KEY   ← run: wrangler secret put VAPID_PRIVATE_KEY
+#   RESULT_STUDENT_ID   ← CR's student ID for result monitoring
+#   RESULT_BIRTH_DATE   ← CR's birth date (YYYY-MM-DD) for result monitoring
 
 [[kv_namespaces]]
 binding  = "SMS_RATE"
