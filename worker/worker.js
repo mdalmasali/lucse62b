@@ -586,10 +586,8 @@ async function runMonitor(env) {
     checkExamRoutine(env, 'mid').catch(() => {}),
     checkExamRoutine(env, 'final').catch(() => {}),
   ]);
-  /* Result check every 3 hours — per-student via push_subscriptions */
-  if (new Date().getUTCHours() % 3 === 0) {
-    await checkResult(env).catch(() => {});
-  }
+  /* Result check every hour — per-student via push_subscriptions */
+  await checkResult(env).catch(() => {});
 }
 
 /* ── SHA-256 hash ── */
@@ -702,21 +700,53 @@ function parse62BSlots(table, dayName) {
 
 /* ── Compute slot diff ── */
 function computeSlotDiff(oldSlots, newSlots) {
-  const toMap = arr => Object.fromEntries(arr.map(s => [`${s.day}|${s.time}|${s.code}`, s]));
-  const oldMap = toMap(oldSlots), newMap = toMap(newSlots);
-  const changes = [];
+  const byKey  = arr => Object.fromEntries(arr.map(s => [`${s.day}|${s.time}|${s.code}`, s]));
+  const byCode = arr => {
+    const m = {};
+    arr.forEach(s => { if (!m[s.code]) m[s.code] = []; m[s.code].push(s); });
+    return m;
+  };
 
+  const oldMap     = byKey(oldSlots),  newMap     = byKey(newSlots);
+  const oldByCode  = byCode(oldSlots), newByCode  = byCode(newSlots);
+  const changes    = [];
+  const matched    = new Set();
+
+  /* Exact key match → check teacher/room changes */
   for (const [k, o] of Object.entries(oldMap)) {
-    if (!newMap[k]) changes.push(`• ${o.code}: Removed from ${o.day}`);
-  }
-  for (const [k, n] of Object.entries(newMap)) {
-    if (!oldMap[k]) { changes.push(`• ${n.code}: Added on ${n.day} at ${n.time}`); continue; }
-    const o = oldMap[k];
+    const n = newMap[k];
+    if (!n) continue;
+    matched.add(k);
     const fc = [];
     if (o.teacher !== n.teacher && (o.teacher || n.teacher)) fc.push(`Teacher: ${o.teacher||'?'} → ${n.teacher||'?'}`);
     if (o.room    !== n.room    && (o.room    || n.room   )) fc.push(`Room: ${o.room||'?'} → ${n.room||'?'}`);
     if (fc.length) changes.push(`• ${n.code} (${n.day}): ${fc.join(', ')}`);
   }
+
+  /* Unmatched old slots → try to find same code in new (day/time moved) */
+  for (const [k, o] of Object.entries(oldMap)) {
+    if (matched.has(k)) continue;
+    const candidates = (newByCode[o.code] || []).filter(n => !matched.has(`${n.day}|${n.time}|${n.code}`));
+    if (candidates.length === 1) {
+      const n = candidates[0];
+      matched.add(`${n.day}|${n.time}|${n.code}`);
+      const fc = [];
+      if (o.day  !== n.day)  fc.push(`Day: ${o.day} → ${n.day}`);
+      if (o.time !== n.time) fc.push(`Time: ${o.time} → ${n.time}`);
+      if (o.teacher !== n.teacher && (o.teacher || n.teacher)) fc.push(`Teacher: ${o.teacher||'?'} → ${n.teacher||'?'}`);
+      if (o.room    !== n.room    && (o.room    || n.room   )) fc.push(`Room: ${o.room||'?'} → ${n.room||'?'}`);
+      if (fc.length) changes.push(`• ${o.code}: ${fc.join(', ')}`);
+    } else {
+      changes.push(`• ${o.code}: Removed from ${o.day} at ${o.time}`);
+    }
+  }
+
+  /* Unmatched new slots → added */
+  for (const [k, n] of Object.entries(newMap)) {
+    if (matched.has(k)) continue;
+    changes.push(`• ${n.code}: Added on ${n.day} at ${n.time}`);
+  }
+
   return changes;
 }
 
