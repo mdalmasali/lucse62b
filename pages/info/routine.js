@@ -6,11 +6,20 @@
 const _RT_SUPA = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _RT_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
-let _routineCache     = null;
-let _improvedCache    = null;
-let _routineTab       = 'regular';
+let _routineCache      = null;  /* currently displayed cache */
+let _62bCache          = null;  /* always the 62B cache, preserved for restore */
+let _improvedCache     = null;
+let _routineTab        = 'regular';
 let _rtLastEnrollments = [];
-window._rtExcluded    = new Set(); /* shared — also read by retake-improve.js */
+window._rtExcluded     = new Set();
+
+/* Multi-batch support */
+let _allDayResults          = null;
+let _allCourseInfo          = {};
+let _semLabel               = 'Current Semester';
+let _availableBatchSections = [];
+let _selectedBatch          = '62';
+let _selectedSection        = 'B';
 
 /* ── Excluded courses: localStorage + Supabase ── */
 function _rtLocalExcluded(userId) {
@@ -65,14 +74,14 @@ async function _rtFetchEnrollments(userId) {
 
 /* ── Build improved cache (62B selected courses + enrolled) ── */
 function _buildImprovedCache(enrollments) {
-  if (!_routineCache || !enrollments.length) return null;
+  if (!_62bCache || !enrollments.length) return null;
 
   const excl = window._rtExcluded;
   const schedule = {};
   ROUTINE_DAY_NAMES.forEach(day => {
-    if (_routineCache.schedule[day]) {
-      schedule[day] = _routineCache.schedule[day]
-        .filter(s => s.isBreak || !excl.has(s.code))  /* skip excluded 62B courses */
+    if (_62bCache.schedule[day]) {
+      schedule[day] = _62bCache.schedule[day]
+        .filter(s => s.isBreak || !excl.has(s.code))
         .map(s => ({ ...s, source: '62b' }));
     }
   });
@@ -109,7 +118,109 @@ function _buildImprovedCache(enrollments) {
   });
 
   const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]?.some(s => !s.isBreak));
-  return { days, schedule, courseInfo: _routineCache.courseInfo, allTimes, breakTimesSet, semester: _routineCache.semester };
+  return { days, schedule, courseInfo: _62bCache.courseInfo, allTimes, breakTimesSet, semester: _62bCache.semester };
+}
+
+/* ── Scan all day results to find unique batch/section combos ── */
+function _scanBatchSections(dayResults) {
+  const seen   = new Set();
+  const combos = [];
+  dayResults.forEach(data => {
+    if (!data?.table) return;
+    const rows = data.table.rows || [];
+    const cols = data.table.cols || [];
+    let timeSlots = cols.slice(3).map(c => (c.label||'').trim());
+    let dataStart = 0;
+    if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+      for (let r = 0; r < Math.min(rows.length, 3); r++) {
+        const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+        if (cells.slice(3).some(c => /\d+:\d+/.test(c))) { dataStart = r + 1; break; }
+      }
+    }
+    for (let r = dataStart; r < rows.length; r++) {
+      const cells   = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+      const batch   = cells[1]?.trim();
+      const section = cells[2]?.trim()?.toUpperCase();
+      if (batch && /^\d+$/.test(batch) && section && /^[A-Z]$/.test(section)) {
+        const key = `${batch}-${section}`;
+        if (!seen.has(key)) { seen.add(key); combos.push({ batch, section }); }
+      }
+    }
+  });
+  return combos.sort((a, b) => {
+    const bd = parseInt(b.batch) - parseInt(a.batch);
+    return bd !== 0 ? bd : a.section.localeCompare(b.section);
+  });
+}
+
+/* ── Build a schedule object for any batch/section from stored day results ── */
+function _buildScheduleFor(batch, section) {
+  const schedule = {};
+  ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
+    const data = _allDayResults[idx];
+    if (!data?.table) return;
+    const rows = data.table.rows || [];
+    const cols = data.table.cols || [];
+    if (!rows.length) return;
+
+    let timeSlots = cols.slice(3).map(c => (c.label||'').trim());
+    let dataStart = 0;
+    if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+      for (let r = 0; r < Math.min(rows.length, 3); r++) {
+        const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+        if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
+          timeSlots = cells.slice(3); dataStart = r + 1; break;
+        }
+      }
+    }
+
+    let breakSlotIdx = -1;
+    const targetRows = [];
+    for (let r = dataStart; r < rows.length; r++) {
+      const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+      cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
+      if (cells[1]?.trim() === batch && cells[2]?.trim().toUpperCase() === section) targetRows.push(cells);
+    }
+    if (!targetRows.length) return;
+
+    const mergedCells = targetRows[0].slice(3).map((_, i) =>
+      targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
+    );
+
+    const daySchedule = [];
+    timeSlots.forEach((time, i) => {
+      if (!time) return;
+      if (i === breakSlotIdx) { daySchedule.push({ isBreak: true, time }); return; }
+      const parsed = parseClassCell(mergedCells[i]);
+      if (parsed) daySchedule.push({ time, ...parsed, source: '62b' });
+    });
+    if (daySchedule.some(s => !s.isBreak)) schedule[dayName] = daySchedule;
+  });
+  return schedule;
+}
+
+/* ── Build a full cache object from a schedule ── */
+function _scheduleToCacheWith(schedule, courseInfo, sem) {
+  const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
+  if (!days.length) return null;
+
+  const timeKeyMap    = new Map();
+  const breakTimeKeys = new Set();
+  Object.values(schedule).forEach(slots => {
+    slots.forEach(s => {
+      const k = timeToMin(s.time);
+      if (!timeKeyMap.has(k)) timeKeyMap.set(k, s.time);
+      if (s.isBreak) breakTimeKeys.add(k);
+    });
+  });
+  const sortedKeys    = [...timeKeyMap.keys()].sort((a, b) => a - b);
+  const allTimes      = sortedKeys.map(k => timeKeyMap.get(k));
+  const breakTimesSet = new Set(sortedKeys.filter(k => breakTimeKeys.has(k)).map(k => timeKeyMap.get(k)));
+  ROUTINE_DAY_NAMES.forEach(day => {
+    (schedule[day] || []).forEach(s => { s.time = timeKeyMap.get(timeToMin(s.time)) || s.time; });
+  });
+
+  return { days, schedule, courseInfo, allTimes, breakTimesSet, semester: sem };
 }
 
 /* ── Render one course card ── */
@@ -157,9 +268,11 @@ function buildGrid(todayName) {
   });
 
   const excl = window._rtExcluded;
+  const is62b = _selectedBatch === '62' && _selectedSection === 'B';
+  const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const captureTitle = isImproved
-    ? `Class Routine — Batch 62, Section B + Retake/Improve · ${cache.semester || ''}`
-    : `Class Routine — Batch 62, Section B · ${cache.semester || ''}`;
+    ? `Class Routine — ${batchLabel} + Retake/Improve · ${cache.semester || ''}`
+    : `Class Routine — ${batchLabel} · ${cache.semester || ''}`;
 
   let html = `<div id="rt-capture" class="rt-capture-area">
     <div class="rt-capture-title">
@@ -189,9 +302,8 @@ function buildGrid(todayName) {
       const allSlots = daySlots[time] || [];
       const hasBreakHere = allSlots.some(s => s.isBreak);
 
-      /* In regular tab, hide excluded 62B courses (show as free) */
       const courses = allSlots.filter(s =>
-        !s.isBreak && (!isImproved ? !excl.has(s.code) : true)
+        !s.isBreak && (!isImproved && is62b ? !excl.has(s.code) : true)
       );
 
       if (isBreak) {
@@ -229,17 +341,133 @@ window.routineSwitchTab = function(tab) {
   if (el) el.innerHTML = buildGrid(todayName);
 };
 
+/* ── Batch/section selector: update section options when batch changes ── */
+window._rtOnBatchChange = function() {
+  const batchSel   = document.getElementById('rt-batch-select');
+  const sectionSel = document.getElementById('rt-section-select');
+  if (!batchSel || !sectionSel) return;
+  const batch = batchSel.value;
+  const sections = _availableBatchSections
+    .filter(c => c.batch === batch)
+    .map(c => c.section);
+  const prevSection = sectionSel.value;
+  sectionSel.innerHTML = sections.map(s =>
+    `<option value="${s}"${s === prevSection ? ' selected' : ''}>${s}</option>`
+  ).join('');
+  if (!sections.includes(prevSection) && sections.length) sectionSel.value = sections[0];
+  window._rtApplyBatchSection();
+};
+
+/* ── Switch to selected batch/section ── */
+window._rtApplyBatchSection = function() {
+  const batch   = document.getElementById('rt-batch-select')?.value;
+  const section = document.getElementById('rt-section-select')?.value;
+  if (!batch || !section) return;
+  if (batch === _selectedBatch && section === _selectedSection) return;
+
+  _selectedBatch   = batch;
+  _selectedSection = section;
+  const is62b      = batch === '62' && section === 'B';
+  const todayName  = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
+
+  if (is62b) {
+    /* Restore the 62B cache */
+    _routineCache  = _62bCache;
+    _routineTab    = 'regular';
+    _improvedCache = null;
+
+    /* Rebuild Improved cache if enrollments are available */
+    if (_rtLastEnrollments.length) {
+      _improvedCache = _buildImprovedCache(_rtLastEnrollments);
+    }
+  } else {
+    /* Build a fresh cache for the selected batch/section */
+    const schedule = _buildScheduleFor(batch, section);
+    const newCache = _scheduleToCacheWith(schedule, _allCourseInfo, _semLabel);
+    if (!newCache) {
+      const el = document.getElementById('rt-main-content');
+      if (el) el.innerHTML = `<div class="rt-grid-empty-msg">No schedule found for Batch ${escH(batch)}, Section ${escH(section)}.</div>`;
+      return;
+    }
+    _routineCache  = newCache;
+    _routineTab    = 'regular';
+    _improvedCache = null;
+  }
+
+  /* Show/hide 62B-only controls */
+  const user   = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+  const tabBar = document.getElementById('rt-tab-bar');
+  const myCoursesBtn = document.getElementById('rt-my-courses-btn');
+
+  if (is62b) {
+    if (myCoursesBtn) myCoursesBtn.style.display = '';
+    if (tabBar && _improvedCache && _rtLastEnrollments.length) {
+      tabBar.innerHTML = `
+        <div style="display:flex;gap:8px;">
+          <button class="ri-tab" onclick="routineSwitchTab('regular')" id="rt-tab-regular">
+            <i class="fa-solid fa-calendar-week"></i> Regular
+          </button>
+          <button class="ri-tab ri-tab-active" onclick="routineSwitchTab('improved')" id="rt-tab-improved">
+            <i class="fa-solid fa-rotate-right"></i> Improved
+            <span class="ri-tab-count">${_rtLastEnrollments.length}</span>
+          </button>
+        </div>`;
+      _routineTab = 'improved';
+    }
+  } else {
+    if (myCoursesBtn) myCoursesBtn.style.display = 'none';
+    if (tabBar) tabBar.innerHTML = '';
+  }
+
+  const el = document.getElementById('rt-main-content');
+  if (el) el.innerHTML = buildGrid(todayName);
+};
+
+/* ── Render the batch/section selector bar ── */
+function _renderSelectorBar() {
+  const batches  = [...new Set(_availableBatchSections.map(c => c.batch))];
+  const sections = _availableBatchSections
+    .filter(c => c.batch === '62')
+    .map(c => c.section);
+
+  const batchOpts   = batches.map(b => `<option value="${b}"${b === '62' ? ' selected' : ''}>${b}</option>`).join('');
+  const sectionOpts = sections.map(s => `<option value="${s}"${s === 'B' ? ' selected' : ''}>${s}</option>`).join('');
+
+  return `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;
+      padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+      <i class="fa-solid fa-magnifying-glass" style="color:var(--accent-bright);font-size:0.8rem;"></i>
+      <span style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;">Batch</span>
+      <select id="rt-batch-select" onchange="_rtOnBatchChange()"
+        style="font-size:0.78rem;font-weight:700;color:var(--text);background:var(--bg);
+          border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer;
+          font-family:'Inter',sans-serif;outline:none;">
+        ${batchOpts}
+      </select>
+      <span style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;">Section</span>
+      <select id="rt-section-select" onchange="_rtApplyBatchSection()"
+        style="font-size:0.78rem;font-weight:700;color:var(--text);background:var(--bg);
+          border:1px solid var(--border);border-radius:8px;padding:4px 8px;cursor:pointer;
+          font-family:'Inter',sans-serif;outline:none;">
+        ${sectionOpts}
+      </select>
+      <span style="font-size:0.7rem;color:var(--text-secondary);margin-left:2px;">
+        — other batches' routines available
+      </span>
+    </div>`;
+}
+
 /* ── My Courses modal ── */
 window._rtOpenMyCourses = function() {
   const existing = document.getElementById('rt-my-courses-panel');
   if (existing) { existing.remove(); return; }
-  if (!_routineCache) return;
+  if (!_62bCache) return;
 
   const allCodes = new Map();
-  Object.values(_routineCache.schedule).forEach(slots => {
+  Object.values(_62bCache.schedule).forEach(slots => {
     slots.forEach(s => {
       if (!s.isBreak && s.code) {
-        allCodes.set(s.code, _routineCache.courseInfo[s.code]?.name || '');
+        allCodes.set(s.code, _62bCache.courseInfo[s.code]?.name || '');
       }
     });
   });
@@ -295,10 +523,8 @@ window._rtSaveMyCourses = async function() {
 
   document.getElementById('rt-my-courses-panel')?.remove();
 
-  /* Rebuild improved cache with updated exclusions */
   if (_rtLastEnrollments.length) _improvedCache = _buildImprovedCache(_rtLastEnrollments);
 
-  /* Re-render current tab */
   const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
   const el = document.getElementById('rt-main-content');
   if (el) el.innerHTML = buildGrid(todayName);
@@ -308,10 +534,14 @@ window._rtSaveMyCourses = async function() {
 async function loadRoutine(body) {
   try {
     const [routineSheetId, sem] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
+    _semLabel = sem;
 
     const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
     const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
     const [cpgData, ...dayResults] = await Promise.all([cpgFetch, ...dayFetches]);
+
+    /* Store globally for re-use when switching batch/section */
+    _allDayResults = dayResults;
 
     const courseInfo = {};
     if (cpgData) {
@@ -325,73 +555,26 @@ async function loadRoutine(body) {
           };
         });
     }
+    _allCourseInfo = courseInfo;
 
-    const schedule = {};
-    ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
-      const data = dayResults[idx];
-      if (!data?.table) return;
-      const rows = data.table.rows || [];
-      const cols = data.table.cols || [];
-      if (!rows.length) return;
+    /* Scan all available batch/section combos */
+    _availableBatchSections = _scanBatchSections(dayResults);
 
-      let timeSlots = cols.slice(3).map(c => (c.label||'').trim());
-      let dataStart = 0;
-      if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
-        for (let r = 0; r < Math.min(rows.length, 3); r++) {
-          const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-          if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
-            timeSlots = cells.slice(3); dataStart = r + 1; break;
-          }
-        }
-      }
-
-      let breakSlotIdx = -1;
-      const targetRows = [];
-      for (let r = dataStart; r < rows.length; r++) {
-        const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-        cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
-        if (cells[1] === '62' && cells[2] === 'B') targetRows.push(cells);
-      }
-      if (!targetRows.length) return;
-
-      const mergedCells = targetRows[0].slice(3).map((_, i) =>
-        targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
-      );
-
-      const daySchedule = [];
-      timeSlots.forEach((time, i) => {
-        if (!time) return;
-        if (i === breakSlotIdx) { daySchedule.push({ isBreak: true, time }); return; }
-        const parsed = parseClassCell(mergedCells[i]);
-        if (parsed) daySchedule.push({ time, ...parsed, source: '62b' });
-      });
-      if (daySchedule.some(s => !s.isBreak)) schedule[dayName] = daySchedule;
-    });
-
+    /* Build 62B schedule */
+    const schedule = _buildScheduleFor('62', 'B');
     const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
     if (!days.length) throw new Error('No classes found for Batch 62, Section B');
 
-    const timeKeyMap    = new Map();
-    const breakTimeKeys = new Set();
-    Object.values(schedule).forEach(slots => {
-      slots.forEach(s => {
-        const k = timeToMin(s.time);
-        if (!timeKeyMap.has(k)) timeKeyMap.set(k, s.time);
-        if (s.isBreak) breakTimeKeys.add(k);
-      });
-    });
-    const sortedKeys    = [...timeKeyMap.keys()].sort((a, b) => a - b);
-    const allTimes      = sortedKeys.map(k => timeKeyMap.get(k));
-    const breakTimesSet = new Set(sortedKeys.filter(k => breakTimeKeys.has(k)).map(k => timeKeyMap.get(k)));
+    const cache62b = _scheduleToCacheWith(schedule, courseInfo, sem);
+    if (!cache62b) throw new Error('No classes found for Batch 62, Section B');
 
-    ROUTINE_DAY_NAMES.forEach(day => {
-      (schedule[day] || []).forEach(s => { s.time = timeKeyMap.get(timeToMin(s.time)) || s.time; });
-    });
-
-    _routineCache      = { days, schedule, courseInfo, allTimes, breakTimesSet, semester: sem };
-    _improvedCache     = null;
+    _62bCache      = cache62b;
+    _routineCache  = cache62b;
+    _improvedCache = null;
     _rtLastEnrollments = [];
-    _routineTab        = 'regular';
+    _routineTab    = 'regular';
+    _selectedBatch = '62';
+    _selectedSection = 'B';
 
     /* Load excluded courses from localStorage immediately */
     const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
@@ -409,7 +592,6 @@ async function loadRoutine(body) {
       } catch(e) {}
 
       window._rtExcluded = _rtLocalExcluded(user.id);
-      /* Sync from Supabase in background */
       _rtLoadExcludedFromSupa(user.id).then(() => {
         const el = document.getElementById('rt-main-content');
         if (el) el.innerHTML = buildGrid(todayName);
@@ -419,12 +601,13 @@ async function loadRoutine(body) {
     const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
 
     body.innerHTML = `
+      ${_availableBatchSections.length > 1 ? _renderSelectorBar() : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
         <div class="rt-sync" style="margin:0;">
           <div class="rt-sync-dot"></div>
           <span>Live sync · ${sem} · Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
         </div>
-        ${user?.id ? `<button onclick="_rtOpenMyCourses()"
+        ${user?.id ? `<button id="rt-my-courses-btn" onclick="_rtOpenMyCourses()"
           style="font-size:0.72rem;color:var(--text-secondary);background:rgba(255,255,255,.05);
           border:1px solid var(--border);border-radius:8px;padding:5px 11px;cursor:pointer;
           font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
@@ -442,10 +625,12 @@ async function loadRoutine(body) {
         _improvedCache = _buildImprovedCache(enrollments);
         if (!_improvedCache) return;
 
+        /* Only show Improved tab if still on 62B */
+        if (_selectedBatch !== '62' || _selectedSection !== 'B') return;
+
         const tabBar = document.getElementById('rt-tab-bar');
         if (!tabBar) return;
 
-        /* Default to Improved tab since the student has enrollments */
         _routineTab = 'improved';
 
         tabBar.innerHTML = `
@@ -459,7 +644,6 @@ async function loadRoutine(body) {
             </button>
           </div>`;
 
-        /* Re-render grid with improved data */
         const mainContent = document.getElementById('rt-main-content');
         if (mainContent) mainContent.innerHTML = buildGrid(todayName);
       });
@@ -479,14 +663,16 @@ function downloadRoutineImage(btn) {
   const cache = isImproved ? _improvedCache : _routineCache;
   const sem   = cache?.semester || 'Routine';
   const slug  = sem.replace(/\s+/g, '');
+  const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const title = isImproved ? 'My Improved Routine' : 'Class Routine';
-  _doDownloadImg(`Routine-CSE62B-${slug}.png`, title, `Batch 62, Section B · ${sem}`, cache, null, btn);
+  _doDownloadImg(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.png`, title, `${batchLabel} · ${sem}`, cache, null, btn);
 }
 function downloadRoutinePDF(btn) {
   const isImproved = _routineTab === 'improved' && _improvedCache;
   const cache = isImproved ? _improvedCache : _routineCache;
   const sem   = cache?.semester || 'Routine';
   const slug  = sem.replace(/\s+/g, '');
+  const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const title = isImproved ? 'My Improved Routine' : 'Class Routine';
-  _doDownloadPDF(`Routine-CSE62B-${slug}.pdf`, title, `Batch 62, Section B · ${sem}`, cache, null, btn);
+  _doDownloadPDF(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.pdf`, title, `${batchLabel} · ${sem}`, cache, null, btn);
 }
