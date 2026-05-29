@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>What's New | CSE 62B Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .wn-hero {
+      text-align: center;
+      padding: 48px 0 36px;
+    }
+    .wn-hero-icon {
+      width: 64px; height: 64px; border-radius: 20px;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px; font-size: 1.6rem;
+    }
+    .wn-hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem; font-weight: 800;
+      color: var(--text); letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .wn-hero-sub {
+      font-size: 0.88rem; color: var(--text-secondary);
+    }
+
+    .wn-timeline {
+      max-width: 680px;
+      margin: 0 auto;
+      padding-bottom: 60px;
+    }
+
+    .wn-group { margin-bottom: 40px; }
+
+    .wn-version-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .wn-version {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.78rem; font-weight: 700;
+      background: rgba(124,58,237,0.15);
+      color: #a78bfa;
+      border: 1px solid rgba(124,58,237,0.3);
+      padding: 3px 10px; border-radius: 100px;
+    }
+    .wn-date {
+      font-size: 0.75rem; color: var(--text-secondary);
+    }
+    .wn-divider {
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    .wn-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-bottom: 12px;
+      display: flex; gap: 16px; align-items: flex-start;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .wn-card:hover {
+      border-color: rgba(124,58,237,0.35);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .wn-card-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .wn-card-body { flex: 1; min-width: 0; }
+    .wn-card-title {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text); margin-bottom: 5px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .wn-tag {
+      font-size: 0.6rem; font-weight: 800;
+      padding: 2px 7px; border-radius: 5px;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .wn-tag.feature  { background: rgba(99,102,241,.18); color: #818cf8; }
+    .wn-tag.fix      { background: rgba(52,211,153,.15); color: #34d399; }
+    .wn-tag.improve  { background: rgba(251,191,36,.15);  color: #fbbf24; }
+
+    .wn-card-desc {
+      font-size: 0.78rem; color: var(--text-secondary);
+      line-height: 1.65;
+    }
+    .wn-card-desc li { margin-bottom: 3px; }
+
+    @media (max-width: 600px) {
+      .wn-hero-title { font-size: 1.5rem; }
+      .wn-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="topbar fade-in">
+    <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+    <ul class="topbar-links">
+      <li><a href="../index.html">Home</a></li>
+      <li class="auth-only"><a href="students.html">Students</a></li>
+      <li class="auth-only"><a href="classwork.html">Classwork</a></li>
+      <li class="auth-only"><a href="info.html">Info</a></li>
+      <li class="auth-only"><a href="resources.html">Resources</a></li>
+      <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+      <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+      <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+    </ul>
+    <div class="topbar-status">
+      <div class="status-dot"></div>
+      Portal Active
+    </div>
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <div class="mobile-nav-overlay" id="mobileNav">
+    <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+    <a href="../index.html">Home</a>
+    <a class="auth-only" href="students.html">Students</a>
+    <a class="auth-only" href="classwork.html">Classwork</a>
+    <a class="auth-only" href="info.html">Info</a>
+    <a class="auth-only" href="resources.html">Resources</a>
+    <a class="auth-only" href="result-dashboard.html">Results</a>
+    <a href="cover-page.html">Cover Page</a>
+    <a href="login.html" id="mobileLoginBtn">Login</a>
+  </div>
+
+  <main class="container fade-in" style="max-width:760px;margin:0 auto;padding:0 20px;">
+
+    <div class="wn-hero">
+      <div class="wn-hero-icon">🆕</div>
+      <div class="wn-hero-title">What's New</div>
+      <div class="wn-hero-sub">CSE 62B Portal — latest updates & improvements</div>
+    </div>
+
+    <div class="wn-timeline" id="wnTimeline">
+      <div style="text-align:center;padding:40px 0;color:var(--text-secondary);font-size:.82rem;">
+        <i class="fa-solid fa-spinner fa-spin" style="margin-bottom:8px;font-size:1.2rem;display:block;"></i>
+        Loading updates...
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const _WN_SUPA     = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+    const _WN_ANON     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+
+    function escH(s) {
+      return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatDate(d) {
+      return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    async function loadUpdates() {
+      const timeline = document.getElementById('wnTimeline');
+      try {
+        const r = await fetch(
+          `${_WN_SUPA}/rest/v1/site_updates?order=release_date.desc,created_at.desc`,
+          { headers: { 'apikey': _WN_ANON, 'Authorization': `Bearer ${_WN_ANON}` } }
+        );
+        if (!r.ok) throw new Error('Failed to fetch');
+        const updates = await r.json();
+
+        if (!updates.length) {
+          timeline.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-secondary);font-size:.82rem;">No updates yet.</div>`;
+          return;
+        }
+
+        /* Group by version */
+        const grouped = {};
+        const versionOrder = [];
+        updates.forEach(u => {
+          if (!grouped[u.version]) { grouped[u.version] = { date: u.release_date, items: [] }; versionOrder.push(u.version); }
+          grouped[u.version].items.push(u);
+        });
+
+        timeline.innerHTML = versionOrder.map(ver => {
+          const group = grouped[ver];
+          const cards = group.items.map(u => `
+            <div class="wn-card">
+              <div class="wn-card-icon" style="background:${escH(u.icon_bg||'rgba(124,58,237,.12)')};color:${escH(u.icon_color||'#a78bfa')};">
+                <i class="${escH(u.icon||'fa-solid fa-star')}"></i>
+              </div>
+              <div class="wn-card-body">
+                <div class="wn-card-title">
+                  ${escH(u.title)}
+                  <span class="wn-tag ${escH(u.tag)}">${escH(u.tag)}</span>
+                </div>
+                <div class="wn-card-desc">${escH(u.description)}</div>
+              </div>
+            </div>`).join('');
+
+          return `
+            <div class="wn-group">
+              <div class="wn-version-row">
+                <span class="wn-version">${escH(ver)}</span>
+                <span class="wn-date">${formatDate(group.date)}</span>
+                <div class="wn-divider"></div>
+              </div>
+              ${cards}
+            </div>`;
+        }).join('');
+
+      } catch (e) {
+        timeline.innerHTML = `<div style="text-align:center;padding:40px 0;color:#f87171;font-size:.82rem;">Could not load updates. Please try again later.</div>`;
+      }
+    }
+
+    loadUpdates();
+  </script>
+
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/sheets.js"></script>
+  <script src="../assets/js/script.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/analytics.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => reg.update());
+    }
+  </script>
+  <script src="/assets/js/event-poster.js"></script>
+  <script src="/assets/js/portal-status.js"></script>
+  <script src="/assets/js/notifications.js"></script>
+</body>
+</html>
