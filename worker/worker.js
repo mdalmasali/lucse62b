@@ -588,6 +588,8 @@ async function runMonitor(env) {
   ]);
   /* Result check every hour — per-student via push_subscriptions */
   await checkResult(env).catch(() => {});
+  /* Enrolled retake/improve course routine + exam changes — per-student */
+  await checkEnrolledCourses(env).catch(() => {});
 }
 
 /* ── SHA-256 hash ── */
@@ -634,7 +636,8 @@ async function insertNotification(env, type, title, body, link) {
 
 /* ── Sheet fetch helper (no CORS needed for scheduled) ── */
 async function fetchSheetGviz(sheetId, tab) {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}&_t=${Date.now()}`;
+  let url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
+  if (tab) url += `&sheet=${encodeURIComponent(tab)}`;
   const r = await fetch(url);
   const text = await r.text();
   const m = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
@@ -929,6 +932,362 @@ async function insertPersonalNotification(env, studentId, type, title, body, lin
     },
     body: JSON.stringify({ type, title, body, link, student_id: studentId }),
   }).catch(() => {});
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ENROLLED RETAKE / IMPROVE MONITOR  (per-student "My Courses")
+   Source of truth: student_retake_enrollments  (= Profile → My Courses)
+   Notifies a student ONLY about the exact course / batch / section
+   they enrolled in, when its class routine or mid/final exam changes
+   (incl. being removed from the sheet). Nothing if not enrolled.
+   ════════════════════════════════════════════════════════════════════ */
+
+async function checkEnrolledCourses(env) {
+  if (!env.SUPA_KEY) return;
+
+  /* 1. All enrollments (= every student's "My Courses") */
+  const enrRes = await fetch(
+    `${SUPA_URL}/rest/v1/student_retake_enrollments?select=student_id,course_code,course_name,batch,section,type`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  if (!enrRes || !enrRes.ok) return;
+  const enrollments = await enrRes.json();
+  if (!enrollments.length) return;
+
+  /* 2. Push endpoints grouped by student (in-app notif still works without push) */
+  const subRes = await fetch(
+    `${SUPA_URL}/rest/v1/push_subscriptions?select=endpoint,student_id&student_id=not.is.null`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  const subs = (subRes && subRes.ok) ? await subRes.json() : [];
+  const endpointsByStudent = {};
+  subs.forEach(s => { (endpointsByStudent[s.student_id] ||= []).push(s.endpoint); });
+
+  /* 3. Fetch sheets ONCE */
+  const classSheetId = (await getRoutineSheetIdByKeyword(env, 'class routine'))
+    || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+  const classDayTabs = await Promise.all(
+    MONITOR_DAYS.map(d => fetchSheetGviz(classSheetId, d).catch(() => null))
+  );
+  const classSlots = buildClassSectionSlots(classDayTabs);
+
+  const midSheetId   = await getRoutineSheetIdByKeyword(env, 'mid term');
+  const finalSheetId = await getRoutineSheetIdByKeyword(env, 'final term');
+  const midTable   = midSheetId   ? await fetchSheetGviz(midSheetId).catch(() => null)   : null;
+  const finalTable = finalSheetId ? await fetchSheetGviz(finalSheetId).catch(() => null) : null;
+  const examCache = {};
+
+  /* 4. Per-enrollment diff */
+  for (const enr of enrollments) {
+    await processEnrollment(env, enr, {
+      classSlots, midTable, finalTable, examCache, endpointsByStudent,
+    }).catch(() => {});
+  }
+}
+
+async function processEnrollment(env, enr, ctx) {
+  const studentId = enr.student_id;
+  const batch     = String(enr.batch || '').trim();
+  const section   = String(enr.section || '').trim();
+  const code      = String(enr.course_code || '').trim().toUpperCase();
+  if (!studentId || !batch || !section || !code) return;
+
+  const typeLabel  = enr.type === 'improve' ? 'Improve' : 'Retake';
+  const courseName = enr.course_name || '';
+  const endpoints  = ctx.endpointsByStudent[studentId] || [];
+  const secKey     = `${batch}-${section}`;
+  const stateBase  = `${sanitizeKey(studentId)}_${sanitizeKey(batch)}${sanitizeKey(section)}_${sanitizeKey(code)}`;
+
+  /* ── Class routine ── */
+  const curClassSlots = (ctx.classSlots[secKey]?.[code] || [])
+    .map(s => ({ day: s.day, time: s.time, teacher: s.teacher, room: s.room, code }))
+    .sort((a, b) => `${a.day}${a.time}`.localeCompare(`${b.day}${b.time}`));
+
+  await diffClassAndNotify(env, {
+    key: `enr_class_${stateBase}`, studentId, endpoints,
+    code, batch, section, typeLabel, courseName, current: curClassSlots,
+  });
+
+  /* ── Mid / Final exams ── */
+  if (ctx.midTable) {
+    const exam = getExamForCourse(ctx.examCache, 'mid', ctx.midTable, batch, section, code);
+    await diffExamAndNotify(env, {
+      key: `enr_mid_${stateBase}`, examType: 'mid', studentId, endpoints,
+      code, batch, section, typeLabel, courseName, current: exam,
+    });
+  }
+  if (ctx.finalTable) {
+    const exam = getExamForCourse(ctx.examCache, 'final', ctx.finalTable, batch, section, code);
+    await diffExamAndNotify(env, {
+      key: `enr_final_${stateBase}`, examType: 'final', studentId, endpoints,
+      code, batch, section, typeLabel, courseName, current: exam,
+    });
+  }
+}
+
+async function diffClassAndNotify(env, p) {
+  const { key, studentId, endpoints, code, batch, section, typeLabel, courseName, current } = p;
+  const hash   = await sha256(JSON.stringify(current));
+  const stored = await supabaseGetState(env, key);
+
+  if (!stored) { await supabaseUpsertState(env, key, hash, { slots: current }); return; }
+  if (stored.state_hash === hash) return;
+
+  const changes = computeSlotDiff(stored.state_data?.slots || [], current);
+  await supabaseUpsertState(env, key, hash, { slots: current });
+  if (!changes.length) return;
+
+  const title = `🔁 ${typeLabel} Class Updated`;
+  const body  = `${code}${courseName ? ' · ' + courseName : ''} (${batch}${section})\n`
+              + changes.slice(0, 6).join('\n');
+  await insertPersonalNotification(env, studentId, 'retake_class', title, body, '/pages/info.html');
+  await pushToEndpoints(env, endpoints);
+}
+
+async function diffExamAndNotify(env, p) {
+  const { key, examType, studentId, endpoints, code, batch, section, typeLabel, courseName, current } = p;
+  const norm   = current ? { date: current.date, time: current.time } : null;
+  const hash   = await sha256(JSON.stringify(norm));
+  const stored = await supabaseGetState(env, key);
+
+  if (!stored) { await supabaseUpsertState(env, key, hash, { exam: norm }); return; }
+  if (stored.state_hash === hash) return;
+
+  const old = stored.state_data?.exam || null;
+  await supabaseUpsertState(env, key, hash, { exam: norm });
+
+  const label = examType === 'mid' ? 'Mid' : 'Final';
+  const lines = [];
+  if (old && !norm) {
+    lines.push(`Removed from ${label} exam routine`);
+  } else if (!old && norm) {
+    lines.push(`Scheduled: ${fmtExamDateWorker(norm.date)}${norm.time ? ', ' + norm.time : ''}`);
+  } else if (old && norm) {
+    if (old.date !== norm.date) lines.push(`Date: ${fmtExamDateWorker(old.date)} → ${fmtExamDateWorker(norm.date)}`);
+    if (old.time !== norm.time) lines.push(`Time: ${old.time || '?'} → ${norm.time || '?'}`);
+  }
+  if (!lines.length) return;
+
+  const title = `📝 ${typeLabel} ${label} Exam Updated`;
+  const body  = `${code}${courseName ? ' · ' + courseName : ''} (${batch}${section})\n` + lines.join('\n');
+  await insertPersonalNotification(env, studentId, `retake_${examType}`, title, body, '/pages/info.html');
+  await pushToEndpoints(env, endpoints);
+}
+
+async function pushToEndpoints(env, endpoints) {
+  if (!env.VAPID_PRIVATE_KEY || !endpoints || !endpoints.length) return;
+  const expired = [];
+  for (const ep of endpoints) {
+    const status = await sendWebPush(ep, env);
+    if (status === 410) expired.push(ep);
+  }
+  for (const ep of expired) {
+    await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(ep)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` },
+    }).catch(() => {});
+  }
+}
+
+function sanitizeKey(s) { return String(s).replace(/[^a-zA-Z0-9]/g, ''); }
+
+/* ── Class routine: build {`batch-section`: {CODE: [{day,time,teacher,room}]}} ── */
+function buildClassSectionSlots(dayTabs) {
+  const sectionCourseSlots = {};
+  MONITOR_DAYS.forEach((dayName, idx) => {
+    const table = dayTabs[idx];
+    if (!table) return;
+    const rows = table.rows || [];
+    const cols = table.cols || [];
+    if (!rows.length) return;
+
+    let timeSlots = cols.slice(3).map(c => (c.label || '').trim());
+    let dataStart = 0;
+    if (!timeSlots.some(t => /\d+:\d+/.test(t))) {
+      for (let r = 0; r < Math.min(rows.length, 3); r++) {
+        const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+        if (cells.slice(3).some(c => /\d+:\d+/.test(c))) {
+          timeSlots = cells.slice(3); dataStart = r + 1; break;
+        }
+      }
+    }
+
+    /* Break slot detection by majority vote */
+    const breakCounts = {};
+    for (let r = dataStart; r < rows.length; r++) {
+      (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '').slice(3)
+        .forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakCounts[i] = (breakCounts[i] || 0) + 1; });
+    }
+    let breakSlotIdx = -1, maxBrk = 0;
+    Object.entries(breakCounts).forEach(([k, cnt]) => { if (cnt > maxBrk) { maxBrk = cnt; breakSlotIdx = parseInt(k); } });
+
+    for (let r = dataStart; r < rows.length; r++) {
+      const cells   = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+      const batch   = cells[1] || '';
+      const section = cells[2] || '';
+      if (!batch || !section) continue;
+      const key = `${batch}-${section}`;
+
+      cells.slice(3).forEach((cell, i) => {
+        if (!cell || cell.toUpperCase() === 'BREAK' || i === breakSlotIdx) return;
+        const parsed = parseClassCellWorker(cell);
+        if (!parsed?.code) return;
+        const time = timeSlots[i] || '';
+        if (!time || !/\d+:\d+/.test(time)) return;
+        const codeUp = parsed.code.toUpperCase();
+
+        if (!sectionCourseSlots[key]) sectionCourseSlots[key] = {};
+        if (!sectionCourseSlots[key][codeUp]) sectionCourseSlots[key][codeUp] = [];
+        const dup = sectionCourseSlots[key][codeUp].some(s => s.day === dayName && s.time === time);
+        if (!dup) sectionCourseSlots[key][codeUp].push({
+          day: dayName, time, teacher: parsed.initials || '', room: parsed.room || '',
+        });
+      });
+    }
+  });
+  return sectionCourseSlots;
+}
+
+/* Parse "CSE-3214 MSR ACL-3" → { code, initials, room } */
+function parseClassCellWorker(cell) {
+  if (!cell) return null;
+  cell = cell.trim();
+  if (!cell || cell === '--' || cell === '–') return null;
+  const parts = cell.split(/\s+/).filter(Boolean);
+  if (parts.length >= 3) return { code: parts[0], initials: parts[1], room: parts.slice(2).join(' ') };
+  if (parts.length === 2) return { code: parts[0], initials: '', room: parts[1] };
+  return parts.length ? { code: parts[0], initials: '', room: '' } : null;
+}
+
+/* ── Exam routine: find a course's exam for a batch/section (cached) ── */
+function getExamForCourse(cache, examType, table, batch, section, code) {
+  const ck = `${examType}|${batch}-${section}`;
+  if (!cache[ck]) cache[ck] = parseExamRoutineWorker(table, batch, section) || [];
+  const hit = cache[ck].find(e => e.course.toUpperCase() === code.toUpperCase());
+  return hit ? { date: hit.date, time: hit.time, weekday: hit.weekday, label: hit.label } : null;
+}
+
+function normExamDateWorker(raw) {
+  if (!raw) return '';
+  const num = parseFloat(String(raw).trim());
+  if (!isNaN(num) && num > 40000 && num < 60000) {
+    const d   = new Date(Math.round((num - 25569) * 86400 * 1000));
+    const utc = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    return `${String(utc.getDate()).padStart(2,'0')}-${String(utc.getMonth()+1).padStart(2,'0')}-${utc.getFullYear()}`;
+  }
+  const dm = String(raw).match(/^Date\((\d+),(\d+),(\d+)/);
+  if (dm) {
+    const d = new Date(+dm[1], +dm[2], +dm[3]);
+    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+  }
+  return String(raw).trim();
+}
+
+function fmtExamDateWorker(s) {
+  const m = (s || '').match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (!m) return s || '';
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(m[1])} ${MON[parseInt(m[2]) - 1]} ${m[3]}`;
+}
+
+/* Ported from pages/info/exam.js parseExamRoutine — takes a gviz table directly */
+function parseExamRoutineWorker(table, targetBatch, targetSection) {
+  if (!table) return null;
+
+  const allRows = (table.rows || []).map(r =>
+    (r.c || []).map(c => {
+      if (!c || c.v == null) return '';
+      return normExamDateWorker(c.v) || String(c.v).trim();
+    })
+  );
+
+  const colLabels = (table.cols || []).map(c => String(c.label || '').trim());
+  if (colLabels.some(l => /day[\s\-]*\d+/i.test(l))) {
+    const synRow = colLabels.map(l => {
+      const m = l.match(/day[\s\-]*(\d+)/i);
+      return m ? `Day-${m[1]}` : '';
+    });
+    allRows.unshift(synRow);
+  }
+
+  const blockStarts = [];
+  for (let r = 0; r < allRows.length; r++) {
+    for (let c = 0; c < allRows[r].length; c++) {
+      if (/^\s*day[\s\-]*\d+\s*$/i.test(allRows[r][c])) { blockStarts.push({ rowIdx: r, colIdx: c }); break; }
+    }
+  }
+  if (blockStarts.length === 0) return null;
+
+  let batchCol = 0, sectionCol = 1;
+  for (let r = 0; r < Math.min(allRows.length, 15); r++) {
+    (allRows[r] || []).forEach((cell, i) => {
+      if (/^\s*batch\s*$/i.test(cell))   batchCol = i;
+      if (/^\s*section\s*$/i.test(cell)) sectionCol = i;
+    });
+  }
+
+  const tbNum = String(targetBatch).replace(/[^0-9]/g, '');
+  const tsStr = String(targetSection).trim().toUpperCase();
+  const allExams = [];
+
+  blockStarts.forEach((block, blockIdx) => {
+    const dayHeaderIdx = block.rowIdx;
+    const nextBlockRow = blockStarts[blockIdx + 1] ? blockStarts[blockIdx + 1].rowIdx : allRows.length;
+
+    const rowBatches = {};
+    let lastBatch = '';
+    for (let r = dayHeaderIdx; r < nextBlockRow; r++) {
+      const batchCell = String(allRows[r][batchCol] || '').trim();
+      if (batchCell && /\d/.test(batchCell) && !/^(date|time|day|section)/i.test(batchCell)) lastBatch = batchCell;
+      rowBatches[r] = lastBatch;
+    }
+
+    const dayRow  = allRows[dayHeaderIdx] || [];
+    const dayCols = dayRow.reduce((a, cell, i) => { if (/^\s*day[\s\-]*\d+\s*$/i.test(cell)) a.push(i); return a; }, []);
+
+    let dateRowIdx = dayHeaderIdx + 1, timeRowIdx = dayHeaderIdx + 2, weekdayRowIdx = dayHeaderIdx + 3;
+    if (dayCols.length > 0) {
+      const sampleCol = dayCols[0];
+      for (let i = 1; i <= 5; i++) {
+        const rIdx = dayHeaderIdx + i;
+        if (rIdx >= allRows.length || rIdx >= nextBlockRow) break;
+        const cell = String(allRows[rIdx][sampleCol]).trim();
+        if (/Date\(/i.test(cell) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell)) dateRowIdx = rIdx;
+        else if (/\d{1,2}:\d{2}/.test(cell) || /am|pm/i.test(cell)) timeRowIdx = rIdx;
+        else if (/^(sun|mon|tue|wed|thu|fri|sat)/i.test(cell)) weekdayRowIdx = rIdx;
+      }
+    }
+
+    const dataStartRow = Math.max(dayHeaderIdx, dateRowIdx, timeRowIdx, weekdayRowIdx) + 1;
+    const dateRow    = allRows[dateRowIdx]    || [];
+    const timeRow    = allRows[timeRowIdx]    || [];
+    const weekdayRow = allRows[weekdayRowIdx] || [];
+
+    const examDays = dayCols.map(col => ({
+      col, label: dayRow[col] || '', date: dateRow[col] || '',
+      time: timeRow[col] || '', weekday: weekdayRow[col] || '',
+    }));
+
+    for (let r = dataStartRow; r < nextBlockRow; r++) {
+      const row = allRows[r];
+      if (!row) continue;
+      const section = (row[sectionCol] || '').trim();
+      if (!section || /^(section|day|date|time)$/i.test(section)) continue;
+      const cbNum = String(rowBatches[r]).replace(/[^0-9]/g, '');
+      const csStr = section.toUpperCase();
+      const batchMatch   = cbNum && cbNum === tbNum;
+      const sectionMatch = csStr === tsStr || csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr);
+      if (batchMatch && sectionMatch) {
+        examDays.forEach(day => {
+          const raw    = row[day.col] || '';
+          const course = raw.replace(/\s*\(\d+\)\s*/g, '').trim();
+          if (course && course !== '--' && course !== '–') allExams.push({ ...day, course });
+        });
+      }
+    }
+  });
+
+  return allExams.length ? allExams : null;
 }
 
 /* ════════════════════════════════════════════════════════════════════

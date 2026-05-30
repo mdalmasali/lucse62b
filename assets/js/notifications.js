@@ -117,10 +117,12 @@
         background:#f43f5e;color:#fff;font-size:0.58rem;font-weight:800;line-height:1;
         display:flex;align-items:center;justify-content:center;padding:0 3px;
         font-family:'Inter',sans-serif;border:2px solid var(--bg,#0d0d1b);pointer-events:none;}
-      #notif-dropdown{position:fixed;background:var(--card,#1a1825);
+      #notif-dropdown{position:fixed;background:#15131f;
         border:1px solid var(--border,rgba(255,255,255,.08));border-radius:14px;
         box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:99990;width:320px;overflow:hidden;
+        backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
         font-family:'Inter',sans-serif;}
+      html[data-theme="light"] #notif-dropdown{background:#ffffff;}
       .nd-header{padding:12px 16px;border-bottom:1px solid var(--border,rgba(255,255,255,.08));
         display:flex;align-items:center;justify-content:space-between;}
       .nd-title{font-size:.82rem;font-weight:700;color:var(--text,#e2d9f3);}
