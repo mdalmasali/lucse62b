@@ -4,12 +4,22 @@
   const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
   const WORKER    = 'https://lucse62b-api.sy164425.workers.dev';
   const VAPID_PUB = 'BKvTLWhriB6TC5zTPHg7ueOTkPuscWWohuFAshrCCigaT1cKm_vUTrFYtV6x8yDgmQZiOjPIjxf5sMdYErfFPK4';
-  const LS_SEEN   = 'lu62b_notif_last_seen';
+  const LS_SEEN    = 'lu62b_notif_last_seen';
+  const LS_WN_SEEN = 'lu62b_wn_last_seen';
 
   let _notifs = [];
 
+  /* ── Login check ── */
+  function isLoggedIn() {
+    try {
+      const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      return !!(raw && JSON.parse(raw)?.id);
+    } catch { return false; }
+  }
+
   /* ── Boot ── */
   function boot() {
+    if (!isLoggedIn()) return;
     renderBell();
     fetchNotifs().then(ns => { _notifs = ns; updateBadge(); });
     /* Tell SW the logged-in student_id so push shows personalized notification */
@@ -31,6 +41,7 @@
     const bar = document.querySelector('.topbar');
     if (!bar || document.getElementById('notifBellBtn')) return;
     injectStyles();
+    injectWhatsNewLink(bar);
     const btn = document.createElement('button');
     btn.id = 'notifBellBtn';
     btn.className = 'notif-bell-btn';
@@ -39,6 +50,58 @@
     btn.onclick = toggleDropdown;
     const themeBtn = bar.querySelector('.theme-toggle-btn');
     bar.insertBefore(btn, themeBtn || null);
+  }
+
+  /* ── What's New nav link ── */
+  function injectWhatsNewLink(bar) {
+    const ul = bar.querySelector('.topbar-links');
+    if (!ul || document.getElementById('whatsNewNavLi')) return;
+
+    const isInPages = window.location.pathname.includes('/pages/');
+    const href = (isInPages ? '' : 'pages/') + 'whats-new.html';
+    const isActive = window.location.pathname.endsWith('whats-new.html');
+
+    const li = document.createElement('li');
+    li.id = 'whatsNewNavLi';
+    li.innerHTML = `<a href="${href}" id="whatsNewNavA"${isActive ? ' class="active"' : ''}>What's New</a>`;
+    const lastLi = ul.lastElementChild;
+    ul.insertBefore(li, lastLi);
+
+    /* Mobile nav */
+    const mNav = document.getElementById('mobileNav');
+    if (mNav && !document.getElementById('whatsNewMobileA')) {
+      const a = document.createElement('a');
+      a.id   = 'whatsNewMobileA';
+      a.href = href;
+      if (isActive) a.className = 'active';
+      a.textContent = "What's New";
+      const lastA = mNav.querySelector('a:last-child');
+      mNav.insertBefore(a, lastA);
+    }
+
+    fetchWhatsNewBadge();
+  }
+
+  async function fetchWhatsNewBadge() {
+    if (window.location.pathname.endsWith('whats-new.html')) return;
+    try {
+      const lastSeen = localStorage.getItem(LS_WN_SEEN) || '1970-01-01T00:00:00Z';
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/site_updates?created_at=gt.${encodeURIComponent(lastSeen)}&limit=1&select=id`,
+        { headers: { 'apikey': SUPA_ANON, 'Authorization': `Bearer ${SUPA_ANON}` } }
+      );
+      if (!r.ok) return;
+      const rows = await r.json();
+      if (rows.length > 0) {
+        const a = document.getElementById('whatsNewNavA');
+        if (a) {
+          const badge = document.createElement('span');
+          badge.className = 'wn-nav-badge';
+          badge.textContent = 'NEW';
+          a.appendChild(badge);
+        }
+      }
+    } catch {}
   }
 
   function injectStyles() {
@@ -83,6 +146,9 @@
         background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
         display:flex;align-items:center;justify-content:center;gap:6px;}
       .nd-push-btn.unsub{background:rgba(255,255,255,.06);color:var(--text-secondary,#94a3b8);}
+      .wn-nav-badge{display:inline-block;background:linear-gradient(135deg,#7c3aed,#a855f7);
+        color:#fff;font-size:.5rem;font-weight:800;padding:1px 5px;border-radius:5px;
+        letter-spacing:.05em;text-transform:uppercase;margin-left:5px;vertical-align:middle;}
     `;
     document.head.appendChild(s);
   }
