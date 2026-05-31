@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>User Guide | CSE 62B Portal</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    /* ── Layout ── */
+    .ug-layout {
+      max-width: 1100px;
+      margin: 0 auto 60px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .ug-sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px 10px;
+      position: sticky;
+      top: 80px;
+    }
+    .ug-sidebar-title {
+      font-size: 0.6rem; font-weight: 700;
+      color: var(--accent-bright);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 4px 10px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .ug-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 12px;
+      cursor: pointer; transition: all 0.18s;
+      color: var(--text-secondary);
+      font-size: 0.82rem; font-weight: 500;
+      text-decoration: none;
+    }
+    .ug-menu-item:hover { background: rgba(124,58,237,0.1); color: var(--text); }
+    .ug-menu-item.active { background: rgba(124,58,237,0.15); color: var(--accent-bright); font-weight: 600; }
+    .ug-menu-item i { width: 16px; text-align: center; font-size: 0.8rem; opacity: 0.7; flex-shrink: 0; }
+    .ug-menu-item.active i { opacity: 1; }
+
+    /* ── Hero ── */
+    .ug-hero {
+      text-align: center;
+      padding: 52px 24px 36px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @keyframes ug-icon-pulse {
+      0%,100% { box-shadow: 0 0 0 6px rgba(124,58,237,.18), 0 0 0 14px rgba(124,58,237,.07), 0 10px 40px rgba(124,58,237,.55); transform: scale(1); }
+      50%      { box-shadow: 0 0 0 10px rgba(168,85,247,.22), 0 0 0 22px rgba(168,85,247,.09), 0 14px 56px rgba(168,85,247,.65); transform: scale(1.04); }
+    }
+    .ug-hero-icon {
+      width: 80px; height: 80px; border-radius: 26px;
+      background: linear-gradient(145deg, #6d28d9 0%, #a855f7 55%, #3b82f6 100%);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 22px; font-size: 2rem; color: #fff;
+      animation: ug-icon-pulse 2.4s ease-in-out infinite;
+    }
+    .ug-hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(120deg, #fff 30%, #c4b5fd 70%, #93c5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .ug-hero-sub {
+      font-size: 0.88rem; color: var(--text-secondary);
+    }
+
+    /* ── Main content ── */
+    .ug-main { min-width: 0; }
+
+    /* ── Section ── */
+    .ug-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 28px 24px;
+      margin-bottom: 20px;
+      scroll-margin-top: 90px;
+    }
+    .ug-section-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ug-section-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .ug-section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem; font-weight: 700; color: var(--text);
+      margin: 0;
+    }
+    .ug-section-badge {
+      font-size: 0.6rem; font-weight: 800;
+      padding: 2px 8px; border-radius: 6px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-left: auto; flex-shrink: 0;
+    }
+    .badge-free  { background: rgba(52,211,153,.15); color: #34d399; }
+    .badge-login { background: rgba(124,58,237,.18); color: #a78bfa; }
+
+    /* ── Steps ── */
+    .ug-steps { display: flex; flex-direction: column; gap: 14px; }
+    .ug-step {
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .ug-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: #a78bfa; font-size: 0.75rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .ug-step-body { flex: 1; }
+    .ug-step-title {
+      font-size: 0.88rem; font-weight: 700; color: var(--text);
+      margin-bottom: 3px;
+    }
+    .ug-step-desc {
+      font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65;
+    }
+
+    /* ── Tip / Note / Warning callouts ── */
+    .ug-tip, .ug-note, .ug-warn {
+      display: flex; gap: 11px; align-items: flex-start;
+      border-radius: 12px; padding: 12px 15px;
+      margin-top: 16px;
+      font-size: 0.8rem; line-height: 1.6;
+    }
+    .ug-tip  { background: rgba(52,211,153,.09);  border: 1px solid rgba(52,211,153,.2);  color: #6ee7b7; }
+    .ug-note { background: rgba(124,58,237,.09);  border: 1px solid rgba(124,58,237,.22); color: #c4b5fd; }
+    .ug-warn { background: rgba(251,191,36,.09);  border: 1px solid rgba(251,191,36,.2);  color: #fcd34d; }
+    .ug-tip i, .ug-note i, .ug-warn i { margin-top: 2px; font-size: 0.85rem; flex-shrink: 0; }
+
+    /* ── Feature list ── */
+    .ug-feat-list { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-direction: column; gap: 9px; }
+    .ug-feat-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55;
+    }
+    .ug-feat-list li i { color: var(--accent-bright); margin-top: 2px; font-size: 0.78rem; flex-shrink: 0; }
+
+    /* ── Status dots ── */
+    .ug-status-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+    }
+    .ug-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .ug-status-label { font-weight: 600; color: var(--text); }
+    .ug-status-desc  { color: var(--text-secondary); font-size: 0.78rem; }
+
+    /* ── Divider ── */
+    .ug-divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+    /* ── Auth notice (shown to logged-out users) ── */
+    .ug-auth-notice {
+      display: none;
+      align-items: flex-start; gap: 14px;
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 16px; padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .ug-auth-notice.visible { display: flex; }
+    .ug-auth-notice-icon {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      background: rgba(124,58,237,0.15); color: #a78bfa;
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .ug-auth-notice-body { flex: 1; }
+    .ug-auth-notice-title { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .ug-auth-notice-desc  { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+    .ug-auth-notice-link  {
+      display: inline-block; margin-top: 10px;
+      background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+      color: #a78bfa; border-radius: 50px; padding: 6px 18px;
+      font-size: 0.78rem; font-weight: 600; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .ug-auth-notice-link:hover { background: rgba(124,58,237,0.28); }
+
+    /* ── Sidebar locked item ── */
+    .ug-menu-item.ug-locked {
+      opacity: 0.35; pointer-events: none; display: none;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 720px) {
+      .ug-hero { padding: 36px 20px 24px; }
+      .ug-layout { grid-template-columns: 1fr; }
+      .ug-sidebar { position: static; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; }
+      .ug-sidebar-title { width: 100%; }
+      .ug-menu-item { font-size: 0.75rem; padding: 7px 10px; }
+      .ug-hero-title { font-size: 1.5rem; }
+      .ug-section { padding: 20px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+        <li class="auth-only"><a href="students.html">Students</a></li>
+        <li class="auth-only"><a href="classwork.html">Classwork</a></li>
+        <li class="auth-only"><a href="info.html">Info</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+      </ul>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+      </button>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a class="auth-only" href="students.html">Students</a>
+      <a class="auth-only" href="classwork.html">Classwork</a>
+      <a class="auth-only" href="info.html">Info</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a href="login.html" id="mobileLoginBtn">Login</a>
+    </div>
+
+    <!-- Hero — full width, outside the two-column layout -->
+    <div class="ug-hero">
+      <div class="ug-hero-icon"><i class="fa-solid fa-book-bookmark"></i></div>
+      <div class="ug-hero-title">User Guide</div>
+      <div class="ug-hero-sub">How to use every feature of the CSE 62B Portal</div>
+    </div>
+
+    <div class="ug-layout">
+
+      <!-- Sidebar -->
+      <aside class="ug-sidebar">
+        <div class="ug-sidebar-title">Contents</div>
+        <a class="ug-menu-item active" href="#getting-started"><i class="fa-solid fa-door-open"></i> Getting Started</a>
+        <a class="ug-menu-item" href="#home"><i class="fa-solid fa-house"></i> Home Page</a>
+        <a class="ug-menu-item ug-auth-item" href="#students"><i class="fa-solid fa-users"></i> Students Directory</a>
+        <a class="ug-menu-item ug-auth-item" href="#classwork"><i class="fa-solid fa-book-open"></i> Classwork</a>
+        <a class="ug-menu-item ug-auth-item" href="#info"><i class="fa-solid fa-circle-info"></i> Class Info</a>
+        <a class="ug-menu-item ug-auth-item" href="#resources"><i class="fa-solid fa-folder-open"></i> Resources</a>
+        <a class="ug-menu-item ug-auth-item" href="#results"><i class="fa-solid fa-chart-line"></i> Result Dashboard</a>
+        <a class="ug-menu-item" href="#cover-page"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+        <a class="ug-menu-item" href="#gallery"><i class="fa-solid fa-images"></i> Gallery</a>
+        <a class="ug-menu-item ug-auth-item" href="#notifications"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a class="ug-menu-item ug-auth-item" href="#whats-new"><i class="fa-solid fa-wand-magic-sparkles"></i> What's New</a>
+        <a class="ug-menu-item" href="#portal-status"><i class="fa-solid fa-circle-dot"></i> Portal Status</a>
+        <a class="ug-menu-item ug-auth-item" href="#profile"><i class="fa-solid fa-id-card"></i> Your Profile</a>
+        <a class="ug-menu-item" href="#theme"><i class="fa-solid fa-circle-half-stroke"></i> Theme & Display</a>
+      </aside>
+
+      <!-- Main content -->
+      <main class="ug-main">
+
+        <!-- Login notice (shown only to logged-out users) -->
+        <div class="ug-auth-notice" id="ugLoginNotice">
+          <div class="ug-auth-notice-icon"><i class="fa-solid fa-lock"></i></div>
+          <div class="ug-auth-notice-body">
+            <div class="ug-auth-notice-title">You are viewing the public guide</div>
+            <div class="ug-auth-notice-desc">This guide shows features available without login — Home, Cover Page, Gallery, Portal Status, and Theme. Log in to see guides for all features including Classwork, Results, Resources, Students, and more.</div>
+            <a class="ug-auth-notice-link" href="login.html"><i class="fa-solid fa-right-to-bracket" style="margin-right:6px;font-size:0.72rem;"></i>Log In to See Full Guide</a>
+          </div>
+        </div>
+
+        <!-- 1. Getting Started -->
+        <div class="ug-section" id="getting-started">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(99,102,241,.15);color:#818cf8;">
+              <i class="fa-solid fa-door-open"></i>
+            </div>
+            <h2 class="ug-section-title">Getting Started</h2>
+            <span class="ug-section-badge badge-free">No Login Required</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Go to the Portal</div>
+                <div class="ug-step-desc">Open your browser and visit <strong>lucse62b.xyz</strong>. You will land on the Home page. Some sections are public, but most features require you to be logged in.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">First Time? Set Your Password</div>
+                <div class="ug-step-desc">If you have never logged in before, click <strong>Login</strong> in the top navbar, then click <strong>"Set Password"</strong> on the login page. Enter your 16-digit Student ID and follow the steps to create a new password.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">3</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Log In</div>
+                <div class="ug-step-desc">Click <strong>Login</strong> in the navbar. Enter your <strong>Student ID</strong> (16 digits) and your password, then click <strong>Login</strong>. Once logged in, the navbar will show all available pages.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">4</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Forgot Password?</div>
+                <div class="ug-step-desc">On the login page, click <strong>"Forgot Password"</strong>. You will need to verify your identity using your Student ID and date of birth, then you can reset your password.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-tip">
+            <i class="fa-solid fa-circle-check"></i>
+            Your login session is saved in the browser. You do not need to log in again every time you visit, unless you clear your browser data or log out manually.
+          </div>
+        </div>
+
+        <!-- 2. Home Page -->
+        <div class="ug-section" id="home">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(124,58,237,.15);color:#a78bfa;">
+              <i class="fa-solid fa-house"></i>
+            </div>
+            <h2 class="ug-section-title">Home Page</h2>
+            <span class="ug-section-badge badge-free">Public</span>
+          </div>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-grid-2"></i>
+              <span><strong>Navigation Grid</strong> — Quick-access tiles to all major sections of the portal: Students Directory, Classwork, Class Info, Resources, Result Dashboard, Cover Page, Gallery, and What's New.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-clock"></i>
+              <span><strong>Exam Countdown Widget</strong> — Shows a live countdown to the next university exam. Appears 7 days before the exam date so you always know how much time is left.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-camera-retro"></i>
+              <span><strong>Memories Section</strong> — A scrollable collection of class photos and memorable moments from the batch.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-address-card"></i>
+              <span><strong>Contact Info</strong> — Department and batch contact details at the bottom of the home page.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. Students Directory -->
+        <div class="ug-section ug-auth-section" id="students">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(6,182,212,.12);color:#67e8f9;">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <h2 class="ug-section-title">Students Directory</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Search for a Student</div>
+                <div class="ug-step-desc">Use the search bar at the top to find a classmate by name or Student ID. Results update instantly as you type.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">View a Student Profile</div>
+                <div class="ug-step-desc">Click on any student card to open their full profile. You can see their name, ID, photo, department, and other details.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-note">
+            <i class="fa-solid fa-lock"></i>
+            This page is only accessible after logging in. Unauthenticated users are redirected to the login page automatically.
+          </div>
+        </div>
+
+        <!-- 4. Classwork -->
+        <div class="ug-section ug-auth-section" id="classwork">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(251,146,60,.12);color:#fdba74;">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h2 class="ug-section-title">Classwork</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Browse by Course</div>
+                <div class="ug-step-desc">The Classwork page shows all enrolled courses as cards, grouped by semester. Click a course card to open its materials.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Browse by Category</div>
+                <div class="ug-step-desc">Inside each course you will find materials organized by category — <strong>Assignments, Tutorials, Lab Reports, Viva, Presentations,</strong> and more. Click a category to see the list of files.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">3</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Open or Download a File</div>
+                <div class="ug-step-desc">Click any file in the list to open or download it. Files are served from Google Drive and open in a new tab.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-tip">
+            <i class="fa-solid fa-circle-check"></i>
+            All classwork data is synced live from Google Sheets by the class management team. If a new file has been uploaded, it will appear here without needing a page refresh.
+          </div>
+        </div>
+
+        <!-- 5. Class Info -->
+        <div class="ug-section ug-auth-section" id="info">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(52,211,153,.12);color:#6ee7b7;">
+              <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <h2 class="ug-section-title">Class Info</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 14px;">The Info page has multiple sections, accessible from the left sidebar menu:</p>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-calendar-days"></i>
+              <span><strong>Class Routine</strong> — The current weekly class schedule with time, room, and teacher details. Updated whenever the routine changes.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-list-check"></i>
+              <span><strong>Course List</strong> — All courses offered in the current semester with credit hours and teacher assignments.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-bus"></i>
+              <span><strong>Bus Schedule</strong> — University shuttle bus timings and routes relevant to CSE 62B students.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-chalkboard-user"></i>
+              <span><strong>Teacher Contacts</strong> — A directory of course teachers with their office information and contact details.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-file-pen"></i>
+              <span><strong>Exam Schedule</strong> — Upcoming exam dates and times for each course. A countdown timer is also shown on the Home page when an exam is within 7 days.</span>
+            </li>
+          </ul>
+          <div class="ug-note">
+            <i class="fa-solid fa-rotate"></i>
+            All information on this page is pulled live from Google Sheets and reflects the most up-to-date data maintained by the class representatives.
+          </div>
+        </div>
+
+        <!-- 6. Resources -->
+        <div class="ug-section ug-auth-section" id="resources">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(236,72,153,.12);color:#f9a8d4;">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h2 class="ug-section-title">Resources</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Search for a Resource</div>
+                <div class="ug-step-desc">Use the <strong>global search bar</strong> at the top to find study materials by keyword — book name, subject, or topic. Results update as you type.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Browse by Category</div>
+                <div class="ug-step-desc">Resources are organized into categories such as <strong>Books, Slides, Notes, Past Papers,</strong> and more. Click a category tab to filter the list.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">3</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Download or Open</div>
+                <div class="ug-step-desc">Click a resource card to open the file. If a download button is available, click it to save the file to your device.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">4</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Load More</div>
+                <div class="ug-step-desc">If there are more resources than displayed, a <strong>Load More</strong> button appears at the bottom. Click it to load the next batch of items.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Result Dashboard -->
+        <div class="ug-section ug-auth-section" id="results">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(34,197,94,.12);color:#86efac;">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h2 class="ug-section-title">Result Dashboard</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Enter Your Details</div>
+                <div class="ug-step-desc">On the Result Dashboard page, enter your <strong>Student ID</strong>, select your <strong>Semester</strong>, and enter your <strong>Date of Birth</strong> (used to verify identity with the LU system).</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">View Your Results</div>
+                <div class="ug-step-desc">Click <strong>Check Result</strong>. Your semester results will be fetched directly from the Leading University result system and displayed with subject-wise grades and GPA.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">3</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">View GPA Chart</div>
+                <div class="ug-step-desc">A visual chart shows your GPA trend across all semesters that have results published, so you can track your academic progress over time.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-warn">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Results shown here are fetched live from the LU result server. If a result is not yet published by the university, it will not appear here.
+          </div>
+        </div>
+
+        <!-- 8. Cover Page Generator -->
+        <div class="ug-section" id="cover-page">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(239,68,68,.12);color:#fca5a5;">
+              <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <h2 class="ug-section-title">Cover Page Generator</h2>
+            <span class="ug-section-badge badge-free">Public</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Select Cover Type</div>
+                <div class="ug-step-desc">Choose from available cover page types — <strong>Assignment</strong> or <strong>Lab Report</strong>. The template adjusts based on your selection.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Fill in Your Details</div>
+                <div class="ug-step-desc">Enter your <strong>name, Student ID, course name, course code, teacher name,</strong> and any other required fields. The live preview on the right updates instantly.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">3</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Download as PDF</div>
+                <div class="ug-step-desc">Once happy with the preview, click <strong>Download PDF</strong>. A properly formatted cover page PDF is generated and saved to your device automatically.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-tip">
+            <i class="fa-solid fa-circle-check"></i>
+            The Cover Page Generator does not require login — anyone can use it directly without an account.
+          </div>
+        </div>
+
+        <!-- 9. Gallery -->
+        <div class="ug-section" id="gallery">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(168,85,247,.15);color:#d8b4fe;">
+              <i class="fa-solid fa-images"></i>
+            </div>
+            <h2 class="ug-section-title">Gallery</h2>
+            <span class="ug-section-badge badge-free">Public</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Browse Events</div>
+                <div class="ug-step-desc">The Gallery shows all class events as album cards — trips, celebrations, and special moments. Click an event card to open its photo album.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">View Photos</div>
+                <div class="ug-step-desc">Inside an album, click any photo thumbnail to open it in full screen. Use the arrow buttons or keyboard arrow keys to navigate between photos.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-note">
+            <i class="fa-solid fa-cloud"></i>
+            All photos are stored in Google Drive and are loaded on demand, so the page stays fast even with hundreds of photos.
+          </div>
+        </div>
+
+        <!-- 10. Notifications -->
+        <div class="ug-section ug-auth-section" id="notifications">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(251,191,36,.12);color:#fcd34d;">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+            <h2 class="ug-section-title">Notifications</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-bell-ring"></i>
+              <span><strong>Bell Icon</strong> — The bell icon in the top-right navbar opens a dropdown showing your latest notifications. It appears after you log in.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-circle"></i>
+              <span><strong>Unread Badge</strong> — A purple badge number on the bell icon shows how many notifications you have not read yet. It disappears once you open the dropdown.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span><strong>What's New Glow</strong> — The <em>What's New</em> link in the navbar glows purple when there are unread portal updates. The glow stops after you visit the What's New page.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-calendar-check"></i>
+              <span><strong>Routine & Exam Alerts</strong> — Enrolled students receive automatic notifications when the class routine or exam schedule is updated.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-cake-candles"></i>
+              <span><strong>Birthday Notifications</strong> — A special birthday card appears when it is a classmate's birthday today, shown automatically on the portal.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 11. What's New -->
+        <div class="ug-section ug-auth-section" id="whats-new">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(124,58,237,.15);color:#a78bfa;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h2 class="ug-section-title">What's New</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-list"></i>
+              <span>The <strong>What's New</strong> page shows a full timeline of all portal updates, organized by version number and release date.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-tag"></i>
+              <span>Each update is tagged as <strong>Feature</strong> (new functionality), <strong>Improve</strong> (enhancement), or <strong>Fix</strong> (bug fix).</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-star"></i>
+              <span>Updates you have not seen before are marked with a <strong>NEW</strong> badge so you can spot what changed since your last visit.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-chevrons-down"></i>
+              <span>Older updates are loaded in pages. Click <strong>Load More</strong> at the bottom to see the full history.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 12. Portal Status -->
+        <div class="ug-section" id="portal-status">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(52,211,153,.12);color:#6ee7b7;">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <h2 class="ug-section-title">Portal Status</h2>
+            <span class="ug-section-badge badge-free">All Pages</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 14px;">Once logged in, a thin status strip appears just below the top navbar on every page. It tells you the current operational state of the portal at a glance.</p>
+          <div class="ug-status-row">
+            <div class="ug-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></div>
+            <span class="ug-status-label">Green dot</span>
+            <span class="ug-status-desc">— Portal is fully operational. All features are working normally.</span>
+          </div>
+          <div class="ug-status-row">
+            <div class="ug-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b;"></div>
+            <span class="ug-status-label">Yellow dot</span>
+            <span class="ug-status-desc">— Portal is up but some features may be limited or slow. Check back later.</span>
+          </div>
+          <div class="ug-status-row">
+            <div class="ug-dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444;"></div>
+            <span class="ug-status-label">Red dot</span>
+            <span class="ug-status-desc">— Portal is under maintenance or temporarily unavailable. Access is suspended.</span>
+          </div>
+          <div class="ug-warn">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            When the portal is in maintenance mode, a full-screen lock page appears and access is suspended for all users except authorized administrators.
+          </div>
+        </div>
+
+        <!-- 13. Profile -->
+        <div class="ug-section ug-auth-section" id="profile">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(6,182,212,.12);color:#67e8f9;">
+              <i class="fa-solid fa-id-card"></i>
+            </div>
+            <h2 class="ug-section-title">Your Profile</h2>
+            <span class="ug-section-badge badge-login">Login Required</span>
+          </div>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-user-circle"></i>
+              <span>Click your <strong>profile avatar or name</strong> in the navbar (visible after login) to open your student profile page.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-id-badge"></i>
+              <span>Your profile shows your <strong>name, Student ID, photo, department, batch,</strong> and other academic details pulled from the university database.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>To <strong>log out</strong>, click the logout button on your profile page. Your session data will be cleared from the browser.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 14. Theme & Display -->
+        <div class="ug-section" id="theme">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(251,191,36,.12);color:#fcd34d;">
+              <i class="fa-solid fa-circle-half-stroke"></i>
+            </div>
+            <h2 class="ug-section-title">Theme &amp; Display</h2>
+            <span class="ug-section-badge badge-free">All Pages</span>
+          </div>
+          <div class="ug-steps">
+            <div class="ug-step">
+              <div class="ug-step-num">1</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Toggle Dark / Light Mode</div>
+                <div class="ug-step-desc">Click the <strong>half-circle icon</strong> (<i class="fa-solid fa-circle-half-stroke" style="font-size:0.8rem;"></i>) in the top-right of the navbar to switch between dark mode and light mode.</div>
+              </div>
+            </div>
+            <div class="ug-step">
+              <div class="ug-step-num">2</div>
+              <div class="ug-step-body">
+                <div class="ug-step-title">Preference is Saved</div>
+                <div class="ug-step-desc">Your chosen theme is remembered in the browser. The portal will open in your preferred mode automatically on every visit.</div>
+              </div>
+            </div>
+          </div>
+          <div class="ug-divider"></div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0;"><strong style="color:var(--text);">Mobile Navigation</strong> — On small screens, the navbar collapses into a hamburger menu (<i class="fa-solid fa-bars" style="font-size:0.78rem;"></i>). Tap it to open the full navigation menu as a slide-in overlay.</p>
+        </div>
+
+      </main>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="info.html">Class Info</a>
+        <a href="user-guide.html">User Guide</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        © 2026 CSE 62 B. All Rights Reserved.
+      </div>
+    </footer>
+  </div>
+
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/script.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="/assets/js/portal-status.js"></script>
+  <script src="/assets/js/notifications.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => reg.update());
+    }
+
+    /* Auth-gate: hide login-required sections for logged-out users */
+    (function () {
+      const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      const loggedIn = !!raw;
+      if (!loggedIn) {
+        document.querySelectorAll('.ug-auth-section').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.ug-auth-item').forEach(el => el.style.display = 'none');
+        const notice = document.getElementById('ugLoginNotice');
+        if (notice) notice.classList.add('visible');
+      }
+    })();
+
+    /* Sidebar active highlight on scroll */
+    const sections = document.querySelectorAll('.ug-section[id]');
+    const menuItems = document.querySelectorAll('.ug-menu-item');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          menuItems.forEach(m => m.classList.remove('active'));
+          const active = document.querySelector(`.ug-menu-item[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>

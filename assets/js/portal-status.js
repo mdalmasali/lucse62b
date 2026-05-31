@@ -108,7 +108,8 @@
     if (txt) txt.textContent = status;
   }
 
-  injectStatusBar();
+  const _isLoggedIn = !!(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student'));
+  if (_isLoggedIn) injectStatusBar();
 
   /* ── Full-screen maintenance overlay ── */
   function showMaintenancePage(status, message) {
