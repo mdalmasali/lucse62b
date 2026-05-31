@@ -182,9 +182,69 @@
       return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
+    const PAGE_SIZE = 3;
+    let _wnGrouped = {}, _wnOrder = [], _wnShown = 0, _wnLastSeen = '';
+
+    function renderVersionGroup(ver) {
+      const group = _wnGrouped[ver];
+      const cards = group.items.map(u => {
+        const isNew = u.created_at > _wnLastSeen;
+        return `
+        <div class="wn-card">
+          <div class="wn-card-icon" style="background:${escH(u.icon_bg||'rgba(124,58,237,.12)')};color:${escH(u.icon_color||'#a78bfa')};">
+            <i class="${escH(u.icon||'fa-solid fa-star')}"></i>
+          </div>
+          <div class="wn-card-body">
+            <div class="wn-card-title">
+              ${escH(u.title)}
+              <span class="wn-tag ${escH(u.tag)}">${escH(u.tag)}</span>
+              ${isNew ? '<span class="wn-tag" style="background:rgba(124,58,237,.25);color:#c4b5fd;animation:wn-pulse 1.8s ease-in-out infinite;">NEW</span>' : ''}
+            </div>
+            <div class="wn-card-desc">${escH(u.description)}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `
+        <div class="wn-group">
+          <div class="wn-version-row">
+            <span class="wn-version">${escH(ver)}</span>
+            <span class="wn-date">${formatDate(group.date)}</span>
+            <div class="wn-divider"></div>
+          </div>
+          ${cards}
+        </div>`;
+    }
+
+    function renderMore() {
+      const timeline = document.getElementById('wnTimeline');
+      const btn = document.getElementById('wnLoadMore');
+      if (btn) btn.remove();
+
+      const next = _wnOrder.slice(_wnShown, _wnShown + PAGE_SIZE);
+      next.forEach(ver => {
+        timeline.insertAdjacentHTML('beforeend', renderVersionGroup(ver));
+      });
+      _wnShown += next.length;
+
+      if (_wnShown < _wnOrder.length) {
+        timeline.insertAdjacentHTML('beforeend', `
+          <div style="text-align:center;padding:8px 0 32px;">
+            <button id="wnLoadMore" onclick="renderMore()" style="
+              background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.3);
+              color:#a78bfa;font-size:0.82rem;font-weight:600;padding:9px 24px;
+              border-radius:100px;cursor:pointer;transition:background 0.2s;"
+              onmouseover="this.style.background='rgba(124,58,237,0.22)'"
+              onmouseout="this.style.background='rgba(124,58,237,0.12)'">
+              Load More
+            </button>
+          </div>`);
+      }
+    }
+
     async function loadUpdates() {
       const timeline = document.getElementById('wnTimeline');
-      const lastSeen = localStorage.getItem('lu62b_wn_last_seen') || '1970-01-01T00:00:00Z';
+      _wnLastSeen = localStorage.getItem('lu62b_wn_last_seen') || '1970-01-01T00:00:00Z';
       try {
         const r = await fetch(
           `${_WN_SUPA}/rest/v1/site_updates?order=release_date.desc,created_at.desc`,
@@ -199,46 +259,14 @@
           return;
         }
 
-        /* Group by version */
-        const grouped = {};
-        const versionOrder = [];
         updates.forEach(u => {
-          if (!grouped[u.version]) { grouped[u.version] = { date: u.release_date, items: [] }; versionOrder.push(u.version); }
-          grouped[u.version].items.push(u);
+          if (!_wnGrouped[u.version]) { _wnGrouped[u.version] = { date: u.release_date, items: [] }; _wnOrder.push(u.version); }
+          _wnGrouped[u.version].items.push(u);
         });
 
-        timeline.innerHTML = versionOrder.map(ver => {
-          const group = grouped[ver];
-          const cards = group.items.map(u => {
-            const isNew = u.created_at > lastSeen;
-            return `
-            <div class="wn-card">
-              <div class="wn-card-icon" style="background:${escH(u.icon_bg||'rgba(124,58,237,.12)')};color:${escH(u.icon_color||'#a78bfa')};">
-                <i class="${escH(u.icon||'fa-solid fa-star')}"></i>
-              </div>
-              <div class="wn-card-body">
-                <div class="wn-card-title">
-                  ${escH(u.title)}
-                  <span class="wn-tag ${escH(u.tag)}">${escH(u.tag)}</span>
-                  ${isNew ? '<span class="wn-tag" style="background:rgba(124,58,237,.25);color:#c4b5fd;animation:wn-pulse 1.8s ease-in-out infinite;">NEW</span>' : ''}
-                </div>
-                <div class="wn-card-desc">${escH(u.description)}</div>
-              </div>
-            </div>`;
-          }).join('');
+        timeline.innerHTML = '';
+        renderMore();
 
-          return `
-            <div class="wn-group">
-              <div class="wn-version-row">
-                <span class="wn-version">${escH(ver)}</span>
-                <span class="wn-date">${formatDate(group.date)}</span>
-                <div class="wn-divider"></div>
-              </div>
-              ${cards}
-            </div>`;
-        }).join('');
-
-        /* Mark as seen after render */
         localStorage.setItem('lu62b_wn_last_seen', new Date().toISOString());
 
       } catch (e) {
