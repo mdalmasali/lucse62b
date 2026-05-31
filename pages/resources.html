@@ -280,6 +280,80 @@
       .file-item { padding: 10px 12px; gap: 8px; }
     }
 
+    /* ── Global Resource Search ── */
+    .res-search-wrap { position: relative; margin-bottom: 20px; }
+    .res-search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .res-search-bar:focus-within {
+      border-color: rgba(139,92,246,0.5);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.08);
+    }
+    .res-search-icon { color: var(--muted); font-size: 0.9rem; flex-shrink: 0; }
+    .res-search-bar input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem;
+    }
+    .res-search-bar input::placeholder { color: var(--muted); }
+    .res-search-clear {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 0.85rem; padding: 3px 5px;
+      border-radius: 6px; line-height: 1; transition: color 0.15s; flex-shrink: 0;
+    }
+    .res-search-clear:hover { color: var(--text); }
+    .res-search-results {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+      z-index: 200; max-height: 440px; overflow-y: auto;
+    }
+    .res-sr-group-hdr {
+      padding: 9px 16px 5px;
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--text-secondary);
+      background: rgba(255,255,255,0.025);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .res-sr-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px; cursor: pointer;
+      transition: background 0.12s;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .res-sr-item:last-child { border-bottom: none; }
+    .res-sr-item:hover { background: rgba(255,255,255,0.04); }
+    .res-sr-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; flex-shrink: 0;
+    }
+    .res-sr-body { flex: 1; min-width: 0; }
+    .res-sr-title {
+      font-size: 0.88rem; font-weight: 500; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .res-sr-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .res-sr-hl { color: #a78bfa; font-weight: 700; }
+    .res-sr-empty {
+      padding: 28px 16px; text-align: center;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .res-sr-empty i { display: block; font-size: 1.6rem; opacity: 0.25; margin-bottom: 10px; }
+    .res-sr-status {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 14px 16px;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    html[data-theme="light"] .res-sr-group-hdr { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.06); }
+    html[data-theme="light"] .res-sr-item { border-color: rgba(0,0,0,0.05); }
+    html[data-theme="light"] .res-sr-item:hover { background: rgba(0,0,0,0.03); }
+    html[data-theme="light"] .res-search-results { box-shadow: 0 16px 48px rgba(0,0,0,0.15); }
+    html[data-theme="light"] .res-sr-hl { color: #7c3aed; }
+
     /* -- Preview Modal -- */
     .preview-modal {
       position: fixed; inset: 0; z-index: 1000;
@@ -378,6 +452,19 @@
       <div class="sync-badge fade-in delay-1" id="syncBadge">
         <span class="sync-dot"></span>
         <span id="syncText">Connecting...</span>
+      </div>
+
+      <div class="res-search-wrap fade-in delay-2" id="resSearchWrap">
+        <div class="res-search-bar">
+          <i class="fa-solid fa-magnifying-glass res-search-icon"></i>
+          <input type="text" id="resSearchInput" placeholder="Search courses, files..." autocomplete="off"
+            oninput="runResSearch(this.value)"
+            onfocus="if(this.value.trim().length>=2)document.getElementById('resSearchResults').style.display=''">
+          <button class="res-search-clear" id="resSearchClear" onclick="clearResSearch()" style="display:none;" aria-label="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="res-search-results" id="resSearchResults" style="display:none;"></div>
       </div>
 
       <div id="courseGrid" class="course-grid fade-in delay-2">
@@ -702,6 +789,134 @@
         </div>`;
     }
 
+    /* ── Global Resource Search ─────────────────── */
+    let _idxReady = false, _idxBuilding = false;
+
+    async function buildSearchIndex() {
+      if (_idxReady || _idxBuilding) return;
+      _idxBuilding = true;
+      try {
+        await Promise.allSettled(Object.entries(grouped).map(async ([code, g]) => {
+          if (g.midFiles !== null && g.finalFiles !== null) return;
+          const [mR, fR] = await Promise.allSettled([
+            g.midFolderId   ? loadFolderFiles(g.midFolderId)   : Promise.resolve([]),
+            g.finalFolderId ? loadFolderFiles(g.finalFolderId) : Promise.resolve([]),
+          ]);
+          g.midFiles   = mR.status === 'fulfilled' ? mR.value : [];
+          g.finalFiles = fR.status === 'fulfilled' ? fR.value : [];
+        }));
+      } finally {
+        _idxReady = true; _idxBuilding = false;
+      }
+      const q = document.getElementById('resSearchInput')?.value || '';
+      if (q.trim().length >= 2) runResSearch(q);
+    }
+
+    function srHighlight(text, q) {
+      const idx = text.toLowerCase().indexOf(q.toLowerCase());
+      if (idx === -1) return esc(text);
+      return esc(text.slice(0, idx)) +
+        `<span class="res-sr-hl">${esc(text.slice(idx, idx + q.length))}</span>` +
+        esc(text.slice(idx + q.length));
+    }
+
+    function runResSearch(raw) {
+      const resultsEl = document.getElementById('resSearchResults');
+      const clearBtn  = document.getElementById('resSearchClear');
+      const grid      = document.getElementById('courseGrid');
+      if (!resultsEl) return;
+
+      const q  = (raw || '').trim();
+      clearBtn.style.display = q ? '' : 'none';
+
+      if (q.length < 2) {
+        resultsEl.style.display = 'none';
+        grid.style.display = '';
+        return;
+      }
+
+      grid.style.display = 'none';
+      resultsEl.style.display = '';
+
+      const lq = q.toLowerCase();
+      const courseHits = [], fileHits = [];
+
+      Object.entries(grouped).forEach(([code, g]) => {
+        if (code.toLowerCase().includes(lq) || g.name.toLowerCase().includes(lq))
+          courseHits.push({ code, g });
+
+        [...(g.midFiles || []).map(f => ({ f, section: 'Mid Term' })),
+         ...(g.finalFiles || []).map(f => ({ f, section: 'Final Term' }))
+        ].forEach(({ f, section }) => {
+          if (f.name.toLowerCase().includes(lq))
+            fileHits.push({ code, courseName: g.name, colorIdx: g.colorIdx, f, section });
+        });
+      });
+
+      let html = '';
+
+      if (courseHits.length) {
+        html += `<div class="res-sr-group-hdr"><i class="fa-solid fa-graduation-cap" style="margin-right:5px;opacity:0.6;"></i>Courses</div>`;
+        html += courseHits.map(({ code, g }) =>
+          `<div class="res-sr-item" onclick="clearResSearch();showMaterials('${esc(code)}')">
+            <div class="res-sr-icon ca-${g.colorIdx}"><i class="fa-solid ${getCourseIcon(code)}"></i></div>
+            <div class="res-sr-body">
+              <div class="res-sr-title">${srHighlight(g.name, q)}</div>
+              <div class="res-sr-sub">${srHighlight(code, q)} · Course</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--muted);font-size:0.75rem;flex-shrink:0;"></i>
+          </div>`
+        ).join('');
+      }
+
+      if (fileHits.length) {
+        html += `<div class="res-sr-group-hdr"><i class="fa-solid fa-file" style="margin-right:5px;opacity:0.6;"></i>Files</div>`;
+        html += fileHits.slice(0, 15).map(({ code, courseName, f, section }) => {
+          const tm = typeMeta(f.mimeType);
+          return `<div class="res-sr-item" onclick="clearResSearch();showMaterials('${esc(code)}')">
+            <div class="res-sr-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
+            <div class="res-sr-body">
+              <div class="res-sr-title">${srHighlight(f.name, q)}</div>
+              <div class="res-sr-sub">${esc(courseName)} · ${esc(section)}</div>
+            </div>
+          </div>`;
+        }).join('');
+        if (fileHits.length > 15)
+          html += `<div class="res-sr-status">${fileHits.length - 15} more — refine your search</div>`;
+      }
+
+      if (!courseHits.length && !fileHits.length) {
+        if (!_idxReady) {
+          html = `<div class="res-sr-status"><div class="spin" style="width:15px;height:15px;border-width:2px;"></div> Searching all files...</div>`;
+          if (!_idxBuilding) buildSearchIndex();
+        } else {
+          html = `<div class="res-sr-empty"><i class="fa-solid fa-magnifying-glass"></i>No results for "<strong>${esc(q)}</strong>"</div>`;
+        }
+      } else if (!_idxReady && !_idxBuilding) {
+        buildSearchIndex();
+      }
+
+      resultsEl.innerHTML = html;
+    }
+
+    function clearResSearch() {
+      const inp = document.getElementById('resSearchInput');
+      if (inp) { inp.value = ''; inp.focus(); }
+      const r = document.getElementById('resSearchResults');
+      if (r) r.style.display = 'none';
+      const c = document.getElementById('resSearchClear');
+      if (c) c.style.display = 'none';
+      document.getElementById('courseGrid').style.display = '';
+    }
+
+    document.addEventListener('click', e => {
+      const wrap = document.getElementById('resSearchWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const r = document.getElementById('resSearchResults');
+        if (r) r.style.display = 'none';
+      }
+    });
+
     function filterFiles(q) {
       if (!activeCourse) return;
       const g  = grouped[activeCourse];
@@ -716,6 +931,8 @@
       document.getElementById('coursesView').classList.remove('hidden');
       document.getElementById('materialsView').classList.remove('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      const q = document.getElementById('resSearchInput')?.value.trim() || '';
+      if (q.length < 2) document.getElementById('courseGrid').style.display = '';
     }
 
     /* -- Sheet helpers -- */
@@ -779,6 +996,7 @@
         else if (grouped[activeCourse]) renderMarks(activeCourse);
 
         setSyncText(`Live sync · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`);
+        if (!_idxReady && !_idxBuilding) setTimeout(buildSearchIndex, 2000);
       } catch (err) {
         setSyncText('Sync failed · retrying...', false);
         if (!Object.keys(grouped).length) {
