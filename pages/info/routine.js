@@ -241,6 +241,8 @@ function _rtRenderSlot(slot, courseInfo) {
   const color   = courseColor(slot.code);
   const info    = courseInfo[slot.code?.toUpperCase()] || {};
   const teacher = info.teacher || slot.initials || '';
+  const name    = info.name || slot.name || '';
+  const title   = name || slot.code || '';
 
   let borderColor = color + '55';
   let badge = '';
@@ -255,7 +257,8 @@ function _rtRenderSlot(slot, courseInfo) {
   }
 
   return `<div class="rt-gc" style="background:${color}12;border-color:${borderColor};margin-bottom:3px;">
-    <span class="rt-gc-code" style="color:${color};">${escH(slot.code)}</span>
+    <span class="rt-gc-name" style="color:${color};font-weight:800;font-size:0.62rem;line-height:1.22;letter-spacing:0.01em;text-align:center;">${escH(title)}</span>
+    ${name ? `<span class="rt-gc-code" style="color:${color};opacity:0.55;font-size:0.5rem;font-weight:700;letter-spacing:0.04em;">${escH(slot.code)}</span>` : ''}
     ${badge}
     ${teacher ? `<span class="rt-gc-teacher">${escH(teacher)}</span>` : ''}
     ${slot.room ? `<span class="rt-gc-room">${escH(slot.room)}</span>` : ''}
