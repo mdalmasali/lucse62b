@@ -306,6 +306,7 @@ function buildGrid(todayName) {
   ROUTINE_DAY_NAMES.forEach(day => {
     const daySlots = lookup[day] || {};
     const hasClass = schedule[day]?.some(s => !s.isBreak);
+    if (!hasClass) return;  /* hide days with no class */
     const isToday  = day === todayName;
 
     html += `<tr class="${hasClass ? 'has-class' : 'no-class'}">

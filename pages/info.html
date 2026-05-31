@@ -1136,6 +1136,7 @@
       ROUTINE_DAY_NAMES.forEach((day, ri) => {
         const daySlots = lookup[day];
         const hasClass = schedule[day]?.some(s => !s.isBreak);
+        if (!hasClass) return;  /* hide days with no class */
         const rowBg    = ri % 2 === 0 ? t.rowEven : t.rowOdd;
         tbl += `<tr><td style="padding:10px 14px;font-size:13px;font-weight:${hasClass?'700':'400'};color:${hasClass?t.dayCellText:t.dayCellFaint};background:${t.dayCell};border:1px solid ${t.borderSub};white-space:nowrap;">${escH(DAY_DISPLAY[day]||day)}</td>`;
         allTimes.forEach(time => {
@@ -1147,9 +1148,12 @@
             const color = courseColor(slot.code);
             const info  = courseInfo[slot.code?.toUpperCase()] || {};
             const line2 = getCellLine2(slot, info);
+            const name  = info.name || slot.name || '';
+            const title2 = name || slot.code || '';
             tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};">
               <div style="background:${color}1a;border:1.5px solid ${color}55;border-radius:8px;padding:7px 5px;margin:0 auto;max-width:98%;">
-                <div style="font-size:11.5px;font-weight:800;color:${color};letter-spacing:0.02em;">${escH(slot.code)}</div>
+                <div style="font-size:10.5px;font-weight:800;color:${color};letter-spacing:0.01em;line-height:1.25;">${escH(title2)}</div>
+                ${name?`<div style="font-size:8.5px;font-weight:700;color:${color};opacity:0.6;letter-spacing:0.03em;margin-top:1px;">${escH(slot.code)}</div>`:''}
                 ${line2?`<div style="font-size:10px;color:${t.line2};font-weight:600;margin-top:3px;">${escH(line2)}</div>`:''}
                 ${slot.room?`<div style="font-size:9.5px;color:${t.room};margin-top:2px;">${escH(slot.room)}</div>`:''}
               </div></td>`;
@@ -1194,7 +1198,7 @@
       wrapper.innerHTML = buildPrintTemplate(title, subtitle, cache, getCellLine2);
       document.body.appendChild(wrapper);
       const canvas = await html2canvas(wrapper.firstElementChild, {
-        backgroundColor: t.bg, scale: 3, useCORS: true, logging: false, allowTaint: true
+        backgroundColor: t.bg, scale: 2, useCORS: true, logging: false, allowTaint: true
       });
       document.body.removeChild(wrapper);
       return canvas;
@@ -1222,8 +1226,8 @@
         const canvas = await captureTemplate(title, subtitle, cache, getCellLine2);
         const { jsPDF } = window.jspdf;
         const w = canvas.width/3, h = canvas.height/3;
-        const pdf = new jsPDF({ orientation:'landscape', unit:'px', format:[w+20, h+20] });
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, w, h);
+        const pdf = new jsPDF({ orientation:'landscape', unit:'px', format:[w+20, h+20], compress:true });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 10, 10, w, h);
         pdf.save(filename);
       } catch(e) { alert('PDF download failed: ' + e.message); }
       finally { btn.disabled = false; btn.innerHTML = orig; }
