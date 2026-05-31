@@ -155,10 +155,11 @@
         color:#fff;font-size:.5rem;font-weight:800;padding:1px 5px;border-radius:5px;
         letter-spacing:.05em;text-transform:uppercase;margin-left:5px;vertical-align:middle;}
       @keyframes wn-link-glow{
-        0%,100%{color:#c4b5fd;text-shadow:0 0 8px rgba(167,139,250,.9),0 0 20px rgba(124,58,237,.6);}
-        50%{color:#a78bfa;text-shadow:0 0 4px rgba(167,139,250,.3);}
+        0%  {color:#fff;    text-shadow:0 0 6px #e9d5ff,0 0 18px rgba(167,139,250,1),0 0 40px rgba(124,58,237,.95),0 0 70px rgba(109,40,217,.7);transform:scale(1.08);}
+        40% {color:#f0abfc; text-shadow:0 0 8px #f0abfc,0 0 22px rgba(232,121,249,.9),0 0 45px rgba(192,38,211,.7),0 0 80px rgba(126,34,206,.5);transform:scale(1.1);}
+        100%{color:#fff;    text-shadow:0 0 6px #e9d5ff,0 0 18px rgba(167,139,250,1),0 0 40px rgba(124,58,237,.95),0 0 70px rgba(109,40,217,.7);transform:scale(1.08);}
       }
-      .wn-link-glow{animation:wn-link-glow 1.8s ease-in-out infinite !important;color:#c4b5fd !important;}
+      .wn-link-glow{animation:wn-link-glow 1.2s ease-in-out infinite !important;color:#fff !important;display:inline-block !important;transform-origin:center !important;}
     `;
     document.head.appendChild(s);
   }
