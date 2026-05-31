@@ -42,17 +42,73 @@
     } catch (_) { return null; }
   }
 
-  /* ── Update navbar badge ── */
-  function updateBadge(status) {
-    const statusEl = document.querySelector('.topbar-status');
-    const dotEl    = statusEl?.querySelector('.status-dot');
-    if (!statusEl || !dotEl) return;
-    const c = dotColor(status);
-    dotEl.style.background = c.dot;
-    dotEl.style.boxShadow  = `0 0 8px ${c.glow}`;
-    [...statusEl.childNodes].forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.remove(); });
-    statusEl.appendChild(document.createTextNode(' ' + status));
+  /* ── Inject below-nav status strip ── */
+  function injectStatusBar() {
+    const style = document.createElement('style');
+    style.textContent = `
+      #ps-statusbar {
+        width: 100%; box-sizing: border-box;
+        display: flex; align-items: center; justify-content: center; gap: 9px;
+        padding: 7px 20px;
+        background: linear-gradient(to right,
+          transparent,
+          rgba(124,58,237,0.07) 20%,
+          rgba(124,58,237,0.07) 80%,
+          transparent);
+        border-bottom: 1px solid rgba(124,58,237,0.12);
+        font-family: 'Inter','Segoe UI',sans-serif;
+        font-size: 0.71rem; font-weight: 600; letter-spacing: 0.45px;
+        color: rgba(196,181,253,0.8);
+        position: relative; z-index: 99;
+      }
+      html[data-theme="light"] #ps-statusbar {
+        background: linear-gradient(to right,
+          transparent,
+          rgba(109,40,217,0.05) 20%,
+          rgba(109,40,217,0.05) 80%,
+          transparent);
+        border-bottom: 1px solid rgba(109,40,217,0.13);
+        color: rgba(109,40,217,0.7);
+      }
+      #ps-sb-dot {
+        width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+        background: #f59e0b; box-shadow: 0 0 8px #f59e0b;
+        animation: ps-sb-pulse 2s ease-in-out infinite;
+      }
+      #ps-sb-tag {
+        font-size: 0.6rem; font-weight: 700; letter-spacing: 1px;
+        text-transform: uppercase; opacity: 0.45; margin-right: 1px;
+      }
+      @keyframes ps-sb-pulse {
+        0%,100% { opacity: 1; transform: scale(1); }
+        50%      { opacity: 0.4; transform: scale(0.78); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    const bar = document.createElement('div');
+    bar.id = 'ps-statusbar';
+    bar.innerHTML = `<span id="ps-sb-dot"></span><span id="ps-sb-tag">Portal</span><span id="ps-sb-text">Loading...</span>`;
+
+    function mount() {
+      const nav = document.querySelector('nav');
+      if (nav) nav.insertAdjacentElement('afterend', bar);
+      else document.body.prepend(bar);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+    else mount();
   }
+
+  /* ── Update status strip ── */
+  function updateBadge(status) {
+    const c = dotColor(status);
+    const dot = document.getElementById('ps-sb-dot');
+    const txt = document.getElementById('ps-sb-text');
+    if (dot) { dot.style.background = c.dot; dot.style.boxShadow = `0 0 7px ${c.glow}`; }
+    if (txt) txt.textContent = status;
+  }
+
+  injectStatusBar();
 
   /* ── Full-screen maintenance overlay ── */
   function showMaintenancePage(status, message) {
