@@ -95,11 +95,14 @@
       if (rows.length > 0) {
         const a = document.getElementById('whatsNewNavA');
         if (a) {
+          a.classList.add('wn-link-glow');
           const badge = document.createElement('span');
           badge.className = 'wn-nav-badge';
           badge.textContent = 'NEW';
           a.appendChild(badge);
         }
+        const mobileA = document.getElementById('whatsNewMobileA');
+        if (mobileA) mobileA.classList.add('wn-link-glow');
       }
     } catch {}
   }
@@ -151,6 +154,11 @@
       .wn-nav-badge{display:inline-block;background:linear-gradient(135deg,#7c3aed,#a855f7);
         color:#fff;font-size:.5rem;font-weight:800;padding:1px 5px;border-radius:5px;
         letter-spacing:.05em;text-transform:uppercase;margin-left:5px;vertical-align:middle;}
+      @keyframes wn-link-glow{
+        0%,100%{color:#c4b5fd;text-shadow:0 0 8px rgba(167,139,250,.9),0 0 20px rgba(124,58,237,.6);}
+        50%{color:#a78bfa;text-shadow:0 0 4px rgba(167,139,250,.3);}
+      }
+      .wn-link-glow{animation:wn-link-glow 1.8s ease-in-out infinite !important;color:#c4b5fd !important;}
     `;
     document.head.appendChild(s);
   }
