@@ -18,16 +18,23 @@
       text-align: center;
       padding: 48px 0 36px;
     }
+    @keyframes wn-icon-pulse {
+      0%,100% { box-shadow: 0 0 0 6px rgba(124,58,237,.18), 0 0 0 14px rgba(124,58,237,.07), 0 10px 40px rgba(124,58,237,.55); transform: scale(1); }
+      50%      { box-shadow: 0 0 0 10px rgba(168,85,247,.22), 0 0 0 22px rgba(168,85,247,.09), 0 14px 56px rgba(168,85,247,.65); transform: scale(1.05); }
+    }
     .wn-hero-icon {
-      width: 64px; height: 64px; border-radius: 20px;
-      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      width: 80px; height: 80px; border-radius: 26px;
+      background: linear-gradient(145deg, #6d28d9 0%, #a855f7 55%, #ec4899 100%);
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 18px; font-size: 1.6rem;
+      margin: 0 auto 22px; font-size: 2rem; color: #fff;
+      animation: wn-icon-pulse 2.4s ease-in-out infinite;
     }
     .wn-hero-title {
       font-family: 'Space Grotesk', sans-serif;
       font-size: 2rem; font-weight: 800;
-      color: var(--text); letter-spacing: -0.03em;
+      background: linear-gradient(120deg, #fff 30%, #c4b5fd 70%, #f0abfc);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: -0.03em;
       margin-bottom: 8px;
     }
     .wn-hero-sub {
@@ -155,7 +162,7 @@
   <main class="container fade-in" style="max-width:760px;margin:0 auto;padding:0 20px;">
 
     <div class="wn-hero">
-      <div class="wn-hero-icon">🆕</div>
+      <div class="wn-hero-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
       <div class="wn-hero-title">What's New</div>
       <div class="wn-hero-sub">CSE 62B Portal — latest updates & improvements</div>
     </div>
