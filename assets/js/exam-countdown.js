@@ -1,0 +1,314 @@
+/* ── CSE 62B · Exam Countdown ─────────────────────────────────────────────
+   Provides:
+   1. Home-page widget — shown when any exam is ≤ 7 days away
+   2. window._examCd helpers — used by exam.js for in-section countdowns
+   ─────────────────────────────────────────────────────────────────────────── */
+(function () {
+
+  /* ── Date helpers ── */
+  function normDate(raw) {
+    if (!raw) return '';
+    const num = parseFloat(String(raw).trim());
+    if (!isNaN(num) && num > 40000 && num < 60000) {
+      const d = new Date(Math.round((num - 25569) * 86400 * 1000));
+      const u = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+      return `${String(u.getDate()).padStart(2,'0')}-${String(u.getMonth()+1).padStart(2,'0')}-${u.getFullYear()}`;
+    }
+    const dm = String(raw).match(/^Date\((\d+),(\d+),(\d+)/);
+    if (dm) {
+      const d = new Date(+dm[1], +dm[2], +dm[3]);
+      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+    }
+    return String(raw).trim();
+  }
+
+  function cdDateObj(s) {
+    const m = (s || '').match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (!m) return null;
+    const d = new Date(+m[3], +m[2] - 1, +m[1]);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function cdFmtDate(s) {
+    const m = (s || '').match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (!m) return s || '';
+    const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(m[1])} ${MON[parseInt(m[2]) - 1]} ${m[3]}`;
+  }
+
+  function cdParseTimeMins(t) {
+    const m = String(t).match(/(\d+):(\d+)\s*([AP]M)?/i);
+    if (!m) return 0;
+    let h = parseInt(m[1]);
+    const min = parseInt(m[2]);
+    const ampm = (m[3] || '').toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    if (!ampm && h < 7) h += 12;
+    return h * 60 + min;
+  }
+
+  function cdExamDateTime(exam) {
+    const d = cdDateObj(exam.date);
+    if (!d) return null;
+    const mins = cdParseTimeMins(exam.time);
+    d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+    return d;
+  }
+
+  /* ── Timer management ── */
+  const _timers = {};
+
+  function cdStartTick(examDt, ids, key) {
+    if (_timers[key]) clearInterval(_timers[key]);
+    const pad = n => String(n).padStart(2, '0');
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    function tick() {
+      const diff = examDt.getTime() - Date.now();
+      if (diff <= 0) {
+        clearInterval(_timers[key]);
+        delete _timers[key];
+        ['days','hrs','min','sec'].forEach(k => set(ids[k], '00'));
+        return;
+      }
+      set(ids.days, Math.floor(diff / 86400000));
+      set(ids.hrs,  pad(Math.floor((diff % 86400000) / 3600000)));
+      set(ids.min,  pad(Math.floor((diff % 3600000) / 60000)));
+      set(ids.sec,  pad(Math.floor((diff % 60000) / 1000)));
+    }
+    tick();
+    _timers[key] = setInterval(tick, 1000);
+  }
+
+  function cdStopTick(key) {
+    if (_timers[key]) { clearInterval(_timers[key]); delete _timers[key]; }
+  }
+
+  /* ── Info-page countdown block (called from exam.js) ── */
+  function cdBuildInfoBlock(exams, prefix) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const upcoming = exams.filter(e => { const d = cdDateObj(e.date); return d && d >= today; });
+    if (!upcoming.length) return '';
+    const next = upcoming[0];
+    const dt = cdExamDateTime(next);
+    if (!dt) return '';
+
+    setTimeout(() => {
+      cdStartTick(dt, {
+        days: `${prefix}CdD`,
+        hrs:  `${prefix}CdH`,
+        min:  `${prefix}CdM`,
+        sec:  `${prefix}CdS`,
+      }, `info_${prefix}`);
+    }, 30);
+
+    return `<div class="exam-cd-wrap">
+      <div class="exam-cd-left">
+        <div class="exam-cd-lbl">Next Exam</div>
+        <div class="exam-cd-crs">${next.course}</div>
+        <div class="exam-cd-dt">${cdFmtDate(next.date)}&nbsp;&nbsp;·&nbsp;&nbsp;${next.time}</div>
+      </div>
+      <div class="exam-cd-timer">
+        <div class="exam-cd-unit"><span id="${prefix}CdD">--</span><small>d</small></div>
+        <span class="exam-cd-sep">:</span>
+        <div class="exam-cd-unit"><span id="${prefix}CdH">--</span><small>h</small></div>
+        <span class="exam-cd-sep">:</span>
+        <div class="exam-cd-unit"><span id="${prefix}CdM">--</span><small>m</small></div>
+        <span class="exam-cd-sep">:</span>
+        <div class="exam-cd-unit"><span id="${prefix}CdS">--</span><small>s</small></div>
+      </div>
+    </div>`;
+  }
+
+  function cdStopInfo(prefix) {
+    cdStopTick(`info_${prefix}`);
+  }
+
+  /* ── Sheet helper ── */
+  async function cdGetSheetId(keyword) {
+    try {
+      const d = await window.fetchSheet('Routine');
+      const rows = (d.table?.rows || []).map(r => (r.c || []).map(c => (c?.v != null ? String(c.v).trim() : '')));
+      for (const row of rows) {
+        if (row[0]?.toLowerCase().includes(keyword) && row[1]) {
+          const m = row[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+          if (m) return m[1];
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /* ── Mini exam parser (batch 62, section B) ── */
+  function cdParseExams(data, targetBatch, targetSection) {
+    const table = data?.table;
+    if (!table) return [];
+
+    const allRows = (table.rows || []).map(r =>
+      (r.c || []).map(c => { if (!c || c.v == null) return ''; return normDate(c.v) || String(c.v).trim(); })
+    );
+
+    const colLabels = (table.cols || []).map(c => String(c.label || '').trim());
+    if (colLabels.some(l => /day[\s\-]*\d+/i.test(l))) {
+      const synRow = colLabels.map(l => { const m = l.match(/day[\s\-]*(\d+)/i); return m ? `Day-${m[1]}` : ''; });
+      allRows.unshift(synRow);
+    }
+
+    const blockStarts = [];
+    for (let r = 0; r < allRows.length; r++) {
+      for (let c = 0; c < allRows[r].length; c++) {
+        if (/^\s*day[\s\-]*\d+\s*$/i.test(allRows[r][c])) { blockStarts.push({ rowIdx: r }); break; }
+      }
+    }
+    if (!blockStarts.length) return [];
+
+    let batchCol = 0, sectionCol = 1;
+    for (let r = 0; r < Math.min(allRows.length, 15); r++) {
+      (allRows[r] || []).forEach((cell, i) => {
+        if (/^\s*batch\s*$/i.test(cell)) batchCol = i;
+        if (/^\s*section\s*$/i.test(cell)) sectionCol = i;
+      });
+    }
+
+    const tbNum = String(targetBatch).replace(/[^0-9]/g, '');
+    const tsStr = String(targetSection).trim().toUpperCase();
+    const allExams = [];
+
+    blockStarts.forEach((block, blockIdx) => {
+      const dayHeaderIdx = block.rowIdx;
+      const nextBlockRow = blockStarts[blockIdx + 1] ? blockStarts[blockIdx + 1].rowIdx : allRows.length;
+
+      const rowBatches = {};
+      let lastBatch = '';
+      for (let r = dayHeaderIdx; r < nextBlockRow; r++) {
+        const bc = String(allRows[r][batchCol] || '').trim();
+        if (bc && /\d/.test(bc) && !/^(date|time|day|section)/i.test(bc)) lastBatch = bc;
+        rowBatches[r] = lastBatch;
+      }
+
+      const dayRow = allRows[dayHeaderIdx] || [];
+      const dayCols = dayRow.reduce((a, cell, i) => { if (/^\s*day[\s\-]*\d+\s*$/i.test(cell)) a.push(i); return a; }, []);
+
+      let dateRowIdx = dayHeaderIdx + 1, timeRowIdx = dayHeaderIdx + 2;
+      if (dayCols.length > 0) {
+        const sc = dayCols[0];
+        for (let i = 1; i <= 5; i++) {
+          const rIdx = dayHeaderIdx + i;
+          if (rIdx >= allRows.length || rIdx >= nextBlockRow) break;
+          const cell = String(allRows[rIdx][sc]).trim();
+          if (/Date\(/i.test(cell) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell)) dateRowIdx = rIdx;
+          else if (/\d{1,2}:\d{2}/.test(cell) || /am|pm/i.test(cell)) timeRowIdx = rIdx;
+        }
+      }
+
+      const dataStartRow = Math.max(dayHeaderIdx, dateRowIdx, timeRowIdx) + 1;
+      const dateRow = allRows[dateRowIdx] || [];
+      const timeRow = allRows[timeRowIdx] || [];
+      const examDays = dayCols.map(col => ({ col, date: dateRow[col] || '', time: timeRow[col] || '' }));
+
+      for (let r = dataStartRow; r < nextBlockRow; r++) {
+        const row = allRows[r];
+        if (!row) continue;
+        const section = (row[sectionCol] || '').trim();
+        if (!section || /^(section|day|date|time)$/i.test(section)) continue;
+        const cbNum = String(rowBatches[r]).replace(/[^0-9]/g, '');
+        const csStr = section.toUpperCase();
+        if (cbNum === tbNum && (csStr === tsStr || csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr))) {
+          examDays.forEach(day => {
+            const course = (row[day.col] || '').replace(/\s*\(\d+\)\s*/g, '').trim();
+            if (course && course !== '--' && course !== '–') allExams.push({ date: day.date, time: day.time, course });
+          });
+        }
+      }
+    });
+
+    return allExams.sort((a, b) => {
+      const da = cdDateObj(a.date), db = cdDateObj(b.date);
+      if (!da && !db) return 0; if (!da) return 1; if (!db) return -1;
+      return da - db;
+    });
+  }
+
+  /* ── Home page init ── */
+  async function initHome() {
+    await new Promise(r => { if (document.readyState !== 'loading') r(); else document.addEventListener('DOMContentLoaded', r); });
+
+    const container = document.getElementById('examCdHomeWrap');
+    if (!container) return;
+
+    try {
+      const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      if (!raw || !JSON.parse(raw)?.id) return;
+    } catch { return; }
+
+    let t = 0;
+    while (typeof window.fetchSheet !== 'function' && t++ < 40) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (typeof window.fetchSheet !== 'function') return;
+
+    try {
+      const [midId, finalId] = await Promise.all([
+        cdGetSheetId('mid term'),
+        cdGetSheetId('final term'),
+      ]);
+
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const hits = [];
+
+      for (const [type, sheetId, color] of [['Mid', midId, '#4ade80'], ['Final', finalId, '#f87171']]) {
+        if (!sheetId) continue;
+        const data = await window.fetchSheetById(sheetId).catch(() => null);
+        if (!data) continue;
+        const exams = cdParseExams(data, '62', 'B');
+        const upcoming = exams.filter(e => { const d = cdDateObj(e.date); return d && d >= today; });
+        if (!upcoming.length) continue;
+        const next = upcoming[0];
+        const diffDays = Math.ceil((cdDateObj(next.date) - today) / 86400000);
+        if (diffDays <= 7) hits.push({ type, exam: next, color });
+      }
+
+      if (!hits.length) return;
+
+      container.style.display = '';
+      container.innerHTML = `<div class="ehcd-wrap">
+        <div class="ehcd-header">
+          <i class="fa-solid fa-bell" style="color:#a78bfa;margin-right:6px;font-size:.8rem;"></i>
+          Upcoming Exam${hits.length > 1 ? 's' : ''}
+        </div>
+        <div class="ehcd-cards">
+          ${hits.map((r, i) => `
+          <div class="ehcd-card">
+            <div class="ehcd-info">
+              <span class="ehcd-type" style="color:${r.color};">${r.type} Term</span>
+              <span class="ehcd-course">${r.exam.course}</span>
+              <span class="ehcd-date">${cdFmtDate(r.exam.date)}&nbsp;·&nbsp;${r.exam.time}</span>
+            </div>
+            <div class="ehcd-timer">
+              <div class="ehcd-unit"><span id="ehcd${i}D">--</span><small>d</small></div>
+              <span class="ehcd-sep">:</span>
+              <div class="ehcd-unit"><span id="ehcd${i}H">--</span><small>h</small></div>
+              <span class="ehcd-sep">:</span>
+              <div class="ehcd-unit"><span id="ehcd${i}M">--</span><small>m</small></div>
+              <span class="ehcd-sep">:</span>
+              <div class="ehcd-unit"><span id="ehcd${i}S">--</span><small>s</small></div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+
+      hits.forEach((r, i) => {
+        const dt = cdExamDateTime(r.exam);
+        if (dt) cdStartTick(dt, { days: `ehcd${i}D`, hrs: `ehcd${i}H`, min: `ehcd${i}M`, sec: `ehcd${i}S` }, `home${i}`);
+      });
+
+    } catch (_) {}
+  }
+
+  /* ── Expose to exam.js ── */
+  window._examCd = { cdBuildInfoBlock, cdStopInfo };
+
+  initHome();
+})();

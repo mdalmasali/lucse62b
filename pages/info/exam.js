@@ -348,11 +348,13 @@ async function _examShowRetakeUI(type) {
 
     const rtCount = retakeExams.length;
     const regCount = regularExams.length;
+    const _cdRet = window._examCd ? window._examCd.cdBuildInfoBlock(allExams, 'ret') : '';
     content.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
         <span>My Full Exam Schedule &nbsp;·&nbsp; ${label} &nbsp;·&nbsp; ${sem}</span>
       </div>
+      ${_cdRet}
       <div class="exam-meta" style="display:flex;gap:8px;flex-wrap:wrap;">
         <span class="exam-count-badge">${allExams.length} Total</span>
         ${regCount ? `<span class="exam-count-badge" style="background:rgba(99,102,241,.15);color:#a78bfa;">${regCount} Regular</span>` : ''}
@@ -477,11 +479,13 @@ async function doExamSearch(type) {
 
     _examCache = { type, label, exams, courseInfo, targetBatch, targetSection, semester: sem, isRetake: false };
 
+    const _cdReg = window._examCd ? window._examCd.cdBuildInfoBlock(exams, 'reg') : '';
     if (resultDiv) resultDiv.innerHTML = `
       <div class="rt-sync">
         <div class="rt-sync-dot"></div>
         <span>${label} Exam Routine &nbsp;·&nbsp; Batch ${escH(targetBatch)}, Section ${escH(targetSection)} &nbsp;·&nbsp; ${sem}</span>
       </div>
+      ${_cdReg}
       <div class="exam-meta">
         <span class="exam-count-badge">${exams.length} Exam${exams.length !== 1 ? 's' : ''}</span>
       </div>

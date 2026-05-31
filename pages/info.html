@@ -310,6 +310,23 @@
     .exam-card-time   { font-size: 0.72rem; color: var(--accent-bright); font-weight: 600; margin-top: 4px; }
     .exam-today-tag   { display: inline-block; font-size: 0.58rem; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; vertical-align: middle; }
 
+    /* ── Exam Countdown ── */
+    .exam-cd-wrap { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(79,70,229,.06));
+      border:1px solid rgba(124,58,237,.22); border-radius:14px; padding:14px 18px; margin-bottom:14px; }
+    .exam-cd-lbl { font-size:.62rem; font-weight:700; color:#a78bfa; text-transform:uppercase; letter-spacing:.08em; margin-bottom:3px; }
+    .exam-cd-crs { font-size:.92rem; font-weight:800; color:var(--text); }
+    .exam-cd-dt  { font-size:.68rem; color:var(--text-secondary); margin-top:2px; }
+    .exam-cd-timer { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+    .exam-cd-unit { text-align:center; min-width:44px; background:rgba(124,58,237,.15); border-radius:10px; padding:8px 6px 5px; }
+    .exam-cd-unit span { display:block; font-size:1.35rem; font-weight:800; font-family:'Space Grotesk',monospace; color:#c4b5fd; line-height:1; }
+    .exam-cd-unit small { display:block; font-size:.5rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-top:2px; }
+    .exam-cd-sep { font-size:1.1rem; font-weight:800; color:#7c3aed; margin-bottom:10px; }
+    html[data-theme="light"] .exam-cd-wrap { background:rgba(124,58,237,.06); border-color:rgba(124,58,237,.18); }
+    html[data-theme="light"] .exam-cd-unit { background:rgba(124,58,237,.1); }
+    html[data-theme="light"] .exam-cd-unit span { color:#6d28d9; }
+    html[data-theme="light"] .exam-cd-sep { color:#7c3aed; }
+
     /* ── Teacher Routine: search form ── */
     .rt-tf-wrap { margin-bottom: 22px; }
     .rt-tf-heading { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -669,6 +686,7 @@
   </div>
 
   <script src="../assets/js/sheets.js"></script>
+  <script src="../assets/js/exam-countdown.js"></script>
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/theme.js"></script>
   <script src="../assets/js/analytics.js"></script>
