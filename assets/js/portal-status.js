@@ -88,7 +88,7 @@
 
     const bar = document.createElement('div');
     bar.id = 'ps-statusbar';
-    bar.innerHTML = `<span id="ps-sb-dot"></span><span id="ps-sb-tag">Portal</span><span id="ps-sb-text">Loading...</span>`;
+    bar.innerHTML = `<span id="ps-sb-dot"></span><span id="ps-sb-tag">Portal Status</span><span id="ps-sb-text">Loading...</span>`;
 
     function mount() {
       const nav = document.querySelector('nav');
