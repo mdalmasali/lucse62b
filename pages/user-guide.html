@@ -459,30 +459,218 @@
             <h2 class="ug-section-title">Class Info</h2>
             <span class="ug-section-badge badge-login">Login Required</span>
           </div>
-          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 14px;">The Info page has multiple sections, accessible from the left sidebar menu:</p>
-          <ul class="ug-feat-list">
-            <li>
-              <i class="fa-solid fa-calendar-days"></i>
-              <span><strong>Class Routine</strong> — The current weekly class schedule with time, room, and teacher details. Updated whenever the routine changes.</span>
-            </li>
-            <li>
-              <i class="fa-solid fa-list-check"></i>
-              <span><strong>Course List</strong> — All courses offered in the current semester with credit hours and teacher assignments.</span>
-            </li>
-            <li>
-              <i class="fa-solid fa-bus"></i>
-              <span><strong>Bus Schedule</strong> — University shuttle bus timings and routes relevant to CSE 62B students.</span>
-            </li>
-            <li>
-              <i class="fa-solid fa-chalkboard-user"></i>
-              <span><strong>Teacher Contacts</strong> — A directory of course teachers with their office information and contact details.</span>
-            </li>
-            <li>
-              <i class="fa-solid fa-file-pen"></i>
-              <span><strong>Exam Schedule</strong> — Upcoming exam dates and times for each course. A countdown timer is also shown on the Home page when an exam is within 7 days.</span>
-            </li>
-          </ul>
-          <div class="ug-note">
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 18px;">The Info page has multiple sections accessible from the left sidebar. Click any item to load its content. Each section is described in detail below.</p>
+
+          <!-- Class Routine -->
+          <div style="margin-bottom:12px;background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.18);border-left:3px solid #a78bfa;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#a78bfa;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-calendar-week"></i> Class Routine
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">The main weekly timetable for CSE 62B — shows every class slot with day, time, room, course code, and teacher initials. Always reflects the latest routine maintained by the class rep.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li><strong style="color:var(--text);">Switch batch/section</strong> — By default it shows 62B, but you can switch to view any other batch or section from the dropdown at the top.</li>
+              <li><strong style="color:var(--text);">My Courses tab</strong> — A personalised view: courses you excluded (skipping) are hidden, and any retake/improve sections you enrolled in (from the Retake &amp; Improve section) are added automatically, colour-coded differently so you can see your complete personal timetable in one view.</li>
+              <li><strong style="color:var(--text);">Exclude a course</strong> — If you are not attending a regular 62B class (e.g. because you already passed it or are taking it elsewhere), click the × button on that course in the My Courses tab to hide it. This also removes it from the clash detection in Retake &amp; Improve.</li>
+              <li><strong style="color:var(--text);">Download</strong> — Save the current routine as an Image (PNG) or PDF using the buttons at the top right.</li>
+            </ul>
+          </div>
+
+          <!-- Teacher Class Routine -->
+          <div style="margin-bottom:12px;background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.18);border-left:3px solid #34d399;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#34d399;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-chalkboard-user"></i> Teacher Class Routine
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">Look up the weekly schedule of any teacher at Leading University — not just 62B teachers, but university-wide.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li><strong style="color:var(--text);">Autocomplete search</strong> — Start typing a teacher's name or initials in the search box. A dropdown appears with matching suggestions — click one to load their routine instantly.</li>
+              <li><strong style="color:var(--text);">Full weekly view</strong> — See all the batches and sections that teacher is currently teaching, along with day, time, room, and course details.</li>
+              <li>Useful when you need to find a teacher's free period or confirm which batches they teach.</li>
+            </ul>
+          </div>
+
+          <!-- Course Offer -->
+          <div style="margin-bottom:12px;background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.18);border-left:3px solid #38bdf8;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#38bdf8;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-book-open"></i> Course Offer
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">Shows all courses being offered to CSE 62B this semester in a clean card layout — course code, full title, credit hours, sections available, and prerequisites (if any).</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li>A summary bar at the top shows the total number of courses and combined credit hours for the semester.</li>
+              <li>If a course has a prerequisite, it is shown so you know which course you must have passed first.</li>
+            </ul>
+          </div>
+
+          <!-- All Batch Course Offer -->
+          <div style="margin-bottom:12px;background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.18);border-left:3px solid #34d399;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#34d399;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-layer-group"></i> All Batch Course Offer
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">Same as Course Offer but covers every batch — not just 62B. This is especially useful when you need to find which batches are being offered a course you need to retake.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li><strong style="color:var(--text);">Batch chips</strong> — Click any batch number at the top to instantly switch and see that batch's course list.</li>
+              <li><strong style="color:var(--text);">Retake/Improve highlighting</strong> — Once your DOB is entered, courses that you need to retake (F grade) are highlighted in red and courses to improve (D/C/C+/B−) are highlighted in orange, so you can quickly spot them in any batch's list.</li>
+            </ul>
+          </div>
+
+          <!-- Bus Schedule -->
+          <div style="margin-bottom:12px;background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.18);border-left:3px solid #fbbf24;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#fbbf24;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-bus"></i> Bus Schedule
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">Shows the university shuttle bus departure times and route information. The table is maintained by the class rep and updated whenever the university changes the bus timings.</p>
+          </div>
+
+          <!-- Semester Info -->
+          <div style="margin-bottom:12px;background:rgba(244,114,182,.04);border:1px solid rgba(244,114,182,.18);border-left:3px solid #f472b6;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#f472b6;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-graduation-cap"></i> Semester Info
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">A key-value information panel for the current semester — includes the semester name, academic year, semester start/end dates, and any other important academic timeline information maintained by the class rep.</p>
+          </div>
+
+          <!-- Group Links -->
+          <div style="margin-bottom:12px;background:rgba(129,140,248,.04);border:1px solid rgba(129,140,248,.18);border-left:3px solid #818cf8;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#818cf8;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-link"></i> All Course Group Link
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">Lists all course group links (WhatsApp or Messenger) for this semester so you can join course groups without searching for them yourself.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li>Each card shows the course code, course name, and a clickable <strong style="color:var(--text);">Join Group</strong> link.</li>
+              <li>A <strong style="color:var(--text);">Copy Code</strong> button lets you copy the course code to clipboard with one click — useful for pasting into assignments or forms.</li>
+            </ul>
+          </div>
+
+          <!-- Teacher Contacts -->
+          <div style="margin-bottom:12px;background:rgba(251,146,60,.04);border:1px solid rgba(251,146,60,.18);border-left:3px solid #fb923c;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#fb923c;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-address-book"></i> Teacher Contact List
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">A directory of all teachers handling courses for 62B this semester, with their contact details.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li>Each card shows the teacher's full name, initials/acronym, the courses they teach, and their phone number.</li>
+              <li>A <strong style="color:#25D366;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</strong> icon next to the number lets you open a WhatsApp chat with that teacher directly from the portal.</li>
+            </ul>
+          </div>
+
+          <!-- bKash -->
+          <div style="margin-bottom:12px;background:rgba(232,121,249,.04);border:1px solid rgba(232,121,249,.18);border-left:3px solid #e879f9;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#e879f9;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-mobile-screen-button"></i> bKash Payment / Fees
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">Shows university fee information needed when paying via bKash or at the bank. The table has three columns:</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li><strong style="color:var(--text);">Head of Fees</strong> — The name/category of the fee (e.g. Tuition Fee, Lab Fee, Library Fee).</li>
+              <li><strong style="color:var(--text);">Fees Code</strong> — The numeric code you need to enter when making the payment at the bank or bKash agent.</li>
+              <li><strong style="color:var(--text);">Writing / Method</strong> — Instructions on how to write the payment slip or proceed with the payment method.</li>
+            </ul>
+          </div>
+
+          <!-- Mid Term Routine -->
+          <div style="margin-bottom:12px;background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.18);border-left:3px solid #4ade80;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#4ade80;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-calendar-check"></i> Mid Term Routine
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">The exam schedule for the Mid Term examination — shows each course with its exam date, time, room/hall, and any other instructions provided.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li>When any Mid Term exam is <strong style="color:var(--text);">7 days or less away</strong>, a countdown widget automatically appears on the Home page so you never miss the deadline.</li>
+              <li>The countdown shows days, hours, minutes, and seconds remaining until the next exam.</li>
+            </ul>
+          </div>
+
+          <!-- Final Term Routine -->
+          <div style="margin-bottom:18px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.18);border-left:3px solid #f87171;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.82rem;font-weight:800;color:#f87171;margin-bottom:8px;display:flex;align-items:center;gap:7px;">
+              <i class="fa-solid fa-calendar-xmark"></i> Final Term Routine
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 8px;line-height:1.65;">The exam schedule for the Final Term examination — same layout as the Mid Term Routine but for final exams.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.85;">
+              <li>The same 7-day countdown rule applies — a widget on the Home page appears when a Final exam is approaching.</li>
+              <li>Both Mid and Final Term countdowns can appear simultaneously if exams from both terms overlap in the same 7-day window.</li>
+            </ul>
+          </div>
+
+          <!-- Retake & Improve detailed guide -->
+          <div style="margin-top:22px;padding:18px 20px;background:rgba(244,63,94,.05);border:1px solid rgba(244,63,94,.2);border-radius:14px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="width:32px;height:32px;border-radius:9px;background:rgba(244,63,94,.15);color:#f43f5e;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;">
+                <i class="fa-solid fa-rotate-right"></i>
+              </div>
+              <h3 style="font-size:0.95rem;font-weight:800;color:var(--text);margin:0;">Retake &amp; Improve</h3>
+            </div>
+
+            <p style="font-size:0.81rem;color:var(--text-secondary);margin:0 0 14px;line-height:1.7;">
+              This is the most advanced section of the Info page. It automatically detects which courses you need to <strong style="color:#f43f5e;">Retake</strong> (failed with F grade) or <strong style="color:#fb923c;">Improve</strong> (low grade: D, C, C+, or B−), then shows you every section of that course currently in the university routine — so you can find one that fits your schedule.
+            </p>
+
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#f43f5e;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-xmark-circle"></i> What is Retake?
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  If you received an <strong>F</strong> grade in a course, you must retake it — attend a section from another batch, sit for the exams again, and pass the course. The old F grade is replaced by your new grade in your CGPA.
+                </p>
+              </div>
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#fb923c;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-arrow-trend-up"></i> What is Improve?
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  If you received a <strong>D, C, C+, or B−</strong> in a course, you can voluntarily retake it to earn a better grade. Only the higher of the two grades counts toward your CGPA. Improve is optional — you choose whether it is worth the effort.
+                </p>
+              </div>
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#a78bfa;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-calendar-check"></i> First-time setup — Enter your Date of Birth
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  The portal fetches your results from the LU result system. To do this it needs your <strong>Student ID</strong> (already stored from login) and your <strong>Date of Birth</strong>. The first time you open Retake &amp; Improve, a prompt will ask for your DOB — enter it once and it is saved permanently. Your retake and improve courses are detected automatically after that.
+                </p>
+              </div>
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#818cf8;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-pen-to-square"></i> Manual Add / Remove
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  If a course is not detected automatically (e.g. results are not yet published), you can manually add it. Use the <strong>Search</strong> bar to find a course by code or name, then click <strong>Add to Retake</strong> or <strong>Add to Improve</strong>. Manually added courses show a <em>Manual</em> badge and can be removed anytime. Your manual list is synced to the cloud so it stays consistent across devices.
+                </p>
+              </div>
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#34d399;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-table-cells"></i> Section Table — Free vs Clash
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  For each retake/improve course, the portal scans the full university routine and lists every section (batch + section + teacher + schedule). Each section is checked against the 62B regular class schedule:
+                </p>
+                <ul style="font-size:0.79rem;color:var(--text-secondary);margin:8px 0 0 0;padding-left:18px;line-height:1.8;">
+                  <li><strong style="color:#34d399;">Free</strong> — This section's time does not conflict with any 62B class. You can attend it.</li>
+                  <li><strong style="color:#f43f5e;">Clash</strong> — This section overlaps with a 62B class you already have. Attending both is not possible.</li>
+                </ul>
+              </div>
+
+              <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+                <div style="font-size:0.78rem;font-weight:800;color:#c4b5fd;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-list-check"></i> Enroll &amp; My List
+                </div>
+                <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                  Once you decide on a section, click the <strong>Enroll</strong> button next to it. This saves your chosen section to <strong>My List</strong> — a personal record of which batch and section you are attending for each retake/improve course. You can also see which classmates have enrolled in the same section (names appear below each section row). To change your section, click <strong>Enroll</strong> on a different row — it automatically replaces the old one. To remove a course from My List entirely, go to the My List tab and click <strong>Remove</strong>.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="ug-tip">
+              <i class="fa-solid fa-lightbulb"></i>
+              The tabs show counts: <strong>Retake (n)</strong> and <strong>Improve (n)</strong> reflect how many courses were detected from your results plus any you added manually. My List shows only courses you have actively enrolled in.
+            </div>
+          </div>
+
+          <div class="ug-note" style="margin-top:14px;">
             <i class="fa-solid fa-rotate"></i>
             All information on this page is pulled live from Google Sheets and reflects the most up-to-date data maintained by the class representatives.
           </div>
