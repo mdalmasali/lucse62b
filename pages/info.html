@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602b';
+    const _BUILD = '20260602c';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -1041,7 +1041,7 @@
         const days = bySig[sig];
         const labelFreq = {};        /* key → { label: count } */
         const breakKeys = new Set();
-        const usedKeys  = [];
+        const classKeys = [];
         const addLabel = label => {
           if (!label || !/\d+:\d+/.test(label)) return;
           const k = timeToMin(label);
@@ -1050,19 +1050,20 @@
         };
         /* Full timeframe columns define the headers (keeps middle empty slots) */
         days.forEach(day => frameLabels(day).forEach(addLabel));
-        /* Used slots define the break + the active range */
+        /* Used slots: classes set the active range, breaks are flagged */
         days.forEach(day => (schedule[day] || []).forEach(s => {
           addLabel(s.time);
           const k = timeToMin(s.time);
-          usedKeys.push(k);
           if (s.isBreak) breakKeys.add(k);
+          else classKeys.push(k);
         }));
-        if (!usedKeys.length) return { days, allTimes: [], breakTimesSet: new Set() };
+        if (!classKeys.length) return { days, allTimes: [], breakTimesSet: new Set() };
 
-        /* Show every timeframe column BETWEEN the first and last used slot —
-           so blank middle periods stay visible, but far-off unused columns
-           (e.g. an evening "OL Class" or empty trailing slots) are dropped. */
-        const minU = Math.min(...usedKeys), maxU = Math.max(...usedKeys);
+        /* Show every timeframe column BETWEEN the first and last CLASS — so
+           blank middle periods (and a break that sits between classes) stay
+           visible, but far-off unused columns and a dangling trailing/leading
+           break (e.g. Friday's lunch with no afternoon class) are dropped. */
+        const minU = Math.min(...classKeys), maxU = Math.max(...classKeys);
         const keyMap = new Map();
         Object.keys(labelFreq).forEach(kStr => {
           const k = Number(kStr);
