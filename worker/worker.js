@@ -409,7 +409,7 @@ export default {
       if (p === '/run-monitor') {
         const token = request.headers.get('x-monitor-key') || url.searchParams.get('token') || '';
         if (!env.SUPA_KEY || token !== env.SUPA_KEY) return errResp(cors, 403, 'Forbidden');
-        ctx.waitUntil(runMonitor(env));
+        ctx.waitUntil(runMonitor(env, { all: true }));
         return jsonResp(cors, { ok: true, triggered: true, at: new Date().toISOString() });
       }
 
@@ -590,17 +590,28 @@ function errResp(cors, status, msg) {
 
 const MONITOR_DAYS = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
 
-async function runMonitor(env) {
+async function runMonitor(env, opts = {}) {
   if (!env.SUPA_KEY) return;
-  await Promise.allSettled([
-    checkClassRoutine(env).catch(() => {}),
-    checkExamRoutine(env, 'mid').catch(() => {}),
-    checkExamRoutine(env, 'final').catch(() => {}),
-  ]);
-  /* Result check every hour — per-student via push_subscriptions */
-  await checkResult(env).catch(() => {});
-  /* Enrolled retake/improve course routine + exam changes — per-student */
-  await checkEnrolledCourses(env).catch(() => {});
+  const all  = opts.all === true;
+  const hour = new Date().getUTCHours();
+
+  /* Split work across hours so one cron run never exceeds Cloudflare's
+     per-invocation subrequest limit (50 on the free plan). Routine / exam /
+     enrolled checks run on even hours; the heavier per-student result check
+     runs on odd hours with the full budget. Manual /run-monitor passes
+     all:true to run everything in one go (for testing). */
+  if (all || hour % 2 === 0) {
+    await Promise.allSettled([
+      checkClassRoutine(env).catch(() => {}),
+      checkExamRoutine(env, 'mid').catch(() => {}),
+      checkExamRoutine(env, 'final').catch(() => {}),
+    ]);
+    /* Enrolled retake/improve course routine + exam changes — per-student */
+    await checkEnrolledCourses(env).catch(() => {});
+  }
+  if (all || hour % 2 === 1) {
+    await checkResult(env, { all }).catch(() => {});
+  }
 }
 
 /* ── SHA-256 hash ── */
@@ -827,45 +838,56 @@ async function checkExamRoutine(env, type) {
   await sendPushToAll(env);
 }
 
-/* ── Result Monitor — per-student ── */
-async function checkResult(env) {
+/* ── Result Monitor — every student with a saved DOB (no push needed) ──
+   Reads student_passwords fresh each run, so newly-registered students are
+   picked up automatically. To respect the subrequest limit, students are
+   processed in hourly round-robin batches (≤45 students → fully covered
+   every ~8h; results rarely change minute-to-minute). A personal in-app
+   notification is always inserted; a push is also sent if the student has
+   subscribed. opts.all = true processes everyone at once (manual test). ── */
+async function checkResult(env, opts = {}) {
   if (!env.SUPA_KEY) return;
 
-  /* Get all subscriptions that have student_id */
-  const r = await fetch(
+  /* Every student who has a DOB on file (fresh read → new sign-ups included) */
+  const sr = await fetch(
+    `${SUPA_URL}/rest/v1/student_passwords?select=student_id,dob&dob=not.is.null&order=student_id.asc`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  if (!sr || !sr.ok) return;
+  const students = (await sr.json()).filter(s => s.student_id && s.dob);
+  if (!students.length) return;
+
+  /* student_id → push endpoints (optional; in-app notification works without) */
+  const pr = await fetch(
     `${SUPA_URL}/rest/v1/push_subscriptions?select=endpoint,student_id&student_id=not.is.null`,
     { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
   ).catch(() => null);
-  if (!r || !r.ok) return;
-  const subs = await r.json();
-  if (!subs.length) return;
+  const endpointMap = {};
+  if (pr && pr.ok) {
+    (await pr.json()).forEach(s => {
+      if (!endpointMap[s.student_id]) endpointMap[s.student_id] = [];
+      endpointMap[s.student_id].push(s.endpoint);
+    });
+  }
 
-  /* Group endpoints by student_id */
-  const byStudent = {};
-  subs.forEach(s => {
-    if (!byStudent[s.student_id]) byStudent[s.student_id] = [];
-    byStudent[s.student_id].push(s.endpoint);
-  });
+  /* Round-robin batch by hour so a single run stays within the limit */
+  const BATCH = 12;
+  let slice;
+  if (opts.all) {
+    slice = students;
+  } else {
+    const batchCount = Math.max(1, Math.ceil(students.length / BATCH));
+    const idx        = Math.floor(new Date().getUTCHours() / 2) % batchCount;
+    slice            = students.slice(idx * BATCH, idx * BATCH + BATCH);
+  }
 
-  /* Check each student (rate limit: sequential with small delay) */
-  for (const [studentId, endpoints] of Object.entries(byStudent)) {
-    await checkStudentResult(env, studentId, endpoints).catch(() => {});
+  for (const s of slice) {
+    await checkStudentResult(env, s.student_id, s.dob, endpointMap[s.student_id] || []).catch(() => {});
     await new Promise(r => setTimeout(r, 500)); /* avoid hammering LU portal */
   }
 }
 
-async function checkStudentResult(env, studentId, endpoints) {
-  /* Get DOB from Supabase */
-  const dobR = await fetch(`${SUPA_URL}/rest/v1/rpc/get_student_dob`, {
-    method: 'POST',
-    headers: {
-      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ p_student_id: studentId }),
-  }).catch(() => null);
-  if (!dobR || !dobR.ok) return;
-  const dob = await dobR.json();
+async function checkStudentResult(env, studentId, dob, endpoints) {
   if (!dob) return;
 
   /* Fetch result from LU portal */
