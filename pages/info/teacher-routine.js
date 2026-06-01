@@ -236,7 +236,7 @@ async function doTeacherSearch() {
       sem = await getSemesterLabel();
     }
 
-    const schedule = parseDayResults(dayResults, (cells, cell) => {
+    const { schedule, dayTimeframes } = parseDayResults(dayResults, (cells, cell) => {
       const parsed = parseClassCell(cell);
       if (!parsed || parsed.initials.toUpperCase() !== initials) return null;
       return { batch: cells[1] || '', section: cells[2] || '' };
@@ -260,8 +260,8 @@ async function doTeacherSearch() {
       return;
     }
 
-    const { allTimes, breakTimesSet } = deduplicateTimes(schedule);
-    _teacherCache = { days, schedule, courseInfo, allTimes, breakTimesSet, initials, teacherFullName, semester: sem };
+    const groups = buildTimeframeGroups(schedule, dayTimeframes);
+    _teacherCache = { days, schedule, courseInfo, groups, dayTimeframes, initials, teacherFullName, semester: sem };
 
     const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
 
@@ -299,53 +299,21 @@ async function doTeacherSearch() {
 /* ── Grid renderer ── */
 function buildTeacherGrid(todayName) {
   if (!_teacherCache) return '';
-  const { allTimes, schedule, courseInfo, breakTimesSet } = _teacherCache;
-  if (!allTimes.length) return '<div class="rt-grid-empty-msg">No schedule data found.</div>';
+  const { schedule, groups } = _teacherCache;
+  if (!groups || !groups.length) return '<div class="rt-grid-empty-msg">No schedule data found.</div>';
 
-  const lookup = {};
-  ROUTINE_DAY_NAMES.forEach(day => {
-    lookup[day] = {};
-    (schedule[day] || []).forEach(s => { if (!lookup[day][s.time]) lookup[day][s.time] = s; });
-  });
+  const renderCourses = courses => courses.map(slot => {
+    const color    = courseColor(slot.code);
+    const batchSec = `${slot.batch || ''}${slot.section ? '-' + slot.section : ''}`;
+    return `<div class="rt-gc" style="background:${color}12;border-color:${color}33;">
+      <span class="rt-gc-code" style="color:${color};">${escH(slot.code)}</span>
+      <span class="rt-gc-teacher">${escH(batchSec)}</span>
+      ${slot.room ? `<span class="rt-gc-room">${escH(slot.room)}</span>` : ''}
+    </div>`;
+  }).join('');
 
-  let html = `<div id="rt-teacher-capture" class="rt-capture-area">
-    <div class="rt-grid-wrap"><table class="rt-grid"><thead><tr>
-    <th class="rt-th-day">Day</th>`;
-  allTimes.forEach(time => {
-    const isBreak = breakTimesSet.has(time);
-    html += `<th${isBreak ? ' class="rt-th-break"' : ''}>${escH(time)}</th>`;
-  });
-  html += `</tr></thead><tbody>`;
-
-  ROUTINE_DAY_NAMES.forEach(day => {
-    const daySlots = lookup[day];
-    const hasClass = schedule[day]?.some(s => !s.isBreak);
-    const isToday  = day === todayName;
-    html += `<tr class="${hasClass ? 'has-class' : 'no-class'}">
-      <td class="rt-grid-day-cell">${escH(DAY_DISPLAY[day] || day)}${isToday
-        ? ' <span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;">Today</span>'
-        : ''}</td>`;
-    allTimes.forEach(time => {
-      const isBreak = breakTimesSet.has(time);
-      const slot    = daySlots[time];
-      if (isBreak) {
-        html += `<td class="rt-grid-break-cell">${slot?.isBreak ? '&#9749; Break' : ''}</td>`;
-      } else if (slot && !slot.isBreak) {
-        const color    = courseColor(slot.code);
-        const batchSec = `${slot.batch || ''}${slot.section ? '-' + slot.section : ''}`;
-        html += `<td><div class="rt-gc" style="background:${color}12;border-color:${color}33;">
-          <span class="rt-gc-code" style="color:${color};">${escH(slot.code)}</span>
-          <span class="rt-gc-teacher">${escH(batchSec)}</span>
-          ${slot.room ? `<span class="rt-gc-room">${escH(slot.room)}</span>` : ''}
-        </div></td>`;
-      } else {
-        html += `<td><span class="rt-grid-free">—</span></td>`;
-      }
-    });
-    html += `</tr>`;
-  });
-  html += `</tbody></table></div></div>`;
-  return html;
+  const tables = groups.map((g, gi) => routineTableHTML(g, schedule, todayName, renderCourses, gi)).join('');
+  return `<div id="rt-teacher-capture" class="rt-capture-area"><div class="rt-grid-wrap">${tables}</div></div>`;
 }
 
 /* ── Download ── */

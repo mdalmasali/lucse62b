@@ -72,25 +72,6 @@ async function _rtFetchEnrollments(userId) {
   } catch(e) { return []; }
 }
 
-/* ── Collapse every BREAK slot onto a single canonical time label so the
-      grid never renders two break columns. Day tabs sometimes label the
-      break differently (e.g. Friday "12:15-1:50" vs "1:20 - 1:50 PM" on the
-      other days), which otherwise splits the break across two columns — and
-      can even collide a break with a real class column that starts at 12:15.
-      We snap all breaks to the most common break label. ── */
-function _rtNormalizeBreaks(schedule) {
-  const freq = {};
-  Object.values(schedule).forEach(slots =>
-    (slots || []).forEach(s => { if (s.isBreak && s.time) freq[s.time] = (freq[s.time] || 0) + 1; })
-  );
-  const labels = Object.keys(freq);
-  if (labels.length < 2) return;            /* already a single break column */
-  const canonical = labels.sort((a, b) => freq[b] - freq[a])[0];
-  Object.values(schedule).forEach(slots =>
-    (slots || []).forEach(s => { if (s.isBreak) s.time = canonical; })
-  );
-}
-
 /* ── Build improved cache (62B selected courses + enrolled) ── */
 function _buildImprovedCache(enrollments) {
   if (!_62bCache || !enrollments.length) return null;
@@ -119,27 +100,12 @@ function _buildImprovedCache(enrollments) {
     });
   });
 
-  _rtNormalizeBreaks(schedule);
-
-  const timeKeyMap    = new Map();
-  const breakTimeKeys = new Set();
-  Object.values(schedule).forEach(slots => {
-    slots.forEach(s => {
-      const k = timeToMin(s.time);
-      if (!timeKeyMap.has(k)) timeKeyMap.set(k, s.time);
-      if (s.isBreak) breakTimeKeys.add(k);
-    });
-  });
-  const sortedKeys    = [...timeKeyMap.keys()].sort((a, b) => a - b);
-  const allTimes      = sortedKeys.map(k => timeKeyMap.get(k));
-  const breakTimesSet = new Set(sortedKeys.filter(k => breakTimeKeys.has(k)).map(k => timeKeyMap.get(k)));
-
-  ROUTINE_DAY_NAMES.forEach(day => {
-    (schedule[day] || []).forEach(s => { s.time = timeKeyMap.get(timeToMin(s.time)) || s.time; });
-  });
+  const groups = buildTimeframeGroups(schedule, _62bCache.dayTimeframes);
+  if (!groups.length) return null;
 
   const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]?.some(s => !s.isBreak));
-  return { days, schedule, courseInfo: _62bCache.courseInfo, allTimes, breakTimesSet, semester: _62bCache.semester };
+  return { days, schedule, courseInfo: _62bCache.courseInfo, groups,
+           dayTimeframes: _62bCache.dayTimeframes, semester: _62bCache.semester };
 }
 
 /* ── Scan all day results to find unique batch/section combos ── */
@@ -176,8 +142,9 @@ function _scanBatchSections(dayResults) {
 
 /* ── Build a schedule object for any batch/section from stored day results ── */
 function _buildScheduleFor(batch, section) {
-  const schedule   = {};
-  const sheetTimes = new Map(); /* all time slots from sheet, including empty ones */
+  const schedule      = {};
+  const sheetTimes    = new Map(); /* all time slots from sheet, including empty ones */
+  const dayTimeframes = {};        /* dayName → that day's full list of time columns */
 
   ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
     const data = _allDayResults[idx];
@@ -221,6 +188,7 @@ function _buildScheduleFor(batch, section) {
     /* Only collect time slots from days where this section actually has classes */
     if (daySchedule.some(s => !s.isBreak)) {
       schedule[dayName] = daySchedule;
+      dayTimeframes[dayName] = timeSlots.filter(t => t && /\d+:\d+/.test(t));
       timeSlots.forEach(t => {
         if (t && /\d+:\d+/.test(t)) {
           const k = timeToMin(t);
@@ -229,37 +197,20 @@ function _buildScheduleFor(batch, section) {
       });
     }
   });
-  return { schedule, sheetTimes };
+  return { schedule, sheetTimes, dayTimeframes };
 }
 
 /* ── Build a full cache object from a schedule ── */
-function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes) {
+function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes, dayTimeframes) {
   const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
   if (!days.length) return null;
 
-  _rtNormalizeBreaks(schedule);
+  /* Group days by their timeframe so Friday (different time columns) renders
+     under its own header instead of being forced into the Sat–Thu grid. */
+  const groups = buildTimeframeGroups(schedule, dayTimeframes);
+  if (!groups.length) return null;
 
-  /* Build the time axis ONLY from slots this section actually uses (its own
-     classes + break). Seeding from every raw sheet column dragged in other
-     batches' misaligned labels (e.g. Friday "1:10-2:25 PM") as stray empty
-     columns, so we no longer do that. */
-  const timeKeyMap    = new Map();
-  const breakTimeKeys = new Set();
-  Object.values(schedule).forEach(slots => {
-    slots.forEach(s => {
-      const k = timeToMin(s.time);
-      if (!timeKeyMap.has(k)) timeKeyMap.set(k, s.time);
-      if (s.isBreak) breakTimeKeys.add(k);
-    });
-  });
-  const sortedKeys    = [...timeKeyMap.keys()].sort((a, b) => a - b);
-  const allTimes      = sortedKeys.map(k => timeKeyMap.get(k));
-  const breakTimesSet = new Set(sortedKeys.filter(k => breakTimeKeys.has(k)).map(k => timeKeyMap.get(k)));
-  ROUTINE_DAY_NAMES.forEach(day => {
-    (schedule[day] || []).forEach(s => { s.time = timeKeyMap.get(timeToMin(s.time)) || s.time; });
-  });
-
-  return { days, schedule, courseInfo, allTimes, breakTimesSet, semester: sem };
+  return { days, schedule, courseInfo, groups, dayTimeframes, semester: sem };
 }
 
 /* ── Render one course card ── */
@@ -297,71 +248,30 @@ function buildGrid(todayName) {
   const cache      = isImproved ? _improvedCache : _routineCache;
   if (!cache) return '';
 
-  const { allTimes, schedule, courseInfo, breakTimesSet } = cache;
-  if (!allTimes.length) return '<div class="rt-grid-empty-msg">No schedule data found.</div>';
+  const { schedule, courseInfo, groups } = cache;
+  if (!groups || !groups.length) return '<div class="rt-grid-empty-msg">No schedule data found.</div>';
 
-  const lookup = {};
-  ROUTINE_DAY_NAMES.forEach(day => {
-    lookup[day] = {};
-    (schedule[day] || []).forEach(s => {
-      if (!lookup[day][s.time]) lookup[day][s.time] = [];
-      lookup[day][s.time].push(s);
-    });
-  });
-
-  const excl = window._rtExcluded;
+  const excl  = window._rtExcluded;
   const is62b = _selectedBatch === '62' && _selectedSection === 'B';
-  const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
+  const batchLabel   = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const captureTitle = isImproved
     ? `Class Routine — ${batchLabel} + Retake/Improve · ${cache.semester || ''}`
     : `Class Routine — ${batchLabel} · ${cache.semester || ''}`;
+
+  /* One table per timeframe group (Sat–Thu, then a separate Friday if its
+     time columns differ), rendered back-to-back inside one wrap. */
+  const renderCourses = courses => courses
+    .filter(s => (!isImproved && is62b ? !excl.has(s.code) : true))
+    .map(s => _rtRenderSlot(s, courseInfo))
+    .join('');
+
+  const tables = groups.map((g, gi) => routineTableHTML(g, schedule, todayName, renderCourses, gi)).join('');
 
   let html = `<div id="rt-capture" class="rt-capture-area">
     <div class="rt-capture-title">
       <i class="fa-solid fa-calendar-week" style="margin-right:6px;color:var(--accent-bright);"></i>${captureTitle}
     </div>
-    <div class="rt-grid-wrap"><table class="rt-grid"><thead><tr>
-    <th class="rt-th-day">Day</th>`;
-
-  allTimes.forEach(time => {
-    const isBreak = breakTimesSet.has(time);
-    html += `<th${isBreak ? ' class="rt-th-break"' : ''}>${escH(time)}</th>`;
-  });
-  html += `</tr></thead><tbody>`;
-
-  ROUTINE_DAY_NAMES.forEach(day => {
-    const daySlots = lookup[day] || {};
-    const hasClass = schedule[day]?.some(s => !s.isBreak);
-    if (!hasClass) return;  /* hide days with no class */
-    const isToday  = day === todayName;
-
-    html += `<tr class="${hasClass ? 'has-class' : 'no-class'}">
-      <td class="rt-grid-day-cell">${escH(DAY_DISPLAY[day] || day)}${isToday
-        ? ' <span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle;">Today</span>'
-        : ''}</td>`;
-
-    allTimes.forEach(time => {
-      const isBreak  = breakTimesSet.has(time);
-      const allSlots = daySlots[time] || [];
-      const hasBreakHere = allSlots.some(s => s.isBreak);
-
-      const courses = allSlots.filter(s =>
-        !s.isBreak && (!isImproved && is62b ? !excl.has(s.code) : true)
-      );
-
-      if (isBreak) {
-        html += `<td class="rt-grid-break-cell">${hasBreakHere ? '&#9749; Break' : ''}</td>`;
-      } else if (!courses.length) {
-        html += `<td><span class="rt-grid-free">—</span></td>`;
-      } else {
-        html += `<td>${courses.map(s => _rtRenderSlot(s, courseInfo)).join('')}</td>`;
-      }
-    });
-
-    html += `</tr>`;
-  });
-
-  html += `</tbody></table></div></div>
+    <div class="rt-grid-wrap">${tables}</div></div>
   <div class="rt-dl-bar">
     <button class="rt-dl-btn" onclick="downloadRoutineImage(this)">
       <i class="fa-solid fa-image"></i> Image Download
@@ -425,8 +335,8 @@ window._rtApplyBatchSection = function() {
     }
   } else {
     /* Build a fresh cache for the selected batch/section */
-    const { schedule, sheetTimes } = _buildScheduleFor(batch, section);
-    const newCache = _scheduleToCacheWith(schedule, _allCourseInfo, _semLabel, sheetTimes);
+    const { schedule, sheetTimes, dayTimeframes } = _buildScheduleFor(batch, section);
+    const newCache = _scheduleToCacheWith(schedule, _allCourseInfo, _semLabel, sheetTimes, dayTimeframes);
     if (!newCache) {
       const el = document.getElementById('rt-main-content');
       if (el) el.innerHTML = `<div class="rt-grid-empty-msg">No schedule found for Batch ${escH(batch)}, Section ${escH(section)}.</div>`;
@@ -604,11 +514,11 @@ async function loadRoutine(body) {
     _availableBatchSections = _scanBatchSections(dayResults);
 
     /* Build 62B schedule */
-    const { schedule, sheetTimes } = _buildScheduleFor('62', 'B');
+    const { schedule, sheetTimes, dayTimeframes } = _buildScheduleFor('62', 'B');
     const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
     if (!days.length) throw new Error('No classes found for Batch 62, Section B');
 
-    const cache62b = _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes);
+    const cache62b = _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes, dayTimeframes);
     if (!cache62b) throw new Error('No classes found for Batch 62, Section B');
 
     _62bCache      = cache62b;
