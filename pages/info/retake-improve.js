@@ -8,6 +8,7 @@ const _RI_SUPA   = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _RI_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
 let _riActiveTab = 'retake';
+let _riClassmatesView = 'subject';   /* 'subject' | 'student' */
 window._riData   = null;
 
 /* Read excluded 62B courses from localStorage (set by routine.js or My Courses panel) */
@@ -527,6 +528,7 @@ async function loadRetakeImprove(body) {
       busy62BMap, offDays, userId: user?.id || null, enrollments,
       studentName: user?.name || '',
       sectionEnrollees: {},
+      allEnrollments: [],
     };
 
     /* Background: fetch fresh enrollments + all section enrollees */
@@ -538,9 +540,10 @@ async function loadRetakeImprove(body) {
         riSwitchTab(_riActiveTab);
       });
 
-      /* Fetch ALL students' enrollments to build section enrollee map */
+      /* Fetch ALL students' enrollments — powers both the section enrollee
+         map and the Classmates tab (who in 62B is taking what) */
       fetch(
-        `${_RI_SUPA}/rest/v1/student_retake_enrollments?select=course_code,batch,section,student_name,student_id`,
+        `${_RI_SUPA}/rest/v1/student_retake_enrollments?select=course_code,course_name,batch,section,teacher,type,student_name,student_id`,
         { headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}` } }
       ).then(r => r.ok ? r.json() : []).then(rows => {
         if (!window._riData) return;
@@ -552,6 +555,9 @@ async function loadRetakeImprove(body) {
           if (name && !map[key].includes(name)) map[key].push(name);
         });
         window._riData.sectionEnrollees = map;
+        window._riData.allEnrollments  = rows;
+        const cntC = document.getElementById('ri-cnt-classmates');
+        if (cntC) cntC.textContent = rows.length;
         riSwitchTab(_riActiveTab);
       }).catch(() => {});
     }
@@ -591,6 +597,13 @@ async function loadRetakeImprove(body) {
           My List <span class="ri-tab-count" id="ri-cnt-mylist"
             style="background:rgba(99,102,241,.25);color:#818cf8;">
             ${Object.keys(window._riData.enrollments || {}).length}
+          </span>
+        </button>
+        <button class="ri-tab ${_riActiveTab === 'classmates' ? 'ri-tab-active' : ''}"
+          onclick="riSwitchTab('classmates')" id="ri-tab-classmates">
+          <i class="fa-solid fa-users"></i>
+          Classmates <span class="ri-tab-count" id="ri-cnt-classmates">
+            ${(window._riData.allEnrollments || []).length}
           </span>
         </button>` : ''}
         <div style="flex:1;min-width:160px;display:flex;gap:8px;align-items:center;margin-left:auto;">
@@ -746,10 +759,18 @@ async function loadRetakeImprove(body) {
       const el = document.getElementById('ri-content');
       if (tab === 'mylist') {
         _riRenderMyList(el);
+      } else if (tab === 'classmates') {
+        _riRenderClassmates(el);
       } else {
         const list = tab === 'retake' ? d.retakeList : d.improveList;
         _riRenderContent(el, list, tab === 'retake');
       }
+    };
+
+    /* Toggle the Classmates view (subject ↔ student) */
+    window._riSetClassmatesView = function(view) {
+      _riClassmatesView = view;
+      _riRenderClassmates(document.getElementById('ri-content'));
     };
 
     riSwitchTab(_riActiveTab);
@@ -1043,6 +1064,140 @@ function _riRenderMyList(el) {
       </div>
       ${rows}
     </div>`;
+}
+
+/* ══════════════════════════════════════════════
+   CLASSMATES — who in 62B is taking what (retake/improve)
+   ══════════════════════════════════════════════ */
+
+function _riRenderClassmates(el) {
+  if (!el) return;
+  const d    = window._riData;
+  const rows = (d?.allEnrollments || []).filter(r => (r.student_name || r.student_id) && r.course_code);
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="info-placeholder" style="padding:48px 20px;">
+      <i class="fa-solid fa-users" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
+      <p style="font-weight:700;">No enrollments yet</p>
+      <p style="font-size:0.78rem;margin-top:6px;color:var(--text-secondary);">
+        When classmates enroll in a retake / improve section, they'll show up here.
+      </p>
+    </div>`;
+    return;
+  }
+
+  const typeBadge = (type) => {
+    const isR = type === 'retake';
+    const clr = isR ? '#f43f5e' : '#fb923c';
+    const bg  = isR ? 'rgba(244,63,94,.15)' : 'rgba(251,146,60,.15)';
+    return `<span style="font-size:0.58rem;font-weight:800;padding:2px 7px;border-radius:5px;
+      background:${bg};color:${clr};letter-spacing:0.04em;flex-shrink:0;">${isR ? 'RETAKE' : 'IMPROVE'}</span>`;
+  };
+  const secChip = (r) => {
+    const sec = `${escH(r.batch || '')}${escH(r.section || '')}`;
+    const tch = r.teacher
+      ? `<span style="font-family:monospace;font-size:0.66rem;font-weight:700;color:#c4b5fd;
+          background:rgba(196,181,253,.1);padding:1px 6px;border-radius:4px;">${escH(r.teacher)}</span>` : '';
+    return `${sec ? `<span style="font-size:0.7rem;font-weight:700;color:var(--accent-bright);">${sec}</span>` : ''} ${tch}`;
+  };
+
+  const toggle = (active) => `
+    <div style="display:inline-flex;gap:4px;padding:3px;background:rgba(255,255,255,0.04);
+      border:1px solid var(--border);border-radius:10px;margin-bottom:16px;">
+      ${[['subject', 'fa-book-open', 'By Subject'], ['student', 'fa-user', 'By Student']].map(([v, ic, lbl]) => `
+        <button onclick="_riSetClassmatesView('${v}')" style="font-size:0.74rem;font-weight:700;
+          padding:5px 13px;border-radius:7px;cursor:pointer;border:none;font-family:'Inter',sans-serif;
+          ${active === v
+            ? 'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;'
+            : 'background:transparent;color:var(--text-secondary);'}">
+          <i class="fa-solid ${ic}" style="font-size:0.7rem;margin-right:4px;"></i>${lbl}
+        </button>`).join('')}
+    </div>`;
+
+  let inner = '';
+
+  if (_riClassmatesView === 'subject') {
+    /* Group by course_code */
+    const byCourse = {};
+    rows.forEach(r => {
+      const code = (r.course_code || '').toUpperCase();
+      if (!byCourse[code]) byCourse[code] = [];
+      byCourse[code].push(r);
+    });
+    inner = Object.keys(byCourse).sort().map(code => {
+      const list  = byCourse[code].slice().sort((a, b) =>
+        (a.student_name || '').localeCompare(b.student_name || ''));
+      const color = courseColor(code);
+      const name  = d.courseNameMap[code] || byCourse[code][0].course_name || '';
+      const people = list.map(r => `
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;
+          border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--border);">
+          <span style="font-size:0.82rem;font-weight:600;color:var(--text);flex:1;min-width:120px;">
+            ${escH((r.student_name || '').trim() || r.student_id || '—')}
+          </span>
+          ${typeBadge(r.type)}
+          ${secChip(r)}
+        </div>`).join('');
+      return `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);
+          border-top:3px solid ${color};border-radius:14px;padding:16px 18px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <span style="font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:6px;
+              background:${color}1a;color:${color};letter-spacing:0.04em;">${escH(code)}</span>
+            ${name ? `<span style="font-size:0.9rem;font-weight:700;color:var(--text);">${escH(name)}</span>` : ''}
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-secondary);">${list.length} student${list.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">${people}</div>
+        </div>`;
+    }).join('');
+
+  } else {
+    /* Group by student */
+    const byStudent = {};
+    rows.forEach(r => {
+      const key = (r.student_name || '').trim() || r.student_id || '—';
+      if (!byStudent[key]) byStudent[key] = [];
+      byStudent[key].push(r);
+    });
+    inner = Object.keys(byStudent).sort((a, b) => a.localeCompare(b)).map(student => {
+      const list = byStudent[student].slice().sort((a, b) =>
+        (a.course_code || '').localeCompare(b.course_code || ''));
+      const courses = list.map(r => {
+        const code  = (r.course_code || '').toUpperCase();
+        const color = courseColor(code);
+        const cname = d.courseNameMap[code] || r.course_name || '';
+        return `
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 12px;
+            border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--border);">
+            <span style="font-family:monospace;font-size:0.76rem;font-weight:800;color:${color};
+              background:${color}1a;padding:2px 7px;border-radius:5px;flex-shrink:0;">${escH(code)}</span>
+            ${cname ? `<span style="font-size:0.8rem;color:var(--text);flex:1;min-width:100px;">${escH(cname)}</span>` : '<span style="flex:1;"></span>'}
+            ${typeBadge(r.type)}
+            ${secChip(r)}
+          </div>`;
+      }).join('');
+      return `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);
+          border-left:3px solid var(--accent);border-radius:14px;padding:16px 18px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <i class="fa-solid fa-user-graduate" style="color:var(--accent-bright);font-size:0.85rem;"></i>
+            <span style="font-size:0.92rem;font-weight:700;color:var(--text);">${escH(student)}</span>
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-secondary);">${list.length} course${list.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">${courses}</div>
+        </div>`;
+    }).join('');
+  }
+
+  const distinctStudents = new Set(rows.map(r => (r.student_name || '').trim() || r.student_id)).size;
+
+  el.innerHTML = `
+    <div class="rt-sync" style="margin-bottom:14px;">
+      <div class="rt-sync-dot"></div>
+      <span>${escH(d.sem || '')} &nbsp;·&nbsp; ${distinctStudents} classmate${distinctStudents !== 1 ? 's' : ''} &nbsp;·&nbsp; ${rows.length} enrollment${rows.length !== 1 ? 's' : ''}</span>
+    </div>
+    ${toggle(_riClassmatesView)}
+    ${inner}`;
 }
 
 /* ══════════════════════════════════════════════
