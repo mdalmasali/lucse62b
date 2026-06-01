@@ -1094,10 +1094,13 @@ function _riRenderClassmates(el) {
       background:${bg};color:${clr};letter-spacing:0.04em;flex-shrink:0;">${isR ? 'RETAKE' : 'IMPROVE'}</span>`;
   };
   const secChip = (r) => {
-    const sec = `${escH(r.batch || '')}${escH(r.section || '')}`;
-    const tch = r.teacher
+    const sec  = `${escH(r.batch || '')}${escH(r.section || '')}`;
+    const init = (r.teacher || '').trim();
+    const full = init ? ((d.initialsMap || {})[init.toUpperCase()] || '') : '';
+    const tch  = init
       ? `<span style="font-family:monospace;font-size:0.66rem;font-weight:700;color:#c4b5fd;
-          background:rgba(196,181,253,.1);padding:1px 6px;border-radius:4px;">${escH(r.teacher)}</span>` : '';
+          background:rgba(196,181,253,.1);padding:1px 6px;border-radius:4px;flex-shrink:0;">${escH(init)}</span>
+         ${full ? `<span style="font-size:0.7rem;color:var(--text-secondary);">${escH(full)}</span>` : ''}` : '';
     return `${sec ? `<span style="font-size:0.7rem;font-weight:700;color:var(--accent-bright);">${sec}</span>` : ''} ${tch}`;
   };
 
