@@ -139,12 +139,12 @@ async function _trLoadTeacherData() {
     const teacherList = [];
 
     if (teacherData) {
-      /* CPG_Teachers columns: A=Name, B=Designation, C=Department, D=Acronym */
+      /* CPG_Teachers columns: A=Acronym, B=Name, C=Designation, D=Department */
       sheetRows(teacherData).forEach(r => {
-        const name    = (r[0] || '').trim();
-        const desig   = (r[1] || '').trim();
-        const acronym = (r[3] || '').trim().toUpperCase();
-        if (name && acronym && !/^(name|acronym|initials)/i.test(name)) {
+        const acronym = (r[0] || '').trim().toUpperCase();
+        const name    = (r[1] || '').trim();
+        const desig   = (r[2] || '').trim();
+        if (acronym && name && !/^(name|acronym|initials)/i.test(acronym)) {
           initialsMap[acronym] = name;
           teacherList.push({ name, desig, acronym });
         }
