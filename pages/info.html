@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260530a';
+    const _BUILD = '20260601a';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -978,6 +978,19 @@
 
     /* ── Shared: time deduplication for any schedule ── */
     function deduplicateTimes(schedule) {
+      /* Collapse all BREAK slots onto one canonical label first, so day tabs
+         that label the break differently (e.g. Friday "12:15-1:50" vs
+         "1:20 - 1:50 PM") don't split it into two break columns. */
+      const brkFreq = {};
+      Object.values(schedule).forEach(slots => slots.forEach(s => {
+        if (s.isBreak && s.time) brkFreq[s.time] = (brkFreq[s.time] || 0) + 1;
+      }));
+      const brkLabels = Object.keys(brkFreq);
+      if (brkLabels.length > 1) {
+        const canonical = brkLabels.sort((a, b) => brkFreq[b] - brkFreq[a])[0];
+        Object.values(schedule).forEach(slots => slots.forEach(s => { if (s.isBreak) s.time = canonical; }));
+      }
+
       const keyMap    = new Map();
       const breakKeys = new Set();
       Object.values(schedule).forEach(slots => slots.forEach(s => {

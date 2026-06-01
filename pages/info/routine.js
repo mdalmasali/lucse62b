@@ -72,6 +72,25 @@ async function _rtFetchEnrollments(userId) {
   } catch(e) { return []; }
 }
 
+/* ── Collapse every BREAK slot onto a single canonical time label so the
+      grid never renders two break columns. Day tabs sometimes label the
+      break differently (e.g. Friday "12:15-1:50" vs "1:20 - 1:50 PM" on the
+      other days), which otherwise splits the break across two columns — and
+      can even collide a break with a real class column that starts at 12:15.
+      We snap all breaks to the most common break label. ── */
+function _rtNormalizeBreaks(schedule) {
+  const freq = {};
+  Object.values(schedule).forEach(slots =>
+    (slots || []).forEach(s => { if (s.isBreak && s.time) freq[s.time] = (freq[s.time] || 0) + 1; })
+  );
+  const labels = Object.keys(freq);
+  if (labels.length < 2) return;            /* already a single break column */
+  const canonical = labels.sort((a, b) => freq[b] - freq[a])[0];
+  Object.values(schedule).forEach(slots =>
+    (slots || []).forEach(s => { if (s.isBreak) s.time = canonical; })
+  );
+}
+
 /* ── Build improved cache (62B selected courses + enrolled) ── */
 function _buildImprovedCache(enrollments) {
   if (!_62bCache || !enrollments.length) return null;
@@ -99,6 +118,8 @@ function _buildImprovedCache(enrollments) {
       });
     });
   });
+
+  _rtNormalizeBreaks(schedule);
 
   const timeKeyMap    = new Map();
   const breakTimeKeys = new Set();
@@ -216,8 +237,13 @@ function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes) {
   const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);
   if (!days.length) return null;
 
-  /* Seed with ALL sheet time slots so empty columns still appear */
-  const timeKeyMap    = new Map(sheetTimes || []);
+  _rtNormalizeBreaks(schedule);
+
+  /* Build the time axis ONLY from slots this section actually uses (its own
+     classes + break). Seeding from every raw sheet column dragged in other
+     batches' misaligned labels (e.g. Friday "1:10-2:25 PM") as stray empty
+     columns, so we no longer do that. */
+  const timeKeyMap    = new Map();
   const breakTimeKeys = new Set();
   Object.values(schedule).forEach(slots => {
     slots.forEach(s => {
