@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602c';
+    const _BUILD = '20260602d';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -1048,9 +1048,9 @@
           if (!labelFreq[k]) labelFreq[k] = {};
           labelFreq[k][label] = (labelFreq[k][label] || 0) + 1;
         };
-        /* Full timeframe columns define the headers (keeps middle empty slots) */
+        /* Full timeframe columns define the headers (keeps every empty slot) */
         days.forEach(day => frameLabels(day).forEach(addLabel));
-        /* Used slots: classes set the active range, breaks are flagged */
+        /* Used slots: flag breaks vs classes */
         days.forEach(day => (schedule[day] || []).forEach(s => {
           addLabel(s.time);
           const k = timeToMin(s.time);
@@ -1059,17 +1059,21 @@
         }));
         if (!classKeys.length) return { days, allTimes: [], breakTimesSet: new Set() };
 
-        /* Show every timeframe column BETWEEN the first and last CLASS — so
-           blank middle periods (and a break that sits between classes) stay
-           visible, but far-off unused columns and a dangling trailing/leading
-           break (e.g. Friday's lunch with no afternoon class) are dropped. */
-        const minU = Math.min(...classKeys), maxU = Math.max(...classKeys);
+        /* Show the FULL daytime timeframe — every column from the start to the
+           end of the day, whether or not it has a class (empty ones render as
+           "—"). Only a far-off outlier column (e.g. an evening "OL Class"
+           hours after the last period) is dropped, and even that is kept if a
+           class actually uses it. */
+        const usedSet   = new Set([...classKeys, ...breakKeys]);
+        const frameKeys = [...new Set(Object.keys(labelFreq).map(Number))].sort((a, b) => a - b);
         const keyMap = new Map();
-        Object.keys(labelFreq).forEach(kStr => {
-          const k = Number(kStr);
-          if (k < minU || k > maxU) return;
+        let prev = null;
+        frameKeys.forEach(k => {
+          const contiguous = prev === null || (k - prev) <= 120;
+          if (!contiguous && !usedSet.has(k)) return;   /* skip far-off empty column */
           const best = Object.entries(labelFreq[k]).sort((a, b) => b[1] - a[1])[0][0];
           keyMap.set(k, best);
+          prev = k;
         });
         const sortedKeys    = [...keyMap.keys()].sort((a, b) => a - b);
         const allTimes      = sortedKeys.map(k => keyMap.get(k));
