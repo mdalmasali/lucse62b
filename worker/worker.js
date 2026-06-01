@@ -10,7 +10,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url    = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
     const cors   = {
@@ -400,6 +400,17 @@ export default {
         }).catch(() => null);
         if (!r || !r.ok) return errResp(cors, 500, 'Failed to fetch');
         return jsonResp(cors, await r.json());
+      }
+
+      // ── POST/GET /run-monitor — manually trigger the change monitor ──
+      //   Owner-only: caller must present SUPA_KEY (the worker's secret key).
+      //   Lets us test routine/exam/result detection without waiting for the
+      //   hourly cron. Returns immediately; work continues via waitUntil.
+      if (p === '/run-monitor') {
+        const token = request.headers.get('x-monitor-key') || url.searchParams.get('token') || '';
+        if (!env.SUPA_KEY || token !== env.SUPA_KEY) return errResp(cors, 403, 'Forbidden');
+        ctx.waitUntil(runMonitor(env));
+        return jsonResp(cors, { ok: true, triggered: true, at: new Date().toISOString() });
       }
 
       return new Response('Not found', { status: 404, headers: cors });
