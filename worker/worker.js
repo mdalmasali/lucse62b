@@ -409,8 +409,16 @@ export default {
       if (p === '/run-monitor') {
         const token = request.headers.get('x-monitor-key') || url.searchParams.get('token') || '';
         if (!env.SUPA_KEY || token !== env.SUPA_KEY) return errResp(cors, 403, 'Forbidden');
-        ctx.waitUntil(runMonitor(env, { all: true }));
-        return jsonResp(cors, { ok: true, triggered: true, at: new Date().toISOString() });
+        /* ?batch=N → run only the result check for batch N (lets us seed all
+           result baselines now without overloading the subrequest limit).
+           Otherwise run the normal hour-split monitor. */
+        const batchParam = url.searchParams.get('batch');
+        if (batchParam !== null) {
+          ctx.waitUntil(checkResult(env, { batchIndex: parseInt(batchParam, 10) || 0 }).catch(() => {}));
+        } else {
+          ctx.waitUntil(runMonitor(env));
+        }
+        return jsonResp(cors, { ok: true, triggered: true, batch: batchParam, at: new Date().toISOString() });
       }
 
       return new Response('Not found', { status: 404, headers: cors });
@@ -590,17 +598,15 @@ function errResp(cors, status, msg) {
 
 const MONITOR_DAYS = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
 
-async function runMonitor(env, opts = {}) {
+async function runMonitor(env) {
   if (!env.SUPA_KEY) return;
-  const all  = opts.all === true;
   const hour = new Date().getUTCHours();
 
   /* Split work across hours so one cron run never exceeds Cloudflare's
-     per-invocation subrequest limit (50 on the free plan). Routine / exam /
-     enrolled checks run on even hours; the heavier per-student result check
-     runs on odd hours with the full budget. Manual /run-monitor passes
-     all:true to run everything in one go (for testing). */
-  if (all || hour % 2 === 0) {
+     per-invocation subrequest limit (50 on the free plan): routine / exam /
+     enrolled checks on even hours, the heavier per-student result check on
+     odd hours. Each branch fits comfortably under the limit on its own. */
+  if (hour % 2 === 0) {
     await Promise.allSettled([
       checkClassRoutine(env).catch(() => {}),
       checkExamRoutine(env, 'mid').catch(() => {}),
@@ -608,9 +614,8 @@ async function runMonitor(env, opts = {}) {
     ]);
     /* Enrolled retake/improve course routine + exam changes — per-student */
     await checkEnrolledCourses(env).catch(() => {});
-  }
-  if (all || hour % 2 === 1) {
-    await checkResult(env, { all }).catch(() => {});
+  } else {
+    await checkResult(env).catch(() => {});
   }
 }
 
@@ -844,7 +849,7 @@ async function checkExamRoutine(env, type) {
    processed in hourly round-robin batches (≤45 students → fully covered
    every ~8h; results rarely change minute-to-minute). A personal in-app
    notification is always inserted; a push is also sent if the student has
-   subscribed. opts.all = true processes everyone at once (manual test). ── */
+   subscribed. opts.batchIndex forces a specific batch (manual seeding). ── */
 async function checkResult(env, opts = {}) {
   if (!env.SUPA_KEY) return;
 
@@ -870,16 +875,15 @@ async function checkResult(env, opts = {}) {
     });
   }
 
-  /* Round-robin batch by hour so a single run stays within the limit */
+  /* Round-robin batch so a single run stays within the subrequest limit.
+     Normally the batch index follows the clock; a manual call can pass
+     batchIndex to step through every batch (to seed all baselines now). */
   const BATCH = 12;
-  let slice;
-  if (opts.all) {
-    slice = students;
-  } else {
-    const batchCount = Math.max(1, Math.ceil(students.length / BATCH));
-    const idx        = Math.floor(new Date().getUTCHours() / 2) % batchCount;
-    slice            = students.slice(idx * BATCH, idx * BATCH + BATCH);
-  }
+  const batchCount = Math.max(1, Math.ceil(students.length / BATCH));
+  const idx = (opts.batchIndex != null)
+    ? ((opts.batchIndex % batchCount) + batchCount) % batchCount
+    : Math.floor(new Date().getUTCHours() / 2) % batchCount;
+  const slice = students.slice(idx * BATCH, idx * BATCH + BATCH);
 
   for (const s of slice) {
     await checkStudentResult(env, s.student_id, s.dob, endpointMap[s.student_id] || []).catch(() => {});
