@@ -12,9 +12,12 @@ function _tcPhoneHtml(phone) {
     if      (norm.startsWith('880') && norm.length === 13) norm = '0' + norm.slice(3); // +8801X → 01X
     else if (norm.startsWith('88')  && norm.length === 12) norm = '0' + norm.slice(2); // 8801X → 01X
     else if (norm.startsWith('1')   && norm.length === 10) norm = '0' + norm;          // 1XXXXXXXXX → 01X (GVIZ drops leading 0)
-    const waNum = norm.startsWith('01') && norm.length === 11 ? '88' + norm : norm;
-    return `<span style="font-size:0.85rem;font-weight:600;">${escH(norm)}</span>
-            <a href="https://wa.me/${waNum}" target="_blank"
+    const display = `<span style="font-size:0.85rem;font-weight:600;">${escH(norm)}</span>`;
+    // Only attach a WhatsApp link to a valid BD mobile — never to a landline,
+    // extension or garbage value (which would make a broken wa.me link).
+    if (!/^01\d{9}$/.test(norm)) return display;
+    return `${display}
+            <a href="https://wa.me/88${norm}" target="_blank"
                 style="margin-left:6px;color:#25D366;font-size:1rem;" title="WhatsApp">
                 <i class="fa-brands fa-whatsapp"></i></a>`;
 }
@@ -68,13 +71,17 @@ async function loadTeachers(body) {
                     const name  = cells[nameCol];
                     if (!init || !name) return;
                     const key = name.toLowerCase().trim();
-                    const prev = directory[key];
+                    const prev = directory[key] || {};
+                    /* Non-destructive merge: if two rows share a name, keep the
+                       first non-empty value for each field so good data (e.g. a
+                       phone or email) is never clobbered by a later blank row. */
+                    const pick = (existing, incoming) => _tcEmpty(existing) ? (incoming || '') : existing;
                     directory[key] = {
                         name,
-                        designation: cells[deCol] || prev?.designation || '',
-                        department:  cells[dpCol] || prev?.department  || '',
-                        phone:       cells[phCol] || prev?.phone       || '',
-                        email:       cells[emCol] || prev?.email       || '',
+                        designation: pick(prev.designation, cells[deCol]),
+                        department:  pick(prev.department,  cells[dpCol]),
+                        phone:       pick(prev.phone,       cells[phCol]),
+                        email:       pick(prev.email,       cells[emCol]),
                     };
                     initialsMap[init] = key;
                 });
@@ -141,9 +148,12 @@ async function loadTeachers(body) {
                     enrollments.forEach(enr => {
                         if (!enr.teacher) return;
                         const init = enr.teacher.toUpperCase();
-                        const key  = initialsMap[init];
-                        const info = key ? directory[key] : null;
-                        if (!info) return;
+                        const dirKey = initialsMap[init];
+                        const info   = dirKey ? directory[dirKey] : null;
+                        /* If the teacher isn't in CPG_Teachers, still show them
+                           keyed by initials so the enrolled course's teacher
+                           never silently disappears from the contact list. */
+                        const key = dirKey || init;
 
                         const enrolledCourse = {
                             title:    enr.course_name || enr.course_code || '',
@@ -151,8 +161,8 @@ async function loadTeachers(body) {
                             enrolled: enr.type,
                         };
 
-                        const bestPhone = info.phone || '';
-                        const bestEmail = info.email || '';
+                        const bestPhone = info?.phone || '';
+                        const bestEmail = info?.email || '';
 
                         if (teacherMap.has(key)) {
                             const existing   = teacherMap.get(key);
@@ -162,9 +172,9 @@ async function loadTeachers(body) {
                             if (!_tcEmpty(bestEmail)) existing.email = bestEmail;
                         } else {
                             teacherMap.set(key, {
-                                name:        info.name,
-                                designation: info.designation,
-                                department:  info.department,
+                                name:        info?.name || enr.teacher,   /* fall back to initials */
+                                designation: info?.designation || '',
+                                department:  info?.department  || '',
                                 phone:       bestPhone,
                                 email:       bestEmail,
                                 courses:     enrolledCourse.code ? [enrolledCourse] : [],
