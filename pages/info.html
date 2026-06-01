@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602d';
+    const _BUILD = '20260602e';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -1050,27 +1050,36 @@
         };
         /* Full timeframe columns define the headers (keeps every empty slot) */
         days.forEach(day => frameLabels(day).forEach(addLabel));
-        /* Used slots: flag breaks vs classes */
+        /* Used slots: flag breaks vs classes; record break time ranges */
+        const breakIntervals = [];
         days.forEach(day => (schedule[day] || []).forEach(s => {
           addLabel(s.time);
           const k = timeToMin(s.time);
-          if (s.isBreak) breakKeys.add(k);
-          else classKeys.push(k);
+          if (s.isBreak) {
+            breakKeys.add(k);
+            const ts = (s.time.match(/\d{1,2}:\d{2}/g) || []).map(timeToMin);
+            if (ts.length >= 2) breakIntervals.push([Math.min(...ts), Math.max(...ts)]);
+          } else {
+            classKeys.push(k);
+          }
         }));
         if (!classKeys.length) return { days, allTimes: [], breakTimesSet: new Set() };
 
         /* Show the FULL daytime timeframe — every column from the start to the
            end of the day, whether or not it has a class (empty ones render as
-           "—"). Only a far-off outlier column (e.g. an evening "OL Class"
-           hours after the last period) is dropped, and even that is kept if a
-           class actually uses it. */
+           "—"). Dropped: (a) a far-off outlier column (e.g. an evening "OL
+           Class"), and (b) a stray column that starts in the MIDDLE of a break
+           (a malformed/leftover sheet column) — unless a class actually uses
+           it. */
         const usedSet   = new Set([...classKeys, ...breakKeys]);
         const frameKeys = [...new Set(Object.keys(labelFreq).map(Number))].sort((a, b) => a - b);
         const keyMap = new Map();
         let prev = null;
         frameKeys.forEach(k => {
-          const contiguous = prev === null || (k - prev) <= 120;
-          if (!contiguous && !usedSet.has(k)) return;   /* skip far-off empty column */
+          if (!usedSet.has(k)) {
+            if (breakIntervals.some(([a, b]) => k > a && k < b)) return;  /* mid-break stray */
+            if (prev !== null && (k - prev) > 120) return;                /* far-off outlier */
+          }
           const best = Object.entries(labelFreq[k]).sort((a, b) => b[1] - a[1])[0][0];
           keyMap.set(k, best);
           prev = k;
