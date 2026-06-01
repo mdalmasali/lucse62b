@@ -902,42 +902,54 @@ async function checkStudentResult(env, studentId, dob, endpoints) {
 
   let data;
   try { data = JSON.parse(text); } catch { return; }
-  if (!Array.isArray(data?.result)) return;
+  /* LU shape: { success, results: { "<year>": [ {courses:[{course_code,
+     course_title,grade,...}], name:"Spring 2022", ... }, ... ], ... } } */
+  if (!data?.success || !data.results || typeof data.results !== 'object') return;
 
-  /* Find latest semester */
-  const semesters = [...new Set(data.result.map(x => x.semester || ''))].filter(Boolean);
-  if (!semesters.length) return;
-  const latestSem = semesters[0];
-
-  const courses = data.result
-    .filter(x => x.semester === latestSem)
-    .map(x => ({ code: x.course_code || x.code || '', name: x.course_title || x.course_name || '' }))
-    .filter(c => c.code)
-    .sort((a, b) => a.code.localeCompare(b.code));
+  /* Flatten every graded course across all years/semesters */
+  const courses = [];
+  for (const yearVal of Object.values(data.results)) {
+    const sems = Array.isArray(yearVal) ? yearVal : Object.values(yearVal || {});
+    for (const sem of sems) {
+      const semName = (sem && sem.name) ? String(sem.name).trim() : '';
+      for (const c of (sem?.courses || [])) {
+        const code  = (c.course_code || '').trim().toUpperCase();
+        const grade = (c.grade || '').trim();
+        if (!code || !grade) continue;
+        courses.push({ code, name: (c.course_title || '').trim(), grade, sem: semName });
+      }
+    }
+  }
   if (!courses.length) return;
+  courses.sort((a, b) => (a.sem + a.code).localeCompare(b.sem + b.code));
 
-  /* Compare with stored state for this student */
+  /* Compare with stored state — a new course OR a changed grade = new result */
   const stateKey = `result_${studentId}`;
-  const hash     = await sha256(JSON.stringify(courses));
+  const sig      = courses.map(c => `${c.sem}|${c.code}|${c.grade}`);
+  const hash     = await sha256(JSON.stringify(sig));
   const stored   = await supabaseGetState(env, stateKey);
 
   if (!stored) {
-    await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+    await supabaseUpsertState(env, stateKey, hash, { courses });
     return;
   }
   if (stored.state_hash === hash) return;
 
-  const storedCodes = new Set((stored.state_data?.courses || []).map(c => c.code));
-  const newCourses  = courses.filter(c => !storedCodes.has(c.code));
+  const storedSig = new Set((stored.state_data?.courses || [])
+    .map(c => `${c.sem || ''}|${c.code}|${c.grade || ''}`));
+  const newCourses = courses.filter(c => !storedSig.has(`${c.sem}|${c.code}|${c.grade}`));
   if (!newCourses.length) {
-    await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+    await supabaseUpsertState(env, stateKey, hash, { courses });
     return;
   }
 
   /* Insert personalized notification (student_id set → only that student sees it) */
-  const count = newCourses.length;
-  const title = `🎓 ${count === 1 ? 'New Result Available!' : `${count} New Results Available!`}`;
-  const nbody = newCourses.map(c => `• ${c.code}${c.name ? ' · ' + c.name : ''}`).join('\n') + `\n${latestSem}`;
+  const count    = newCourses.length;
+  const title    = `🎓 ${count === 1 ? 'New Result Published!' : `${count} New Results Published!`}`;
+  const semLabel = newCourses[0].sem;
+  const nbody    = newCourses.slice(0, 8).map(c => `• ${c.code}${c.name ? ' · ' + c.name : ''}: ${c.grade}`).join('\n')
+    + (count > 8 ? `\n…and ${count - 8} more` : '')
+    + (semLabel ? `\n${semLabel}` : '');
   await insertPersonalNotification(env, studentId, 'result', title, nbody, '/pages/result-dashboard.html');
 
   /* Send push only to this student's endpoints */
@@ -953,7 +965,7 @@ async function checkStudentResult(env, studentId, dob, endpoints) {
     }).catch(() => {});
   }
 
-  await supabaseUpsertState(env, stateKey, hash, { courses, semester: latestSem });
+  await supabaseUpsertState(env, stateKey, hash, { courses });
 }
 
 async function insertPersonalNotification(env, studentId, type, title, body, link) {
