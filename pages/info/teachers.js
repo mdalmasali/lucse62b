@@ -23,15 +23,14 @@ async function loadTeachers(body) {
     body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Teachers & Courses...</div>';
     try {
         const [data, cpgTeacherData] = await Promise.all([
-            fetchSheet('CPG_Courses'),
+            fetchSheet('CPG_Courses').catch(() => null),
             fetchSheet('CPG_Teachers').catch(() => null),
         ]);
 
-        const rows = sheetRows(data);
-        if (rows.length === 0) {
-            body.innerHTML = '<div class="info-placeholder"><p>No data found.</p></div>';
-            return;
-        }
+        /* CPG_Courses (the assigned-course list) may be empty — that's fine.
+           The searchable directory comes from CPG_Teachers, so we still render
+           the search UI even when no course has a teacher assigned yet. */
+        const rows = data ? sheetRows(data) : [];
 
         /* ── Build full teacher directory from CPG_Teachers (for search + phone/email) ── */
         const directory   = {}; /* key: lowercase name → teacher info */
@@ -84,10 +83,10 @@ async function loadTeachers(body) {
         }
 
         /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
-        let headers    = (data.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
+        let headers    = (data?.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
         let startIndex = 0;
 
-        if (!headers.some(h => h.includes('title') || h.includes('code') || h.includes('name'))) {
+        if (rows.length && !headers.some(h => h.includes('title') || h.includes('code') || h.includes('name'))) {
             headers    = rows[0].map(h => (h || '').toLowerCase().trim());
             startIndex = 1;
         }
@@ -178,7 +177,11 @@ async function loadTeachers(body) {
         }
 
         const teachers = Array.from(teacherMap.values());
-        if (!teachers.length) {
+        const dirCount = Object.keys(directory).length;
+        /* Only a true dead-end when BOTH the course list and the teacher
+           directory are empty. If the directory has teachers we still render
+           the search UI so any teacher can be looked up. */
+        if (!teachers.length && !dirCount) {
             body.innerHTML = '<div class="info-placeholder"><p>No teacher data found.</p></div>';
             return;
         }
@@ -186,6 +189,7 @@ async function loadTeachers(body) {
         /* ── Render cards ── */
         let cardsHtml = '';
         teachers.forEach(t => {
+            const tKey = t.name.toLowerCase().trim();
             const searchText = [t.name, t.designation, t.department, ...t.courses.map(c => c.code + ' ' + c.title)]
                 .join(' ').toLowerCase();
 
@@ -210,7 +214,7 @@ async function loadTeachers(body) {
             }).join('');
 
             cardsHtml += `
-                <div class="info-item-card tc-card" data-search="${escH(searchText)}" style="display:flex;flex-direction:column;">
+                <div class="info-item-card tc-card" data-search="${escH(searchText)}" data-name="${escH(tKey)}" style="display:flex;flex-direction:column;">
                     <div style="margin-bottom:12px;">
                         <div style="font-size:1.05rem;font-weight:700;color:var(--text);">${escH(t.name)}</div>
                         ${t.designation ? `<div style="font-size:0.78rem;color:var(--accent-bright);font-weight:600;margin-bottom:2px;">${escH(t.designation)}</div>` : ''}
@@ -246,7 +250,9 @@ async function loadTeachers(body) {
         body.innerHTML = `
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
                 <span id="tcCountLabel" style="flex:1;font-size:0.78rem;color:var(--text-secondary);">
-                    ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}
+                    ${teachers.length
+                        ? `${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`
+                        : `<i class="fa-solid fa-magnifying-glass" style="margin-right:5px;opacity:0.5;"></i>Search any of ${dirCount} teachers`}
                 </span>
                 <div style="position:relative;" id="tcSearchWrap">
                     <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;
@@ -275,6 +281,12 @@ async function loadTeachers(body) {
                 <div id="tcDirContent"></div>
             </div>
             <div class="info-card-grid" id="tcGrid">${cardsHtml}</div>
+            ${!teachers.length ? `
+            <div id="tcEmptyHint" style="padding:40px 20px;text-align:center;color:var(--text-secondary);font-size:0.85rem;">
+                <i class="fa-solid fa-chalkboard-user" style="opacity:0.25;font-size:2rem;display:block;margin-bottom:12px;"></i>
+                No course teachers assigned yet.<br>
+                <span style="font-size:0.78rem;opacity:0.8;">Type a name above to look up any teacher's contact.</span>
+            </div>` : ''}
             <div id="tcNoResult" style="display:none;padding:40px;text-align:center;
                 color:var(--text-secondary);font-size:0.9rem;">No teachers found.</div>`;
 
@@ -288,26 +300,11 @@ async function loadTeachers(body) {
         const cards       = grid.querySelectorAll('.tc-card');
         let acFocused = -1;
 
-        function tcApplyFilter(q) {
-            const lq = q.toLowerCase().trim();
-            let visible = 0;
-            cards.forEach(card => {
-                const match = !lq || card.dataset.search.includes(lq);
-                card.style.display = match ? '' : 'none';
-                if (match) visible++;
-            });
-            countLabel.textContent = lq
-                ? `${visible} of ${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`
-                : `${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`;
-            noResult.style.display = (visible === 0 && dirResult.style.display === 'none') ? '' : 'none';
-            grid.style.display     = visible === 0 ? 'none' : '';
-        }
+        const emptyHint = body.querySelector('#tcEmptyHint');
 
-        /* Show directory card for a teacher not in the current list */
-        function tcShowDirCard(key) {
-            const t = directory[key];
-            if (!t) { dirResult.style.display = 'none'; return; }
-            dirContent.innerHTML = `
+        /* One directory contact card's inner HTML (name, role, phone, email) */
+        function tcDirCardInner(t) {
+            return `
                 <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:4px;">${escH(t.name)}</div>
                 ${t.designation ? `<div style="font-size:0.78rem;color:var(--accent-bright);font-weight:600;margin-bottom:2px;">${escH(t.designation)}</div>` : ''}
                 ${t.department  ? `<div style="font-size:0.7rem;color:var(--text-secondary);opacity:0.8;margin-bottom:10px;">${escH(t.department)}</div>` : ''}
@@ -320,8 +317,51 @@ async function loadTeachers(body) {
                         ? `<a href="mailto:${t.email}" style="color:var(--accent-bright);text-decoration:none;">${escH(t.email)}</a>`
                         : '<span style="color:#64748b;">N/A</span>'}
                 </div>`;
-            dirResult.style.display = '';
-            noResult.style.display  = 'none';
+        }
+
+        function tcApplyFilter(q) {
+            const lq = q.toLowerCase().trim();
+            let visible = 0;
+            const inGrid = new Set();
+            cards.forEach(card => {
+                const match = !lq || card.dataset.search.includes(lq);
+                card.style.display = match ? '' : 'none';
+                if (match) { visible++; inGrid.add(card.dataset.name); }
+            });
+
+            /* Search the full CPG_Teachers directory for matches not already in
+               the grid — so ANY teacher is findable even with no course assigned. */
+            let dirMatches = [];
+            if (lq.length >= 2) {
+                dirMatches = Object.entries(directory)
+                    .filter(([key, t]) => !inGrid.has(key)
+                        && `${t.name} ${t.designation} ${t.department}`.toLowerCase().includes(lq))
+                    .map(([, t]) => t)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .slice(0, 12);
+            }
+            if (dirMatches.length) {
+                dirContent.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${
+                    dirMatches.map(t => `
+                    <div style="border:1px solid rgba(124,58,237,0.18);border-radius:10px;
+                        background:rgba(255,255,255,0.02);padding:12px 14px;">${tcDirCardInner(t)}</div>`).join('')
+                }</div>`;
+                dirResult.style.display = '';
+            } else {
+                dirContent.innerHTML = '';
+                dirResult.style.display = 'none';
+            }
+
+            if (emptyHint) emptyHint.style.display = (lq || dirMatches.length) ? 'none' : '';
+
+            countLabel.innerHTML = lq
+                ? `${visible + dirMatches.length} match${(visible + dirMatches.length) !== 1 ? 'es' : ''}`
+                : (teachers.length
+                    ? `${teachers.length} teacher${teachers.length !== 1 ? 's' : ''}`
+                    : `<i class="fa-solid fa-magnifying-glass" style="margin-right:5px;opacity:0.5;"></i>Search any of ${dirCount} teachers`);
+
+            noResult.style.display = (visible === 0 && dirMatches.length === 0 && lq) ? '' : 'none';
+            grid.style.display     = visible === 0 ? 'none' : '';
         }
 
         function tcCloseDrop() {
@@ -356,16 +396,10 @@ async function loadTeachers(body) {
                 item.addEventListener('mouseleave', () => { item.style.background = ''; });
                 item.addEventListener('mousedown', e => {
                     e.preventDefault();
-                    const key   = item.dataset.key;
                     const label = item.dataset.label;
                     searchInput.value = label;
-                    dirResult.style.display = 'none';
+                    /* tcApplyFilter handles both grid + directory lookup */
                     tcApplyFilter(label);
-
-                    /* If teacher not in current list, show directory card */
-                    const inGrid = Array.from(cards).some(c => c.style.display !== 'none');
-                    if (!inGrid && directory[key]) tcShowDirCard(key);
-
                     tcCloseDrop();
                 });
             });
@@ -373,7 +407,6 @@ async function loadTeachers(body) {
 
         searchInput.addEventListener('input', () => {
             const q = searchInput.value;
-            dirResult.style.display = 'none';
             tcApplyFilter(q);
             tcShowDrop(q.trim());
         });
