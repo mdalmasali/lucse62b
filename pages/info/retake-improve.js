@@ -295,26 +295,20 @@ async function _riBuildRoutineData(routineSheetId) {
       }
     }
 
-    /* Break slot detection by majority vote */
-    const breakCounts = {};
-    for (let r = dataStart; r < rows.length; r++) {
-      (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '').slice(3)
-        .forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakCounts[i] = (breakCounts[i] || 0) + 1; });
-    }
-    let breakSlotIdx = -1, maxBrk = 0;
-    Object.entries(breakCounts).forEach(([k, cnt]) => {
-      if (cnt > maxBrk) { maxBrk = cnt; breakSlotIdx = parseInt(k); }
-    });
-
     for (let r = dataStart; r < rows.length; r++) {
       const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      const batch   = cells[1] || '';
-      const section = cells[2] || '';
+      const batch   = (cells[1] || '').trim();
+      const section = (cells[2] || '').trim().toUpperCase();
       if (!batch || !section) continue;
       const key = `${batch}-${section}`;
 
       cells.slice(3).forEach((cell, i) => {
-        if (!cell || cell.toUpperCase() === 'BREAK' || i === breakSlotIdx) return;
+        /* Skip empty + any break variant ("BREAK", "Break", "Lunch Break"…).
+           We match by content rather than a fixed column index so a real
+           class is never dropped just because its column happens to be the
+           one most sections use for the break. Course codes (CSE-3214) never
+           contain "break", so this can't false-positive. */
+        if (!cell || /break/i.test(cell)) return;
         const parsed = parseClassCell(cell);
         if (!parsed?.code) return;
         const time = timeSlots[i] || '';
@@ -461,7 +455,14 @@ async function loadRetakeImprove(body) {
         const section = key.slice(dashIdx + 1);
         const slots   = courses[codeUp];
 
-        const clashSlots = slots.filter(s => busy62BMap[s.day]?.[timeToMin(s.time)]);
+        /* A 62B slot busy with the SAME course at the same time is not a
+           clash — it's literally the same class (e.g. a retake course that
+           62B is already taking this semester). Only a different course
+           occupying that slot is a real conflict. */
+        const clashSlots = slots.filter(s => {
+          const busy = busy62BMap[s.day]?.[timeToMin(s.time)];
+          return busy && busy.code !== codeUp;
+        });
         const hasConflict = clashSlots.length > 0;
 
         /* Which 62B courses clash (for display) */
