@@ -22,13 +22,14 @@
     }
     .profile-top-row {
       display: grid;
-      grid-template-columns: 1fr 280px;
+      grid-template-columns: minmax(0, 1fr) 280px;
       gap: 20px;
       align-items: start;
       margin-bottom: 24px;
     }
+    .profile-top-row > * { min-width: 0; }
     @media (max-width: 780px) {
-      .profile-top-row { grid-template-columns: 1fr; }
+      .profile-top-row { grid-template-columns: minmax(0, 1fr); }
       .profile-header { padding: 28px 20px 32px; }
     }
     
@@ -1416,6 +1417,8 @@
       border-radius: 20px;
       padding: 22px;
       backdrop-filter: blur(12px);
+      min-width: 0;
+      overflow: hidden;
     }
     .my-courses-header {
       display: flex; align-items: center; gap: 12px;
