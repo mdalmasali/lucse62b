@@ -523,13 +523,13 @@ window._rtSaveMyCourses = async function() {
 /* ── Main loader ── */
 async function loadRoutine(body) {
   try {
-    const [routineSheetId, sem] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
+    const [cpgData, tchData, dayResults, sem] = await Promise.all([
+      fetchSheet('CPG_Courses').catch(() => null),
+      fetchSheet('CPG_Teachers').catch(() => null),
+      fetchAllRoutineDays(),        /* merges Link 1 + any extra Routine Link N */
+      getSemesterLabel(),
+    ]);
     _semLabel = sem;
-
-    const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
-    const tchFetch   = fetchSheet('CPG_Teachers').catch(() => null);
-    const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
-    const [cpgData, tchData, ...dayResults] = await Promise.all([cpgFetch, tchFetch, ...dayFetches]);
 
     /* Store globally for re-use when switching batch/section */
     _allDayResults = dayResults;

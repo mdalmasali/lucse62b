@@ -10,7 +10,6 @@ let _trNameMap     = {};   /* normalised full name → initials */
 let _trTeacherList = [];   /* [{name, desig, acronym}] for autocomplete */
 let _trCourseInfo  = null; /* cached CPG_Courses */
 let _trDayResults  = null; /* cached day tab results */
-let _trSheetId     = null; /* cached routine sheet id */
 let _trDataLoaded  = false;
 
 /* ── Autocomplete engine ── */
@@ -129,11 +128,7 @@ function loadTeacherRoutine(body) {
 /* ── Background: build initials ↔ name maps from CPG_Teachers ── */
 async function _trLoadTeacherData() {
   try {
-    const [sheetId, teacherData] = await Promise.all([
-      getRoutineSheetId(),
-      fetchSheet('CPG_Teachers').catch(() => null),
-    ]);
-    _trSheetId = sheetId;
+    const teacherData = await fetchSheet('CPG_Teachers').catch(() => null);
 
     const initialsMap = {};
     const teacherList = [];
@@ -209,13 +204,13 @@ async function doTeacherSearch() {
     let dayResults = _trDayResults;
     let sem;
 
-    if (!courseInfo || !dayResults || !_trSheetId) {
-      const [routineSheetId, s] = await Promise.all([getRoutineSheetId(), getSemesterLabel()]);
-      _trSheetId = routineSheetId;
+    if (!courseInfo || !dayResults) {
+      const [cpgData, dr, s] = await Promise.all([
+        fetchSheet('CPG_Courses').catch(() => null),
+        fetchAllRoutineDays(),       /* merges Link 1 + any extra Routine Link N */
+        getSemesterLabel(),
+      ]);
       sem = s;
-      const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
-      const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
-      const [cpgData, ...dr] = await Promise.all([cpgFetch, ...dayFetches]);
 
       courseInfo = {};
       if (cpgData) {
@@ -239,7 +234,7 @@ async function doTeacherSearch() {
     const { schedule, dayTimeframes } = parseDayResults(dayResults, (cells, cell) => {
       const parsed = parseClassCell(cell);
       if (!parsed || parsed.initials.toUpperCase() !== initials) return null;
-      return { batch: cells[1] || '', section: cells[2] || '' };
+      return { batch: (cells[1] || '').replace(/\.0+$/, ''), section: (cells[2] || '').trim().toUpperCase() };
     });
 
     const days = ROUTINE_DAY_NAMES.filter(d => schedule[d]);

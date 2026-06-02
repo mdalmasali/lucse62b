@@ -268,10 +268,8 @@ async function _riGetCodes(userId, dob) {
    ROUTINE SCAN — all sections + 62B busy map
    ══════════════════════════════════════════════ */
 
-async function _riBuildRoutineData(routineSheetId) {
-  const dayResults = await Promise.all(
-    ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null))
-  );
+async function _riBuildRoutineData() {
+  const dayResults = await fetchAllRoutineDays();   /* merges Link 1 + extra Routine Link N */
 
   /* sectionCourseSlots["62-A"]["CSE-3214"] = [{day, time, initials, room}] */
   const sectionCourseSlots = {};
@@ -357,12 +355,11 @@ async function loadRetakeImprove(body) {
     let manualRetake  = localManual.retake;
     let manualImprove = localManual.improve;
 
-    const [myCodes, courseOfferData, cpgData, teacherData, routineSheetId, sem] = await Promise.all([
+    const [myCodes, courseOfferData, cpgData, teacherData, sem] = await Promise.all([
       _riGetCodes(user?.id, dob),
       fetchSheet('LU_Course_Offer').catch(() => null),
       fetchSheet('CPG_Courses').catch(() => null),
       fetchSheet('CPG_Teachers').catch(() => null),
-      getRoutineSheetId(),
       getSemesterLabel(),
     ]);
 
@@ -391,7 +388,7 @@ async function loadRetakeImprove(body) {
       });
     }
 
-    const { sectionCourseSlots, busy62BMap } = await _riBuildRoutineData(routineSheetId);
+    const { sectionCourseSlots, busy62BMap } = await _riBuildRoutineData();
 
     /* ── Course name map ── */
     const courseNameMap = {};

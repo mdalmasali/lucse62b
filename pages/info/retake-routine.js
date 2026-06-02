@@ -17,10 +17,8 @@ async function _rrFetchEnrollments(userId) {
   } catch(e) { return []; }
 }
 
-async function _rrBuild62BSchedule(routineSheetId) {
-  const dayResults = await Promise.all(
-    ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null))
-  );
+async function _rrBuild62BSchedule() {
+  const dayResults = await fetchAllRoutineDays();   /* merges Link 1 + extra Routine Link N */
 
   const schedule = {};
 
@@ -85,9 +83,8 @@ async function loadRetakeRoutine(body) {
   }
 
   try {
-    const [enrollments, routineSheetId, sem, cpgData] = await Promise.all([
+    const [enrollments, sem, cpgData] = await Promise.all([
       _rrFetchEnrollments(user.id),
-      getRoutineSheetId(),
       getSemesterLabel(),
       fetchSheet('CPG_Courses').catch(() => null),
     ]);
@@ -105,7 +102,7 @@ async function loadRetakeRoutine(body) {
     });
 
     /* 62B regular schedule */
-    const schedule62B = await _rrBuild62BSchedule(routineSheetId);
+    const schedule62B = await _rrBuild62BSchedule();
 
     /* Combine */
     const combined = {};

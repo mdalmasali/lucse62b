@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602i';
+    const _BUILD = '20260602j';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -907,6 +907,51 @@
     async function getRoutineSheetId() {
       return (await getSheetIdFromRoutineTab('class routine'))
           || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+    }
+
+    /* ── All class-routine sheet IDs (Link 1 + any extra "Routine Link N") ──
+       The "class routine" row of the Routine tab may hold several spreadsheet
+       links across columns (B = Link 1, C = Link 2, …). Each extra sheet has the
+       same format and carries additional sections/batches to merge in. */
+    async function getRoutineSheetIds() {
+      const ids = [];
+      try {
+        const d = await fetchSheet('Routine');
+        for (const row of sheetRows(d)) {
+          if (!row[0]?.toLowerCase().includes('class routine')) continue;
+          for (let i = 1; i < row.length; i++) {
+            const m = (row[i] || '').match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+            if (m && !ids.includes(m[1])) ids.push(m[1]);
+          }
+          break;
+        }
+      } catch(_) {}
+      if (!ids.length) ids.push('1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M');
+      return ids;
+    }
+
+    /* ── Fetch every routine day tab from ALL class-routine sheets and merge
+       their rows per day, so sections/batches that live in a second sheet show
+       up alongside the first. Same format assumed (identical day tabs + time
+       columns). Returns dayResults[] aligned to ROUTINE_DAY_NAMES — the exact
+       shape every routine parser already expects. */
+    async function fetchAllRoutineDays() {
+      const ids = await getRoutineSheetIds();
+      const perSheet = await Promise.all(
+        ids.map(id => Promise.all(
+          ROUTINE_DAY_NAMES.map(d => fetchDayTab(id, d).catch(() => null))
+        ))
+      );
+      return ROUTINE_DAY_NAMES.map((_, dayIdx) => {
+        const tables = perSheet.map(s => s[dayIdx]).filter(r => r?.table);
+        if (!tables.length) return null;
+        /* Base columns = the richest time layout among the sheets for this day */
+        const base = tables.reduce((a, b) =>
+          (b.table.cols?.length || 0) > (a.table.cols?.length || 0) ? b : a, tables[0]);
+        const rows = [];
+        tables.forEach(t => (t.table.rows || []).forEach(r => rows.push(r)));
+        return { table: { cols: base.table.cols || [], rows } };
+      });
     }
 
     /* ── Shared: auto-detect current semester from Semester sheet ── */
