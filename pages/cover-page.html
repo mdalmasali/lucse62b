@@ -154,6 +154,17 @@
     .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.35); }
     .btn-gen:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
+    .btn-print {
+      width: 100%; padding: 13px; margin-top: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+      color: #fff; border: none; border-radius: 12px;
+      font-weight: 700; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+      cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-print:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(20,184,166,0.35); }
+    .btn-print:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
     /* PDF counter line */
     .pdf-counter-line {
       display: flex; align-items: center; gap: 6px; justify-content: center;
@@ -624,21 +635,9 @@
         <button class="btn-gen" id="btnGen" onclick="generatePDF()">
           <i class="fa-solid fa-file-arrow-down"></i> Generate PDF
         </button>
-        <div class="btn-share-row" id="shareBtnRow" style="display:none;">
-          <button class="btn-share btn-wa" id="btnShareWA" onclick="shareCover('whatsapp')">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp
-          </button>
-          <button class="btn-share btn-tg" id="btnShareTG" onclick="shareCover('telegram')">
-            <i class="fa-brands fa-telegram"></i> Telegram <span style="font-size:0.65rem;opacity:0.85;background:rgba(0,0,0,0.18);border-radius:4px;padding:1px 5px;">Recommended</span>
-          </button>
-        </div>
-        <div class="share-hint" id="shareHintDiv" style="display:none;">
-          <i class="fa-solid fa-print share-hint-icon"></i>
-          <div>
-            <span class="share-hint-title">Need a print? Tap a button above!</span>
-            <span class="share-hint-sub">PDF saves automatically → Almas's inbox opens → Attach &amp; send</span>
-          </div>
-        </div>
+        <button class="btn-print" id="btnPrint" onclick="printCover()">
+          <i class="fa-solid fa-print"></i> Print
+        </button>
         <button class="cg-preview-toggle-btn" id="previewToggleBtn" onclick="toggleMobilePreview()">
           <i class="fa-solid fa-eye" id="previewToggleIcon"></i>
           <span id="previewToggleText">Show Live Preview</span>
@@ -692,8 +691,6 @@
       const u = JSON.parse(_ud);
       document.getElementById('fName').value  = u.name || '';
       document.getElementById('fSID').value   = u.id   || '';
-      document.getElementById('shareBtnRow').style.display = 'grid';
-      document.getElementById('shareHintDiv').style.display = 'flex';
     }
     document.getElementById('fTDept').value   = 'Department of Computer Science & Engineering';
     document.getElementById('fDate').value    = formatDateNice(new Date());
@@ -1533,15 +1530,15 @@
       }
     }
 
-    /* ── Share via WhatsApp / Telegram ── */
-    const WA_LINK = 'https://wa.me/8801781782704?text=Sir%2C+I+need+print!';
-    const TG_LINK = 'https://t.me/mdalmasalihimu';
-
-    async function shareCover(platform) {
-      const btn  = document.getElementById(platform === 'whatsapp' ? 'btnShareWA' : 'btnShareTG');
-      const orig = btn.innerHTML;
+    /* ── Print directly from the browser (works logged-in or out) ──
+       Renders the cover to an A4 image and prints it via a hidden iframe
+       (desktop / Android). iOS Safari handles iframe printing poorly, so
+       there we open a print-ready page in a new tab instead. */
+    async function printCover() {
+      const btn  = document.getElementById('btnPrint');
+      const orig = '<i class="fa-solid fa-print"></i> Print';
       btn.disabled = true;
-      btn.innerHTML = '<span class="cg-spinner"></span> Generating…';
+      btn.innerHTML = '<span class="cg-spinner"></span> Preparing…';
 
       try {
         updatePreview();
@@ -1552,29 +1549,40 @@
         ]);
         await new Promise(r => setTimeout(r, 300));
 
-        const canvas = await getCanvasFromPreview();
-        const fname  = buildFilename();
+        const canvas  = await getCanvasFromPreview();
+        const imgData = canvas.toDataURL('image/jpeg', 0.97);
+        const isIOS   = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        /* Step 1: download PDF */
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 210, 297);
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const pageCss = '@page{size:A4 portrait;margin:0;}html,body{margin:0;padding:0;}';
+
         if (isIOS) {
-          const blob = pdf.output('blob');
-          const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          const w = window.open('', '_blank');
+          if (!w) { alert('Please allow pop-ups to print, or use Generate PDF.'); return; }
+          w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Print</title>
+            <style>${pageCss}img{width:100%;display:block;}</style></head>
+            <body><img src="${imgData}" onload="setTimeout(function(){window.focus();window.print();},300);"></body></html>`);
+          w.document.close();
         } else {
-          pdf.save(`${fname}.pdf`);
+          let frame = document.getElementById('cpPrintFrame');
+          if (frame) frame.remove();
+          frame = document.createElement('iframe');
+          frame.id = 'cpPrintFrame';
+          frame.setAttribute('aria-hidden', 'true');
+          frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+          document.body.appendChild(frame);
+          const d = frame.contentWindow.document;
+          d.open();
+          d.write(`<!doctype html><html><head><meta charset="utf-8">
+            <style>${pageCss}img{width:210mm;height:297mm;display:block;}</style></head>
+            <body><img src="${imgData}"></body></html>`);
+          d.close();
+          const go = () => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {} };
+          const img = d.images[0];
+          if (img && !img.complete) { img.onload = go; img.onerror = go; }
+          else setTimeout(go, 200);
         }
-
-        /* Step 2: open inbox after short delay so download triggers first */
-        await new Promise(r => setTimeout(r, 500));
-        window.open(platform === 'whatsapp' ? WA_LINK : TG_LINK, '_blank');
-
-      } catch(err) {
-        alert('Failed. Please use Generate PDF instead.\n' + err.message);
+      } catch (err) {
+        alert('Print failed. Please use Generate PDF instead.\n' + err.message);
       } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
