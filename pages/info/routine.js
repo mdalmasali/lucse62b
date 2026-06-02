@@ -16,6 +16,7 @@ window._rtExcluded     = new Set();
 /* Multi-batch support */
 let _allDayResults          = null;
 let _allCourseInfo          = {};
+let _teacherAcrMap          = {};   /* acronym → { name, desig } from CPG_Teachers */
 let _semLabel               = 'Current Semester';
 let _availableBatchSections = [];
 let _selectedBatch          = '62';
@@ -214,11 +215,34 @@ function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes, dayTimefram
   return { days, schedule, courseInfo, groups, dayTimeframes, semester: sem };
 }
 
+/* Are two teacher names the same person? (ignores titles like Dr./Md./Prof.) */
+function _sameTeacher(a, b) {
+  if (!a || !b) return false;
+  const tok = s => s.toLowerCase()
+    .replace(/\b(dr|md|mr|mrs|ms|prof|professor|engr|mohammad|mohammed)\b\.?/g, ' ')
+    .replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const ta = tok(a), tb = tok(b);
+  if (!ta.length || !tb.length) return false;
+  return ta.every(t => tb.includes(t)) || tb.every(t => ta.includes(t));
+}
+
+/* Resolve the teacher to display for a slot. The routine cell's acronym is
+   section-specific; CPG_Courses stores only the default-section teacher. So when
+   the acronym maps to a DIFFERENT person, trust the acronym (section-accurate);
+   otherwise keep the curated CPG_Courses name (has titles/designation). */
+function _rtResolveTeacher(slot, info) {
+  const cpgName = info.teacher || '';
+  const acr     = (slot.initials || '').trim().toUpperCase();
+  const acrName = acr && _teacherAcrMap[acr] ? _teacherAcrMap[acr].name : '';
+  if (acrName && !_sameTeacher(acrName, cpgName)) return acrName;  /* section differs */
+  return cpgName || acrName || slot.initials || '';
+}
+
 /* ── Render one course card ── */
 function _rtRenderSlot(slot, courseInfo) {
   const color   = courseColor(slot.code);
   const info    = courseInfo[slot.code?.toUpperCase()] || {};
-  const teacher = info.teacher || slot.initials || '';
+  const teacher = _rtResolveTeacher(slot, info);
   const name    = info.name || slot.name || '';
   const title   = name || slot.code || '';
 
@@ -491,8 +515,9 @@ async function loadRoutine(body) {
     _semLabel = sem;
 
     const cpgFetch   = fetchSheet('CPG_Courses').catch(() => null);
+    const tchFetch   = fetchSheet('CPG_Teachers').catch(() => null);
     const dayFetches = ROUTINE_DAY_NAMES.map(d => fetchDayTab(routineSheetId, d).catch(() => null));
-    const [cpgData, ...dayResults] = await Promise.all([cpgFetch, ...dayFetches]);
+    const [cpgData, tchData, ...dayResults] = await Promise.all([cpgFetch, tchFetch, ...dayFetches]);
 
     /* Store globally for re-use when switching batch/section */
     _allDayResults = dayResults;
@@ -510,6 +535,21 @@ async function loadRoutine(body) {
         });
     }
     _allCourseInfo = courseInfo;
+
+    /* Build acronym → teacher map (CPG_Teachers: A=Acronym, B=Name, C=Designation).
+       Used to resolve the section-specific teacher from the routine cell acronym,
+       since CPG_Courses only stores one teacher per course (the default section). */
+    _teacherAcrMap = {};
+    if (tchData) {
+      sheetRows(tchData)
+        .filter(r => r[0] && !['acronym','initials','code'].includes(r[0].toLowerCase()))
+        .forEach(r => {
+          _teacherAcrMap[r[0].trim().toUpperCase()] = {
+            name:  r[1]?.trim() || '',
+            desig: r[2]?.trim() || '',
+          };
+        });
+    }
 
     /* Scan all available batch/section combos */
     _availableBatchSections = _scanBatchSections(dayResults);
@@ -619,7 +659,7 @@ function downloadRoutineImage(btn) {
   const slug  = sem.replace(/\s+/g, '');
   const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const title = isImproved ? 'My Improved Routine' : 'Class Routine';
-  _doDownloadImg(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.png`, title, `${batchLabel} · ${sem}`, cache, null, btn);
+  _doDownloadImg(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.png`, title, `${batchLabel} · ${sem}`, cache, _rtResolveTeacher, btn);
 }
 function downloadRoutinePDF(btn) {
   const isImproved = _routineTab === 'improved' && _improvedCache;
@@ -628,5 +668,5 @@ function downloadRoutinePDF(btn) {
   const slug  = sem.replace(/\s+/g, '');
   const batchLabel = `Batch ${_selectedBatch}, Section ${_selectedSection}`;
   const title = isImproved ? 'My Improved Routine' : 'Class Routine';
-  _doDownloadPDF(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.pdf`, title, `${batchLabel} · ${sem}`, cache, null, btn);
+  _doDownloadPDF(`Routine-CSE${_selectedBatch}${_selectedSection}-${slug}.pdf`, title, `${batchLabel} · ${sem}`, cache, _rtResolveTeacher, btn);
 }
