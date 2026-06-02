@@ -1038,13 +1038,11 @@
       const wrap   = document.getElementById('previewScalerWrap');
       const scaler = document.getElementById('previewScaler');
       if (!outer || !wrap || !scaler) return;
-      const availW = outer.offsetWidth;
+      const availW = outer.clientWidth;
       if (availW <= 0) return;
       const outerTop = outer.getBoundingClientRect().top;
-      const availH   = window.innerHeight - outerTop - 24;
-      const scaleW   = availW / 794;
-      const scaleH   = availH > 200 ? availH / 1123 : 1;
-      const scale    = Math.min(1, scaleW, scaleH);
+      const availH   = Math.max(320, window.innerHeight - outerTop - 24);
+      const scale    = Math.min(1, availW / 794, availH / 1123);
       const vw       = Math.round(794  * scale);
       const vh       = Math.round(1123 * scale);
       scaler.style.transform       = `scale(${scale})`;
@@ -1057,6 +1055,14 @@
       wrap.style.margin   = '0 auto';
     }
     window.addEventListener('resize', scalePreview);
+    window.addEventListener('load', scalePreview);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(scalePreview);
+    /* Re-scale as soon as the preview column gets its real width/height — fixes
+       the case where the first scalePreview ran before layout (page didn't fit). */
+    if (window.ResizeObserver) {
+      const _poEl = document.getElementById('previewOuter');
+      if (_poEl) new ResizeObserver(() => scalePreview()).observe(_poEl);
+    }
 
     function toggleMobilePreview() {
       const panel = document.getElementById('previewPanel');
@@ -1531,12 +1537,22 @@
     }
 
     /* ── Print directly from the browser (works logged-in or out) ──
-       Renders the cover to an A4 image and prints it via a hidden iframe
-       (desktop / Android). iOS Safari handles iframe printing poorly, so
-       there we open a print-ready page in a new tab instead. */
+       Renders the cover to a full-colour A4 image and opens it in a dedicated
+       print window. A top-level window reliably honours `@page { size: A4 }`
+       (so the dialog defaults to A4, not Letter), and print-color-adjust:exact
+       keeps the colours. The window is opened synchronously on the click so
+       pop-up blockers allow it, then filled once the image is ready. */
     async function printCover() {
       const btn  = document.getElementById('btnPrint');
       const orig = '<i class="fa-solid fa-print"></i> Print';
+
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write('<!doctype html><meta charset="utf-8"><title>Print</title>' +
+          '<body style="margin:0;font:14px/1.6 system-ui,sans-serif;color:#444">' +
+          '<p style="padding:24px">Preparing your cover page…</p></body>');
+      }
+
       btn.disabled = true;
       btn.innerHTML = '<span class="cg-spinner"></span> Preparing…';
 
@@ -1551,37 +1567,27 @@
 
         const canvas  = await getCanvasFromPreview();
         const imgData = canvas.toDataURL('image/jpeg', 0.97);
-        const isIOS   = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        const pageCss = '@page{size:A4 portrait;margin:0;}html,body{margin:0;padding:0;}';
-
-        if (isIOS) {
-          const w = window.open('', '_blank');
-          if (!w) { alert('Please allow pop-ups to print, or use Generate PDF.'); return; }
-          w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Print</title>
-            <style>${pageCss}img{width:100%;display:block;}</style></head>
-            <body><img src="${imgData}" onload="setTimeout(function(){window.focus();window.print();},300);"></body></html>`);
-          w.document.close();
-        } else {
-          let frame = document.getElementById('cpPrintFrame');
-          if (frame) frame.remove();
-          frame = document.createElement('iframe');
-          frame.id = 'cpPrintFrame';
-          frame.setAttribute('aria-hidden', 'true');
-          frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-          document.body.appendChild(frame);
-          const d = frame.contentWindow.document;
-          d.open();
-          d.write(`<!doctype html><html><head><meta charset="utf-8">
-            <style>${pageCss}img{width:210mm;height:297mm;display:block;}</style></head>
-            <body><img src="${imgData}"></body></html>`);
-          d.close();
-          const go = () => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {} };
-          const img = d.images[0];
-          if (img && !img.complete) { img.onload = go; img.onerror = go; }
-          else setTimeout(go, 200);
+        if (!win) {
+          alert('Please allow pop-ups for this site to print, or use Generate PDF.');
+          return;
         }
+
+        win.document.open();
+        win.document.write(
+          '<!doctype html><html><head><meta charset="utf-8"><title>Cover Page</title><style>' +
+          '@page{size:A4;margin:0;}' +
+          'html,body{margin:0;padding:0;background:#fff;' +
+          '-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+          'img{width:210mm;height:297mm;display:block;}' +
+          '</style></head><body onafterprint="window.close()">' +
+          '<img src="' + imgData + '" ' +
+          'onload="setTimeout(function(){window.focus();window.print();},250)" ' +
+          'onerror="window.print()"></body></html>'
+        );
+        win.document.close();
       } catch (err) {
+        if (win) { try { win.close(); } catch (e) {} }
         alert('Print failed. Please use Generate PDF instead.\n' + err.message);
       } finally {
         btn.disabled = false;
