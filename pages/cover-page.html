@@ -875,7 +875,7 @@
       const heading  = isLab ? 'Lab Report On' : 'Assignment on';
       const title    = v('fCourseTitle');
       const code     = v('fCourseCode');
-      const hasNo    = isLab || currentType === 'asgn-single';
+      const hasNo    = isLab || currentType.includes('asgn');
       const no       = hasNo ? v('fNo') : '';
       const noLabel  = isLab ? 'Lab Report No' : 'Assignment No';
       const topic    = v('fTopic');
