@@ -126,7 +126,7 @@ function _scanBatchSections(dayResults) {
     }
     for (let r = dataStart; r < rows.length; r++) {
       const cells   = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      const batch   = cells[1]?.trim();
+      const batch   = (cells[1]?.trim() || '').replace(/\.0+$/, '');
       const section = cells[2]?.trim()?.toUpperCase();
       if (batch && /^\d+$/.test(batch) && section && /^[A-Z]$/.test(section)) {
         const key = `${batch}-${section}`;
@@ -169,7 +169,8 @@ function _buildScheduleFor(batch, section) {
     for (let r = dataStart; r < rows.length; r++) {
       const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
       cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
-      if (cells[1]?.trim() === batch && cells[2]?.trim().toUpperCase() === section) targetRows.push(cells);
+      const rowBatch = String(cells[1]?.trim() || '').replace(/\.0+$/, '');
+      if (rowBatch === batch && cells[2]?.trim().toUpperCase() === section) targetRows.push(cells);
     }
     if (!targetRows.length) return;
 

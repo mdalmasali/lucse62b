@@ -298,7 +298,7 @@ async function _riBuildRoutineData(routineSheetId) {
 
     for (let r = dataStart; r < rows.length; r++) {
       const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      const batch   = (cells[1] || '').trim();
+      const batch   = (cells[1] || '').trim().replace(/\.0+$/, '');
       const section = (cells[2] || '').trim().toUpperCase();
       if (!batch || !section) continue;
       const key = `${batch}-${section}`;

@@ -710,7 +710,7 @@ function parse62BSlots(table, dayName) {
   for (let r = dataStart; r < rows.length; r++) {
     const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
     cells.slice(3).forEach((cell, i) => { if (cell.toUpperCase() === 'BREAK') breakSlotIdx = i; });
-    if (cells[1]?.trim() === '62' && cells[2]?.trim().toUpperCase() === 'B') targetRows.push(cells);
+    if (cells[1]?.trim().replace(/\.0+$/,'') === '62' && cells[2]?.trim().toUpperCase() === 'B') targetRows.push(cells);
   }
   if (!targetRows.length) return [];
 
@@ -1172,8 +1172,8 @@ function buildClassSectionSlots(dayTabs) {
 
     for (let r = dataStart; r < rows.length; r++) {
       const cells   = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      const batch   = cells[1] || '';
-      const section = cells[2] || '';
+      const batch   = (cells[1] || '').replace(/\.0+$/, '');
+      const section = (cells[2] || '').trim().toUpperCase();
       if (!batch || !section) continue;
       const key = `${batch}-${section}`;
 
