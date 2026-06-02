@@ -671,21 +671,58 @@ async function fetchSheetGviz(sheetId, tab) {
   return m ? JSON.parse(m[1]).table : null;
 }
 
-/* ── Get routine sheet ID from main sheet ── */
+/* ── Get routine sheet ID from main sheet (first link only) ── */
 async function getRoutineSheetIdByKeyword(env, keyword) {
+  return (await getRoutineSheetIdsByKeyword(env, keyword))[0] || null;
+}
+
+/* ── All routine sheet IDs for a keyword (col B, C, … each a separate link) ──
+   A row may hold several spreadsheet links; extra ones carry additional
+   sections/batches that live only in a second sheet. */
+async function getRoutineSheetIdsByKeyword(env, keyword) {
   const mainId = env.MAIN_SHEET_ID;
-  if (!mainId) return null;
+  if (!mainId) return [];
+  const ids = [];
   try {
     const table = await fetchSheetGviz(mainId, 'Routine');
     for (const row of (table?.rows || [])) {
       const cells = (row.c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      if (cells[0]?.toLowerCase().includes(keyword) && cells[1]) {
-        const m = cells[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-        if (m) return m[1];
+      if (!cells[0]?.toLowerCase().includes(keyword)) continue;
+      for (let i = 1; i < cells.length; i++) {
+        const m = (cells[i] || '').match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+        if (m && !ids.includes(m[1])) ids.push(m[1]);
       }
+      break;
     }
   } catch {}
-  return null;
+  return ids;
+}
+
+/* ── Merge several GVIZ tables (same format) into one ── */
+function mergeGvizTables(tables) {
+  const valid = tables.filter(t => t);
+  if (!valid.length) return null;
+  const base = valid.reduce((a, b) => ((b.cols?.length || 0) > (a.cols?.length || 0) ? b : a), valid[0]);
+  const rows = [];
+  valid.forEach(t => (t.rows || []).forEach(r => rows.push(r)));
+  return { cols: base.cols || [], rows };
+}
+
+/* ── Fetch + merge every day tab across all sheets linked for a keyword ──
+   Returns one merged table per MONITOR_DAY (aligned to MONITOR_DAYS). */
+async function fetchMergedDayTabs(env, ids) {
+  if (!ids.length) return MONITOR_DAYS.map(() => null);
+  const perSheet = await Promise.all(
+    ids.map(id => Promise.all(MONITOR_DAYS.map(d => fetchSheetGviz(id, d).catch(() => null))))
+  );
+  return MONITOR_DAYS.map((_, i) => mergeGvizTables(perSheet.map(s => s[i])));
+}
+
+/* ── Fetch + merge a single-tab sheet (e.g. exam routine) across all IDs ── */
+async function fetchMergedSingleTab(ids) {
+  if (!ids.length) return null;
+  const tables = await Promise.all(ids.map(id => fetchSheetGviz(id).catch(() => null)));
+  return mergeGvizTables(tables);
 }
 
 /* ── Parse 62B slots from a single day tab ── */
@@ -780,7 +817,12 @@ function computeSlotDiff(oldSlots, newSlots) {
   return changes;
 }
 
-/* ── Class Routine Monitor ── */
+/* ── Class Routine Monitor ──
+   Watches 62B's own routine (parse62BSlots). 62B always lives in the first
+   ("Link 1") sheet, so a second Routine Link carries only other sections and
+   never affects this notification — we read just the first link to stay well
+   under the per-run subrequest limit. (Extra links are merged where it matters:
+   the enrolled-courses monitor below.) */
 async function checkClassRoutine(env) {
   const sheetId = (await getRoutineSheetIdByKeyword(env, 'class routine')) || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
   const dayTabs = await Promise.all(MONITOR_DAYS.map(d => fetchSheetGviz(sheetId, d).catch(() => null)));
@@ -1012,18 +1054,15 @@ async function checkEnrolledCourses(env) {
   const endpointsByStudent = {};
   subs.forEach(s => { (endpointsByStudent[s.student_id] ||= []).push(s.endpoint); });
 
-  /* 3. Fetch sheets ONCE */
-  const classSheetId = (await getRoutineSheetIdByKeyword(env, 'class routine'))
-    || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
-  const classDayTabs = await Promise.all(
-    MONITOR_DAYS.map(d => fetchSheetGviz(classSheetId, d).catch(() => null))
-  );
+  /* 3. Fetch sheets ONCE — merge ALL links per keyword (Link 1 + Routine Link N),
+        because an enrolled section may live only in a second sheet. */
+  let classIds = await getRoutineSheetIdsByKeyword(env, 'class routine');
+  if (!classIds.length) classIds = ['1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M'];
+  const classDayTabs = await fetchMergedDayTabs(env, classIds);
   const classSlots = buildClassSectionSlots(classDayTabs);
 
-  const midSheetId   = await getRoutineSheetIdByKeyword(env, 'mid term');
-  const finalSheetId = await getRoutineSheetIdByKeyword(env, 'final term');
-  const midTable   = midSheetId   ? await fetchSheetGviz(midSheetId).catch(() => null)   : null;
-  const finalTable = finalSheetId ? await fetchSheetGviz(finalSheetId).catch(() => null) : null;
+  const midTable   = await fetchMergedSingleTab(await getRoutineSheetIdsByKeyword(env, 'mid term'));
+  const finalTable = await fetchMergedSingleTab(await getRoutineSheetIdsByKeyword(env, 'final term'));
   const examCache = {};
 
   /* 4. Per-enrollment diff */
