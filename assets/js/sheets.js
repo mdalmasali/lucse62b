@@ -45,6 +45,12 @@
     return get(q);
   };
 
+  /* Hidden column indices per tab → { "SATURDAY": [10], ... }.
+     Lets the routine mirror columns the user hid in the Google Sheet. */
+  window.fetchHiddenCols = function (id) {
+    return get('/hidden-cols?id=' + encodeURIComponent(id));
+  };
+
   /* Send SMS via gateway (credentials hidden in Worker) */
   window.sendProxySMS = function (phone, message) {
     return fetch(W + '/sms', {

@@ -82,6 +82,16 @@ export default {
         return await gvizProxy(id, tab, cors, env);
       }
 
+      // ── GET /hidden-cols?id=SHEET_ID — hidden column indices per tab ──
+      // GVIZ doesn't expose hidden columns, so we read columnMetadata via the
+      // Sheets API. Lets the site mirror columns the user hid in the sheet.
+      if (p === '/hidden-cols') {
+        const id = url.searchParams.get('id');
+        if (!id) return errResp(cors, 400, 'Missing id');
+        if (!/^[A-Za-z0-9_-]{20,60}$/.test(id)) return errResp(cors, 400, 'Invalid sheet ID');
+        return jsonResp(cors, await fetchHiddenColumns(id, env));
+      }
+
       // ── POST /sms  { phone, message } ────────────────────────────────
       if (p === '/sms' && request.method === 'POST') {
         const { phone, message } = await request.json();
@@ -452,6 +462,39 @@ function v4ToTable(values) {
       }),
     })),
   };
+}
+
+/* Hidden column indices per tab → { "SATURDAY": [10], ... }.
+   GVIZ has no hidden flag, so read columnMetadata.hiddenByUser via Sheets API.
+   Cached in KV (10 min) so repeated routine loads don't re-hit the API. */
+async function fetchHiddenColumns(sheetId, env) {
+  if (!env || !env.DRIVE_API_KEY) return {};
+  const cacheKey = `hidden:v4:${sheetId}`;
+  if (env.SMS_RATE) {
+    try { const c = await env.SMS_RATE.get(cacheKey); if (c) return JSON.parse(c); } catch {}
+  }
+  const out = {};
+  try {
+    const fields = encodeURIComponent('sheets(properties(title),data(columnMetadata(hiddenByUser)))');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}` +
+      `?includeGridData=true&fields=${fields}&key=${env.DRIVE_API_KEY}`;
+    const r = await fetch(url, { headers: { 'Referer': 'https://lucse62b.xyz/' } });
+    if (r.ok) {
+      const d = await r.json();
+      (d.sheets || []).forEach(s => {
+        const title = s.properties?.title;
+        if (!title) return;
+        const meta = s.data?.[0]?.columnMetadata || [];
+        const hidden = [];
+        meta.forEach((c, i) => { if (c && c.hiddenByUser) hidden.push(i); });
+        out[title] = hidden;
+      });
+    }
+  } catch {}
+  if (env.SMS_RATE) {
+    try { await env.SMS_RATE.put(cacheKey, JSON.stringify(out), { expirationTtl: 600 }); } catch {}
+  }
+  return out;
 }
 
 async function tryV4(sheetId, tab, env) {

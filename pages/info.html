@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602k';
+    const _BUILD = '20260602l';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -937,28 +937,60 @@
       return { table: { cols: base.table.cols || [], rows } };
     }
 
-    /* ── Fetch every routine day tab from ALL class-routine sheets and merge
-       their rows per day, so sections/batches that live in a second sheet show
-       up alongside the first. Returns dayResults[] aligned to ROUTINE_DAY_NAMES
-       — the exact shape every routine parser already expects. */
+    /* ── Drop columns the user hid in the Google Sheet ──
+       hiddenIdx is a list of column indices; remove them from both the column
+       headers and every row so the parsers never see them (positions stay
+       aligned because cols and cells lose the same indices). */
+    function stripHiddenCols(dayResult, hiddenIdx) {
+      if (!dayResult?.table || !hiddenIdx || !hiddenIdx.length) return dayResult;
+      const drop = new Set(hiddenIdx);
+      const t = dayResult.table;
+      return { table: {
+        ...t,
+        cols: (t.cols || []).filter((_, i) => !drop.has(i)),
+        rows: (t.rows || []).map(r => ({ ...r, c: (r.c || []).filter((_, i) => !drop.has(i)) })),
+      }};
+    }
+
+    /* Case-insensitive lookup of a tab's hidden-column list. */
+    function hiddenForTab(map, tab) {
+      if (!map) return [];
+      if (map[tab]) return map[tab];
+      const key = Object.keys(map).find(k => k.toUpperCase() === String(tab).toUpperCase());
+      return key ? map[key] : [];
+    }
+
+    /* ── Fetch every routine day tab from ALL class-routine sheets, drop the
+       columns hidden in each sheet, then merge rows per day. Returns
+       dayResults[] aligned to ROUTINE_DAY_NAMES — the shape parsers expect. */
     async function fetchAllRoutineDays() {
       const ids = await getRoutineSheetIds();
-      const perSheet = await Promise.all(
-        ids.map(id => Promise.all(
-          ROUTINE_DAY_NAMES.map(d => fetchDayTab(id, d).catch(() => null))
-        ))
-      );
+      const perSheet = await Promise.all(ids.map(async id => {
+        const [hidden, ...days] = await Promise.all([
+          fetchHiddenCols(id).catch(() => ({})),
+          ...ROUTINE_DAY_NAMES.map(d => fetchDayTab(id, d).catch(() => null)),
+        ]);
+        return ROUTINE_DAY_NAMES.map((d, i) => stripHiddenCols(days[i], hiddenForTab(hidden, d)));
+      }));
       return ROUTINE_DAY_NAMES.map((_, dayIdx) =>
         mergeSheetTables(perSheet.map(s => s[dayIdx]))
       );
     }
 
     /* ── Fetch a single-tab sheet (e.g. an exam routine) from EVERY linked ID
-       for a keyword and merge the rows. Returns one merged table (or null). ── */
+       for a keyword, drop hidden columns, and merge the rows. ── */
     async function fetchMergedRoutineSheet(keyword) {
       const ids = await getSheetIdsFromRoutineTab(keyword);
       if (!ids.length) return null;
-      const tables = await Promise.all(ids.map(id => fetchSheetById(id).catch(() => null)));
+      const tables = await Promise.all(ids.map(async id => {
+        const [hidden, table] = await Promise.all([
+          fetchHiddenCols(id).catch(() => ({})),
+          fetchSheetById(id).catch(() => null),
+        ]);
+        /* Single-tab sheet → the first tab's hidden columns apply. */
+        const firstHidden = hidden && Object.keys(hidden).length ? Object.values(hidden)[0] : [];
+        return stripHiddenCols(table, firstHidden);
+      }));
       return mergeSheetTables(tables);
     }
 
