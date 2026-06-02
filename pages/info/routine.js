@@ -227,15 +227,27 @@ function _sameTeacher(a, b) {
 }
 
 /* Resolve the teacher to display for a slot. The routine cell's acronym is
-   section-specific; CPG_Courses stores only the default-section teacher. So when
-   the acronym maps to a DIFFERENT person, trust the acronym (section-accurate);
-   otherwise keep the curated CPG_Courses name (has titles/designation). */
+   section-specific; CPG_Courses stores only the default-section (62B) teacher.
+
+   • 62B regular slots  → CPG_Courses is curated for this section, so trust it
+     (keeps titles/designation like "Dr."), falling back to the acronym.
+   • Any other section, or a retake/improve slot from another section → the
+     routine acronym is the source of truth. Resolve it via CPG_Teachers; if the
+     acronym maps to the same person as CPG, keep the curated name; if it's a
+     different person, use the acronym's name; if the acronym isn't in
+     CPG_Teachers at all, show the acronym itself (never the wrong 62B default). */
 function _rtResolveTeacher(slot, info) {
-  const cpgName = info.teacher || '';
-  const acr     = (slot.initials || '').trim().toUpperCase();
-  const acrName = acr && _teacherAcrMap[acr] ? _teacherAcrMap[acr].name : '';
-  if (acrName && !_sameTeacher(acrName, cpgName)) return acrName;  /* section differs */
-  return cpgName || acrName || slot.initials || '';
+  const cpgName      = info.teacher || '';
+  const acr          = (slot.initials || '').trim().toUpperCase();
+  const acrName      = acr && _teacherAcrMap[acr] ? _teacherAcrMap[acr].name : '';
+  const isRetakeSlot = slot.source === 'retake' || slot.source === 'improve';
+  const isHome       = !isRetakeSlot && _selectedBatch === '62' && _selectedSection === 'B';
+
+  if (isHome) return cpgName || acrName || slot.initials || '';
+
+  if (acrName) return _sameTeacher(acrName, cpgName) ? cpgName : acrName;
+  if (acr)     return slot.initials;          /* acronym present but unknown → show it */
+  return cpgName || '';
 }
 
 /* ── Render one course card ── */

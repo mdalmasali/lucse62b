@@ -43,7 +43,9 @@ async function _rrBuild62BSchedule(routineSheetId) {
 
     for (let r = dataStart; r < rows.length; r++) {
       const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
-      if (cells[1] !== '62' || cells[2] !== 'B') continue;
+      const rowBatch   = (cells[1] || '').replace(/\.0+$/, '');
+      const rowSection = (cells[2] || '').trim().toUpperCase();
+      if (rowBatch !== '62' || rowSection !== 'B') continue;
 
       cells.slice(3).forEach((cell, i) => {
         if (!cell || cell.toUpperCase() === 'BREAK') return;
