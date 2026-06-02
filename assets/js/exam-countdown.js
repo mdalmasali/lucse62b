@@ -126,19 +126,33 @@
     cdStopTick(`info_${prefix}`);
   }
 
-  /* ── Sheet helper ── */
-  async function cdGetSheetId(keyword) {
+  /* ── Sheet helper: ALL linked sheet IDs for a keyword (B = Link 1, C = …) ── */
+  async function cdGetSheetIds(keyword) {
+    const ids = [];
     try {
       const d = await window.fetchSheet('Routine');
       const rows = (d.table?.rows || []).map(r => (r.c || []).map(c => (c?.v != null ? String(c.v).trim() : '')));
       for (const row of rows) {
-        if (row[0]?.toLowerCase().includes(keyword) && row[1]) {
-          const m = row[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-          if (m) return m[1];
+        if (!row[0]?.toLowerCase().includes(keyword)) continue;
+        for (let i = 1; i < row.length; i++) {
+          const m = (row[i] || '').match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+          if (m && !ids.includes(m[1])) ids.push(m[1]);
         }
+        break;
       }
     } catch (_) {}
-    return null;
+    return ids;
+  }
+
+  /* Merge several GVIZ tables (same format) into one. */
+  function cdMergeTables(tables) {
+    const valid = tables.filter(t => t?.table);
+    if (!valid.length) return null;
+    const base = valid.reduce((a, b) =>
+      (b.table.cols?.length || 0) > (a.table.cols?.length || 0) ? b : a, valid[0]);
+    const rows = [];
+    valid.forEach(t => (t.table.rows || []).forEach(r => rows.push(r)));
+    return { table: { cols: base.table.cols || [], rows } };
   }
 
   /* ── Mini exam parser (batch 62, section B) ── */
@@ -172,7 +186,7 @@
       });
     }
 
-    const tbNum = String(targetBatch).replace(/[^0-9]/g, '');
+    const tbNum = String(targetBatch).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
     const tsStr = String(targetSection).trim().toUpperCase();
     const allExams = [];
 
@@ -213,7 +227,7 @@
         if (!row) continue;
         const section = (row[sectionCol] || '').trim();
         if (!section || /^(section|day|date|time)$/i.test(section)) continue;
-        const cbNum = String(rowBatches[r]).replace(/[^0-9]/g, '');
+        const cbNum = String(rowBatches[r]).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
         const csStr = section.toUpperCase();
         if (cbNum === tbNum && (csStr === tsStr || csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr))) {
           examDays.forEach(day => {
@@ -250,17 +264,18 @@
     if (typeof window.fetchSheet !== 'function') return;
 
     try {
-      const [midId, finalId] = await Promise.all([
-        cdGetSheetId('mid term'),
-        cdGetSheetId('final term'),
+      const [midIds, finalIds] = await Promise.all([
+        cdGetSheetIds('mid term'),
+        cdGetSheetIds('final term'),
       ]);
 
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const hits = [];
 
-      for (const [type, sheetId, color] of [['Mid', midId, '#4ade80'], ['Final', finalId, '#f87171']]) {
-        if (!sheetId) continue;
-        const data = await window.fetchSheetById(sheetId).catch(() => null);
+      for (const [type, ids, color] of [['Mid', midIds, '#4ade80'], ['Final', finalIds, '#f87171']]) {
+        if (!ids.length) continue;
+        const tables = await Promise.all(ids.map(id => window.fetchSheetById(id).catch(() => null)));
+        const data = cdMergeTables(tables);
         if (!data) continue;
         const exams = cdParseExams(data, '62', 'B');
         const upcoming = exams.filter(e => { const d = cdDateObj(e.date); return d && d >= today; });

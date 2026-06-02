@@ -83,7 +83,7 @@ function parseExamRoutine(data, targetBatch, targetSection) {
     });
   }
 
-  const tbNum = String(targetBatch).replace(/[^0-9]/g, '');
+  const tbNum = String(targetBatch).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
   const tsStr = String(targetSection).trim().toUpperCase();
   const allExams = [];
 
@@ -136,7 +136,7 @@ function parseExamRoutine(data, targetBatch, targetSection) {
       if (!row) continue;
       const section = (row[sectionCol] || '').trim();
       if (!section || /^(section|day|date|time)$/i.test(section)) continue;
-      const cbNum = String(rowBatches[r]).replace(/[^0-9]/g, '');
+      const cbNum = String(rowBatches[r]).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
       const csStr = section.toUpperCase();
       const batchMatch   = cbNum && cbNum === tbNum;
       const sectionMatch = csStr === tsStr || csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr);
@@ -263,20 +263,19 @@ async function _examShowRetakeUI(type) {
 
   try {
     const keyword = type === 'mid' ? 'mid term' : 'final term';
-    const sheetId = await getSheetIdFromRoutineTab(keyword);
-    if (!sheetId) {
+
+    const [cpgData, examData, sem] = await Promise.all([
+      fetchSheet('CPG_Courses').catch(() => null),
+      fetchMergedRoutineSheet(keyword),     /* merges Link 1 + extra Routine Link N */
+      getSemesterLabel(),
+    ]);
+    if (!examData) {
       content.innerHTML = `<div class="info-placeholder">
         <i class="fa-solid fa-link-slash" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
         <p style="font-weight:600;">No ${label} Routine linked yet.</p>
       </div>`;
       return;
     }
-
-    const [cpgData, examData, sem] = await Promise.all([
-      fetchSheet('CPG_Courses').catch(() => null),
-      fetchExamTab(sheetId),
-      getSemesterLabel(),
-    ]);
 
     const courseInfo = {};
     if (cpgData) {
@@ -443,8 +442,12 @@ async function doExamSearch(type) {
   if (resultDiv) resultDiv.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Fetching routine...</div>';
 
   try {
-    const sheetId = await getSheetIdFromRoutineTab(keyword);
-    if (!sheetId) {
+    const [cpgData, examData, sem] = await Promise.all([
+      fetchSheet('CPG_Courses').catch(() => null),
+      fetchMergedRoutineSheet(keyword),     /* merges Link 1 + extra Routine Link N */
+      getSemesterLabel(),
+    ]);
+    if (!examData) {
       if (resultDiv) resultDiv.innerHTML = `<div class="info-placeholder">
         <i class="fa-solid fa-link-slash" style="opacity:0.2;font-size:2rem;display:block;margin-bottom:14px;"></i>
         <p style="font-weight:600;">No ${label} Routine linked yet.</p>
@@ -453,12 +456,6 @@ async function doExamSearch(type) {
       </div>`;
       return;
     }
-
-    const [cpgData, examData, sem] = await Promise.all([
-      fetchSheet('CPG_Courses').catch(() => null),
-      fetchExamTab(sheetId),
-      getSemesterLabel(),
-    ]);
 
     const courseInfo = {};
     if (cpgData) {

@@ -879,7 +879,7 @@
     }
 
     /* ── Lazy-load external script ── */
-    const _BUILD = '20260602j';
+    const _BUILD = '20260602k';
     function loadScript(src) {
       const versioned = src.startsWith('http') ? src : src + '?v=' + _BUILD;
       return new Promise((resolve, reject) => {
@@ -890,35 +890,16 @@
       });
     }
 
-    /* ── Shared: find a sheet ID from the Routine tab by keyword in col A ── */
-    async function getSheetIdFromRoutineTab(keyword) {
-      try {
-        const d = await fetchSheet('Routine');
-        for (const row of sheetRows(d)) {
-          if (row[0]?.toLowerCase().includes(keyword.toLowerCase()) && row[1]) {
-            const m = row[1].match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-            if (m) return m[1];
-          }
-        }
-      } catch(_) {}
-      return null;
-    }
-
-    async function getRoutineSheetId() {
-      return (await getSheetIdFromRoutineTab('class routine'))
-          || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
-    }
-
-    /* ── All class-routine sheet IDs (Link 1 + any extra "Routine Link N") ──
-       The "class routine" row of the Routine tab may hold several spreadsheet
-       links across columns (B = Link 1, C = Link 2, …). Each extra sheet has the
-       same format and carries additional sections/batches to merge in. */
-    async function getRoutineSheetIds() {
+    /* ── Shared: ALL spreadsheet IDs in a Routine-tab row matched by keyword ──
+       A row may hold several links across columns (B = Link 1, C = Link 2, …).
+       Each extra sheet has the same format and carries additional rows to merge.
+       Used by every routine type: class routine, mid term, final term. */
+    async function getSheetIdsFromRoutineTab(keyword) {
       const ids = [];
       try {
         const d = await fetchSheet('Routine');
         for (const row of sheetRows(d)) {
-          if (!row[0]?.toLowerCase().includes('class routine')) continue;
+          if (!row[0]?.toLowerCase().includes(keyword.toLowerCase())) continue;
           for (let i = 1; i < row.length; i++) {
             const m = (row[i] || '').match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
             if (m && !ids.includes(m[1])) ids.push(m[1]);
@@ -926,15 +907,40 @@
           break;
         }
       } catch(_) {}
-      if (!ids.length) ids.push('1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M');
       return ids;
+    }
+
+    /* Backward-compatible single-ID lookup (first link only). */
+    async function getSheetIdFromRoutineTab(keyword) {
+      return (await getSheetIdsFromRoutineTab(keyword))[0] || null;
+    }
+
+    async function getRoutineSheetId() {
+      return (await getSheetIdFromRoutineTab('class routine'))
+          || '1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M';
+    }
+
+    async function getRoutineSheetIds() {
+      const ids = await getSheetIdsFromRoutineTab('class routine');
+      return ids.length ? ids : ['1jjOmSUg3U_uyzM0mtaj1FldEOD1nNeMCAhybEiQTW3M'];
+    }
+
+    /* ── Shared: merge several GVIZ tables (same format) into one ──
+       Keeps the richest column layout and concatenates every sheet's rows. */
+    function mergeSheetTables(tables) {
+      const valid = tables.filter(t => t?.table);
+      if (!valid.length) return null;
+      const base = valid.reduce((a, b) =>
+        (b.table.cols?.length || 0) > (a.table.cols?.length || 0) ? b : a, valid[0]);
+      const rows = [];
+      valid.forEach(t => (t.table.rows || []).forEach(r => rows.push(r)));
+      return { table: { cols: base.table.cols || [], rows } };
     }
 
     /* ── Fetch every routine day tab from ALL class-routine sheets and merge
        their rows per day, so sections/batches that live in a second sheet show
-       up alongside the first. Same format assumed (identical day tabs + time
-       columns). Returns dayResults[] aligned to ROUTINE_DAY_NAMES — the exact
-       shape every routine parser already expects. */
+       up alongside the first. Returns dayResults[] aligned to ROUTINE_DAY_NAMES
+       — the exact shape every routine parser already expects. */
     async function fetchAllRoutineDays() {
       const ids = await getRoutineSheetIds();
       const perSheet = await Promise.all(
@@ -942,16 +948,18 @@
           ROUTINE_DAY_NAMES.map(d => fetchDayTab(id, d).catch(() => null))
         ))
       );
-      return ROUTINE_DAY_NAMES.map((_, dayIdx) => {
-        const tables = perSheet.map(s => s[dayIdx]).filter(r => r?.table);
-        if (!tables.length) return null;
-        /* Base columns = the richest time layout among the sheets for this day */
-        const base = tables.reduce((a, b) =>
-          (b.table.cols?.length || 0) > (a.table.cols?.length || 0) ? b : a, tables[0]);
-        const rows = [];
-        tables.forEach(t => (t.table.rows || []).forEach(r => rows.push(r)));
-        return { table: { cols: base.table.cols || [], rows } };
-      });
+      return ROUTINE_DAY_NAMES.map((_, dayIdx) =>
+        mergeSheetTables(perSheet.map(s => s[dayIdx]))
+      );
+    }
+
+    /* ── Fetch a single-tab sheet (e.g. an exam routine) from EVERY linked ID
+       for a keyword and merge the rows. Returns one merged table (or null). ── */
+    async function fetchMergedRoutineSheet(keyword) {
+      const ids = await getSheetIdsFromRoutineTab(keyword);
+      if (!ids.length) return null;
+      const tables = await Promise.all(ids.map(id => fetchSheetById(id).catch(() => null)));
+      return mergeSheetTables(tables);
     }
 
     /* ── Shared: auto-detect current semester from Semester sheet ── */
