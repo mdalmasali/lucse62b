@@ -475,10 +475,10 @@
         <!-- Template Selector -->
         <div class="cg-sec" style="margin-top:0;padding-top:0;border-top:none;">Template</div>
         <div class="cg-type-grid" style="margin-bottom:20px;">
-          <button class="cg-tpl-btn active" data-tpl="v2" onclick="setTemplate('v2',this)">
+          <button class="cg-tpl-btn active" data-tpl="t1" onclick="setTemplate('t1',this)">
             <i class="fa-solid fa-file-lines"></i>Template 1
           </button>
-          <button class="cg-tpl-btn" data-tpl="classic" onclick="setTemplate('classic',this)">
+          <button class="cg-tpl-btn" data-tpl="t2" onclick="setTemplate('t2',this)">
             <i class="fa-solid fa-file-alt"></i>Template 2
           </button>
         </div>
@@ -682,7 +682,7 @@
   <script src="../assets/js/auth.js"></script>
   <script>
     let currentType     = 'asgn-single';
-    let currentTemplate = 'v2';
+    let currentTemplate = 't1';
     let members = [];
     let memberIdCtr = 0;
 
@@ -782,10 +782,10 @@
 
     /* ── Build preview HTML ── */
     function buildCoverHTML() {
-      return currentTemplate === 'v2' ? buildCoverHTML_v2() : buildCoverHTML_classic();
+      return currentTemplate === 't1' ? buildCoverHTML_t1() : buildCoverHTML_t2();
     }
 
-    function buildCoverHTML_v2() {
+    function buildCoverHTML_t1() {   /* UI "Template 1" — modern, table-based (cp2-* styles) */
       const isGroup = currentType.includes('group');
       const isLab   = currentType.includes('lab');
 
@@ -868,7 +868,7 @@
       `;
     }
 
-    function buildCoverHTML_classic() {
+    function buildCoverHTML_t2() {   /* UI "Template 2" — classic, line-based (cp-* styles) */
       const isGroup = currentType.includes('group');
       const isLab   = currentType.includes('lab');
 
@@ -1024,8 +1024,9 @@
           renderMembers();
         }
         if (s.template) {
-          currentTemplate = s.template;
-          const tplBtn = document.querySelector(`[data-tpl="${s.template}"]`);
+          /* migrate legacy saved IDs (v2 → t1, classic → t2) */
+          currentTemplate = s.template === 'v2' ? 't1' : (s.template === 'classic' ? 't2' : s.template);
+          const tplBtn = document.querySelector(`[data-tpl="${currentTemplate}"]`);
           if (tplBtn) {
             document.querySelectorAll('[data-tpl]').forEach(b => b.classList.remove('active'));
             tplBtn.classList.add('active');
