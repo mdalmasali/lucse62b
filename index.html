@@ -214,7 +214,7 @@
       <a href="index.html" class="topbar-brand">CSE 62B · PORTAL</a>
       <ul class="topbar-links">
         <li><a href="index.html">Home</a></li>
-        <li class="auth-only"><a href="pages/students.html">Students</a></li>
+        <li><a href="pages/notice.html">Notice</a></li>
         <li class="auth-only"><a href="pages/classwork.html">Classwork</a></li>
         <li class="auth-only"><a href="pages/info.html">Info</a></li>
         <li class="auth-only"><a href="pages/resources.html">Resources</a></li>
@@ -233,7 +233,7 @@
     <div class="mobile-nav-overlay" id="mobileNav">
       <button class="mobile-nav-close" id="mobileNavClose">✕</button>
       <a href="index.html">Home</a>
-      <a class="auth-only" href="pages/students.html">Students</a>
+      <a href="pages/notice.html">Notice</a>
       <a class="auth-only" href="pages/classwork.html">Classwork</a>
       <a class="auth-only" href="pages/info.html">Info</a>
       <a class="auth-only" href="pages/resources.html">Resources</a>
@@ -452,59 +452,6 @@
     </div>
 
     <div class="divider fade-in delay-2"></div>
-
-    <!-- LU Notices Widget -->
-    <style>
-      .lu-notices-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
-      .lu-notice-card { display:flex; flex-direction:column; background:rgba(255,255,255,0.03);
-        border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden;
-        transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s; }
-      .lu-notice-card:hover { transform:translateY(-4px); border-color:rgba(139,92,246,0.4);
-        box-shadow:0 14px 34px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.18); }
-      .lu-notice-thumb { position:relative; display:block; width:100%; aspect-ratio:1/1.3;
-        background:#0d0820; overflow:hidden; cursor:zoom-in; border:none; padding:0; }
-      .lu-notice-thumb img { width:100%; height:100%; object-fit:cover; object-position:top center;
-        display:block; transition:transform .45s ease; }
-      .lu-notice-thumb:hover img { transform:scale(1.06); }
-      .lu-notice-zoom { position:absolute; bottom:8px; right:8px; width:30px; height:30px;
-        border-radius:50%; background:rgba(0,0,0,0.55); color:#fff; display:flex;
-        align-items:center; justify-content:center; font-size:.78rem; opacity:0;
-        transition:opacity .25s; backdrop-filter:blur(4px); }
-      .lu-notice-thumb:hover .lu-notice-zoom { opacity:1; }
-      .lu-notice-thumb-empty { display:flex; align-items:center; justify-content:center;
-        width:100%; aspect-ratio:1/1.3; font-size:2.4rem; color:rgba(167,139,250,0.55);
-        background:linear-gradient(160deg,rgba(124,58,237,0.14),rgba(14,165,233,0.08));
-        text-decoration:none; cursor:pointer; }
-      .lu-notice-body { padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; flex:1; }
-      .lu-notice-date { font-size:.68rem; color:var(--text-secondary); display:flex;
-        align-items:center; gap:5px; font-weight:600; }
-      .lu-notice-title { font-size:.84rem; font-weight:600; line-height:1.4; color:var(--text);
-        margin:0; display:-webkit-box; -webkit-line-clamp:3; line-clamp:3; -webkit-box-orient:vertical;
-        overflow:hidden; }
-      .lu-notice-link { margin-top:auto; font-size:.74rem; font-weight:600; color:var(--accent-bright);
-        text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding-top:4px; }
-      .lu-notice-link:hover { text-decoration:underline; }
-      html[data-theme="light"] .lu-notice-card { background:rgba(0,0,0,0.015); border-color:rgba(0,0,0,0.08); }
-      html[data-theme="light"] .lu-notice-card:hover { box-shadow:0 14px 34px rgba(0,0,0,0.12); }
-      html[data-theme="light"] .lu-notice-thumb { background:#ece8f5; }
-      @media(max-width:540px){
-        .lu-notices-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
-        .lu-notice-title { font-size:.78rem; -webkit-line-clamp:2; line-clamp:2; }
-        .lu-notice-body { padding:10px 11px 12px; }
-      }
-    </style>
-    <div class="lu-notices-section fade-in delay-2" id="luNoticesSection" style="margin-bottom:44px;display:none;">
-      <div class="section-header" style="margin-bottom:16px;">
-        <span class="section-label">📢 LU Notices</span>
-        <div class="section-line"></div>
-      </div>
-      <div class="lu-notices-grid" id="luNoticesGrid"></div>
-      <div style="text-align:right;margin-top:10px;">
-        <a href="https://lus.ac.bd/notice/" target="_blank" rel="noopener" style="font-size:0.8rem;color:var(--accent-bright);text-decoration:none;font-weight:600;opacity:0.75;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">
-          View All Notices <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem;"></i>
-        </a>
-      </div>
-    </div>
 
     <!-- Memories Slideshow -->
     <div class="memories-section fade-in delay-2" id="memoriesSection" style="margin-bottom:44px;display:none;">
@@ -1104,79 +1051,6 @@
       document.getElementById('memLb').classList.remove('open');
     }
     document.addEventListener('keydown', e => { if(e.key==='Escape') closememLb(); });
-  </script>
-  <script>
-    /* -- LU Notices widget — latest notices from lus.ac.bd via the Worker -- */
-    (async function loadLuNotices() {
-      /* On localhost, talk to the local `wrangler dev` worker (port 8787) so the
-         widget can be tested before deploying; in production use the live worker. */
-      const _isLocal  = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-      const WORKER    = _isLocal
-        ? `${location.protocol}//${location.hostname}:8787`
-        : 'https://lucse62b-api.sy164425.workers.dev';
-      const API       = `${WORKER}/notices`;
-      const CACHE_KEY = 'lu62b_notices_v1';
-      const CACHE_TTL = 1_800_000; // 30 min
-      const MAX       = 5;
-      const section = document.getElementById('luNoticesSection');
-      const grid    = document.getElementById('luNoticesGrid');
-      if (!section || !grid) return;
-
-      function esc(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
-          ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-      }
-      function fmtDate(s) {
-        const d = new Date(s);
-        if (isNaN(d.getTime())) return esc(s);
-        return d.toLocaleDateString('en-US', { day:'numeric', month:'short', year:'numeric' });
-      }
-
-      try {
-        let notices;
-        try {
-          const raw = localStorage.getItem(CACHE_KEY);
-          if (raw) { const c = JSON.parse(raw); if (Date.now() - c.ts < CACHE_TTL) notices = c.data; }
-        } catch (e) {}
-
-        if (!notices) {
-          const res = await fetch(API);
-          if (!res.ok) throw new Error('notices ' + res.status);
-          const data = await res.json();
-          notices = data.notices || [];
-          if (notices.length) {
-            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: notices })); } catch (e) {}
-          }
-        }
-
-        notices = (notices || []).slice(0, MAX);
-        if (!notices.length) return;
-
-        grid.innerHTML = notices.map(n => {
-          const title = esc(n.title);
-          const date  = fmtDate(n.date);
-          const link  = esc(n.link);
-          const img   = n.image ? esc(n.image) : '';
-          const thumb = img
-            ? `<button class="lu-notice-thumb" type="button" onclick="openMemLb('${img.replace(/'/g, "\\'")}')" aria-label="View notice image">
-                 <img src="${img}" alt="" loading="lazy" decoding="async">
-                 <span class="lu-notice-zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
-               </button>`
-            : `<a class="lu-notice-thumb-empty" href="${link}" target="_blank" rel="noopener" aria-label="Open notice"><i class="fa-solid fa-file-lines"></i></a>`;
-          return `
-            <article class="lu-notice-card">
-              ${thumb}
-              <div class="lu-notice-body">
-                <span class="lu-notice-date"><i class="fa-regular fa-calendar"></i> ${date}</span>
-                <h4 class="lu-notice-title">${title}</h4>
-                <a class="lu-notice-link" href="${link}" target="_blank" rel="noopener">Read on LU <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-              </div>
-            </article>`;
-        }).join('');
-
-        section.style.display = 'block';
-      } catch (e) { /* fail silently — widget stays hidden */ }
-    })();
   </script>
   <script>
     /* -- Deadline Countdown -- */

@@ -1048,10 +1048,8 @@ async function checkNotices(env) {
   const title = fresh.length === 1 ? '📢 New LU Notice' : `📢 ${fresh.length} New LU Notices`;
   const body  = fresh.slice(0, 5).map(n => `• ${n.title}`).join('\n')
               + (fresh.length > 5 ? `\n…and ${fresh.length - 5} more` : '');
-  /* Link straight to the notice when it's the only new one; otherwise to the
-     LU notice board so the student sees them all. */
-  const link  = fresh.length === 1 ? (fresh[0].link || 'https://lus.ac.bd/notice/') : 'https://lus.ac.bd/notice/';
-  await insertNotification(env, 'lu_notice', title, body, link);
+  /* Open our own Notice page (the student sees every notice there). */
+  await insertNotification(env, 'lu_notice', title, body, '/pages/notice.html');
   await sendPushToAll(env);
 }
 

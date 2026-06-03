@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>Notice | CSE 62B LU</title>
+  <meta name="description" content="Latest notices from Leading University for CSE Batch 62, Section B.">
+  <link rel="canonical" href="https://lucse62b.xyz/pages/notice.html">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .lu-notices-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; margin-bottom:44px; }
+    .lu-notice-card { display:flex; flex-direction:column; background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden;
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s, border-color .3s; }
+    .lu-notice-card:hover { transform:translateY(-4px); border-color:rgba(139,92,246,0.4);
+      box-shadow:0 14px 34px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.18); }
+    .lu-notice-thumb { position:relative; display:block; width:100%; aspect-ratio:1/1.3;
+      background:#0d0820; overflow:hidden; cursor:zoom-in; border:none; padding:0; }
+    .lu-notice-thumb img { width:100%; height:100%; object-fit:cover; object-position:top center;
+      display:block; transition:transform .45s ease; }
+    .lu-notice-thumb:hover img { transform:scale(1.06); }
+    .lu-notice-zoom { position:absolute; bottom:8px; right:8px; width:30px; height:30px;
+      border-radius:50%; background:rgba(0,0,0,0.55); color:#fff; display:flex;
+      align-items:center; justify-content:center; font-size:.78rem; opacity:0;
+      transition:opacity .25s; backdrop-filter:blur(4px); }
+    .lu-notice-thumb:hover .lu-notice-zoom { opacity:1; }
+    .lu-notice-thumb-empty { display:flex; align-items:center; justify-content:center;
+      width:100%; aspect-ratio:1/1.3; font-size:2.4rem; color:rgba(167,139,250,0.55);
+      background:linear-gradient(160deg,rgba(124,58,237,0.14),rgba(14,165,233,0.08));
+      text-decoration:none; cursor:pointer; }
+    .lu-notice-body { padding:13px 15px 15px; display:flex; flex-direction:column; gap:6px; flex:1; }
+    .lu-notice-date { font-size:.68rem; color:var(--text-secondary); display:flex;
+      align-items:center; gap:5px; font-weight:600; }
+    .lu-notice-title { font-size:.86rem; font-weight:600; line-height:1.4; color:var(--text);
+      margin:0; display:-webkit-box; -webkit-line-clamp:4; line-clamp:4; -webkit-box-orient:vertical;
+      overflow:hidden; }
+    .lu-notice-link { margin-top:auto; font-size:.74rem; font-weight:600; color:var(--accent-bright);
+      text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding-top:6px; }
+    .lu-notice-link:hover { text-decoration:underline; }
+    html[data-theme="light"] .lu-notice-card { background:rgba(0,0,0,0.015); border-color:rgba(0,0,0,0.08); }
+    html[data-theme="light"] .lu-notice-card:hover { box-shadow:0 14px 34px rgba(0,0,0,0.12); }
+    html[data-theme="light"] .lu-notice-thumb { background:#ece8f5; }
+    @media(max-width:540px){
+      .lu-notices-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+      .lu-notice-title { font-size:.78rem; -webkit-line-clamp:3; line-clamp:3; }
+      .lu-notice-body { padding:11px 12px 13px; }
+    }
+    /* Loading + states */
+    .ln-state { grid-column:1/-1; display:flex; flex-direction:column; align-items:center;
+      gap:12px; padding:48px 16px; color:var(--text-secondary); font-size:.9rem; }
+    .ln-state .spin { width:30px; height:30px; border:3px solid rgba(139,92,246,0.25);
+      border-top-color:#a78bfa; border-radius:50%; animation:lnspin .8s linear infinite; }
+    @keyframes lnspin { to { transform:rotate(360deg); } }
+    /* Notice image lightbox */
+    .mem-lb { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.95);
+      backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+      display:none; align-items:center; justify-content:center; }
+    .mem-lb.open { display:flex; }
+    .mem-lb img { max-width:92vw; max-height:88vh; object-fit:contain; border-radius:14px;
+      box-shadow:0 32px 80px rgba(0,0,0,0.8); animation:mlbPop .22s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes mlbPop { from{transform:scale(0.85);opacity:0} to{transform:scale(1);opacity:1} }
+    .mem-lb-close { position:fixed; top:14px; right:14px; width:44px; height:44px; border-radius:50%;
+      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); color:#fff;
+      font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2001; }
+    .mem-lb-close:hover { background:rgba(255,255,255,0.25); }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="notice.html" class="active">Notice</a></li>
+        <li class="auth-only"><a href="classwork.html">Classwork</a></li>
+        <li class="auth-only"><a href="info.html">Info</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+        <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+      </ul>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme"><i class="fa-solid fa-circle-half-stroke"></i></button>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a href="notice.html" class="active">Notice</a>
+      <a class="auth-only" href="classwork.html">Classwork</a>
+      <a class="auth-only" href="info.html">Info</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+      <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    </div>
+
+    <div class="section-header fade-in delay-1" style="margin-top:40px;">
+      <span class="section-label">📢 LU Notices</span>
+      <div class="section-line"></div>
+    </div>
+    <p class="fade-in delay-1" style="color:var(--text-secondary);font-size:0.86rem;margin:-6px 0 22px;max-width:640px;">
+      Latest notices from Leading University. Tap a notice image to view it full-size, or open it on the LU site.
+    </p>
+
+    <div class="lu-notices-grid fade-in delay-2" id="luNoticesGrid">
+      <div class="ln-state"><div class="spin"></div><span>Loading notices…</span></div>
+    </div>
+
+    <div class="fade-in delay-2" style="text-align:right;margin:-26px 0 40px;">
+      <a href="https://lus.ac.bd/notice/" target="_blank" rel="noopener" style="font-size:0.82rem;color:var(--accent-bright);text-decoration:none;font-weight:600;opacity:0.8;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+        View all on lus.ac.bd <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem;"></i>
+      </a>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-links">
+        <a href="../index.html">Home</a>
+        <a href="students.html">Students Directory</a>
+        <a href="info.html">Class Info</a>
+        <a href="user-guide.html">User Guide</a>
+        <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+      </div>
+      <div class="footer-note">
+        © 2026 CSE 62 B. All Rights Reserved.
+      </div>
+    </footer>
+  </div>
+
+  <!-- Notice image lightbox -->
+  <div class="mem-lb" id="memLb" onclick="if(event.target===this)closememLb()">
+    <button class="mem-lb-close" onclick="closememLb()"><i class="fa-solid fa-xmark"></i></button>
+    <img id="memLbImg" src="" alt="">
+  </div>
+
+  <script src="../assets/js/sheets.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/analytics.js"></script>
+  <script>
+    function openMemLb(src) {
+      document.getElementById('memLbImg').src = src;
+      document.getElementById('memLb').classList.add('open');
+    }
+    function closememLb() {
+      document.getElementById('memLb').classList.remove('open');
+      document.getElementById('memLbImg').src = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closememLb(); });
+  </script>
+  <script>
+    /* -- LU Notices — full list from the Worker /notices endpoint -- */
+    (async function loadLuNotices() {
+      /* On localhost, talk to the local `wrangler dev` worker (port 8787) so this
+         page can be tested before deploying; in production use the live worker. */
+      const _isLocal  = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+      const WORKER    = _isLocal
+        ? `${location.protocol}//${location.hostname}:8787`
+        : 'https://lucse62b-api.sy164425.workers.dev';
+      const API       = `${WORKER}/notices`;
+      const CACHE_KEY = 'lu62b_notices_v1';
+      const CACHE_TTL = 1_800_000; // 30 min
+      const grid = document.getElementById('luNoticesGrid');
+      if (!grid) return;
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+          ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+      }
+      function fmtDate(s) {
+        const d = new Date(s);
+        if (isNaN(d.getTime())) return esc(s);
+        return d.toLocaleDateString('en-US', { day:'numeric', month:'short', year:'numeric' });
+      }
+      function showState(html) { grid.innerHTML = `<div class="ln-state">${html}</div>`; }
+
+      try {
+        let notices;
+        try {
+          const raw = localStorage.getItem(CACHE_KEY);
+          if (raw) { const c = JSON.parse(raw); if (Date.now() - c.ts < CACHE_TTL) notices = c.data; }
+        } catch (e) {}
+
+        if (!notices) {
+          const res = await fetch(API);
+          if (!res.ok) throw new Error('notices ' + res.status);
+          const data = await res.json();
+          notices = data.notices || [];
+          if (notices.length) {
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: notices })); } catch (e) {}
+          }
+        }
+
+        if (!notices.length) {
+          showState('<i class="fa-regular fa-folder-open" style="font-size:1.6rem;opacity:.5;"></i><span>No notices available right now.</span>');
+          return;
+        }
+
+        grid.innerHTML = notices.map(n => {
+          const title = esc(n.title);
+          const date  = fmtDate(n.date);
+          const link  = esc(n.link);
+          const img   = n.image ? esc(n.image) : '';
+          const thumb = img
+            ? `<button class="lu-notice-thumb" type="button" onclick="openMemLb('${img.replace(/'/g, "\\'")}')" aria-label="View notice image">
+                 <img src="${img}" alt="" loading="lazy" decoding="async">
+                 <span class="lu-notice-zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+               </button>`
+            : `<a class="lu-notice-thumb-empty" href="${link}" target="_blank" rel="noopener" aria-label="Open notice"><i class="fa-solid fa-file-lines"></i></a>`;
+          return `
+            <article class="lu-notice-card">
+              ${thumb}
+              <div class="lu-notice-body">
+                <span class="lu-notice-date"><i class="fa-regular fa-calendar"></i> ${date}</span>
+                <h3 class="lu-notice-title">${title}</h3>
+                <a class="lu-notice-link" href="${link}" target="_blank" rel="noopener">Read on LU <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+              </div>
+            </article>`;
+        }).join('');
+      } catch (e) {
+        showState('<i class="fa-solid fa-triangle-exclamation" style="font-size:1.4rem;opacity:.6;"></i><span>Could not load notices. Please try again later.</span>');
+      }
+    })();
+  </script>
+  <script src="/assets/js/event-poster.js"></script>
+  <script src="/assets/js/portal-status.js"></script>
+  <script src="/assets/js/notifications.js"></script>
+</body>
+</html>
