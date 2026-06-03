@@ -13,8 +13,13 @@ export default {
   async fetch(request, env, ctx) {
     const url    = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
+    /* Any localhost port is allowed for the CORS header so local dev (Live Server,
+       python -m http.server, etc.) can call the worker. This only affects which
+       Origin is echoed back — the sensitive endpoints below still gate on
+       ALLOWED_ORIGINS.includes(origin), so this doesn't loosen their access. */
+    const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
     const cors   = {
-      'Access-Control-Allow-Origin':  ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+      'Access-Control-Allow-Origin':  (ALLOWED_ORIGINS.includes(origin) || isLocalOrigin) ? origin : ALLOWED_ORIGINS[0],
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age':       '86400',
@@ -412,6 +417,11 @@ export default {
         return jsonResp(cors, await r.json());
       }
 
+      // ── GET /notices — latest LU notices (parsed from the WordPress RSS feed, KV-cached) ──
+      if (p === '/notices') {
+        return jsonResp(cors, await fetchLuNotices(env));
+      }
+
       // ── POST/GET /run-monitor — manually trigger the change monitor ──
       //   Owner-only: caller must present SUPA_KEY (the worker's secret key).
       //   Lets us test routine/exam/result detection without waiting for the
@@ -636,6 +646,90 @@ function errResp(cors, status, msg) {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   LU NOTICES  (https://lus.ac.bd/notice/ — read via the WordPress RSS feed)
+   The site has no public REST endpoint for notices, but every WordPress
+   install exposes /notice/feed/. We parse that RSS to a small JSON array
+   and cache it in KV (~20 min) so the home widget loads instantly and we
+   don't hammer lus.ac.bd. Notices are images, so we pull the first <img>.
+   ════════════════════════════════════════════════════════════════════ */
+async function fetchLuNotices(env) {
+  const cacheKey = 'lu_notices:v1';
+  if (env.SMS_RATE) {
+    try { const c = await env.SMS_RATE.get(cacheKey); if (c) return JSON.parse(c); } catch {}
+  }
+  let notices = [];
+  try {
+    const r = await fetch('https://lus.ac.bd/notice/feed/', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; LUCSE62B/1.0; +https://lucse62b.xyz)',
+        'Accept': 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+      },
+    });
+    if (r.ok) notices = parseRssNotices(await r.text());
+  } catch {}
+  const out = { notices, fetched: new Date().toISOString() };
+  /* Only cache a non-empty result so a transient upstream hiccup doesn't
+     pin an empty list for the full TTL. */
+  if (env.SMS_RATE && notices.length) {
+    try { await env.SMS_RATE.put(cacheKey, JSON.stringify(out), { expirationTtl: 1200 }); } catch {}
+  }
+  return out;
+}
+
+/* Regex RSS parser — Workers have no DOMParser. Pulls title / link / date and
+   the first image out of each <item>. Returns up to 10 newest notices. */
+function parseRssNotices(xml) {
+  const notices = [];
+  const blocks = String(xml).split(/<item[\s>]/i).slice(1);
+  for (const raw of blocks) {
+    const block   = raw.split(/<\/item>/i)[0];
+    const title   = decodeXmlEntities(rssTag(block, 'title'));
+    const link    = decodeXmlEntities(rssTag(block, 'link'));
+    const date    = rssTag(block, 'pubDate');
+    const content = rssContentEncoded(block);
+    let image = '';
+    const imgM = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (imgM) image = imgM[1];
+    if (!image) {
+      const encM = block.match(/<enclosure[^>]+url=["']([^"']+\.(?:jpe?g|png|webp))["'][^>]*>/i)
+                || block.match(/<media:content[^>]+url=["']([^"']+\.(?:jpe?g|png|webp))["'][^>]*>/i);
+      if (encM) image = encM[1];
+    }
+    if (image) image = decodeXmlEntities(image);
+    if (title && link) notices.push({ title, link, date, image });
+    if (notices.length >= 10) break;
+  }
+  return notices;
+}
+
+function rssTag(block, tag) {
+  const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return m ? stripCdata(m[1]).trim() : '';
+}
+
+function rssContentEncoded(block) {
+  const m = block.match(/<content:encoded[^>]*>([\s\S]*?)<\/content:encoded>/i);
+  return m ? stripCdata(m[1]) : '';
+}
+
+function stripCdata(s) {
+  return String(s).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+}
+
+function decodeXmlEntities(s) {
+  return String(s)
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#0?39;/g, "'").replace(/&#x27;/gi, "'")
+    .replace(/&#8217;/g, '’').replace(/&#8216;/g, '‘')
+    .replace(/&#8220;/g, '“').replace(/&#8221;/g, '”')
+    .replace(/&#8211;/g, '–').replace(/&#8212;/g, '—')
+    .replace(/&#8230;/g, '…').replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
+/* ════════════════════════════════════════════════════════════════════
    NOTIFICATION MONITOR  (runs via Cloudflare Cron every hour)
    ════════════════════════════════════════════════════════════════════ */
 
@@ -654,6 +748,7 @@ async function runMonitor(env) {
       checkClassRoutine(env).catch(() => {}),
       checkExamRoutine(env, 'mid').catch(() => {}),
       checkExamRoutine(env, 'final').catch(() => {}),
+      checkNotices(env).catch(() => {}),
     ]);
     /* Enrolled retake/improve course routine + exam changes — per-student */
     await checkEnrolledCourses(env).catch(() => {});
@@ -925,6 +1020,38 @@ async function checkExamRoutine(env, type) {
   const body = changes.slice(0, 8).join('\n') + (changes.length > 8 ? `\n…and ${changes.length - 8} more` : '');
   await insertNotification(env, stateKey, `📋 ${label} Routine Updated`, body, '/pages/info.html');
   await supabaseUpsertState(env, stateKey, hash, { slots: sorted });
+  await sendPushToAll(env);
+}
+
+/* ── LU Notices Monitor ──
+   Watches the latest LU notices (same feed the home widget reads). On the
+   first run it just seeds the baseline; afterwards any notice whose link is
+   new fires a single public notification + push. We key on link (stable
+   per-notice) rather than title so a re-titled notice isn't re-announced. */
+async function checkNotices(env) {
+  if (!env.SUPA_KEY) return;
+  const { notices } = await fetchLuNotices(env);
+  if (!notices || !notices.length) return;
+
+  const links = notices.map(n => n.link).filter(Boolean);
+  const hash   = await sha256(JSON.stringify(links));
+  const stored = await supabaseGetState(env, 'lu_notices');
+
+  if (!stored) { await supabaseUpsertState(env, 'lu_notices', hash, { links }); return; }
+  if (stored.state_hash === hash) return;
+
+  const known = new Set(stored.state_data?.links || []);
+  const fresh = notices.filter(n => n.link && !known.has(n.link));
+  await supabaseUpsertState(env, 'lu_notices', hash, { links });
+  if (!fresh.length) return;
+
+  const title = fresh.length === 1 ? '📢 New LU Notice' : `📢 ${fresh.length} New LU Notices`;
+  const body  = fresh.slice(0, 5).map(n => `• ${n.title}`).join('\n')
+              + (fresh.length > 5 ? `\n…and ${fresh.length - 5} more` : '');
+  /* Link straight to the notice when it's the only new one; otherwise to the
+     LU notice board so the student sees them all. */
+  const link  = fresh.length === 1 ? (fresh[0].link || 'https://lus.ac.bd/notice/') : 'https://lus.ac.bd/notice/';
+  await insertNotification(env, 'lu_notice', title, body, link);
   await sendPushToAll(env);
 }
 
