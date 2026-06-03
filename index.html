@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <meta name="description" content="Official digital portal for CSE Batch 62, Section B at Leading University. Access class materials, schedules, notices and more.">
@@ -198,6 +198,18 @@
       cursor: default;
     }
   </style>
+  <style>
+    /* ── Hero — Polaroid Stack ── */
+    #heroPhotoFrame.hpl-stack { position:absolute; inset:0; }
+    .hpl-card { position:absolute; left:50%; top:50%; width:192px; height:248px; margin-left:-96px; margin-top:-124px;
+      background:#fbfbf7; border-radius:6px; padding:10px 10px 36px;
+      box-shadow:0 18px 40px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.3); will-change:transform,opacity; cursor:pointer; }
+    .hpl-card img { width:100%; height:100%; object-fit:cover; display:block; border-radius:2px; background:#1a1a22; }
+    .hpl-cap { position:absolute; left:0; right:0; bottom:9px; text-align:center; font-family:'Caveat',cursive;
+      font-size:1.05rem; font-weight:700; color:#3a3a44; line-height:1; padding:0 10px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    html[data-theme="light"] .hpl-card { box-shadow:0 16px 34px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.1); }
+  </style>
 </head>
 <body>
   <!-- Background layers -->
@@ -273,12 +285,10 @@
         </div>
       </div>
 
-      <!-- Photo Showcase -->
+      <!-- Photo Showcase — Polaroid Stack -->
       <div class="hero-photo-showcase">
         <div class="photo-frame-glow"></div>
-        <div class="photo-frame-ring"></div>
-        <div class="photo-frame-inner" id="heroPhotoFrame">
-        </div>
+        <div class="hpl-stack" id="heroPhotoFrame"></div>
         <a href="pages/gallery.html" class="photo-gallery-badge">
           <i class="fa-solid fa-images"></i> Gallery
         </a>
@@ -871,13 +881,13 @@
     }
   </script>
   <script>
-    /* -- Hero photo frame — Drive images -- */
+    /* -- Hero photo frame — Polaroid stack of Drive images (caption = event folder) -- */
     (async function loadHeroPhotos() {
       const FOLDER    = '1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z';
-      const CACHE_KEY = 'lu62b_gallery_hero2';
+      const CACHE_KEY = 'lu62b_gallery_hero3';   // v3: now stores { id, folder }
       const CACHE_TTL = 3_600_000; // 1 hour
-      const frame     = document.getElementById('heroPhotoFrame');
-      if (!frame) return;
+      const stack     = document.getElementById('heroPhotoFrame');
+      if (!stack) return;
 
       function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -891,64 +901,73 @@
         let files;
         try {
           const raw = localStorage.getItem(CACHE_KEY);
-          if (raw) {
-            const c = JSON.parse(raw);
-            if (Date.now() - c.ts < CACHE_TTL) files = c.data;
-          }
+          if (raw) { const c = JSON.parse(raw); if (Date.now() - c.ts < CACHE_TTL) files = c.data; }
         } catch(e) {}
 
         if (!files) {
-          const data = await fetchDriveGallery(FOLDER, 8);
+          const data = await fetchDriveGallery(FOLDER, 60);   // pull every photo across all event folders
           files = data.files || [];
           if (files.length) {
             try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: files })); } catch(e) {}
           }
         }
 
-        let images = shuffle(files);
-        if (!images.length) return;
-        while (images.length < 8) images = [...images, ...images];
-        images = images.slice(0, 8);
+        const pool = shuffle((files || []).map(f => ({
+          src: `https://drive.google.com/thumbnail?id=${f.id}&sz=w500`,
+          folder: f.folder || '',
+        })));
+        if (!pool.length) return;
 
-        const frag = document.createDocumentFragment();
-        images.forEach((img, i) => {
-          const el = document.createElement('img');
-          el.className = 'photo-slide';
-          el.src = `https://drive.google.com/thumbnail?id=${img.id}&sz=w400`;
-          el.alt = '';
-          el.decoding = 'async';
-          if (i === 0) {
-            el.fetchPriority = 'high';
-          } else {
-            el.loading = 'lazy';
-          }
-          frag.appendChild(el);
-        });
-        frame.appendChild(frag);
+        const ROT = [-7, 5, -3, 6, -5];
+        let ptr = 0, busy = false;
+        const nextItem = () => pool[ptr++ % pool.length];
 
-        // JS-driven slideshow using rAF — bypasses prefers-reduced-motion CSS overrides
-        const slides = Array.from(frame.querySelectorAll('.photo-slide'));
-        slides[0].style.opacity = '1';
-        let cur = 0, busy = false;
-
-        function fadeBetween(fromEl, toEl, cb) {
-          const start = performance.now(), dur = 800;
-          function step(now) {
-            const t = Math.min((now - start) / dur, 1);
-            const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
-            fromEl.style.opacity = String(1 - e);
-            toEl.style.opacity   = String(e);
-            t < 1 ? requestAnimationFrame(step) : (fromEl.style.opacity = '0', toEl.style.opacity = '1', cb && cb());
-          }
-          requestAnimationFrame(step);
+        function makeCard(item) {
+          const c = document.createElement('div');
+          c.className = 'hpl-card';
+          const img = document.createElement('img'); img.src = item.src; img.alt = ''; img.decoding = 'async';
+          const cap = document.createElement('div'); cap.className = 'hpl-cap'; cap.textContent = item.folder || 'CSE 62B';
+          c.appendChild(img); c.appendChild(cap);
+          c.addEventListener('click', cycle);
+          return c;
         }
 
-        setInterval(() => {
-          if (busy) return;
+        /* setProperty(...,'important') keeps the flip smooth even under a global
+           prefers-reduced-motion transition override. */
+        function restack(anim) {
+          const cs = [...stack.children], n = cs.length;
+          cs.forEach((c, i) => {
+            const d = n - 1 - i;
+            c.style.setProperty('transition', anim ? 'transform .55s cubic-bezier(.34,1.3,.5,1), opacity .4s' : 'none', 'important');
+            c.style.transform = `translate(${d*6}px,${d*8}px) rotate(${ROT[i%ROT.length]}deg) scale(${1-d*0.04})`;
+            c.style.zIndex = i;
+            c.style.filter = d ? `brightness(${(1-d*0.07).toFixed(2)})` : 'none';
+            c.style.opacity = '1';
+          });
+        }
+
+        function cycle() {
+          if (busy || stack.children.length < 2) return;
           busy = true;
-          const next = (cur + 1) % slides.length;
-          fadeBetween(slides[cur], slides[next], () => { cur = next; busy = false; });
-        }, 4000);
+          const top = stack.lastElementChild;
+          top.style.setProperty('transition', 'transform .6s cubic-bezier(.5,0,.2,1), opacity .6s', 'important');
+          top.style.transform = 'translate(0,-130px) rotate(-20deg) scale(.92)';
+          top.style.opacity = '0';
+          setTimeout(() => {
+            const it = nextItem();
+            top.querySelector('img').src = it.src;
+            top.querySelector('.hpl-cap').textContent = it.folder || 'CSE 62B';
+            stack.insertBefore(top, stack.firstElementChild);
+            restack(false);
+            requestAnimationFrame(() => restack(true));
+            busy = false;
+          }, 600);
+        }
+
+        const VISIBLE = Math.min(5, Math.max(2, pool.length));
+        for (let i = 0; i < VISIBLE; i++) stack.appendChild(makeCard(nextItem()));
+        restack(false);
+        setInterval(cycle, 3500);
       } catch (e) { /* fail silently */ }
     })();
   </script>

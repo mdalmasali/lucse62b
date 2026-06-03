@@ -271,10 +271,13 @@ export default {
       }
 
       // ── GET /gallery?folder=FOLDER_ID[&limit=N] — images from folder or subfolders ──
+      //   Each returned image is { id, folder } where `folder` is the name of the
+      //   subfolder (event/album) it came from — lets callers caption by event.
+      //   Back-compatible: existing callers only read `id`.
       if (p === '/gallery') {
         const folder = url.searchParams.get('folder');
         if (!folder) return errResp(cors, 400, 'Missing folder');
-        const limit = Math.min(parseInt(url.searchParams.get('limit') || '8'), 20);
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '8'), 60);
         if (!env.DRIVE_API_KEY) return errResp(cors, 500, 'Not configured');
         const driveHeaders = { 'Referer': 'https://lucse62b.xyz/' };
         // First try direct images in the folder
@@ -283,17 +286,17 @@ export default {
           { headers: driveHeaders }
         );
         const directFiles = (await directRes.json()).files || [];
-        if (directFiles.length > 0) return jsonResp(cors, { files: directFiles });
-        // Fall back to images inside subfolders
+        if (directFiles.length > 0) return jsonResp(cors, { files: directFiles.map(im => ({ id: im.id, folder: '' })) });
+        // Fall back to images inside subfolders (tag each image with its folder name)
         const fRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${folder}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id)&key=${env.DRIVE_API_KEY}`,
+          `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${folder}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name)&key=${env.DRIVE_API_KEY}`,
           { headers: driveHeaders }
         );
         const subfolders = (await fRes.json()).files || [];
         const batches = await Promise.all(subfolders.map(f =>
           fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${f.id}' in parents and mimeType contains 'image/' and trashed=false`)}&pageSize=${limit}&fields=files(id)&key=${env.DRIVE_API_KEY}`,
             { headers: driveHeaders })
-            .then(r => r.json()).then(d => d.files || []).catch(() => [])
+            .then(r => r.json()).then(d => (d.files || []).map(im => ({ id: im.id, folder: f.name }))).catch(() => [])
         ));
         return jsonResp(cors, { files: batches.flat() });
       }
