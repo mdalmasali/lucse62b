@@ -603,6 +603,96 @@ const LU_ANALYTICS = (() => {
     });
   }
 
+  /* ═══════════════════════════════════════════════════
+     ── Footer site-stats row (every page) ──
+     ═══════════════════════════════════════════════════ */
+  function _fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
+
+  function _injectFooterStatsStyle() {
+    if (document.getElementById('lu-fstats-css')) return;
+    const s = document.createElement('style');
+    s.id = 'lu-fstats-css';
+    s.textContent = `
+      .lu-fstats{display:flex;flex-wrap:wrap;justify-content:center;gap:7px 16px;
+        margin:16px auto 2px;max-width:660px;padding-top:14px;
+        border-top:1px solid rgba(124,58,237,.12);font-family:'Inter',sans-serif;}
+      .lu-fstat{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;
+        color:var(--text-secondary,#94a3b8);white-space:nowrap;}
+      .lu-fstat b{font-family:'Space Grotesk','Inter',sans-serif;font-weight:700;
+        color:var(--text,#e2d9f3);font-size:.82rem;}
+      .lu-fstat i{font-style:normal;opacity:.95;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  async function _computeSiteStats() {
+    const CK = 'lu62b_footer_stats_v2';
+    try { const c = JSON.parse(localStorage.getItem(CK) || 'null'); if (c && Date.now() - c.ts < 600000) return c.data; } catch {}
+    const out = { visits: 0, students: 0, covers: 0, photos: 0, topPage: '' };
+
+    /* All three sources in parallel; the slow Drive call gets a hard timeout so it
+       can never block the row from rendering. */
+    const counters = (async () => {
+      try {
+        const r = await _req('/rest/v1/counters?select=name,count');
+        if (r && r.ok) {
+          const map = {};
+          (await r.json()).forEach(x => { map[x.name] = Number(x.count) || 0; });
+          out.visits = map.total_visits || 0;
+          out.covers = map.total_pdfs || 0;
+          let top = '', max = -1;
+          Object.keys(map).forEach(k => { if (k.startsWith('page_') && map[k] > max) { max = map[k]; top = k; } });
+          out.topPage = PAGE_DISPLAY[top] || (top ? top.replace('page_', '') : '');
+        }
+      } catch {}
+    })();
+
+    const students = (async () => {
+      try {
+        const rs = await _req('/rest/v1/student_passwords?select=student_id');
+        if (rs && rs.ok) out.students = (await rs.json()).length;
+      } catch {}
+    })();
+
+    const photos = (async () => {
+      try {
+        const ctl = new AbortController();
+        const to = setTimeout(() => ctl.abort(), 4000);
+        const gr = await fetch('https://lucse62b-api.sy164425.workers.dev/gallery?folder=1JRTVvX0Jy9gPdi1KUV7fh-6F6GDb4N9Z&limit=60', { signal: ctl.signal });
+        clearTimeout(to);
+        if (gr.ok) out.photos = ((await gr.json()).files || []).length;
+      } catch {}
+    })();
+
+    await Promise.allSettled([counters, students, photos]);
+    /* Cache only a meaningful result — never pin all-zeros from a total failure */
+    if (out.visits || out.students || out.covers || out.photos) {
+      try { localStorage.setItem(CK, JSON.stringify({ ts: Date.now(), data: out })); } catch {}
+    }
+    return out;
+  }
+
+  async function renderFooterStats() {
+    const footer = document.querySelector('footer');
+    if (!footer || footer.querySelector('.lu-fstats')) return;
+    const s = await _computeSiteStats();
+    if (!s.visits && !s.students && !s.covers) return; // nothing fetched — stay quiet
+    _injectFooterStatsStyle();
+    const items = [
+      ['👁️', _fmt(s.visits),   'visits'],
+      ['👥', _fmt(s.students),  'students'],
+      ['📄', _fmt(s.covers),    'cover pages'],
+      ['🖼️', _fmt(s.photos),    'photos'],
+    ].filter(it => it[1] !== '0');
+    let html = items.map(it => `<span class="lu-fstat"><i>${it[0]}</i> <b>${it[1]}</b> ${it[2]}</span>`).join('');
+    if (s.topPage) html += `<span class="lu-fstat"><i>⭐</i> top: <b>${_escHtml(s.topPage)}</b></span>`;
+    const row = document.createElement('div');
+    row.className = 'lu-fstats';
+    row.innerHTML = html;
+    const note = footer.querySelector('.footer-note');
+    if (note) footer.insertBefore(row, note); else footer.appendChild(row);
+  }
+
   /* ── Public API ── */
   return {
     increment, getCounter, getOnlineCount, getPresenceList,
@@ -614,6 +704,7 @@ const LU_ANALYTICS = (() => {
         await _cleanup();
         await Promise.all([increment('total_visits'), increment(_pageKey()), _upsertPresence()]);
         _createBadge();
+        renderFooterStats();   // site-stats row in the footer (visits, students, cover pages, photos, top page)
         // Single fetch: serves badge count + arrival snapshot
         const initialList = await getPresenceList();
         _updateBadgeFromList(initialList);

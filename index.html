@@ -913,7 +913,7 @@
         }
 
         const pool = shuffle((files || []).map(f => ({
-          src: `https://drive.google.com/thumbnail?id=${f.id}&sz=w500`,
+          src: `https://lh3.googleusercontent.com/d/${f.id}=w500`,
           folder: f.folder || '',
         })));
         if (!pool.length) return;
@@ -990,12 +990,12 @@
         const card = document.createElement('div');
         card.className = 'mem-photo-card';
         const img = document.createElement('img');
-        img.src = `https://drive.google.com/thumbnail?id=${id}&sz=w300`;
+        img.src = `https://lh3.googleusercontent.com/d/${id}=w300`;
         img.alt = '';
         img.loading = 'lazy';
         img.decoding = 'async';
         card.appendChild(img);
-        card.addEventListener('click', () => openMemLb(`https://drive.google.com/thumbnail?id=${id}&sz=w1000`));
+        card.addEventListener('click', () => openMemLb(`https://lh3.googleusercontent.com/d/${id}=w1000`));
         return card;
       }
 
