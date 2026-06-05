@@ -514,8 +514,14 @@ async function tryV4(sheetId, tab, env) {
   if (!env || !env.DRIVE_API_KEY) return null;
   try {
     const range = encodeURIComponent(tab || 'Sheet1');
+    /* `&_t=` cache-buster is essential: `cache: 'no-store'` is a no-op at our
+       compatibility_date (it needs ≥ 2024-11-11), so without a unique URL this
+       v4 request can be served stale from Cloudflare's edge / Google's cache —
+       while every GVIZ path and the change monitor already bust cache this way.
+       That asymmetry is exactly what makes the routine notification fire while
+       the live info-page routine keeps showing the old schedule. */
     const r = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${env.DRIVE_API_KEY}`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${env.DRIVE_API_KEY}&_t=${Date.now()}`,
       { cache: 'no-store' }
     );
     if (!r.ok) return null;
