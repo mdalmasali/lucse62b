@@ -10,3 +10,9 @@ Thumbs.db
 skills-lock.json
 .agents/
 worker/.wrangler/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
