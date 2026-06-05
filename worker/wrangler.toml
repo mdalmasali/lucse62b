@@ -2,6 +2,11 @@ name               = "lucse62b-api"
 main               = "worker.js"
 compatibility_date = "2024-01-01"
 
+# Logs (Workers Observability) — so `wrangler tail` and the dashboard show
+# console output / errors from the hourly cron, incl. the result monitor.
+[observability]
+enabled = true
+
 [triggers]
 crons = ["0 * * * *"]
 

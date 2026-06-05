@@ -747,23 +747,51 @@ const MONITOR_DAYS = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSD
 async function runMonitor(env) {
   if (!env.SUPA_KEY) return;
   const hour = new Date().getUTCHours();
+  const branch = (hour % 2 === 0) ? 'even' : 'odd';
+  let note = '';
 
   /* Split work across hours so one cron run never exceeds Cloudflare's
      per-invocation subrequest limit (50 on the free plan): routine / exam /
      enrolled checks on even hours, the heavier per-student result check on
      odd hours. Each branch fits comfortably under the limit on its own. */
-  if (hour % 2 === 0) {
-    await Promise.allSettled([
-      checkClassRoutine(env).catch(() => {}),
-      checkExamRoutine(env, 'mid').catch(() => {}),
-      checkExamRoutine(env, 'final').catch(() => {}),
-      checkNotices(env).catch(() => {}),
-    ]);
-    /* Enrolled retake/improve course routine + exam changes — per-student */
-    await checkEnrolledCourses(env).catch(() => {});
-  } else {
-    await checkResult(env).catch(() => {});
+  try {
+    if (hour % 2 === 0) {
+      await Promise.allSettled([
+        checkClassRoutine(env).catch(() => {}),
+        checkExamRoutine(env, 'mid').catch(() => {}),
+        checkExamRoutine(env, 'final').catch(() => {}),
+        checkNotices(env).catch(() => {}),
+      ]);
+      /* Enrolled retake/improve course routine + exam changes — per-student */
+      await checkEnrolledCourses(env).catch(() => {});
+      note = 'routine+exam+notices+enrolled';
+    } else {
+      note = await checkResult(env).catch(e => 'error:' + ((e && e.message) || e)) || '';
+    }
+  } finally {
+    /* Heartbeat: every cron run records its hour/branch/outcome so we can SEE
+       from the DB whether the (odd-hour) result check is actually firing and
+       what it did — instead of guessing why notifications stop. */
+    await recordHeartbeat(env, hour, branch, note);
   }
+}
+
+/* Upsert a single 'cron_heartbeat' row reflecting the most recent cron run. */
+async function recordHeartbeat(env, hour, branch, note) {
+  await fetch(`${SUPA_URL}/rest/v1/monitor_state`, {
+    method: 'POST',
+    headers: {
+      'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+      'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({
+      key: 'cron_heartbeat',
+      state_hash: `${branch}:${hour}`,
+      state_data: { hour, branch, note: String(note || ''), at: new Date().toISOString() },
+      last_checked: new Date().toISOString(),
+      last_changed: new Date().toISOString(),
+    }),
+  }).catch(() => {});
 }
 
 /* ── SHA-256 hash ── */
@@ -1184,16 +1212,16 @@ async function checkNotices(env) {
    notification is always inserted; a push is also sent if the student has
    subscribed. opts.batchIndex forces a specific batch (manual seeding). ── */
 async function checkResult(env, opts = {}) {
-  if (!env.SUPA_KEY) return;
+  if (!env.SUPA_KEY) return 'no-key';
 
   /* Every student who has a DOB on file (fresh read → new sign-ups included) */
   const sr = await fetch(
     `${SUPA_URL}/rest/v1/student_passwords?select=student_id,dob&dob=not.is.null&order=student_id.asc`,
     { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
   ).catch(() => null);
-  if (!sr || !sr.ok) return;
+  if (!sr || !sr.ok) return 'students-fetch-failed';
   const students = (await sr.json()).filter(s => s.student_id && s.dob);
-  if (!students.length) return;
+  if (!students.length) return 'no-students';
 
   /* student_id → push endpoints (optional; in-app notification works without) */
   const pr = await fetch(
@@ -1208,20 +1236,33 @@ async function checkResult(env, opts = {}) {
     });
   }
 
-  /* Round-robin batch so a single run stays within the subrequest limit.
-     Normally the batch index follows the clock; a manual call can pass
-     batchIndex to step through every batch (to seed all baselines now). */
-  const BATCH = 12;
+  /* Round-robin a SMALL batch so each scheduled run is short and reliably
+     finishes inside the cron's time budget (the previous 12-student batch with
+     500ms sleeps could run ~60s on slow LU responses and get killed before any
+     baseline was saved). Smaller batch + ~5 batches still covers every student
+     a couple of times a day, which is plenty for results. A manual call passes
+     batchIndex to step through every batch (e.g. to seed/catch-up now). */
+  const BATCH = 6;
   const batchCount = Math.max(1, Math.ceil(students.length / BATCH));
   const idx = (opts.batchIndex != null)
     ? ((opts.batchIndex % batchCount) + batchCount) % batchCount
     : Math.floor(new Date().getUTCHours() / 2) % batchCount;
   const slice = students.slice(idx * BATCH, idx * BATCH + BATCH);
 
+  const startedAt = Date.now();
+  let processed = 0, notified = 0, errors = 0, timedOut = false;
   for (const s of slice) {
-    await checkStudentResult(env, s.student_id, s.dob, endpointMap[s.student_id] || []).catch(() => {});
-    await new Promise(r => setTimeout(r, 500)); /* avoid hammering LU portal */
+    /* Hard time budget: stop gracefully rather than be killed mid-loop, so
+       every baseline we DID reach is already persisted. */
+    if (Date.now() - startedAt > 22000) { timedOut = true; break; }
+    try {
+      const n = await checkStudentResult(env, s.student_id, s.dob, endpointMap[s.student_id] || []);
+      processed++;
+      if (n) notified += n;
+    } catch { errors++; }
+    await new Promise(r => setTimeout(r, 300)); /* be gentle on the LU portal */
   }
+  return `batch=${idx}/${batchCount} size=${slice.length} processed=${processed} notified=${notified} errors=${errors}${timedOut ? ' TIMEBUDGET' : ''}`;
 }
 
 async function checkStudentResult(env, studentId, dob, endpoints) {
@@ -1303,6 +1344,7 @@ async function checkStudentResult(env, studentId, dob, endpoints) {
   }
 
   await supabaseUpsertState(env, stateKey, hash, { courses });
+  return count;   /* number of new results announced — surfaced in the heartbeat */
 }
 
 async function insertPersonalNotification(env, studentId, type, title, body, link) {
