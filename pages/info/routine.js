@@ -215,39 +215,21 @@ function _scheduleToCacheWith(schedule, courseInfo, sem, sheetTimes, dayTimefram
   return { days, schedule, courseInfo, groups, dayTimeframes, semester: sem };
 }
 
-/* Are two teacher names the same person? (ignores titles like Dr./Md./Prof.) */
-function _sameTeacher(a, b) {
-  if (!a || !b) return false;
-  const tok = s => s.toLowerCase()
-    .replace(/\b(dr|md|mr|mrs|ms|prof|professor|engr|mohammad|mohammed)\b\.?/g, ' ')
-    .replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(t => t.length > 1);
-  const ta = tok(a), tb = tok(b);
-  if (!ta.length || !tb.length) return false;
-  return ta.every(t => tb.includes(t)) || tb.every(t => ta.includes(t));
-}
-
-/* Resolve the teacher to display for a slot. The routine cell's acronym is
-   section-specific; CPG_Courses stores only the default-section (62B) teacher.
-
-   • 62B regular slots  → CPG_Courses is curated for this section, so trust it
-     (keeps titles/designation like "Dr."), falling back to the acronym.
-   • Any other section, or a retake/improve slot from another section → the
-     routine acronym is the source of truth. Resolve it via CPG_Teachers; if the
-     acronym maps to the same person as CPG, keep the curated name; if it's a
-     different person, use the acronym's name; if the acronym isn't in
-     CPG_Teachers at all, show the acronym itself (never the wrong 62B default). */
+/* Resolve the teacher to display for a slot. The class routine itself is the
+   source of truth: the cell carries the teacher's acronym (NJN, MNM, …), which
+   is what actually changes when a teacher is swapped. We only expand that
+   acronym to a full name via the CPG_Teachers tab (acronym → name, with titles
+   like "Dr." already baked in). If the acronym isn't in CPG_Teachers we show
+   the acronym itself; only when the cell has no acronym at all do we fall back
+   to the CPG_Courses name. (CPG_Courses is never used to override a teacher the
+   routine names — that table is maintained separately and would go stale.) */
 function _rtResolveTeacher(slot, info) {
-  const cpgName      = info.teacher || '';
-  const acr          = (slot.initials || '').trim().toUpperCase();
-  const acrName      = acr && _teacherAcrMap[acr] ? _teacherAcrMap[acr].name : '';
-  const isRetakeSlot = slot.source === 'retake' || slot.source === 'improve';
-  const isHome       = !isRetakeSlot && _selectedBatch === '62' && _selectedSection === 'B';
+  const acr     = (slot.initials || '').trim().toUpperCase();
+  const acrName = acr && _teacherAcrMap[acr] ? _teacherAcrMap[acr].name : '';
 
-  if (isHome) return cpgName || acrName || slot.initials || '';
-
-  if (acrName) return _sameTeacher(acrName, cpgName) ? cpgName : acrName;
-  if (acr)     return slot.initials;          /* acronym present but unknown → show it */
-  return cpgName || '';
+  if (acrName) return acrName;          /* routine acronym → CPG_Teachers full name */
+  if (acr)     return slot.initials;    /* acronym not in CPG_Teachers → show it as-is */
+  return info.teacher || '';            /* cell carries no acronym → fall back to CPG_Courses */
 }
 
 /* ── Render one course card ── */
