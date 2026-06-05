@@ -992,17 +992,131 @@ async function checkClassRoutine(env) {
   await sendPushToAll(env);
 }
 
-/* ── Exam Routine Monitor ── */
+/* Normalize an exam date cell (GVIZ may give "Date(2026,2,27)" or a serial)
+   to DD-MM-YYYY; pass already-formatted strings straight through. */
+function examNormDate(raw) {
+  if (raw == null || raw === '') return '';
+  const str = String(raw).trim();
+  const dm = str.match(/^Date\((\d+),(\d+),(\d+)/);
+  if (dm) {
+    const d = new Date(+dm[1], +dm[2], +dm[3]);
+    return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+  }
+  const num = parseFloat(str);
+  if (!isNaN(num) && num > 40000 && num < 60000) {
+    const d   = new Date(Math.round((num - 25569) * 86400 * 1000));
+    const utc = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    return `${String(utc.getDate()).padStart(2,'0')}-${String(utc.getMonth()+1).padStart(2,'0')}-${utc.getFullYear()}`;
+  }
+  return str;
+}
+
+/* Parse one batch/section's exams from a single-tab exam-routine matrix
+   (Day-1…Day-N columns, Batch/Section rows). Mirrors parseExamRoutine in
+   pages/info/exam.js so the monitor sees exactly what the info page shows.
+   Returns slots { code, day, time } where `day` folds in weekday + date so a
+   reschedule reads as a clear diff. Handles multiple Day-N blocks in one sheet. */
+function parseExamSlots(table, targetBatch, targetSection) {
+  if (!table) return [];
+  const allRows = (table.rows || []).map(r =>
+    (r.c || []).map(c => (c && c.v != null) ? (examNormDate(c.v) || String(c.v).trim()) : '')
+  );
+  const colLabels = (table.cols || []).map(c => String(c.label || '').trim());
+  if (colLabels.some(l => /day[\s\-]*\d+/i.test(l))) {
+    allRows.unshift(colLabels.map(l => { const m = l.match(/day[\s\-]*(\d+)/i); return m ? `Day-${m[1]}` : ''; }));
+  }
+
+  const blockStarts = [];
+  for (let r = 0; r < allRows.length; r++) {
+    for (let c = 0; c < allRows[r].length; c++) {
+      if (/^\s*day[\s\-]*\d+\s*$/i.test(allRows[r][c])) { blockStarts.push(r); break; }
+    }
+  }
+  if (!blockStarts.length) return [];
+
+  let batchCol = 0, sectionCol = 1;
+  for (let r = 0; r < Math.min(allRows.length, 15); r++) {
+    (allRows[r] || []).forEach((cell, i) => {
+      if (/^\s*batch\s*$/i.test(cell))   batchCol = i;
+      if (/^\s*section\s*$/i.test(cell)) sectionCol = i;
+    });
+  }
+
+  const tbNum = String(targetBatch).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
+  const tsStr = String(targetSection).trim().toUpperCase();
+  const slots = [];
+
+  blockStarts.forEach((dayHeaderIdx, bi) => {
+    const nextBlockRow = blockStarts[bi + 1] || allRows.length;
+
+    const rowBatches = {};
+    let lastBatch = '';
+    for (let r = dayHeaderIdx; r < nextBlockRow; r++) {
+      const bc = String(allRows[r][batchCol] || '').trim();
+      if (bc && /\d/.test(bc) && !/^(date|time|day|section)/i.test(bc)) lastBatch = bc;
+      rowBatches[r] = lastBatch;
+    }
+
+    const dayRow  = allRows[dayHeaderIdx] || [];
+    const dayCols = dayRow.reduce((a, cell, i) => { if (/^\s*day[\s\-]*\d+\s*$/i.test(cell)) a.push(i); return a; }, []);
+    if (!dayCols.length) return;
+
+    let dateRowIdx = dayHeaderIdx + 1, timeRowIdx = dayHeaderIdx + 2, weekdayRowIdx = dayHeaderIdx + 3;
+    const sampleCol = dayCols[0];
+    for (let i = 1; i <= 5; i++) {
+      const rIdx = dayHeaderIdx + i;
+      if (rIdx >= allRows.length || rIdx >= nextBlockRow) break;
+      const cell = String(allRows[rIdx][sampleCol] || '').trim();
+      if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(cell)) dateRowIdx = rIdx;
+      else if (/\d{1,2}:\d{2}/.test(cell) || /am|pm/i.test(cell)) timeRowIdx = rIdx;
+      else if (/^(sun|mon|tue|wed|thu|fri|sat)/i.test(cell)) weekdayRowIdx = rIdx;
+    }
+
+    const dataStartRow = Math.max(dayHeaderIdx, dateRowIdx, timeRowIdx, weekdayRowIdx) + 1;
+    const dateRow    = allRows[dateRowIdx]    || [];
+    const timeRow    = allRows[timeRowIdx]    || [];
+    const weekdayRow = allRows[weekdayRowIdx] || [];
+
+    for (let r = dataStartRow; r < nextBlockRow; r++) {
+      const row = allRows[r];
+      if (!row) continue;
+      const section = (row[sectionCol] || '').trim();
+      if (!section || /^(section|day|date|time)$/i.test(section)) continue;
+      const cbNum = String(rowBatches[r]).replace(/\.0+$/, '').replace(/[^0-9]/g, '');
+      const csStr = section.toUpperCase();
+      const sectionMatch = csStr === tsStr || csStr.split(/[+&,]/).map(s => s.trim()).includes(tsStr);
+      if (cbNum && cbNum === tbNum && sectionMatch) {
+        dayCols.forEach(ci => {
+          const course = String(row[ci] || '').replace(/\s*\(\d+\)\s*/g, '').trim();
+          if (course && course !== '--' && course !== '–') {
+            slots.push({
+              code: course,
+              day:  `${(weekdayRow[ci] || '').trim()} ${(dateRow[ci] || '').trim()}`.trim(),
+              time: (timeRow[ci] || '').trim(),
+            });
+          }
+        });
+      }
+    }
+  });
+  return slots;
+}
+
+/* ── Exam Routine Monitor ──
+   Exam routines are a single matrix tab (Day-1…Day-N columns, Batch/Section
+   rows), NOT per-day tabs like the class routine — so we read the merged
+   single tab across all linked sheets and parse 62B's exams the same way the
+   info page does. Watches Batch 62, Section B (notifications go to all 62B). */
 async function checkExamRoutine(env, type) {
   const keyword = type === 'mid' ? 'mid term' : 'final term';
   const label   = type === 'mid' ? 'Mid Term' : 'Final Term';
   const stateKey = `${type}_routine`;
 
-  const sheetId = await getRoutineSheetIdByKeyword(env, keyword);
-  if (!sheetId) return;
+  const ids = await getRoutineSheetIdsByKeyword(env, keyword);
+  if (!ids.length) return;
 
-  const dayTabs = await Promise.all(MONITOR_DAYS.map(d => fetchSheetGviz(sheetId, d).catch(() => null)));
-  const allSlots = MONITOR_DAYS.flatMap((day, i) => parse62BSlots(dayTabs[i], day));
+  const table    = await fetchMergedSingleTab(ids);
+  const allSlots = parseExamSlots(table, '62', 'B');
 
   if (!allSlots.length) {
     const stored = await supabaseGetState(env, stateKey);
