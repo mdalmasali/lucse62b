@@ -261,7 +261,10 @@
 
     async function loadUpdates() {
       const timeline = document.getElementById('wnTimeline');
+      // Read old timestamp first (used to mark items as NEW in the UI),
+      // then immediately mark as seen — so glow clears even if fetch fails.
       _wnLastSeen = localStorage.getItem('lu62b_wn_last_seen') || '1970-01-01T00:00:00Z';
+      localStorage.setItem('lu62b_wn_last_seen', new Date().toISOString());
       try {
         const r = await fetch(
           `${_WN_SUPA}/rest/v1/site_updates?order=release_date.desc,created_at.desc`,
@@ -272,7 +275,6 @@
 
         if (!updates.length) {
           timeline.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-secondary);font-size:.82rem;">No updates yet.</div>`;
-          localStorage.setItem('lu62b_wn_last_seen', new Date().toISOString());
           return;
         }
 
@@ -283,8 +285,6 @@
 
         timeline.innerHTML = '';
         renderMore();
-
-        localStorage.setItem('lu62b_wn_last_seen', new Date().toISOString());
 
       } catch (e) {
         timeline.innerHTML = `<div style="text-align:center;padding:40px 0;color:#f87171;font-size:.82rem;">Could not load updates. Please try again later.</div>`;
