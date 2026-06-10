@@ -11,29 +11,14 @@ async function loadCourseOffer(body) {
             return;
         }
 
-        let headers = (data.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
-        let startIndex = 0;
-
-        if (!headers.some(h => h.includes('code') || h.includes('title') || h.includes('credit'))) {
-            headers = rows[0].map(h => (h || '').toLowerCase().trim());
-            startIndex = 1;
-        }
-
-        const cI  = headers.findIndex(h => h === 'code' || h === 'course code' || h === 'course_code');
-        const tI  = headers.findIndex(h => h.includes('title'));
-        const crI = headers.findIndex(h => h.includes('credit'));
-        const pI  = headers.findIndex(h => h.includes('prerequisite') || h.includes('pre-req'));
-
-        const ci  = cI  > -1 ? cI  : 1;
-        const ti  = tI  > -1 ? tI  : 0;
-        const cri = crI > -1 ? crI : 2;
-        const pi  = pI  > -1 ? pI  : 3;
+        // CPG_Courses fixed structure: A=Title, B=Code, C=Credit, D=Prerequisite
+        const ti = 0, ci = 1, cri = 2, pi = 3;
 
         const cards = [];
         let totalCredits = 0;
         let courseCount  = 0;
 
-        for (let i = startIndex; i < rows.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             if (!row) continue;
 
@@ -42,18 +27,15 @@ async function loadCourseOffer(body) {
             const creditRaw = (row[cri] || '0').toString().trim();
             const credit    = parseFloat(creditRaw) || 0;
 
-            if (code === '' && title === '') break;
-            if (code.length > 20 && code.toLowerCase() !== 'tba') break;
-            if (credit > 10) break;
+            // Skip header rows and non-course rows (valid codes: CSE-3201, GED-1101, etc.)
+            if (!code || !/^[A-Z]{2,}-\d/i.test(code)) continue;
 
             const prereq = (row[pi] || '').toString().trim();
             const color  = courseColor(code);
             const creditStr = credit % 1 === 0 ? String(Math.round(credit)) : String(credit);
 
-            if (code && code.toLowerCase() !== 'tba') {
-                totalCredits += credit;
-                courseCount++;
-            }
+            totalCredits += credit;
+            courseCount++;
 
             const prereqHtml = (prereq && prereq !== '-')
                 ? `<div class="co-prereq">
