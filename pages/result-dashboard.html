@@ -281,6 +281,17 @@
     .retake-tag { font-size:.67rem; padding:2px 8px; border-radius:8px; font-weight:600; white-space:nowrap; flex-shrink:0; }
     .retake-tag.retake  { background:rgba(244,63,94,.13);  color:#f43f5e;  border:1px solid rgba(244,63,94,.25); }
     .retake-tag.improve { background:rgba(251,146,60,.13); color:#fb923c; border:1px solid rgba(251,146,60,.25); }
+    /* ── Retake Impact Selector ── */
+    .ri-selector { display:flex; align-items:center; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
+    .ri-selector-lbl { font-size:.76rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; margin-right:2px; }
+    .ri-grade-pill { padding:4px 11px; border-radius:20px; font-size:.75rem; font-weight:700; cursor:pointer; border:1px solid rgba(167,139,250,.2); background:transparent; color:var(--text-secondary); transition:all .18s; font-family:'Inter',sans-serif; }
+    .ri-grade-pill:hover { border-color:rgba(167,139,250,.5); color:#a78bfa; }
+    .ri-grade-pill.active { background:rgba(167,139,250,.18); border-color:rgba(167,139,250,.5); color:#a78bfa; }
+    .ri-sorted-note { font-size:.71rem; color:var(--muted); margin-bottom:10px; }
+    .retake-delta { font-size:.72rem; font-weight:700; color:#34d399; white-space:nowrap; flex-shrink:0; text-align:right; line-height:1.4; }
+    .retake-delta.zero { color:var(--muted); }
+    .retake-delta.neg  { color:#f43f5e; }
+    .retake-delta.top  { color:#a78bfa; }
 
     /* ── Compare ── */
     .res-cmp-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; align-items: start; }
@@ -753,6 +764,7 @@
 
     let resData = null, gradeChart = null, gpaChart = null;
     let isViewingOwnResult = false, _myId = null, _myDob = null;
+    let _riTarget = 'A+';
 
     /* ── Init ── */
     (function init() {
@@ -1166,14 +1178,19 @@
     }
 
     /* ── Retake & Improvement ── */
+    function setRiTarget(g) {
+      _riTarget = g;
+      if (resData) renderRetake(resData.semesters || []);
+    }
+
     function renderRetake(sems) {
       const el = document.getElementById('dRetakeSection');
       if (!el) return;
+      const GP_MAP  = {'A+':4.00,'A':3.75,'A-':3.50,'B+':3.25,'B':3.00,'B-':2.75,'C+':2.50,'C':2.25,'D':2.00,'F':0.00};
       const IMPROVE = new Set(['B-','C+','C','D']);
       const rank = g => ['F','D','C','C+','B-','B','B+','A-','A','A+'].indexOf((g||'').trim());
       const norm = c => { const s=(c||'').toUpperCase().replace(/[^A-Z0-9]/g,''); const m=s.match(/^([A-Z]+)(\d.*)$/); return m?`${m[1]}-${m[2]}`:s; };
-      /* Keep only each course's BEST attempt across all semesters, so a course
-         later passed/improved (≥ B) no longer shows as retake/improvement. */
+      /* Keep only each course's BEST attempt */
       const bestByCode = {};
       sems.forEach(sem => (sem.courses||[]).forEach(c => {
         const code = norm(c.course_code), r = rank(c.grade);
@@ -1189,24 +1206,56 @@
         el.innerHTML = `<div class="retake-badge ok"><i class="fa-solid fa-circle-check"></i> All courses are above B− — nothing to retake or improve!</div>`;
         return;
       }
-      const row = (c, type) => `
-        <div class="retake-row ${type==='retake'?'fail-row':'improve-row'}">
+
+      /* CGPA impact simulation */
+      const curCGPA  = resData.cgpa || 0;
+      const totCr    = resData.total_credit || 0;
+      const curWt    = curCGPA * totCr;
+      const tgtGP    = GP_MAP[_riTarget] ?? 4.00;
+      const impact   = c => {
+        const cr = parseFloat(c.credit) || 0;
+        if (!cr || !totCr) return 0;
+        const oldGP = GP_MAP[c.grade] ?? 0;
+        if (c.grade === 'F') return (curWt + tgtGP * cr) / (totCr + cr) - curCGPA;
+        return (curWt - oldGP * cr + tgtGP * cr) / totCr - curCGPA;
+      };
+
+      /* Merge + sort by impact descending */
+      const all = [
+        ...retake.map(c  => ({...c, _type:'retake',  _d: impact(c)})),
+        ...improve.map(c => ({...c, _type:'improve', _d: impact(c)})),
+      ].sort((a, b) => b._d - a._d);
+
+      const grades   = ['A+','A','A-','B+','B','B-'];
+      const selector = `<div class="ri-selector">
+        <span class="ri-selector-lbl"><i class="fa-solid fa-bullseye"></i> If I get:</span>
+        ${grades.map(g => `<button class="ri-grade-pill${g===_riTarget?' active':''}" onclick="setRiTarget('${g}')">${g}</button>`).join('')}
+      </div>`;
+
+      const row = (c, i) => {
+        const d    = c._d;
+        const newCG = (curCGPA + d).toFixed(2);
+        const dStr  = (d >= 0 ? '+' : '') + d.toFixed(2);
+        const cls   = d > 0.005 ? (i === 0 ? ' top' : '') : d < -0.005 ? ' neg' : ' zero';
+        return `<div class="retake-row ${c._type==='retake'?'fail-row':'improve-row'}">
           <div class="retake-info">
             <div class="retake-name">${c.course_title||c.course_code||'N/A'}</div>
-            <div class="retake-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.semester_name||''}</div>
+            <div class="retake-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.credit||0} cr &nbsp;·&nbsp; ${c.semester_name||''}</div>
           </div>
-          <span class="retake-grade ${type==='retake'?'fail':'improve'}">${c.grade}</span>
-          <span class="retake-tag ${type}">${type==='retake'?'Retake':'Improvement'}</span>
+          <span class="retake-grade ${c._type==='retake'?'fail':'improve'}">${c.grade}</span>
+          <span class="retake-tag ${c._type}">${c._type==='retake'?'Retake':'Improve'}</span>
+          <span class="retake-delta${cls}">${i===0&&d>0.005?'⭐ ':''}${dStr}<br><small style="opacity:.65;font-weight:500">${newCG} CG</small></span>
         </div>`;
+      };
+
       el.innerHTML = `
         <div class="retake-summary">
-          ${retake.length  ? `<span class="retake-badge fail"><i class="fa-solid fa-xmark-circle"></i> ${retake.length} Retake</span>` : ''}
+          ${retake.length  ? `<span class="retake-badge fail"><i class="fa-solid fa-xmark-circle"></i> ${retake.length} Retake</span>`    : ''}
           ${improve.length ? `<span class="retake-badge improve"><i class="fa-solid fa-arrow-up"></i> ${improve.length} Improvement</span>` : ''}
         </div>
-        <div class="retake-2col">
-          ${retake.length  ? `<div><div class="retake-col-hdr fail-hdr"><i class="fa-solid fa-rotate-right"></i> Retake (${retake.length})</div><div class="retake-list">${retake.map(c=>row(c,'retake')).join('')}</div></div>`   : ''}
-          ${improve.length ? `<div><div class="retake-col-hdr improve-hdr"><i class="fa-solid fa-arrow-trend-up"></i> Improve (${improve.length})</div><div class="retake-list">${improve.map(c=>row(c,'improve')).join('')}</div></div>` : ''}
-        </div>`;
+        ${selector}
+        <div class="ri-sorted-note"><i class="fa-solid fa-arrow-down-wide-short"></i> Sorted by CGPA impact — highest benefit first</div>
+        <div class="retake-list">${all.map((c, i) => row(c, i)).join('')}</div>`;
     }
 
     /* ── Compare ── */
