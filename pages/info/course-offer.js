@@ -17,18 +17,24 @@ async function loadCourseOffer(body) {
         const cards = [];
         let totalCredits = 0;
         let courseCount  = 0;
+        let courseSeen   = false;
 
-        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             if (!row) continue;
 
             const code      = (row[ci]  || '').toString().trim();
             const title     = (row[ti]  || '').toString().trim();
-            const creditRaw = (row[cri] || '0').toString().trim();
+            const creditRaw = (row[cri] || '').toString().trim(); // empty = no credit set
             const credit    = parseFloat(creditRaw) || 0;
 
-            // Skip header rows and non-course rows (valid codes: CSE-3201, GED-1101, etc.)
+            // Skip header and non-course rows (valid codes: CSE-3201, GED-1101, etc.)
             if (!code || !/^[A-Z]{2,}-\d/i.test(code)) continue;
+
+            // Once courses started, stop at first course with no credit (future semester)
+            if (courseSeen && !creditRaw) break;
+
+            courseSeen = true;
 
             const prereq = (row[pi] || '').toString().trim();
             const color  = courseColor(code);
