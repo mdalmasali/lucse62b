@@ -18,7 +18,7 @@ async function loadCourseOffer(body) {
         let totalCredits = 0;
         let courseCount  = 0;
 
-        for (let i = 0; i < rows.length; i++) {
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
             const row = rows[i];
             if (!row) continue;
 
