@@ -5,13 +5,48 @@ const _AC_WORKER = 'https://lucse62b-api.sy164425.workers.dev';
 const _AC_SUPA   = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _AC_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
+/* ── Grade helpers: collapse a result set to the BEST grade per course, then
+   bucket once — so a course later passed/improved stops showing as
+   retake/improve, and codes like "GED 1262" / "GED-1262" all match. ── */
+function _gradeRank(g) {
+  return ['F','D','C','C+','B-','B','B+','A-','A','A+'].indexOf((g || '').trim());
+}
+function _normCourseCode(c) {
+  const s = (c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const m = s.match(/^([A-Z]+)(\d.*)$/);
+  return m ? `${m[1]}-${m[2]}` : s;
+}
+function _bucketBestGrade(data) {
+  const IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
+  const best = {};   /* normCode → { grade, rank } */
+  for (const yearSems of Object.values(data.results || {})) {
+    const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
+    for (const sem of sems) {
+      for (const c of (sem.courses || [])) {
+        const code = _normCourseCode(c.course_code);
+        const rank = _gradeRank(c.grade);
+        if (!code || rank < 0) continue;
+        if (!(code in best) || rank > best[code].rank) best[code] = { grade: (c.grade || '').trim(), rank };
+      }
+    }
+  }
+  const retake = [], improve = [], resolved = [];
+  for (const [code, { grade, rank }] of Object.entries(best)) {
+    if (grade === 'F')                retake.push(code);
+    else if (IMPROVE.has(grade))      improve.push(code);
+    else if (rank >= _gradeRank('B')) resolved.push(code);   /* B or better → done */
+  }
+  return { retake, improve, resolved };
+}
+
 function _acCachedCodes() {
   try {
     return {
       retake:  new Set(JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]')),
       improve: new Set(JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]')),
+      resolved: new Set(), live: false,
     };
-  } catch(e) { return { retake: new Set(), improve: new Set() }; }
+  } catch(e) { return { retake: new Set(), improve: new Set(), resolved: new Set(), live: false }; }
 }
 
 async function _acFetchRetakeCodes() {
@@ -44,24 +79,12 @@ async function _acFetchRetakeCodes() {
     const data = JSON.parse(text);
     if (!data?.success) return _acCachedCodes();
 
-    const IMPROVE = new Set(['B-','C+','C','D']);
-    const retake = [], improve = [];
-    for (const yearSems of Object.values(data.results || {})) {
-      const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
-      for (const sem of sems) {
-        for (const c of (sem.courses || [])) {
-          const code = (c.course_code || '').trim().toUpperCase();
-          if (!code) continue;
-          if (c.grade === 'F') retake.push(code);
-          else if (IMPROVE.has(c.grade)) improve.push(code);
-        }
-      }
-    }
+    const { retake, improve, resolved } = _bucketBestGrade(data);
     try {
       localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
       localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
     } catch(e) {}
-    return { retake: new Set(retake), improve: new Set(improve) };
+    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), live: true };
   } catch(e) { return _acCachedCodes(); }
 }
 

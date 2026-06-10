@@ -1170,12 +1170,21 @@
       const el = document.getElementById('dRetakeSection');
       if (!el) return;
       const IMPROVE = new Set(['B-','C+','C','D']);
-      const retake = [], improve = [];
+      const rank = g => ['F','D','C','C+','B-','B','B+','A-','A','A+'].indexOf((g||'').trim());
+      const norm = c => { const s=(c||'').toUpperCase().replace(/[^A-Z0-9]/g,''); const m=s.match(/^([A-Z]+)(\d.*)$/); return m?`${m[1]}-${m[2]}`:s; };
+      /* Keep only each course's BEST attempt across all semesters, so a course
+         later passed/improved (≥ B) no longer shows as retake/improvement. */
+      const bestByCode = {};
       sems.forEach(sem => (sem.courses||[]).forEach(c => {
-        const entry = { ...c, semester_name: sem.semester_name };
-        if (c.grade === 'F')           retake.push(entry);
-        else if (IMPROVE.has(c.grade)) improve.push(entry);
+        const code = norm(c.course_code), r = rank(c.grade);
+        if (!code || r < 0) return;
+        if (!bestByCode[code] || r > bestByCode[code]._r) bestByCode[code] = { ...c, semester_name: sem.semester_name, _r: r };
       }));
+      const retake = [], improve = [];
+      Object.values(bestByCode).forEach(c => {
+        if (c.grade === 'F')           retake.push(c);
+        else if (IMPROVE.has(c.grade)) improve.push(c);
+      });
       if (!retake.length && !improve.length) {
         el.innerHTML = `<div class="retake-badge ok"><i class="fa-solid fa-circle-check"></i> All courses are above B− — nothing to retake or improve!</div>`;
         return;

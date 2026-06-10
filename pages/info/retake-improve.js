@@ -210,12 +210,46 @@ window._riToggleEnroll = async function(courseCode, batch, section, type) {
    RESULT API — fetch retake/improve from grades
    ══════════════════════════════════════════════ */
 
+/* ── Grade helpers (mirror of all-course.js): keep the BEST grade per course,
+   then bucket once, and canonicalize codes ("GED 1262" → "GED-1262"). ── */
+function _gradeRank(g) {
+  return ['F','D','C','C+','B-','B','B+','A-','A','A+'].indexOf((g || '').trim());
+}
+function _normCourseCode(c) {
+  const s = (c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const m = s.match(/^([A-Z]+)(\d.*)$/);
+  return m ? `${m[1]}-${m[2]}` : s;
+}
+function _bucketBestGrade(data) {
+  const IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
+  const best = {};
+  for (const yearSems of Object.values(data.results || {})) {
+    const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
+    for (const sem of sems) {
+      for (const c of (sem.courses || [])) {
+        const code = _normCourseCode(c.course_code);
+        const rank = _gradeRank(c.grade);
+        if (!code || rank < 0) continue;
+        if (!(code in best) || rank > best[code].rank) best[code] = { grade: (c.grade || '').trim(), rank };
+      }
+    }
+  }
+  const retake = [], improve = [], resolved = [];
+  for (const [code, { grade, rank }] of Object.entries(best)) {
+    if (grade === 'F')                retake.push(code);
+    else if (IMPROVE.has(grade))      improve.push(code);
+    else if (rank >= _gradeRank('B')) resolved.push(code);
+  }
+  return { retake, improve, resolved };
+}
+
 async function _riGetCodes(userId, dob) {
   if (typeof _acFetchRetakeCodes === 'function') return _acFetchRetakeCodes();
 
   const cached = () => ({
     retake:  new Set(JSON.parse(localStorage.getItem('lu62b_retake_codes')  || '[]')),
     improve: new Set(JSON.parse(localStorage.getItem('lu62b_improve_codes') || '[]')),
+    resolved: new Set(), live: false,
   });
   if (!userId || !dob) return cached();
 
@@ -243,24 +277,12 @@ async function _riGetCodes(userId, dob) {
     const data = JSON.parse(text);
     if (!data?.success) return cached();
 
-    const IMPROVE_GRADES = new Set(['B-', 'C+', 'C', 'D']);
-    const retake = [], improve = [];
-    for (const yearSems of Object.values(data.results || {})) {
-      const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
-      for (const sem of sems) {
-        for (const c of (sem.courses || [])) {
-          const code = (c.course_code || '').trim().toUpperCase();
-          if (!code) continue;
-          if (c.grade === 'F') retake.push(code);
-          else if (IMPROVE_GRADES.has(c.grade)) improve.push(code);
-        }
-      }
-    }
+    const { retake, improve, resolved } = _bucketBestGrade(data);
     try {
       localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
       localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
     } catch(e) {}
-    return { retake: new Set(retake), improve: new Set(improve) };
+    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), live: true };
   } catch(e) { return cached(); }
 }
 
@@ -363,14 +385,32 @@ async function loadRetakeImprove(body) {
       getSemesterLabel(),
     ]);
 
+    /* Auto-remove courses already PASSED (best grade ≥ B): a retake/improve is
+       no longer possible once passed, so drop them from the saved/enrolled lists
+       too. Only act on a CONFIRMED live result fetch — never on cached/failed
+       data — so a transient error can't wrongly delete a saved course. */
+    const _passed   = (myCodes.live && myCodes.resolved) ? myCodes.resolved : new Set();
+    const _isPassed = c => _passed.has(_normCourseCode(c));
+    if (_passed.size) {
+      const mr = [...manualRetake ].filter(c => !_isPassed(c));
+      const mi = [...manualImprove].filter(c => !_isPassed(c));
+      if (mr.length !== manualRetake.size || mi.length !== manualImprove.size) {
+        manualRetake  = new Set(mr);
+        manualImprove = new Set(mi);
+        localStorage.setItem('lu62b_manual_retake',  JSON.stringify(mr));
+        localStorage.setItem('lu62b_manual_improve', JSON.stringify(mi));
+        if (user?.id) _riSaveManualToSupa(user.id, mr, mi);
+      }
+    }
+
     /* Supabase sync for manual courses (background, non-blocking) */
     if (user?.id) {
       _riLoadManualFromSupa(user.id).then(supa => {
         if (!supa) return;
         /* Merge: Supabase wins (it may have data from another device) */
         const merged = {
-          retake:  new Set([...manualRetake,  ...supa.retake]),
-          improve: new Set([...manualImprove, ...supa.improve]),
+          retake:  new Set([...manualRetake,  ...supa.retake ].filter(c => !_isPassed(c))),
+          improve: new Set([...manualImprove, ...supa.improve].filter(c => !_isPassed(c))),
         };
         localStorage.setItem('lu62b_manual_retake',  JSON.stringify([...merged.retake]));
         localStorage.setItem('lu62b_manual_improve', JSON.stringify([...merged.improve]));
@@ -532,6 +572,15 @@ async function loadRetakeImprove(body) {
     if (user?.id) {
       _riLoadEnrollments(user.id).then(fresh => {
         if (!window._riData) return;
+        /* Drop enrollments for courses already passed (best grade ≥ B) */
+        if (_passed.size) {
+          Object.keys(fresh).forEach(code => {
+            if (!_isPassed(code)) return;
+            delete fresh[code];
+            fetch(`${_RI_SUPA}/rest/v1/student_retake_enrollments?student_id=eq.${encodeURIComponent(user.id)}&course_code=eq.${encodeURIComponent(code)}`,
+              { method: 'DELETE', headers: { 'apikey': _RI_KEY, 'Authorization': `Bearer ${_RI_KEY}`, 'Prefer': 'return=minimal' } }).catch(() => {});
+          });
+        }
         window._riData.enrollments = fresh;
         try { localStorage.setItem(`lu62b_enrollments_${user.id}`, JSON.stringify(fresh)); } catch(e) {}
         riSwitchTab(_riActiveTab);
