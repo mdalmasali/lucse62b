@@ -507,10 +507,14 @@ body {
 }
 .photo-frame-glow {
   position: absolute;
-  inset: -32px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.55) 0%, rgba(6,182,212,0.3) 45%, transparent 70%);
-  filter: blur(28px);
+  /* Sized + centred to match the 192×248 polaroid card (centred in the 300×300 showcase) */
+  left: 20px;
+  top: -8px;
+  width: 260px;
+  height: 316px;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(124,58,237,0.6) 0%, rgba(6,182,212,0.32) 50%, transparent 75%);
+  filter: blur(32px);
   animation: photoGlowPulse 4s ease-in-out infinite alternate;
   pointer-events: none;
 }

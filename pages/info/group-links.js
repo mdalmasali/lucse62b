@@ -13,12 +13,76 @@ async function loadGroupLinks(body) {
     body.innerHTML = `<div class="info-loading-spin"><div class="spin-sm"></div> Loading Links &amp; Codes...</div>`;
 
     try {
-        const [data, sem] = await Promise.all([fetchSheet('CPG_Courses'), getSemesterLabel()]);
-        const rows = sheetRows(data);
+        const routinePromise = (typeof _allDayResults !== 'undefined' && _allDayResults)
+            ? Promise.resolve(_allDayResults)
+            : (typeof fetchAllRoutineDays === 'function' ? fetchAllRoutineDays().catch(() => null) : Promise.resolve(null));
+
+        const [cpgData, sem, cpgTeacherData, dayResults] = await Promise.all([
+            fetchSheet('CPG_Courses'),
+            getSemesterLabel(),
+            fetchSheet('CPG_Teachers').catch(() => null),
+            routinePromise,
+        ]);
+
+        const rows = sheetRows(cpgData);
 
         if (!rows || rows.length === 0) {
             body.innerHTML = `<div class="info-placeholder"><i class="fa-solid fa-link"></i><p>No group links available yet.</p></div>`;
             return;
+        }
+
+        // Build teacher lookup from CPG_Teachers
+        const directory = {};
+        const initialsMap = {};
+        if (cpgTeacherData) {
+            const tRows = sheetRows(cpgTeacherData);
+            const tStart = (tRows[0] && (tRows[0][0] || '').toLowerCase().includes('acronym')) ? 1 : 0;
+            for (let i = tStart; i < tRows.length; i++) {
+                const tr = tRows[i];
+                const initials = (tr[0] || '').trim().toUpperCase();
+                const name = (tr[1] || '').trim();
+                if (!initials || !name) continue;
+                const key = name.toLowerCase();
+                directory[key] = { name };
+                initialsMap[initials] = key;
+            }
+        }
+
+        // Build course code → teacher name map from Batch 62B routine
+        const courseTeacherMap = {};
+        if (dayResults) {
+            (typeof ROUTINE_DAY_NAMES !== 'undefined' ? ROUTINE_DAY_NAMES : []).forEach((dayName, idx) => {
+                const dayData = dayResults[idx];
+                if (!dayData?.table) return;
+                const dayRows = dayData.table.rows || [];
+                const cols    = dayData.table.cols || [];
+
+                let dataStart = 0;
+                const colTimes = cols.slice(3).map(c => (c.label || '').trim());
+                if (!colTimes.some(t => /\d+:\d+/.test(t))) {
+                    for (let r = 0; r < Math.min(dayRows.length, 3); r++) {
+                        const cells = (dayRows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                        if (cells.slice(3).some(c => /\d+:\d+/.test(c))) { dataStart = r + 1; break; }
+                    }
+                }
+
+                for (let r = dataStart; r < dayRows.length; r++) {
+                    const cells = (dayRows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                    const rowBatch = String(cells[1]?.trim() || '').replace(/\.0+$/, '');
+                    if (rowBatch !== '62' || cells[2]?.trim().toUpperCase() !== 'B') continue;
+
+                    cells.slice(3).forEach(cell => {
+                        const parsed = typeof parseClassCell === 'function' ? parseClassCell(cell) : null;
+                        if (!parsed?.code) return;
+                        const initials = (parsed.initials || '').toUpperCase().trim();
+                        if (!initials || initials === 'BREAK') return;
+                        const code = parsed.code.trim().toUpperCase();
+                        if (courseTeacherMap[code]) return;
+                        const dirKey = initialsMap[initials];
+                        courseTeacherMap[code] = dirKey ? directory[dirKey].name : initials;
+                    });
+                }
+            });
         }
 
         const cards = [];
@@ -32,7 +96,8 @@ async function loadGroupLinks(body) {
 
             const title      = row[0]  || '';
             const courseCode = row[1]  || '';
-            const teacher    = row[4]  || 'TBA';
+            const codeUp     = courseCode.trim().toUpperCase();
+            const teacher    = courseTeacherMap[codeUp] || row[4] || 'TBA';
             const waLink     = row[9]  || '';
             const gcLink     = row[10] || '';
             const gcCode     = row[11] || '';

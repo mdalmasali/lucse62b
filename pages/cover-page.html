@@ -371,6 +371,9 @@
       .btn-rm { width: 24px; height: 24px; font-size: 0.72rem; }
     }
 
+    /* Hide site footer while live preview is visible */
+    body.cg-preview-visible footer { display: none; }
+
     /* Spinner */
     .cg-spinner {
       display: inline-block; width: 16px; height: 16px;
@@ -1064,11 +1067,17 @@
       if (_poEl) new ResizeObserver(() => scalePreview()).observe(_poEl);
     }
 
+    function _syncFooterVisibility() {
+      const panel = document.getElementById('previewPanel');
+      document.body.classList.toggle('cg-preview-visible', !panel.classList.contains('collapsed'));
+    }
+
     function toggleMobilePreview() {
       const panel = document.getElementById('previewPanel');
       const icon  = document.getElementById('previewToggleIcon');
       const text  = document.getElementById('previewToggleText');
       const isCollapsed = panel.classList.toggle('collapsed');
+      _syncFooterVisibility();
       if (isCollapsed) {
         icon.className = 'fa-solid fa-eye';
         text.textContent = 'Show Live Preview';
@@ -1091,6 +1100,7 @@
         icon.className = 'fa-solid fa-eye-slash';
         text.textContent = 'Hide Preview';
       }
+      _syncFooterVisibility();
       scalePreview();
     });
 
@@ -1614,6 +1624,7 @@
     if (window.innerWidth > 1100) {
       document.getElementById('previewPanel').classList.remove('collapsed');
     }
+    _syncFooterVisibility();
     setTimeout(scalePreview, 150);
   </script>
   <script src="../assets/js/theme.js"></script>

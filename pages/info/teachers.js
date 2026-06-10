@@ -1,4 +1,6 @@
 /* ── Website/pages/info/teachers.js ── */
+/* Source of truth: Class Routine (62B slots) for teacher→course assignments.
+   CPG_Teachers supplies contact info; CPG_Courses supplies course titles only. */
 
 const _TC_SUPA_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _TC_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
@@ -7,14 +9,11 @@ const _tcEmpty = v => !v || String(v).trim() === '' || String(v).trim() === '-' 
 
 function _tcPhoneHtml(phone) {
     if (_tcEmpty(phone)) return '<span style="color:#64748b;font-size:0.82rem;">N/A</span>';
-    // Normalize: strip separators, remove country prefix, restore leading zero
     let norm = String(phone).replace(/[\s\-\(\)\.]/g, '').replace(/^\+/, '');
-    if      (norm.startsWith('880') && norm.length === 13) norm = '0' + norm.slice(3); // +8801X → 01X
-    else if (norm.startsWith('88')  && norm.length === 12) norm = '0' + norm.slice(2); // 8801X → 01X
-    else if (norm.startsWith('1')   && norm.length === 10) norm = '0' + norm;          // 1XXXXXXXXX → 01X (GVIZ drops leading 0)
+    if      (norm.startsWith('880') && norm.length === 13) norm = '0' + norm.slice(3);
+    else if (norm.startsWith('88')  && norm.length === 12) norm = '0' + norm.slice(2);
+    else if (norm.startsWith('1')   && norm.length === 10) norm = '0' + norm;
     const display = `<span style="font-size:0.85rem;font-weight:600;">${escH(norm)}</span>`;
-    // Only attach a WhatsApp link to a valid BD mobile — never to a landline,
-    // extension or garbage value (which would make a broken wa.me link).
     if (!/^01\d{9}$/.test(norm)) return display;
     return `${display}
             <a href="https://wa.me/88${norm}" target="_blank"
@@ -25,19 +24,20 @@ function _tcPhoneHtml(phone) {
 async function loadTeachers(body) {
     body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Teachers & Courses...</div>';
     try {
-        const [data, cpgTeacherData] = await Promise.all([
-            fetchSheet('CPG_Courses').catch(() => null),
+        /* Reuse already-fetched routine data if the Routine tab was visited first */
+        const routinePromise = (typeof _allDayResults !== 'undefined' && _allDayResults)
+            ? Promise.resolve(_allDayResults)
+            : (typeof fetchAllRoutineDays === 'function' ? fetchAllRoutineDays().catch(() => null) : Promise.resolve(null));
+
+        const [cpgTeacherData, dayResults, cpgCoursesData] = await Promise.all([
             fetchSheet('CPG_Teachers').catch(() => null),
+            routinePromise,
+            fetchSheet('CPG_Courses').catch(() => null),
         ]);
 
-        /* CPG_Courses (the assigned-course list) may be empty — that's fine.
-           The searchable directory comes from CPG_Teachers, so we still render
-           the search UI even when no course has a teacher assigned yet. */
-        const rows = data ? sheetRows(data) : [];
-
-        /* ── Build full teacher directory from CPG_Teachers (for search + phone/email) ── */
-        const directory   = {}; /* key: lowercase name → teacher info */
-        const initialsMap = {}; /* key: uppercase initials → lowercase name */
+        /* ── Build full teacher directory from CPG_Teachers ── */
+        const directory   = {}; /* lowercase name → teacher info */
+        const initialsMap = {}; /* uppercase initials → lowercase name */
         if (cpgTeacherData?.table) {
             const tRows  = cpgTeacherData.table.rows || [];
             const hCells = (cpgTeacherData.table.cols || [])
@@ -50,7 +50,7 @@ async function loadTeachers(body) {
             let phCol   = hCells.findIndex(h => /phone|cell/.test(h));
             let emCol   = hCells.findIndex(h => /email/.test(h));
 
-            /* Fallback: known CPG_Teachers column layout A=Acronym B=Name C=Designation D=Department E=Cell F=Email */
+            /* Fallback column layout: A=Acronym B=Name C=Designation D=Department E=Cell F=Email */
             if (initCol < 0) initCol = 0;
             if (nameCol < 0) nameCol = 1;
             if (deCol   < 0) deCol   = 2;
@@ -58,77 +58,119 @@ async function loadTeachers(body) {
             if (phCol   < 0) phCol   = 4;
             if (emCol   < 0) emCol   = 5;
 
-            if (initCol >= 0 && nameCol >= 0) {
-                tRows.forEach(row => {
-                    /* prefer c.f (formatted) so numbers keep leading zeros */
-                    const cells = (row.c || []).map(c => {
-                        if (!c) return '';
-                        const fv = c.f != null ? String(c.f).trim() : '';
-                        const vv = c.v != null ? String(c.v).trim() : '';
-                        return fv || vv;
-                    });
-                    const init  = cells[initCol]?.toUpperCase().trim();
-                    const name  = cells[nameCol];
-                    if (!init || !name) return;
-                    const key = name.toLowerCase().trim();
-                    const prev = directory[key] || {};
-                    /* Non-destructive merge: if two rows share a name, keep the
-                       first non-empty value for each field so good data (e.g. a
-                       phone or email) is never clobbered by a later blank row. */
-                    const pick = (existing, incoming) => _tcEmpty(existing) ? (incoming || '') : existing;
-                    directory[key] = {
-                        name,
-                        designation: pick(prev.designation, cells[deCol]),
-                        department:  pick(prev.department,  cells[dpCol]),
-                        phone:       pick(prev.phone,       cells[phCol]),
-                        email:       pick(prev.email,       cells[emCol]),
-                    };
-                    initialsMap[init] = key;
+            tRows.forEach(row => {
+                const cells = (row.c || []).map(c => {
+                    if (!c) return '';
+                    const fv = c.f != null ? String(c.f).trim() : '';
+                    const vv = c.v != null ? String(c.v).trim() : '';
+                    return fv || vv;
                 });
-            }
-
-        }
-
-        /* ── Build teacher map from CPG_Courses (what shows in the list) ── */
-        let headers    = (data?.table?.cols || []).map(c => (c.label || '').toLowerCase().trim());
-        let startIndex = 0;
-
-        if (rows.length && !headers.some(h => h.includes('title') || h.includes('code') || h.includes('name'))) {
-            headers    = rows[0].map(h => (h || '').toLowerCase().trim());
-            startIndex = 1;
-        }
-
-        const tI  = headers.findIndex(h => h.includes('title'))       > -1 ? headers.findIndex(h => h.includes('title'))       : 0;
-        const cI  = headers.findIndex(h => h.includes('code'))        > -1 ? headers.findIndex(h => h.includes('code'))        : 1;
-        const nI  = headers.findIndex(h => h.includes('teacher name') || h === 'name') > -1 ? headers.findIndex(h => h.includes('teacher name') || h === 'name') : 2;
-        const deI = headers.findIndex(h => h.includes('designation')) > -1 ? headers.findIndex(h => h.includes('designation')) : 3;
-        const dpI = headers.findIndex(h => h.includes('department'))  > -1 ? headers.findIndex(h => h.includes('department'))  : 4;
-        const pI  = headers.findIndex(h => h.includes('phone'))       > -1 ? headers.findIndex(h => h.includes('phone'))       : 5;
-        const eI  = headers.findIndex(h => h.includes('email'))       > -1 ? headers.findIndex(h => h.includes('email'))       : 6;
-
-        const teacherMap = new Map();
-
-        for (let i = startIndex; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0) continue;
-            const name = row[nI] || '';
-            if (!name || name.toLowerCase() === 'tba' || name.toLowerCase() === 'tb a') continue;
-            const key        = name.toLowerCase().trim();
-            const courseInfo = { title: row[tI] || '', code: row[cI] || '' };
-            const dir        = directory[key]; /* use CPG_Teachers phone/email if available */
-
-            if (!teacherMap.has(key)) {
-                teacherMap.set(key, {
+                const init = cells[initCol]?.toUpperCase().trim();
+                const name = cells[nameCol];
+                if (!init || !name) return;
+                const key  = name.toLowerCase().trim();
+                const prev = directory[key] || {};
+                const pick = (existing, incoming) => _tcEmpty(existing) ? (incoming || '') : existing;
+                directory[key] = {
                     name,
-                    designation: dir?.designation || row[deI] || '',
-                    department:  dir?.department  || row[dpI] || '',
-                    phone:       dir?.phone       || row[pI]  || '',
-                    email:       dir?.email       || row[eI]  || '',
-                    courses: courseInfo.code ? [courseInfo] : [],
-                });
-            } else if (courseInfo.code) {
-                teacherMap.get(key).courses.push(courseInfo);
+                    designation: pick(prev.designation, cells[deCol]),
+                    department:  pick(prev.department,  cells[dpCol]),
+                    phone:       pick(prev.phone,       cells[phCol]),
+                    email:       pick(prev.email,       cells[emCol]),
+                };
+                initialsMap[init] = key;
+            });
+        }
+
+        /* ── Build course title lookup from CPG_Courses (code → title) ── */
+        const courseTitles = {};
+        if (cpgCoursesData) {
+            const rows = sheetRows(cpgCoursesData);
+            const headerRow = rows[0] || [];
+            const isHeader  = headerRow.some(h => /title|code|course/i.test(h));
+            const dataStart = isHeader ? 1 : 0;
+            /* CPG_Courses: A=Title, B=Code (or derive from column headers) */
+            let titleIdx = 0, codeIdx = 1;
+            if (isHeader) {
+                const lo = headerRow.map(h => (h||'').toLowerCase());
+                const ti = lo.findIndex(h => h.includes('title'));
+                const ci = lo.findIndex(h => h.includes('code'));
+                if (ti >= 0) titleIdx = ti;
+                if (ci >= 0) codeIdx  = ci;
             }
+            rows.slice(dataStart).forEach(r => {
+                const code = (r[codeIdx] || '').trim().toUpperCase();
+                const title = (r[titleIdx] || '').trim();
+                if (code && title) courseTitles[code] = title;
+            });
+        }
+
+        /* ── Build teacher→course map from Class Routine (Batch 62, Section B) ── */
+        const teacherMap = new Map(); /* uppercase initials → teacher entry */
+
+        if (dayResults) {
+            ROUTINE_DAY_NAMES.forEach((dayName, idx) => {
+                const data = dayResults[idx];
+                if (!data?.table) return;
+                const rows = data.table.rows || [];
+                const cols = data.table.cols || [];
+                if (!rows.length) return;
+
+                /* Find data start row (time header may be in col labels or first rows) */
+                let dataStart = 0;
+                const colTimes = cols.slice(3).map(c => (c.label||'').trim());
+                if (!colTimes.some(t => /\d+:\d+/.test(t))) {
+                    for (let r = 0; r < Math.min(rows.length, 3); r++) {
+                        const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                        if (cells.slice(3).some(c => /\d+:\d+/.test(c))) { dataStart = r + 1; break; }
+                    }
+                }
+
+                for (let r = dataStart; r < rows.length; r++) {
+                    const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
+                    /* Only process rows for Batch 62, Section B */
+                    const rowBatch = String(cells[1]?.trim() || '').replace(/\.0+$/, '');
+                    if (rowBatch !== '62' || cells[2]?.trim().toUpperCase() !== 'B') continue;
+
+                    cells.slice(3).forEach(cell => {
+                        const parsed = typeof parseClassCell === 'function' ? parseClassCell(cell) : null;
+                        if (!parsed?.code) return;
+                        const initials = (parsed.initials || '').toUpperCase().trim();
+                        if (!initials || initials === 'BREAK') return;
+
+                        const code    = parsed.code.trim().toUpperCase();
+                        const dirKey  = initialsMap[initials];
+                        const dir     = dirKey ? directory[dirKey] : null;
+
+                        if (!teacherMap.has(initials)) {
+                            teacherMap.set(initials, {
+                                name:        dir?.name        || initials,
+                                designation: dir?.designation || '',
+                                department:  dir?.department  || '',
+                                phone:       dir?.phone       || '',
+                                email:       dir?.email       || '',
+                                courses:     [],
+                                _initials:   initials,
+                            });
+                        }
+
+                        const teacher = teacherMap.get(initials);
+                        /* Upgrade contact info if directory has it and teacher entry doesn't yet */
+                        if (dir) {
+                            if (teacher.name === initials && dir.name) teacher.name = dir.name;
+                            if (_tcEmpty(teacher.phone) && dir.phone) teacher.phone = dir.phone;
+                            if (_tcEmpty(teacher.email) && dir.email) teacher.email = dir.email;
+                            if (!teacher.designation && dir.designation) teacher.designation = dir.designation;
+                            if (!teacher.department  && dir.department)  teacher.department  = dir.department;
+                        }
+
+                        /* Add course if not already listed */
+                        if (code && !teacher.courses.some(c => c.code === code)) {
+                            teacher.courses.push({ code, title: courseTitles[code] || '' });
+                        }
+                    });
+                }
+            });
         }
 
         /* ── Merge enrolled retake/improve teachers ── */
@@ -147,38 +189,33 @@ async function loadTeachers(body) {
                     const enrollments = await r.json();
                     enrollments.forEach(enr => {
                         if (!enr.teacher) return;
-                        const init = enr.teacher.toUpperCase();
+                        const init   = enr.teacher.toUpperCase();
                         const dirKey = initialsMap[init];
                         const info   = dirKey ? directory[dirKey] : null;
-                        /* If the teacher isn't in CPG_Teachers, still show them
-                           keyed by initials so the enrolled course's teacher
-                           never silently disappears from the contact list. */
-                        const key = dirKey || init;
+                        const key    = init; /* use initials as map key (same as above) */
 
                         const enrolledCourse = {
-                            title:    enr.course_name || enr.course_code || '',
+                            title:    enr.course_name || courseTitles[enr.course_code?.toUpperCase()] || enr.course_code || '',
                             code:     enr.course_code || '',
                             enrolled: enr.type,
                         };
-
-                        const bestPhone = info?.phone || '';
-                        const bestEmail = info?.email || '';
 
                         if (teacherMap.has(key)) {
                             const existing   = teacherMap.get(key);
                             const alreadyHas = existing.courses.some(c => c.code === enr.course_code);
                             if (!alreadyHas && enrolledCourse.code) existing.courses.push(enrolledCourse);
-                            if (!_tcEmpty(bestPhone)) existing.phone = bestPhone;
-                            if (!_tcEmpty(bestEmail)) existing.email = bestEmail;
+                            if (info?.phone && _tcEmpty(existing.phone)) existing.phone = info.phone;
+                            if (info?.email && _tcEmpty(existing.email)) existing.email = info.email;
                         } else {
                             teacherMap.set(key, {
-                                name:        info?.name || enr.teacher,   /* fall back to initials */
-                                designation: info?.designation || '',
-                                department:  info?.department  || '',
-                                phone:       bestPhone,
-                                email:       bestEmail,
-                                courses:     enrolledCourse.code ? [enrolledCourse] : [],
+                                name:           info?.name || enr.teacher,
+                                designation:    info?.designation || '',
+                                department:     info?.department  || '',
+                                phone:          info?.phone || '',
+                                email:          info?.email || '',
+                                courses:        enrolledCourse.code ? [enrolledCourse] : [],
                                 isEnrolledOnly: true,
+                                _initials:      init,
                             });
                         }
                     });
@@ -186,11 +223,9 @@ async function loadTeachers(body) {
             } catch(e) { /* silently skip */ }
         }
 
-        const teachers = Array.from(teacherMap.values());
-        const dirCount = Object.keys(directory).length;
-        /* Only a true dead-end when BOTH the course list and the teacher
-           directory are empty. If the directory has teachers we still render
-           the search UI so any teacher can be looked up. */
+        const teachers  = Array.from(teacherMap.values());
+        const dirCount  = Object.keys(directory).length;
+
         if (!teachers.length && !dirCount) {
             body.innerHTML = '<div class="info-placeholder"><p>No teacher data found.</p></div>';
             return;
@@ -199,7 +234,7 @@ async function loadTeachers(body) {
         /* ── Render cards ── */
         let cardsHtml = '';
         teachers.forEach(t => {
-            const tKey = t.name.toLowerCase().trim();
+            const tKey       = (t._initials || t.name).toLowerCase().trim();
             const searchText = [t.name, t.designation, t.department, ...t.courses.map(c => c.code + ' ' + c.title)]
                 .join(' ').toLowerCase();
 
@@ -294,7 +329,7 @@ async function loadTeachers(body) {
             ${!teachers.length ? `
             <div id="tcEmptyHint" style="padding:40px 20px;text-align:center;color:var(--text-secondary);font-size:0.85rem;">
                 <i class="fa-solid fa-chalkboard-user" style="opacity:0.25;font-size:2rem;display:block;margin-bottom:12px;"></i>
-                No course teachers assigned yet.<br>
+                No course teachers found in the class routine.<br>
                 <span style="font-size:0.78rem;opacity:0.8;">Type a name above to look up any teacher's contact.</span>
             </div>` : ''}
             <div id="tcNoResult" style="display:none;padding:40px;text-align:center;
@@ -312,7 +347,6 @@ async function loadTeachers(body) {
 
         const emptyHint = body.querySelector('#tcEmptyHint');
 
-        /* One directory contact card's inner HTML (name, role, phone, email) */
         function tcDirCardInner(t) {
             return `
                 <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:4px;">${escH(t.name)}</div>
@@ -339,8 +373,6 @@ async function loadTeachers(body) {
                 if (match) { visible++; inGrid.add(card.dataset.name); }
             });
 
-            /* Search the full CPG_Teachers directory for matches not already in
-               the grid — so ANY teacher is findable even with no course assigned. */
             let dirMatches = [];
             if (lq.length >= 2) {
                 dirMatches = Object.entries(directory)
@@ -408,7 +440,6 @@ async function loadTeachers(body) {
                     e.preventDefault();
                     const label = item.dataset.label;
                     searchInput.value = label;
-                    /* tcApplyFilter handles both grid + directory lookup */
                     tcApplyFilter(label);
                     tcCloseDrop();
                 });

@@ -3,7 +3,7 @@
 async function loadCourseOffer(body) {
     body.innerHTML = '<div class="info-loading-spin"><div class="spin-sm"></div> Loading Course Offer...</div>';
     try {
-        const [data, sem] = await Promise.all([fetchSheet('Course_Offer'), getSemesterLabel()]);
+        const [data, sem] = await Promise.all([fetchSheet('CPG_Courses'), getSemesterLabel()]);
         const rows = sheetRows(data);
 
         if (rows.length === 0) {
