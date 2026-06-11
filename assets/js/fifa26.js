@@ -640,6 +640,7 @@
   }
 
   /* ══════════ PREDICT tab ══════════ */
+  var predictView = 'predict';   /* 'predict' | 'board' — remembered per session */
   var _preds = null, _predsT = 0;
   function fetchPreds(force) {
     if (_preds && !force && Date.now() - _predsT < 6e4) return Promise.resolve(_preds);
@@ -682,6 +683,15 @@
 
       var html = '<p class="f26-sec-note">🎯 Predict the score before kickoff — <b>3 pts</b> exact score, <b>1 pt</b> correct result. Climb the class leaderboard!</p>';
 
+      /* sub-tabs: Predictions | Leaderboard */
+      html += '<div class="f26-subtabs">' +
+        '<button class="f26-subtab' + (predictView === 'predict' ? ' on' : '') + '" id="f26-pt-predict">' +
+          '<i class="fa-solid fa-wand-magic-sparkles"></i> Predictions</button>' +
+        '<button class="f26-subtab' + (predictView === 'board' ? ' on' : '') + '" id="f26-pt-board">' +
+          '<i class="fa-solid fa-ranking-star"></i> Leaderboard</button>' +
+      '</div>';
+
+      if (predictView === 'board') {
       html += '<div class="f26-sec-h"><i class="fa-solid fa-ranking-star"></i> CLASS LEADERBOARD</div>';
       if (ranked.length) {
         html += '<div class="f26-lb">';
@@ -720,6 +730,23 @@
         }
       }
 
+      /* my scored history — lives with the leaderboard */
+      var hist = preds.filter(function (p) { return p.student_id === me.id; })
+        .map(function (p) { return { p: p, m: byId[p.match_id], pts: scorePred(p, byId[p.match_id]) }; })
+        .filter(function (x) { return x.pts != null; })
+        .sort(function (x, y) { return new Date(y.m.date) - new Date(x.m.date); }).slice(0, 8);
+      if (hist.length) {
+        html += '<div class="f26-sec-h"><i class="fa-solid fa-clock-rotate-left"></i> YOUR RESULTS</div>';
+        hist.forEach(function (x) {
+          var t = x.m.teams || [], a = t[0] || {}, b = t[1] || {};
+          html += '<div class="f26-hist"><span>' + esc(a.abbr) + ' <b>' + esc(a.score) + '–' + esc(b.score) + '</b> ' + esc(b.abbr) + '</span>' +
+            '<span class="f26-hist-you">you: ' + x.p.home_score + '–' + x.p.away_score + '</span>' +
+            '<span class="f26-hist-pts p' + x.pts + '">+' + x.pts + '</span></div>';
+        });
+      }
+
+      } else {   /* predictView === 'predict' */
+
       /* my predictions map */
       var minePred = {};
       preds.forEach(function (p) { if (p.student_id === me.id) minePred[p.match_id] = p; });
@@ -755,22 +782,16 @@
         '</div>';
       });
 
-      /* my scored history */
-      var hist = preds.filter(function (p) { return p.student_id === me.id; })
-        .map(function (p) { return { p: p, m: byId[p.match_id], pts: scorePred(p, byId[p.match_id]) }; })
-        .filter(function (x) { return x.pts != null; })
-        .sort(function (x, y) { return new Date(y.m.date) - new Date(x.m.date); }).slice(0, 8);
-      if (hist.length) {
-        html += '<div class="f26-sec-h"><i class="fa-solid fa-clock-rotate-left"></i> YOUR RESULTS</div>';
-        hist.forEach(function (x) {
-          var t = x.m.teams || [], a = t[0] || {}, b = t[1] || {};
-          html += '<div class="f26-hist"><span>' + esc(a.abbr) + ' <b>' + esc(a.score) + '–' + esc(b.score) + '</b> ' + esc(b.abbr) + '</span>' +
-            '<span class="f26-hist-you">you: ' + x.p.home_score + '–' + x.p.away_score + '</span>' +
-            '<span class="f26-hist-pts p' + x.pts + '">+' + x.pts + '</span></div>';
-        });
-      }
+      }   /* end predictView branches */
 
       body.innerHTML = html;
+
+      document.getElementById('f26-pt-predict').addEventListener('click', function () {
+        predictView = 'predict'; renderPredict();
+      });
+      document.getElementById('f26-pt-board').addEventListener('click', function () {
+        predictView = 'board'; renderPredict();
+      });
 
       body.querySelectorAll('.f26-pred-save').forEach(function (btn) {
         btn.addEventListener('click', function () {
