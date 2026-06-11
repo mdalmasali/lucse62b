@@ -813,9 +813,19 @@
 
   /* ── boot ── */
   var bannerTimer = null;
+  /* don't insert the banner until fifa26.css is actually loaded — otherwise
+     a refresh can briefly show the banner as raw unstyled text (FOUC) */
+  function whenCssReady(cb) {
+    var l = document.getElementById('fifa26-css');
+    var done = false;
+    var run = function () { if (!done) { done = true; cb(); } };
+    if (!l || l.sheet) return run();
+    l.addEventListener('load', run, { once: true });
+    l.addEventListener('error', run, { once: true });
+    setTimeout(run, 3000);   /* safety net */
+  }
   function boot() {
     applyThemeOnly();
-    buildBanner();
     /* restore my team from Supabase on a fresh device/browser */
     var u = getUser();
     if (u && u.id && !myTeam()) {
@@ -827,8 +837,11 @@
           }
         }).catch(function () {});
     }
-    refreshBanner();
-    bannerTimer = setInterval(refreshBanner, 9e4);
+    whenCssReady(function () {
+      buildBanner();
+      refreshBanner();
+      bannerTimer = setInterval(refreshBanner, 9e4);
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
