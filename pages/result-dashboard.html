@@ -765,6 +765,24 @@
     let resData = null, gradeChart = null, gpaChart = null;
     let isViewingOwnResult = false, _myId = null, _myDob = null;
     let _riTarget = 'A+';
+    let _luCrMap  = null; // lazy-loaded credit lookup from LU_Course_Offer sheet
+
+    async function getLuCrMap() {
+      if (_luCrMap) return _luCrMap;
+      try {
+        const data = await fetchSheet('LU_Course_Offer');
+        const rows = (data.table?.rows || []).map(r => (r.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : ''));
+        _luCrMap = {};
+        rows.forEach(r => {
+          const code = (r[1] || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          const cr   = parseFloat(r[3]);
+          if (code && !isNaN(cr) && cr > 0) _luCrMap[code] = cr;
+        });
+      } catch (e) {
+        _luCrMap = {};
+      }
+      return _luCrMap;
+    }
 
     /* ── Init ── */
     (function init() {
@@ -1183,7 +1201,7 @@
       if (resData) renderRetake(resData.semesters || []);
     }
 
-    function renderRetake(sems) {
+    async function renderRetake(sems) {
       const el = document.getElementById('dRetakeSection');
       if (!el) return;
       const GP_MAP  = {'A+':4.00,'A':3.75,'A-':3.50,'B+':3.25,'B':3.00,'B-':2.75,'C+':2.50,'C':2.25,'D':2.00,'F':0.00};
@@ -1200,10 +1218,24 @@
         maxCrByCode[code] = Math.max(maxCrByCode[code] || 0, cr);
         if (!bestByCode[code] || r > bestByCode[code]._r) bestByCode[code] = { ...c, semester_name: sem.semester_name, _r: r };
       }));
+      // Inject max-across-attempts credit first (handles rare non-zero F credit in API)
       Object.keys(bestByCode).forEach(code => {
         const real = maxCrByCode[code] || 0;
         if (real > (parseFloat(bestByCode[code].credit) || 0)) bestByCode[code] = { ...bestByCode[code], credit: real };
       });
+      // For F courses still showing 0 credit, look up from LU_Course_Offer sheet
+      const needsLookup = Object.values(bestByCode).some(c => c.grade === 'F' && !(parseFloat(c.credit) > 0));
+      if (needsLookup) {
+        const crMap = await getLuCrMap();
+        Object.keys(bestByCode).forEach(code => {
+          const c = bestByCode[code];
+          if (c.grade === 'F' && !(parseFloat(c.credit) > 0)) {
+            const rawCode = code.replace(/[^A-Z0-9]/gi, '').toUpperCase(); // "CSE-3201" → "CSE3201"
+            const looked  = crMap[rawCode] || 0;
+            if (looked > 0) bestByCode[code] = { ...c, credit: looked };
+          }
+        });
+      }
       const retake = [], improve = [];
       Object.values(bestByCode).forEach(c => {
         if (c.grade === 'F')           retake.push(c);
