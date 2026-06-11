@@ -350,9 +350,7 @@ export default {
       if (p === '/result' && request.method === 'POST') {
         const { student_id, birth_date } = await request.json();
         if (!student_id || !birth_date) return errResp(cors, 400, 'Missing student_id or birth_date');
-        let text = await luGetResult(student_id, birth_date, false);
-        // Nonce expired or rotated → re-scrape a fresh one and retry once.
-        if (/invalid_nonce/.test(text)) text = await luGetResult(student_id, birth_date, true);
+        const text = await luResultCached(env, student_id, birth_date);
         if (text.trimStart().startsWith('<')) return errResp(cors, 503, 'LUS temporarily unavailable');
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
       }
@@ -734,9 +732,17 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
 let _luNonce = null, _luCookies = '', _luNonceAt = 0;
 const LU_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
-async function getLuNonce(force) {
-  if (!force && _luNonce && Date.now() - _luNonceAt < 600000) {
+async function getLuNonce(env, force) {
+  const now = Date.now();
+  if (!force && _luNonce && now - _luNonceAt < 600000) {
     return { nonce: _luNonce, cookies: _luCookies };
+  }
+  // Shared nonce across worker isolates (cuts /result/ page scrapes → less LU load)
+  if (!force && env && env.SMS_RATE) {
+    try {
+      const j = await env.SMS_RATE.get('lu:nonce');
+      if (j) { const o = JSON.parse(j); _luNonce = o.n; _luCookies = o.c || ''; _luNonceAt = now; return { nonce: o.n, cookies: o.c || '' }; }
+    } catch (e) {}
   }
   const r = await fetch('https://lus.ac.bd/result/', {
     headers: { 'user-agent': LU_UA, 'accept': 'text/html' },
@@ -747,12 +753,15 @@ async function getLuNonce(force) {
   const raw = r.headers.get('set-cookie') || '';
   const cookies = raw.split(/,(?=\s*[^;,\s]+=)/)
     .map(c => c.split(';')[0].trim()).filter(Boolean).join('; ');
-  _luNonce = m[1]; _luCookies = cookies; _luNonceAt = Date.now();
+  _luNonce = m[1]; _luCookies = cookies; _luNonceAt = now;
+  if (env && env.SMS_RATE) {
+    try { await env.SMS_RATE.put('lu:nonce', JSON.stringify({ n: _luNonce, c: _luCookies }), { expirationTtl: 600 }); } catch (e) {}
+  }
   return { nonce: _luNonce, cookies };
 }
 
-async function luGetResult(student_id, birth_date, force) {
-  const { nonce, cookies } = await getLuNonce(force);
+async function luGetResult(env, student_id, birth_date, force) {
+  const { nonce, cookies } = await getLuNonce(env, force);
   const body = new URLSearchParams({ action: 'get-result', _ajax_nonce: nonce, student_id, birth_date });
   const headers = {
     'content-type': 'application/x-www-form-urlencoded',
@@ -763,6 +772,46 @@ async function luGetResult(student_id, birth_date, force) {
   if (cookies) headers['cookie'] = cookies;
   const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', { method: 'POST', body, headers });
   return await r.text();
+}
+
+/* Fetch a result with short-lived KV caching to absorb the LU per-IP rate limit.
+   A student loading several pages (DOB gate, result, retake) collapses into one
+   upstream call per ~5 min. Serves a slightly-stale cached copy if LU rate-limits. */
+async function luResultCached(env, student_id, birth_date) {
+  const key = `res:${student_id}:${birth_date}`;
+  if (env && env.SMS_RATE) {
+    try {
+      const hit = await env.SMS_RATE.get(key);
+      if (hit) return hit;                    // fresh cache → no upstream call
+    } catch (e) {}
+  }
+  let text;
+  try {
+    text = await luGetResult(env, student_id, birth_date, false);
+    if (/invalid_nonce/.test(text)) text = await luGetResult(env, student_id, birth_date, true);
+  } catch (e) { text = null; }
+
+  let ok = false;
+  if (text && !text.trimStart().startsWith('<')) {
+    try { ok = !!JSON.parse(text).success; } catch (e) { ok = false; }
+  }
+  if (ok) {
+    if (env && env.SMS_RATE) {
+      try {
+        await env.SMS_RATE.put(key, text, { expirationTtl: 300 });                       // serve-first, 5 min
+        await env.SMS_RATE.put(`res_bak:${student_id}:${birth_date}`, text, { expirationTtl: 86400 }); // 24h rate-limit fallback
+      } catch (e) {}
+    }
+    return text;
+  }
+  // Upstream failed / rate_limited → fall back to last good cache if any
+  if (env && env.SMS_RATE) {
+    try {
+      const stale = await env.SMS_RATE.get(`res_bak:${student_id}:${birth_date}`);
+      if (stale) return stale;
+    } catch (e) {}
+  }
+  return text || '{"success":false,"error":"unavailable","message":"LU portal unavailable. Please try again shortly."}';
 }
 
 function jsonResp(cors, data) {
@@ -1392,11 +1441,12 @@ async function checkResult(env, opts = {}) {
 async function checkStudentResult(env, studentId, dob, endpoints) {
   if (!dob) return;
 
-  /* Fetch result from LU portal (nonce-aware, retries once on invalid_nonce) */
+  /* Fetch result from LU portal (nonce-aware, retries once on invalid_nonce).
+     Monitor needs fresh data to detect changes, so it bypasses the result cache. */
   let text;
   try {
-    text = await luGetResult(studentId, dob, false);
-    if (/invalid_nonce/.test(text)) text = await luGetResult(studentId, dob, true);
+    text = await luGetResult(env, studentId, dob, false);
+    if (/invalid_nonce/.test(text)) text = await luGetResult(env, studentId, dob, true);
   } catch { return; }
   if (text.trimStart().startsWith('<')) return;
 
