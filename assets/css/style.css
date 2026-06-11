@@ -81,8 +81,8 @@ body {
   background-size: 60px 60px;
 }
 
-/* Particle layer */
-.particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+/* Particle layer — replaced by the interactive network background (network-bg.js) */
+.particles { display: none; }
 .particle {
   position: absolute; border-radius: 50%;
   animation: particleRise linear infinite; opacity: 0;
