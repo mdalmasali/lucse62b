@@ -20,7 +20,7 @@ function _trAcInjectCSS() {
   const s = document.createElement('style');
   s.id = 'tr-ac-style';
   s.textContent = `
-    .tr-ac-dropdown{position:fixed;background:#12122a;border:1px solid var(--accent);
+    .tr-ac-dropdown{position:fixed;background:var(--surface);border:1px solid var(--accent);
       border-radius:10px;max-height:220px;overflow-y:auto;z-index:9999;
       box-shadow:0 10px 36px rgba(0,0,0,0.6);animation:trAcIn 0.12s ease;}
     @keyframes trAcIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}

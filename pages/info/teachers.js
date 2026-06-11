@@ -308,10 +308,10 @@ async function loadTeachers(body) {
                         border-radius:8px;padding:7px 12px 7px 30px;color:var(--text);font-size:0.82rem;
                         outline:none;width:230px;transition:border-color .2s;"
                         onfocus="this.style.borderColor='var(--accent-bright)'"
-                        onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+                        onblur="this.style.borderColor='var(--border)'" />
                     <div id="tcDropdown" style="display:none;position:absolute;top:calc(100% + 5px);right:0;
                         min-width:260px;max-height:260px;overflow-y:auto;
-                        background:#1a1a2e;border:1px solid rgba(124,58,237,0.35);
+                        background:var(--surface);border:1px solid rgba(124,58,237,0.35);
                         border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;"></div>
                 </div>
             </div>

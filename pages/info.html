@@ -326,6 +326,12 @@
     html[data-theme="light"] .exam-cd-unit { background:rgba(124,58,237,.1); }
     html[data-theme="light"] .exam-cd-unit span { color:#6d28d9; }
     html[data-theme="light"] .exam-cd-sep { color:#7c3aed; }
+    /* Routine grid — flip the dark sticky header/day cells in light mode */
+    html[data-theme="light"] .rt-grid th, html[data-theme="light"] .rt-grid td { border-color: rgba(0,0,0,0.07); }
+    html[data-theme="light"] .rt-grid thead th { background: rgba(0,0,0,0.03); }
+    html[data-theme="light"] .rt-grid thead th.rt-th-day { background: #ece8f5; }
+    html[data-theme="light"] .rt-grid-day-cell { background: #ece8f5; }
+    html[data-theme="light"] .rt-grid tr.has-class .rt-grid-day-cell { color: #6d28d9; }
 
     /* ── Teacher Routine: search form ── */
     .rt-tf-wrap { margin-bottom: 22px; }
