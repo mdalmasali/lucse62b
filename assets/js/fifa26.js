@@ -547,6 +547,8 @@
     '<p class="f26-sq-note">🏆 % = title chance among teams still alive, based on group points & goal difference so far — updates as the tournament unfolds.</p>';
   }
 
+  var myTeamView = 'matches';   /* 'matches' | 'squad' — remembered per session */
+
   function renderMyTeam() {
     var body = document.getElementById('f26-mc-body');
     if (!body) return;
@@ -560,31 +562,41 @@
       var teams = teamsFromMatches(matches);
       var mt = myTeam(), html = '';
 
-      if (!mt) {
-        html += '<p class="f26-sec-note">Pick the team you support ⚽ — your matches glow gold, the banner cheers for you, and you join the Class Squad below.</p>';
+      if (mt) {
+        var logo = (teams.filter(function (t) { return t.abbr === mt.abbr; })[0] || {}).logo || '';
+        html += '<div class="f26-team-hero">' +
+          (logo ? '<img src="' + esc(logo) + '" alt="">' : '') +
+          '<div><small>YOU SUPPORT</small><b>' + esc(mt.name) + '</b></div>' +
+          '<button class="f26-team-change" id="f26-change-team">Change</button>' +
+        '</div>';
+      }
+
+      /* sub-tabs: My Matches | Class Squad */
+      html += '<div class="f26-subtabs">' +
+        '<button class="f26-subtab' + (myTeamView === 'matches' ? ' on' : '') + '" id="f26-st-matches">' +
+          '<i class="fa-solid fa-futbol"></i> ' + (mt ? esc(mt.abbr) + ' Matches' : 'Pick Team') + '</button>' +
+        '<button class="f26-subtab' + (myTeamView === 'squad' ? ' on' : '') + '" id="f26-st-squad">' +
+          '<i class="fa-solid fa-users"></i> Class Squad</button>' +
+      '</div>';
+
+      if (myTeamView === 'squad') {
+        html += squadHTML(squad, teams, statusMap);
+      } else if (!mt) {
+        html += '<p class="f26-sec-note">Pick the team you support ⚽ — your matches glow gold, the banner cheers for you, and you join the Class Squad.</p>';
         html += '<div class="f26-flag-grid">' + teams.map(function (t) {
           return '<button class="f26-flag" data-abbr="' + esc(t.abbr) + '" data-name="' + esc(t.name) + '">' +
             (t.logo ? '<img src="' + esc(t.logo) + '" alt="">' : '') +
             '<b>' + esc(t.abbr) + '</b><small>' + esc(t.name) + '</small></button>';
         }).join('') + '</div>';
       } else {
-        var logo = (teams.filter(function (t) { return t.abbr === mt.abbr; })[0] || {}).logo || '';
         var mine = matches.filter(isMyMatch).sort(function (x, y) { return new Date(x.date) - new Date(y.date); });
         var next = mine.filter(function (m) { return m.state === 'pre' && new Date(m.date) > new Date(); })[0];
-
-        html += '<div class="f26-team-hero">' +
-          (logo ? '<img src="' + esc(logo) + '" alt="">' : '') +
-          '<div><small>YOU SUPPORT</small><b>' + esc(mt.name) + '</b></div>' +
-          '<button class="f26-team-change" id="f26-change-team">Change</button>' +
-        '</div>';
-
         if (next) {
           html += '<div class="f26-cd"><span class="f26-cd-label"><i class="fa-regular fa-clock"></i> ' +
             esc(mt.abbr) + '’s next match — ' + esc(bdDateLabel(next.date)) + '</span>' +
             '<span class="f26-cd-digits" id="f26-cd" data-at="' + new Date(next.date).getTime() + '">--:--:--</span></div>';
         }
         if (mine.length) {
-          html += '<div class="f26-sec-h"><i class="fa-solid fa-futbol"></i> ' + esc(mt.abbr) + ' MATCHES</div>';
           var tk = todayKey(), lastKey = '';
           mine.forEach(function (m) {
             var k = bdDateKey(m.date);
@@ -594,14 +606,21 @@
             }
             html += matchCard(m, true, k === tk);
           });
+        } else {
+          html += '<div class="f26-empty">No matches found for ' + esc(mt.name) + '.</div>';
         }
       }
 
-      html += squadHTML(squad, teams, statusMap);
       body.innerHTML = html;
       startCD();
       attachExpand(body);
 
+      document.getElementById('f26-st-matches').addEventListener('click', function () {
+        myTeamView = 'matches'; renderMyTeam();
+      });
+      document.getElementById('f26-st-squad').addEventListener('click', function () {
+        myTeamView = 'squad'; renderMyTeam();
+      });
       body.querySelectorAll('.f26-flag').forEach(function (el) {
         el.addEventListener('click', function () {
           setMyTeam({ abbr: el.dataset.abbr, name: el.dataset.name });
@@ -612,6 +631,7 @@
       var chg = document.getElementById('f26-change-team');
       if (chg) chg.addEventListener('click', function () {
         localStorage.removeItem('f26_team');
+        myTeamView = 'matches';
         renderMyTeam();
       });
     }).catch(function () {

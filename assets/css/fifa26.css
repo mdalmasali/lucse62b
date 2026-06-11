@@ -445,6 +445,25 @@ html[data-theme="light"] .f26-flag small { color: #065f46; }
 }
 .f26-team-change:hover { color: #fde68a; border-color: rgba(251,191,36,.4); }
 
+/* ── my-team sub-tabs ── */
+.f26-subtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.f26-subtab {
+  padding: 9px 0; font-size: .74rem; font-weight: 800; letter-spacing: .4px;
+  font-family: 'Inter', sans-serif;
+  color: rgba(209,250,229,.55); background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08); border-radius: 11px;
+  cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.f26-subtab:hover { color: #d1fae5; border-color: rgba(16,185,129,.35); }
+.f26-subtab.on {
+  background: linear-gradient(135deg, rgba(251,191,36,.2), rgba(16,185,129,.12));
+  color: #fde68a; border-color: rgba(251,191,36,.45);
+  box-shadow: 0 2px 12px rgba(251,191,36,.12);
+}
+html[data-theme="light"] .f26-subtab { color: #065f46; background: rgba(0,0,0,.04); }
+html[data-theme="light"] .f26-subtab.on { color: #92400e; }
+
 /* ── class squad ── */
 .f26-sq-row { margin-bottom: 12px; }
 .f26-sq-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
