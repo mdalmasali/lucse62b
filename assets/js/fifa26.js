@@ -121,7 +121,9 @@
     var seen = {}, out = [];
     ms.forEach(function (m) {
       (m.teams || []).forEach(function (t) {
-        if (!t.abbr || !t.name || /tbd|winner|runner/i.test(t.name) || seen[t.abbr]) return;
+        /* skip knockout placeholders: "1A", "2K", "3RD A/B/C/D/F", TBD — real teams have a country flag logo */
+        if (!t.abbr || !t.name || seen[t.abbr]) return;
+        if (/^\d|^3rd|tbd|winner|runner/i.test(t.name) || !/countries/.test(t.logo || '')) return;
         seen[t.abbr] = 1;
         out.push({ abbr: t.abbr, name: t.name, logo: t.logo || '' });
       });
