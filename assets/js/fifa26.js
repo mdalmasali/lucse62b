@@ -263,6 +263,21 @@
     document.getElementById('f26-open').addEventListener('click', function (e) { e.stopPropagation(); openMC(); });
   }
 
+  /* homepage explore strip — sits right under the graduation countdown */
+  function buildHomeStrip() {
+    var grad = document.querySelector('.grad-strip');
+    if (!grad || document.getElementById('fifa26-home')) return;
+    var s = document.createElement('div');
+    s.id = 'fifa26-home';
+    s.innerHTML =
+      '<span class="f26-home-ball">⚽</span>' +
+      '<span class="f26-home-txt"><b>FIFA WORLD CUP 26</b>' +
+        '<small>Live scores · My Team · Predictions · Class Leaderboard</small></span>' +
+      '<span class="f26-home-cta">Explore <i class="fa-solid fa-arrow-right"></i></span>';
+    s.addEventListener('click', function () { openMC(); });
+    grad.insertAdjacentElement('afterend', s);
+  }
+
   /* ── MATCH CENTER ── */
   var mcTab = 'today', mcTimer = null, cdTimer = null, expandedId = null;
 
@@ -980,6 +995,7 @@
     }
     whenCssReady(function () {
       buildBanner();
+      buildHomeStrip();
       refreshBanner();
       bannerTimer = setInterval(refreshBanner, 9e4);
     });

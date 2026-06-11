@@ -148,6 +148,54 @@ html[data-theme="light"] #fifa26-banner {
   .f26-title { display: none; }   /* ball + ticker + buttons only */
 }
 
+/* ════════════════ HOMEPAGE EXPLORE STRIP ════════════════ */
+#fifa26-home {
+  display: flex; align-items: center; gap: 14px;
+  margin: 14px 0 4px; padding: 13px 20px;
+  background: linear-gradient(100deg, #032a1d 0%, #064534 45%, #043225 100%);
+  border: 1px solid rgba(251,191,36,.3); border-radius: 16px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+  font-family: 'Inter', sans-serif;
+}
+#fifa26-home::before {
+  content: ''; position: absolute; top: 0; left: -60%; width: 45%; height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(251,191,36,.12), transparent);
+  animation: f26-home-sheen 3.2s ease-in-out infinite;
+}
+@keyframes f26-home-sheen { 0%, 100% { left: -60%; } 50% { left: 115%; } }
+#fifa26-home:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(16,185,129,.18), 0 0 0 1px rgba(251,191,36,.45);
+}
+.f26-home-ball { font-size: 1.5rem; animation: f26-ballspin 6s linear infinite; filter: drop-shadow(0 0 8px rgba(255,255,255,.3)); }
+.f26-home-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f26-home-txt b {
+  font-family: 'Space Grotesk', sans-serif; font-size: .95rem; font-weight: 800; letter-spacing: 1.2px;
+  background: linear-gradient(90deg, #fde68a, #fbbf24 45%, #f59e0b 70%, #fde68a);
+  background-size: 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: f26-goldflow 4s linear infinite;
+}
+.f26-home-txt small { font-size: .68rem; color: rgba(167,243,208,.65); font-weight: 600; }
+.f26-home-cta {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px;
+  font-size: .76rem; font-weight: 800; letter-spacing: .4px;
+  color: #022c22; background: linear-gradient(135deg, #fde68a, #fbbf24);
+  border-radius: 12px; padding: 8px 18px;
+  box-shadow: 0 3px 14px rgba(251,191,36,.35);
+  transition: transform .15s;
+}
+#fifa26-home:hover .f26-home-cta { transform: translateX(3px); }
+html[data-theme="light"] #fifa26-home { background: linear-gradient(100deg, #065f46, #047857 50%, #065f46); }
+@media (max-width: 560px) {
+  #fifa26-home { padding: 11px 14px; gap: 10px; }
+  .f26-home-txt b { font-size: .8rem; }
+  .f26-home-txt small { font-size: .6rem; }
+  .f26-home-cta { padding: 7px 12px; font-size: .68rem; }
+}
+
 /* ════════════════ MATCH CENTER MODAL ════════════════ */
 #fifa26-mc {
   position: fixed; inset: 0; z-index: 99970;
