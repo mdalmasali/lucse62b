@@ -529,7 +529,15 @@
         }
         if (mine.length) {
           html += '<div class="f26-sec-h"><i class="fa-solid fa-futbol"></i> ' + esc(mt.abbr) + ' MATCHES</div>';
-          html += mine.map(function (m) { return matchCard(m, true, bdDateKey(m.date) === todayKey()); }).join('');
+          var tk = todayKey(), lastKey = '';
+          mine.forEach(function (m) {
+            var k = bdDateKey(m.date);
+            if (k !== lastKey) {
+              lastKey = k;
+              html += '<div class="f26-date-h">' + (k === tk ? '🔥 TODAY · ' : '') + esc(bdDateLabel(m.date)) + '</div>';
+            }
+            html += matchCard(m, true, k === tk);
+          });
         }
       }
 
