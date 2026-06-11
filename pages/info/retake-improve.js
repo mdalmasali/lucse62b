@@ -232,6 +232,7 @@ function _bucketBestGrade(data) {
   const IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
   const best = {};
   const nameMap = {};
+  const creditMap = {};   /* code → credit from the LU API (best across attempts) */
   for (const yearSems of Object.values(data.results || {})) {
     const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
     for (const sem of sems) {
@@ -241,6 +242,9 @@ function _bucketBestGrade(data) {
         if (!code || rank < 0) continue;
         if (!(code in best) || rank > best[code].rank) best[code] = { grade: (c.grade || '').trim(), rank };
         if (c.course_title && !nameMap[code]) nameMap[code] = c.course_title.trim();
+        /* API reports 0 credit for failed courses; keep the max real credit seen */
+        const cr = parseFloat(c.credit);
+        if (!isNaN(cr) && cr > 0 && cr > (creditMap[code] || 0)) creditMap[code] = cr;
       }
     }
   }
@@ -250,7 +254,7 @@ function _bucketBestGrade(data) {
     else if (IMPROVE.has(grade))      improve.push(code);
     else if (rank >= _gradeRank('B')) resolved.push(code);
   }
-  return { retake, improve, resolved, nameMap };
+  return { retake, improve, resolved, nameMap, creditMap };
 }
 
 async function _riGetCodes(userId, dob) {
@@ -287,12 +291,12 @@ async function _riGetCodes(userId, dob) {
     const data = JSON.parse(text);
     if (!data?.success) return cached();
 
-    const { retake, improve, resolved, nameMap } = _bucketBestGrade(data);
+    const { retake, improve, resolved, nameMap, creditMap } = _bucketBestGrade(data);
     try {
       localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
       localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
     } catch(e) {}
-    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), nameMap, live: true };
+    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), nameMap, creditMap, live: true };
   } catch(e) { return cached(); }
 }
 
@@ -495,6 +499,13 @@ async function loadRetakeImprove(body) {
     const apiNameMap = myCodes.nameMap || {};
     Object.entries(apiNameMap).forEach(([code, name]) => {
       if (name && !courseNameMap[code]) courseNameMap[code] = name;
+    });
+
+    /* ── Fill creditMap gaps from LU API (covers Improve courses missing in the
+          sheets; API reports 0 credit for failed courses so those stay sheet-only) ── */
+    const apiCreditMap = myCodes.creditMap || {};
+    Object.entries(apiCreditMap).forEach(([code, cr]) => {
+      if (cr > 0 && !(creditMap[code] > 0)) creditMap[code] = cr;
     });
 
     /* ── Initials → full teacher name map ── */
