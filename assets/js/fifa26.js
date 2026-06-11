@@ -244,7 +244,10 @@
 
   function refreshBanner() {
     fetchSquad();   /* warm the cache so the ticker can show class banter */
-    fetchMatches(todayWindow(), liveSeen ? 6e4 : 3e5).then(renderTicker).catch(function () {});
+    fetchMatches(todayWindow(), liveSeen ? 6e4 : 3e5).then(function (m) {
+      renderTicker(m);
+      updateHomeStrip(m);
+    }).catch(function () {});
   }
 
   function buildBanner() {
@@ -272,10 +275,43 @@
     s.innerHTML =
       '<span class="f26-home-ball">⚽</span>' +
       '<span class="f26-home-txt"><b>FIFA WORLD CUP 26</b>' +
-        '<small>Live scores · My Team · Predictions · Class Leaderboard</small></span>' +
+        '<small id="f26-home-sub">Live scores · My Team · Predictions · Class Leaderboard</small></span>' +
       '<span class="f26-home-cta">Explore <i class="fa-solid fa-arrow-right"></i></span>';
     s.addEventListener('click', function () { openMC(); });
     grad.insertAdjacentElement('afterend', s);
+  }
+
+  /* Live subtitle on the homepage Explore strip — driven by the same data as
+     the banner ticker. Live matches first, then today's fixtures, else static. */
+  var HOME_STATIC = 'Live scores · My Team · Predictions · Class Leaderboard';
+  function updateHomeStrip(matches) {
+    var sub = document.getElementById('f26-home-sub');
+    if (!sub) return;
+    var tk = todayKey();
+    var today = (matches || []).filter(function (m) { return bdDateKey(m.date) === tk; })
+                               .sort(function (x, y) { return new Date(x.date) - new Date(y.date); });
+    var scoreOf = function (m) { var t = m.teams || [], a = t[0] || {}, b = t[1] || {}; return esc(a.abbr) + ' ' + esc(a.score) + '–' + esc(b.score) + ' ' + esc(b.abbr); };
+
+    var live = today.filter(function (m) { return m.state === 'in'; });
+    if (live.length) {
+      sub.innerHTML = '<span class="f26-home-live"></span>' +
+        live.map(function (m) { return '<b>' + scoreOf(m) + '</b> ' + esc(m.clock); }).join('  ·  ');
+      return;
+    }
+    var pre = today.filter(function (m) { return m.state === 'pre'; });
+    if (pre.length) {
+      sub.innerHTML = 'Today · ' + pre.slice(0, 3).map(function (m) {
+        var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
+        return esc(a.abbr) + ' v ' + esc(b.abbr) + ' <b>' + esc(bdTime(m.date)) + '</b>';
+      }).join('  ·  ');
+      return;
+    }
+    var post = today.filter(function (m) { return m.state === 'post'; });
+    if (post.length) {
+      sub.innerHTML = 'Full-time · ' + post.map(function (m) { return '<b>' + scoreOf(m) + '</b>'; }).join('  ·  ');
+      return;
+    }
+    sub.textContent = HOME_STATIC;
   }
 
   /* ── MATCH CENTER ── */
