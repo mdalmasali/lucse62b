@@ -350,15 +350,9 @@ export default {
       if (p === '/result' && request.method === 'POST') {
         const { student_id, birth_date } = await request.json();
         if (!student_id || !birth_date) return errResp(cors, 400, 'Missing student_id or birth_date');
-        const body = new URLSearchParams({ action: 'get-result', student_id, birth_date });
-        const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', {
-          method: 'POST', body,
-          headers: {
-            'content-type': 'application/x-www-form-urlencoded',
-            'x-requested-with': 'XMLHttpRequest',
-          },
-        });
-        const text = await r.text();
+        let text = await luGetResult(student_id, birth_date, false);
+        // Nonce expired or rotated → re-scrape a fresh one and retry once.
+        if (/invalid_nonce/.test(text)) text = await luGetResult(student_id, birth_date, true);
         if (text.trimStart().startsWith('<')) return errResp(cors, 503, 'LUS temporarily unavailable');
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
       }
@@ -732,6 +726,43 @@ async function gvizProxyStrip(sheetId, tab, stripCols, cors, env) {
   } catch (e) {
     return errResp(cors, 502, 'Upstream fetch failed');
   }
+}
+
+/* LU result portal now requires a WordPress _ajax_nonce (scraped from the
+   /result/ page's inline lu_ajax object) plus the page cookies. We cache the
+   pair per-isolate for 10 min; on an invalid_nonce we bust and re-scrape once. */
+let _luNonce = null, _luCookies = '', _luNonceAt = 0;
+const LU_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+
+async function getLuNonce(force) {
+  if (!force && _luNonce && Date.now() - _luNonceAt < 600000) {
+    return { nonce: _luNonce, cookies: _luCookies };
+  }
+  const r = await fetch('https://lus.ac.bd/result/', {
+    headers: { 'user-agent': LU_UA, 'accept': 'text/html' },
+  });
+  const html = await r.text();
+  const m = html.match(/lu_ajax\s*=\s*\{[^}]*?"nonce":"([a-f0-9]+)"/);
+  if (!m) throw new Error('nonce-not-found');
+  const raw = r.headers.get('set-cookie') || '';
+  const cookies = raw.split(/,(?=\s*[^;,\s]+=)/)
+    .map(c => c.split(';')[0].trim()).filter(Boolean).join('; ');
+  _luNonce = m[1]; _luCookies = cookies; _luNonceAt = Date.now();
+  return { nonce: _luNonce, cookies };
+}
+
+async function luGetResult(student_id, birth_date, force) {
+  const { nonce, cookies } = await getLuNonce(force);
+  const body = new URLSearchParams({ action: 'get-result', _ajax_nonce: nonce, student_id, birth_date });
+  const headers = {
+    'content-type': 'application/x-www-form-urlencoded',
+    'x-requested-with': 'XMLHttpRequest',
+    'user-agent': LU_UA,
+    'referer': 'https://lus.ac.bd/result/',
+  };
+  if (cookies) headers['cookie'] = cookies;
+  const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', { method: 'POST', body, headers });
+  return await r.text();
 }
 
 function jsonResp(cors, data) {
@@ -1361,14 +1392,12 @@ async function checkResult(env, opts = {}) {
 async function checkStudentResult(env, studentId, dob, endpoints) {
   if (!dob) return;
 
-  /* Fetch result from LU portal */
-  const body = new URLSearchParams({ action: 'get-result', student_id: studentId, birth_date: dob });
-  const r = await fetch('https://lus.ac.bd/wp-admin/admin-ajax.php', {
-    method: 'POST', body,
-    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-requested-with': 'XMLHttpRequest' },
-  }).catch(() => null);
-  if (!r || !r.ok) return;
-  const text = await r.text();
+  /* Fetch result from LU portal (nonce-aware, retries once on invalid_nonce) */
+  let text;
+  try {
+    text = await luGetResult(studentId, dob, false);
+    if (/invalid_nonce/.test(text)) text = await luGetResult(studentId, dob, true);
+  } catch { return; }
   if (text.trimStart().startsWith('<')) return;
 
   let data;
