@@ -187,8 +187,6 @@
     }
     .res-course:hover { border-color: rgba(124,58,237,0.3); }
     .res-course-name { font-weight: 600; font-size: 0.85rem; color: var(--text); margin-bottom: 4px; }
-    .res-course-teacher { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
-    .res-course-teacher i { margin-right: 3px; }
     .res-course-info { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); }
     .res-course-grade { color: #a78bfa; font-weight: 700; }
     /* Extra info badges */
@@ -202,9 +200,6 @@
     .res-info-badge i { font-size: 0.7rem; opacity: 0.7; }
     .res-info-badge--red  { color: #f87171; border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.07); }
     .res-info-badge--green{ color: #4ade80; border-color: rgba(74,222,128,0.25); background: rgba(74,222,128,0.07); }
-    /* Teacher in modal */
-    .sem-modal-teacher { font-size: 0.75rem; color: var(--muted); margin: 3px 0 6px; }
-    .sem-modal-teacher i { margin-right: 4px; }
 
     /* ── All Semesters ── */
     .res-sems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
@@ -363,12 +358,6 @@
     .sem-modal-course-name { font-weight:600; font-size:0.9rem; color:var(--text); }
     .sem-modal-grade { font-weight:700; font-size:0.9rem; color:#a78bfa; }
     .sem-modal-total { font-size:0.82rem; color:var(--text-secondary); font-weight:600; }
-    .sem-modal-marks { display:flex; gap:8px; flex-wrap:wrap; }
-    .sem-modal-mark-chip {
-      background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
-      border-radius:6px; padding:3px 9px; font-size:0.75rem; color:var(--text-secondary);
-    }
-    .sem-modal-mark-chip strong { color:var(--text); }
 
     /* ── Credit + Grade Progress ── */
     .res-progress-row { margin-bottom: 16px; }
@@ -479,7 +468,6 @@
     html[data-theme="light"] .sem-modal { background: #ffffff; border-color: rgba(124,58,237,0.2); box-shadow: 0 32px 64px rgba(0,0,0,0.15); }
     html[data-theme="light"] .sem-modal-close { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: var(--text-secondary); }
     html[data-theme="light"] .sem-modal-course { background: rgba(124,58,237,0.04); border-color: rgba(124,58,237,0.15); }
-    html[data-theme="light"] .sem-modal-mark-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
@@ -891,41 +879,10 @@
       }
     }
 
-    /* ── Mark field labels & display order ── */
-    const MARK_SKIP = new Set([
-      'CCode','CTitle','CYear','Semister','LG','GP','GradePoint',
-      'SID','SName','Dept','Department','Program','Teacher',
-      'Reference','Serial','InputBy','Batch','Secttion',
-      'TPoint','CDate'
-    ]);
-    const MARK_ORDER = ['ATT','CT','CT1','CT2','TUT','Tutorial','PR','AS','Assignment','VIVA','VI','MTE','FE','GPA','CCredit'];
-    const MARK_LABELS = {
-      Total:'Total', ATT:'Attendance', CT:'Class Test', CT1:'CT-1', CT2:'CT-2',
-      TUT:'Tutorial', Tutorial:'Tutorial', PR:'Presentation', AS:'Assignment',
-      Assignment:'Assignment', VIVA:'Viva', VI:'Viva', MTE:'Midterm', FE:'Final Exam',
-      GPA:'GPA', CCredit:'Credit'
-    };
-    function markLabel(k) { return MARK_LABELS[k] || k; }
-
     /* ── Normalize LUS response → flat structure render functions expect ── */
     function normalizeData(raw) {
       const s  = raw.student;
       const rs = raw.row_data?.student || {};
-
-      // Marks map (numeric fields) + teacher map
-      const markMap    = {};
-      const teacherMap = {};
-      for (const r of (raw.row_data?.result || [])) {
-        const key   = `${r.CCode}|${r.CYear}|${r.Semister}`;
-        const entry = {};
-        for (const [k, v] of Object.entries(r)) {
-          if (MARK_SKIP.has(k)) continue;
-          const n = parseFloat(v);
-          if (!isNaN(n) && n >= 0) entry[k] = n;
-        }
-        markMap[key]    = entry;
-        teacherMap[key] = r.Teacher || '';
-      }
 
       // Flatten year-keyed results → sorted array (newest first)
       const semTypeOrder = { Spring: 1, Summer: 2, Fall: 3 };
@@ -933,24 +890,13 @@
       for (const year of Object.keys(raw.results || {}).sort()) {
         for (const sem of (raw.results[year] || [])) {
           const semType = Object.keys(semTypeOrder).find(t => sem.name.includes(t)) || 'Fall';
-          const courses = (sem.courses || []).map(c => {
-            const key = `${c.course_code}|${year}|${semType}`;
-            const m   = markMap[key]    || {};
-            return {
-              course_title: c.course_title,
-              course_code:  c.course_code,
-              grade:   c.grade,
-              gpa:     parseFloat(c.gpa) || 0,
-              credit:  parseFloat(c.credit) || 0,
-              mark:    m.Total || 0,
-              marks:   m.Total || 0,
-              att:     m.ATT   || 0,
-              mid:     m.MTE   || 0,
-              fin:     m.FE    || 0,
-              extraMarks: m,
-              teacher: teacherMap[key] || '',
-            };
-          });
+          const courses = (sem.courses || []).map(c => ({
+            course_title: c.course_title,
+            course_code:  c.course_code,
+            grade:   c.grade,
+            gpa:     parseFloat(c.gpa) || 0,
+            credit:  parseFloat(c.credit) || 0,
+          }));
           semesters.push({
             semester_name: sem.name,
             year,
@@ -1059,10 +1005,9 @@
       const courses = (s.courses||[]).map(c => `
         <div class="res-course">
           <div class="res-course-name">${c.course_title||c.course_code||'N/A'}</div>
-          ${c.teacher ? `<div class="res-course-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
           <div class="res-course-info">
             <span>${c.credit||0} Cr</span>
-            ${c.mark > 0 ? `<span style="color:var(--text-secondary)">${c.mark}/100</span>` : ''}
+            ${c.gpa > 0 ? `<span style="color:var(--text-secondary)">GPA ${c.gpa.toFixed(2)}</span>` : ''}
             <span class="res-course-grade">${c.grade||'N/A'}</span>
           </div>
         </div>`).join('');
@@ -1362,29 +1307,15 @@
       const s = (resData.semesters||[])[i];
       if (!s) return;
       const courses = (s.courses||[]).map(c => {
-        const em = c.extraMarks || {};
-        const seenKeys = new Set();
-        const orderedChips = MARK_ORDER
-          .filter(k => em[k] > 0 && !seenKeys.has(markLabel(k)) && seenKeys.add(markLabel(k)))
-          .map(k => `<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${em[k]}</strong></span>`);
-        // Any remaining fields not in MARK_ORDER (skip Total — already shown as XX/100)
-        Object.entries(em).forEach(([k, v]) => {
-          if (v > 0 && k !== 'Total' && !MARK_ORDER.includes(k) && !seenKeys.has(markLabel(k))) {
-            seenKeys.add(markLabel(k));
-            orderedChips.push(`<span class="sem-modal-mark-chip">${markLabel(k)} <strong>${v}</strong></span>`);
-          }
-        });
-        const chips = orderedChips.join('');
         return `<div class="sem-modal-course">
           <div class="sem-modal-course-top">
             <div class="sem-modal-course-name">${c.course_title||c.course_code||'N/A'}</div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-              ${c.mark > 0 ? `<span class="sem-modal-total">${c.mark}/100</span>` : ''}
+              <span class="sem-modal-total">${c.credit||0} Cr${c.gpa > 0 ? ` · GPA ${c.gpa.toFixed(2)}` : ''}</span>
               <div class="sem-modal-grade">${c.grade||'—'}</div>
             </div>
           </div>
-          ${c.teacher ? `<div class="sem-modal-teacher"><i class="fa-solid fa-chalkboard-user"></i> ${c.teacher}</div>` : ''}
-          <div class="sem-modal-marks">${chips}</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">${c.course_code||''}</div>
         </div>`;
       }).join('');
       document.getElementById('semModalInner').innerHTML = `
@@ -1469,7 +1400,7 @@
             <div class="res-search-result-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.semester_name||''} &nbsp;·&nbsp; ${c.credit||0} Cr</div>
           </div>
           <div class="res-search-result-right">
-            ${c.mark > 0 ? `<span style="font-size:0.78rem;color:var(--muted)">${c.mark}/100</span>` : ''}
+            ${c.gpa > 0 ? `<span style="font-size:0.78rem;color:var(--muted)">GPA ${c.gpa.toFixed(2)}</span>` : ''}
             <span class="res-search-grade">${c.grade||'N/A'}</span>
           </div>
         </div>`).join('');
