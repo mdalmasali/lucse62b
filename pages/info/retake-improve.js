@@ -231,6 +231,7 @@ function _normCourseCode(c) {
 function _bucketBestGrade(data) {
   const IMPROVE = new Set(['B-', 'C+', 'C', 'D']);
   const best = {};
+  const nameMap = {};
   for (const yearSems of Object.values(data.results || {})) {
     const sems = Array.isArray(yearSems) ? yearSems : Object.values(yearSems);
     for (const sem of sems) {
@@ -239,6 +240,7 @@ function _bucketBestGrade(data) {
         const rank = _gradeRank(c.grade);
         if (!code || rank < 0) continue;
         if (!(code in best) || rank > best[code].rank) best[code] = { grade: (c.grade || '').trim(), rank };
+        if (c.course_title && !nameMap[code]) nameMap[code] = c.course_title.trim();
       }
     }
   }
@@ -248,7 +250,7 @@ function _bucketBestGrade(data) {
     else if (IMPROVE.has(grade))      improve.push(code);
     else if (rank >= _gradeRank('B')) resolved.push(code);
   }
-  return { retake, improve, resolved };
+  return { retake, improve, resolved, nameMap };
 }
 
 async function _riGetCodes(userId, dob) {
@@ -285,12 +287,12 @@ async function _riGetCodes(userId, dob) {
     const data = JSON.parse(text);
     if (!data?.success) return cached();
 
-    const { retake, improve, resolved } = _bucketBestGrade(data);
+    const { retake, improve, resolved, nameMap } = _bucketBestGrade(data);
     try {
       localStorage.setItem('lu62b_retake_codes',  JSON.stringify(retake));
       localStorage.setItem('lu62b_improve_codes', JSON.stringify(improve));
     } catch(e) {}
-    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), live: true };
+    return { retake: new Set(retake), improve: new Set(improve), resolved: new Set(resolved), nameMap, live: true };
   } catch(e) { return cached(); }
 }
 
@@ -488,6 +490,12 @@ async function loadRetakeImprove(body) {
         if(code&&cr>0) creditMap[code]=cr;
       }
     }
+
+    /* ── Fill courseNameMap gaps from LU API result data ── */
+    const apiNameMap = myCodes.nameMap || {};
+    Object.entries(apiNameMap).forEach(([code, name]) => {
+      if (name && !courseNameMap[code]) courseNameMap[code] = name;
+    });
 
     /* ── Initials → full teacher name map ── */
     const initialsMap = {};
