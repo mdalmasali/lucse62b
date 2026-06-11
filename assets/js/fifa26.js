@@ -276,6 +276,7 @@
       '<span class="f26-home-ball">⚽</span>' +
       '<span class="f26-home-txt"><b>FIFA WORLD CUP 26</b>' +
         '<small id="f26-home-sub">Live scores · My Team · Predictions · Class Leaderboard</small></span>' +
+      '<span class="f26-pass"><span class="f26-passball"><span class="f26-passball-i">⚽</span></span></span>' +
       '<span class="f26-home-cta">Explore <i class="fa-solid fa-arrow-right"></i></span>';
     s.addEventListener('click', function () { openMC(); });
     grad.insertAdjacentElement('afterend', s);
