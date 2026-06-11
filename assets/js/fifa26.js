@@ -207,7 +207,7 @@
         today.sort(function (x, y) { return (isMyMatch(y) ? 1 : 0) - (isMyMatch(x) ? 1 : 0); });
         if (isMyMatch(today[0])) {
           extra = '<span class="f26-tick-item f26-tick-mine">⭐ ' + esc(mt.abbr) + ' — YOUR TEAM plays today!</span>' +
-                  '<span style="color:rgba(251,191,36,.4);">•</span>';
+                  '<span style="color:rgba(34,211,238,.4);">•</span>';
         }
       }
       /* class banter: both teams supported by classmates */
@@ -217,13 +217,13 @@
         today.forEach(function (m) {
           var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
           if (cnt[a.abbr] && cnt[b.abbr]) {
-            extra += '<span class="f26-tick-item">🔥 ' + esc(a.abbr) + ' <b style="color:#fbbf24;">' + cnt[a.abbr] + ' : ' + cnt[b.abbr] + '</b> ' + esc(b.abbr) + ' classmates!</span>' +
-                     '<span style="color:rgba(251,191,36,.4);">•</span>';
+            extra += '<span class="f26-tick-item">🔥 ' + esc(a.abbr) + ' <b style="color:#22d3ee;">' + cnt[a.abbr] + ' : ' + cnt[b.abbr] + '</b> ' + esc(b.abbr) + ' classmates!</span>' +
+                     '<span style="color:rgba(34,211,238,.4);">•</span>';
           }
         });
       }
-      var html = extra + today.map(tickItem).join('<span style="color:rgba(251,191,36,.4);">•</span>');
-      el.innerHTML = html + '<span style="color:rgba(251,191,36,.4);">•</span>' + html; /* loop seamlessly */
+      var html = extra + today.map(tickItem).join('<span style="color:rgba(34,211,238,.4);">•</span>');
+      el.innerHTML = html + '<span style="color:rgba(34,211,238,.4);">•</span>' + html; /* loop seamlessly */
       el.classList.remove('f26-static');
       if (wrap) wrap.classList.remove('f26-nomask');
       el.style.setProperty('--f26-speed', Math.max(22, today.length * 9) + 's');
