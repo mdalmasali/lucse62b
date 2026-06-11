@@ -465,7 +465,40 @@
   }
 
   /* ══════════ MY TEAM tab ══════════ */
-  function squadHTML(squad, teams) {
+  /* per-team tournament status + a fun title-chance % (performance-based:
+     group pts + goal difference among teams still alive) */
+  function teamStatusMap(standings, matches) {
+    var info = {};
+    (standings || []).forEach(function (g) {
+      (g.teams || []).forEach(function (t) {
+        info[t.abbr] = {
+          group: (g.name || '').replace(/^Group /i, ''), rank: t.rank,
+          pts: parseInt(t.pts) || 0, p: t.p, w: t.w, d: t.d, l: t.l,
+          gd: parseInt(t.gd) || 0, alive: true,
+        };
+      });
+    });
+    /* losing any knockout match = out */
+    (matches || []).forEach(function (m) {
+      if (!m.round || m.round === 'group-stage' || m.state !== 'post') return;
+      (m.teams || []).forEach(function (t) {
+        if (info[t.abbr] && !t.winner) info[t.abbr].alive = false;
+      });
+    });
+    var sum = 0;
+    Object.keys(info).forEach(function (k) {
+      var x = info[k];
+      x.weight = x.alive ? 1 + x.pts * 2 + Math.max(x.gd, 0) : 0;
+      sum += x.weight;
+    });
+    Object.keys(info).forEach(function (k) {
+      var x = info[k];
+      x.chance = sum ? Math.round(x.weight / sum * 1000) / 10 : 0;
+    });
+    return info;
+  }
+
+  function squadHTML(squad, teams, statusMap) {
     var me = getUser() || {};
     var html = '<div class="f26-sec-h"><i class="fa-solid fa-users"></i> CLASS SQUAD — who supports whom</div>';
     if (!squad.length) return html + '<div class="f26-empty">No one has picked a team yet — be the first! 😎</div>';
@@ -476,31 +509,54 @@
       if (!byTeam[r.team_abbr]) byTeam[r.team_abbr] = { name: r.team_name, members: [] };
       byTeam[r.team_abbr].members.push({ n: r.student_name || r.student_id, me: r.student_id === me.id });
     });
-    var rows = Object.keys(byTeam).map(function (ab) { return { ab: ab, name: byTeam[ab].name, members: byTeam[ab].members }; })
-      .sort(function (a, b) { return b.members.length - a.members.length; });
-    var max = rows[0].members.length || 1;
+    statusMap = statusMap || {};
+    var rows = Object.keys(byTeam).map(function (ab) {
+      return { ab: ab, name: byTeam[ab].name, members: byTeam[ab].members, st: statusMap[ab] || null };
+    }).sort(function (a, b) {
+      var ca = a.st ? a.st.chance : 0, cb = b.st ? b.st.chance : 0;
+      return cb - ca || b.members.length - a.members.length;
+    });
+    var max = Math.max.apply(null, rows.map(function (r) { return r.members.length; })) || 1;
     return html + rows.map(function (r) {
       var names = r.members.map(function (m) {
         return '<span class="f26-sq-name' + (m.me ? ' me' : '') + '">' + esc(m.n) + (m.me ? ' (you)' : '') + '</span>';
       }).join('');
-      return '<div class="f26-sq-row">' +
+      var chanceChip = '', statusLine = '';
+      if (r.st) {
+        chanceChip = r.st.alive
+          ? '<span class="f26-sq-chance">🏆 ' + r.st.chance + '%</span>'
+          : '<span class="f26-sq-elim">❌ OUT</span>';
+        statusLine = r.st.alive
+          ? '<div class="f26-sq-status">Group ' + esc(r.st.group) + ' · #' + esc(r.st.rank) +
+            ' · ' + r.st.pts + ' pts · W' + esc(r.st.w) + ' D' + esc(r.st.d) + ' L' + esc(r.st.l) +
+            ' · GD ' + (r.st.gd > 0 ? '+' : '') + r.st.gd + '</div>'
+          : '<div class="f26-sq-status">Eliminated from the tournament 😢</div>';
+      }
+      return '<div class="f26-sq-row' + (r.st && !r.st.alive ? ' f26-sq-out' : '') + '">' +
         '<div class="f26-sq-top">' +
           (logoOf[r.ab] ? '<img src="' + esc(logoOf[r.ab]) + '" alt="">' : '') +
           '<b>' + esc(r.name || r.ab) + '</b>' +
           '<span class="f26-sq-cnt">' + r.members.length + '</span>' +
+          chanceChip +
         '</div>' +
+        statusLine +
         '<div class="f26-sq-bar"><span style="width:' + Math.round(r.members.length / max * 100) + '%"></span></div>' +
         '<div class="f26-sq-names">' + names + '</div>' +
       '</div>';
-    }).join('');
+    }).join('') +
+    '<p class="f26-sq-note">🏆 % = title chance among teams still alive, based on group points & goal difference so far — updates as the tournament unfolds.</p>';
   }
 
   function renderMyTeam() {
     var body = document.getElementById('f26-mc-body');
     if (!body) return;
-    Promise.all([fetchMatches(WC_RANGE, 18e5), fetchSquad(true)]).then(function (res) {
+    Promise.all([
+      fetchMatches(WC_RANGE, 18e5), fetchSquad(true),
+      fetchStandings().catch(function () { return []; }),
+    ]).then(function (res) {
       if (mcTab !== 'myteam') return;
-      var matches = res[0], squad = res[1];
+      var matches = res[0], squad = res[1], standings = res[2];
+      var statusMap = teamStatusMap(standings, matches);
       var teams = teamsFromMatches(matches);
       var mt = myTeam(), html = '';
 
@@ -541,7 +597,7 @@
         }
       }
 
-      html += squadHTML(squad, teams);
+      html += squadHTML(squad, teams, statusMap);
       body.innerHTML = html;
       startCD();
       attachExpand(body);
@@ -606,8 +662,9 @@
 
       var html = '<p class="f26-sec-note">🎯 Predict the score before kickoff — <b>3 pts</b> exact score, <b>1 pt</b> correct result. Climb the class leaderboard!</p>';
 
+      html += '<div class="f26-sec-h"><i class="fa-solid fa-ranking-star"></i> CLASS LEADERBOARD</div>';
       if (ranked.length) {
-        html += '<div class="f26-sec-h"><i class="fa-solid fa-ranking-star"></i> CLASS LEADERBOARD</div><div class="f26-lb">';
+        html += '<div class="f26-lb">';
         ranked.slice(0, 10).forEach(function (r, i) {
           var medal = ['🥇', '🥈', '🥉'][i] || (i + 1);
           html += '<div class="f26-lb-row' + (r.id === me.id ? ' me' : '') + '">' +
@@ -618,6 +675,29 @@
           '</div>';
         });
         html += '</div>';
+      } else {
+        /* no finished matches yet — show who has placed predictions */
+        var parts = {};
+        preds.forEach(function (p) {
+          if (!parts[p.student_id]) parts[p.student_id] = { name: p.student_name || p.student_id, n: 0 };
+          parts[p.student_id].n++;
+        });
+        var plist = Object.keys(parts).map(function (id) { return { id: id, x: parts[id] }; })
+          .sort(function (a, b) { return b.x.n - a.x.n; });
+        if (plist.length) {
+          html += '<div class="f26-lb">';
+          plist.slice(0, 10).forEach(function (r) {
+            html += '<div class="f26-lb-row' + (r.id === me.id ? ' me' : '') + '">' +
+              '<span class="f26-lb-rank">🎯</span>' +
+              '<span class="f26-lb-name">' + esc(r.x.name) + (r.id === me.id ? ' (you)' : '') + '</span>' +
+              '<span class="f26-lb-meta">' + r.x.n + ' prediction' + (r.x.n !== 1 ? 's' : '') + ' placed</span>' +
+              '<span class="f26-lb-pts">–</span>' +
+            '</div>';
+          });
+          html += '</div><p class="f26-sq-note">Points appear here as soon as the first match finishes ⚽</p>';
+        } else {
+          html += '<div class="f26-empty">No predictions yet — be the first! 🎯</div>';
+        }
       }
 
       /* my predictions map */

@@ -465,6 +465,25 @@ html[data-theme="light"] .f26-sq-top b { color: #064e3b; }
 }
 .f26-sq-name.me { color: #022c22; background: linear-gradient(135deg, #6ee7b7, #34d399); font-weight: 800; }
 html[data-theme="light"] .f26-sq-name { color: #065f46; background: rgba(0,0,0,.05); }
+.f26-sq-chance {
+  margin-left: auto; font-family: 'Space Grotesk', monospace;
+  font-size: .68rem; font-weight: 800; color: #fde68a;
+  background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3);
+  padding: 2px 9px; border-radius: 9px; white-space: nowrap;
+}
+.f26-sq-elim {
+  margin-left: auto; font-size: .6rem; font-weight: 800; letter-spacing: .8px;
+  color: #fda4af; background: rgba(244,63,94,.12); border: 1px solid rgba(244,63,94,.3);
+  padding: 2px 9px; border-radius: 9px; white-space: nowrap;
+}
+.f26-sq-out { opacity: .55; }
+.f26-sq-status {
+  font-size: .62rem; color: rgba(209,250,229,.55); margin: 1px 0 5px;
+  font-family: 'Space Grotesk', monospace; letter-spacing: .3px;
+}
+html[data-theme="light"] .f26-sq-status { color: #065f46; }
+.f26-sq-note { font-size: .64rem; color: rgba(209,250,229,.4); line-height: 1.6; margin: 12px 0 0; font-style: italic; }
+html[data-theme="light"] .f26-sq-note { color: #6b7280; }
 
 /* ── leaderboard ── */
 .f26-lb { display: flex; flex-direction: column; gap: 5px; }
