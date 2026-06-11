@@ -44,42 +44,79 @@
       border-bottom: 1px solid var(--border);
       margin-bottom: 8px;
     }
+    /* ── Premium menu: Slide-Out + Liquid Spotlight ── */
+    #sidebarMenu { position: relative; }
+    .menu-glide {
+      position: absolute; left: 0; right: 0; height: 44px; border-radius: 12px;
+      z-index: 0; pointer-events: none; opacity: 0;
+      transition: transform .42s cubic-bezier(.34,1.4,.5,1), opacity .3s, box-shadow .3s, background .3s;
+    }
     .info-menu-item {
+      position: relative; z-index: 1; overflow: hidden;
       display: flex; align-items: center; gap: 10px;
       padding: 10px 12px; border-radius: 12px;
-      cursor: pointer; transition: all 0.18s;
+      cursor: pointer;
+      transition: color .2s, transform .26s cubic-bezier(.34,1.4,.5,1), background .2s;
       color: var(--text-secondary);
       font-size: 0.84rem; font-weight: 500;
       font-family: 'Inter', sans-serif;
       border: 1px solid transparent;
       user-select: none;
+      opacity: 0;
+      animation: miIn .5s ease forwards;
     }
-    .info-menu-item:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
+    @keyframes miIn { to { opacity: 1; } }
+    /* cursor-follow spotlight (Liquid Spotlight) */
+    .info-menu-item::after {
+      content: ''; position: absolute; inset: 0; border-radius: 12px; z-index: -1;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+      background: radial-gradient(150px circle at var(--mx,50%) var(--my,50%),
+                  color-mix(in srgb, var(--c, var(--accent)) 28%, transparent), transparent 60%);
     }
+    .info-menu-item:hover { color: var(--text); transform: translateX(3px); }
+    .info-menu-item:hover::after { opacity: 1; }
+    .info-menu-item:hover .mi-icon { border-color: color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); }
+    .info-menu-item:hover .mi-icon i { transform: scale(1.14); }
+    /* active: card slides out toward the content panel */
     .info-menu-item.active {
-      background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(99,102,241,0.12));
-      border-color: rgba(124,58,237,0.3);
-      color: #c4b5fd;
-      font-weight: 600;
+      color: #fff; font-weight: 600; transform: translateX(9px);
+      text-shadow: 0 1px 2px rgba(0,0,0,.22);
     }
+    .info-menu-item.active .mi-icon { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.42); }
+    .info-menu-item.active .mi-icon i { color: #fff; transform: none; }
+    /* sheen sweep when activated */
+    .info-menu-item.active::before {
+      content: ''; position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
+      z-index: 2; pointer-events: none; transform: skewX(-18deg);
+      background: linear-gradient(100deg, transparent, rgba(255,255,255,.4), transparent);
+      animation: miSheen 1.05s ease-out;
+    }
+    @keyframes miSheen { from { left: -60%; } to { left: 130%; } }
     .info-menu-item .mi-icon {
       width: 30px; height: 30px; border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
       font-size: 0.8rem; flex-shrink: 0;
-      background: rgba(255,255,255,0.04);
+      background: rgba(127,127,160,0.10);
       border: 1px solid var(--border);
-      transition: all 0.18s;
+      transition: all 0.22s;
     }
-    .info-menu-item.active .mi-icon {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-color: transparent; color: #fff;
-    }
+    .info-menu-item .mi-icon i { color: var(--c, var(--accent-bright)); transition: transform .22s, color .22s; }
     .info-menu-item .mi-num {
-      margin-left: auto;
-      font-size: 0.65rem; color: var(--text-secondary);
-      opacity: 0.5;
+      position: relative; margin-left: auto;
+      font-size: 0.65rem; color: var(--text-secondary); opacity: 0.6;
+      width: 26px; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .info-menu-item.active .mi-num { color: rgba(255,255,255,.9); opacity: 1; }
+    .info-menu-item .mi-num .num { display: inline-block; transition: opacity .2s, transform .2s; }
+    .info-menu-item .mi-num .arrow {
+      position: absolute; right: 0; top: 50%; transform: translate(7px,-50%);
+      opacity: 0; transition: .2s; color: #fff;
+    }
+    .info-menu-item.active .mi-num .num { opacity: 0; transform: translateX(-6px); }
+    .info-menu-item.active .mi-num .arrow { opacity: 1; transform: translate(0,-50%); }
+    @media (prefers-reduced-motion: reduce) {
+      .info-menu-item, .menu-glide, .info-menu-item .mi-icon i { animation: none !important; transition: none !important; }
+      .info-menu-item.active::before { display: none; }
     }
 
     /* ── Mobile chips ── */
@@ -100,8 +137,9 @@
       font-family: 'Inter', sans-serif; white-space: nowrap;
     }
     .info-chip.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background: var(--c, var(--accent));
       border-color: transparent; color: #fff;
+      box-shadow: 0 6px 16px -6px var(--c, var(--accent));
     }
 
     /* ── Content panel ── */
@@ -709,27 +747,65 @@
     function buildMenu() {
       const sidebar = document.getElementById('sidebarMenu');
       const chips   = document.getElementById('mobileChips');
+
+      /* sliding highlight card that glides behind the active item */
+      const glide = document.createElement('div');
+      glide.className = 'menu-glide';
+      glide.id = 'menuGlide';
+      sidebar.appendChild(glide);
+
       MENU.forEach((item, i) => {
         /* sidebar item */
         const div = document.createElement('div');
         div.className = 'info-menu-item';
         div.dataset.id = item.id;
+        div.style.setProperty('--c', item.color);
+        div.style.animationDelay = (i * 40) + 'ms';
         div.innerHTML = `
-          <div class="mi-icon"><i class="${item.icon}" style="color:${item.color};"></i></div>
-          <span>${item.label}</span>
-          <span class="mi-num">${String(i+1).padStart(2,'0')}</span>`;
+          <div class="mi-icon"><i class="${item.icon}"></i></div>
+          <span class="mi-label">${item.label}</span>
+          <span class="mi-num"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="arrow"><i class="fa-solid fa-arrow-right-long"></i></span></span>`;
         div.addEventListener('click', () => selectItem(item.id));
+        /* cursor-follow spotlight position */
+        div.addEventListener('mousemove', (e) => {
+          const r = div.getBoundingClientRect();
+          div.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          div.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
         sidebar.appendChild(div);
 
         /* mobile chip */
         const chip = document.createElement('div');
         chip.className = 'info-chip';
         chip.dataset.id = item.id;
+        chip.style.setProperty('--c', item.color);
         chip.innerHTML = `<i class="${item.icon}"></i> ${item.label}`;
         chip.addEventListener('click', () => selectItem(item.id));
         chips.appendChild(chip);
       });
     }
+
+    /* glide the highlight card to the active item */
+    function shade(hex, factor) {
+      let h = hex.replace('#', '');
+      if (h.length === 3) h = h.split('').map(x => x + x).join('');
+      const r = Math.round(parseInt(h.slice(0,2),16) * factor);
+      const g = Math.round(parseInt(h.slice(2,4),16) * factor);
+      const b = Math.round(parseInt(h.slice(4,6),16) * factor);
+      return `rgb(${r},${g},${b})`;
+    }
+    function moveGlide() {
+      const glide = document.getElementById('menuGlide');
+      const el = document.querySelector(`.info-menu-item[data-id="${activeId}"]`);
+      if (!glide || !el || !el.offsetHeight) return;
+      const item = MENU.find(m => m.id === activeId);
+      glide.style.background = `linear-gradient(135deg, ${item.color}, ${shade(item.color, 0.52)})`;
+      glide.style.boxShadow = `0 16px 34px -12px ${item.color}cc, inset 0 1px 0 rgba(255,255,255,.14)`;
+      glide.style.height = el.offsetHeight + 'px';
+      glide.style.transform = `translate(9px, ${el.offsetTop}px)`;
+      glide.style.opacity = '1';
+    }
+    window.addEventListener('resize', moveGlide);
 
     /* ── Select item ── */
     function selectItem(id) {
@@ -738,6 +814,7 @@
 
       document.querySelectorAll('.info-menu-item').forEach(el =>
         el.classList.toggle('active', el.dataset.id === id));
+      moveGlide();
       document.querySelectorAll('.info-chip').forEach(el =>
         el.classList.toggle('active', el.dataset.id === id));
       document.querySelectorAll('.info-mob-option').forEach(el =>

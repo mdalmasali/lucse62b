@@ -18,3 +18,5 @@ worker/.wrangler/
 !.env.example
 
 background-preview.html
+
+info-menu-preview.html
