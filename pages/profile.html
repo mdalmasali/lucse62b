@@ -1734,7 +1734,7 @@
 
     const WORKER_URL_SMS = 'https://lucse62b-api.sy164425.workers.dev';
     let cpOTP         = null;
-    let cpPendingHash = null;
+    let cpPendingPassword = null;
 
     async function supaRpc(fn, params) {
       const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, {
@@ -1769,32 +1769,21 @@
     }
 
     async function saveDobToSupabase(studentId, dob) {
-      try {
-        const authHdr = { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
-          'Content-Type': 'application/json', 'Prefer': 'return=representation' };
-        // PATCH updates the existing row; if nothing was updated, INSERT a new one.
-        // select=student_id keeps the returned row free of password_hash (anon has no read on it).
-        const pr = await fetch(
-          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=student_id`,
-          { method: 'PATCH', headers: authHdr, body: JSON.stringify({ dob }) }
-        );
-        const updated = pr.ok ? await pr.json() : [];
-        if (!Array.isArray(updated) || !updated.length) {
-          await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
-            method: 'POST',
-            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ student_id: studentId, dob })
-          });
-        }
-      } catch {}
+      // Direct table writes from the anon key are revoked; the SECURITY DEFINER
+      // set_student_dob() RPC upserts the DOB safely (still anon-callable).
+      try { await supaRpc('set_student_dob', { p_student_id: studentId, p_dob: dob }); }
+      catch {}
     }
 
-    async function savePasswordHash(studentId, hash) {
-      await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
-        method: 'POST',
-        headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ student_id: studentId, password_hash: hash })
+    /* Password writes go through the Worker (service_role + DB-side bcrypt), gated
+       by the `pst` token from /verify-otp. This page never writes password_hash. */
+    async function setPasswordViaWorker(studentId, pst, password, name) {
+      const res = await fetch(WORKER_URL_SMS + '/set-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, pst, password, name: name || null }),
       });
+      if (!res.ok) throw new Error('set-password failed');
+      return res.json();
     }
 
     let currentUser = null;
@@ -2214,7 +2203,7 @@
       document.getElementById('cpOtpInput').value = '';
       document.getElementById('cpOtpError').style.display = 'none';
       cpOTP = null;
-      cpPendingHash = null;
+      cpPendingPassword = null;
       showCpStep1();
     }
 
@@ -2280,7 +2269,7 @@
         body: JSON.stringify({ student_id: currentUser.id, otp: code }),
       }).then(r => r.json()).catch(() => ({ valid: false }));
 
-      if (!verifyRes.valid) {
+      if (!verifyRes.valid || !verifyRes.pst) {
         errEl.innerText = 'Invalid OTP. Please try again.';
         errEl.style.display = 'block';
         return;
@@ -2290,13 +2279,13 @@
       btn.disabled = true;
 
       try {
-        await savePasswordHash(currentUser.id, cpPendingHash);
+        await setPasswordViaWorker(currentUser.id, verifyRes.pst, cpPendingPassword);
         document.getElementById('passwordStatus').innerText = 'Password is set';
         document.getElementById('statusIcon').innerText = '🔐';
         document.getElementById('statusIcon').style.color = 'var(--green)';
         document.getElementById('successMsg').innerText = 'Password updated successfully!';
         document.getElementById('successMsg').style.display = 'block';
-        cpOTP = null; cpPendingHash = null;
+        cpOTP = null; cpPendingPassword = null;
         setTimeout(() => closeChangePasswordModal(), 2000);
       } catch {
         errEl.innerText = 'Error updating password. Please try again.';
@@ -2371,7 +2360,7 @@
           return;
         }
 
-        cpPendingHash = await bcrypt.hash(newPassword, 10);
+        cpPendingPassword = newPassword;
 
         btn.innerText = 'Sending OTP...';
         const otpRes = await sendCpOTP();

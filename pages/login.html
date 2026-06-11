@@ -680,18 +680,8 @@
       return (await res.json()) === true;
     }
 
-    async function savePasswordHash(studentId, passwordHash) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/student_passwords`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify({ student_id: studentId, password_hash: passwordHash, updated_at: new Date().toISOString() })
-      });
-      if (!res.ok) throw new Error('Save failed');
-    }
+    /* Password writes are handled by setPasswordViaWorker() (Worker + DB-side bcrypt).
+       The client no longer computes hashes or writes password_hash directly. */
 
     async function fetchStudentData(studentId) {
       const controller = new AbortController();
@@ -736,6 +726,18 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, otp }),
       }).then(r => r.json());
+    }
+
+    /* Password writes go through the Worker (service_role + DB-side bcrypt). The
+       `pst` token returned by /verify-otp proves a fresh OTP was verified. The
+       public anon key can no longer write password_hash directly. */
+    async function setPasswordViaWorker(studentId, pst, password, name) {
+      const res = await fetch(WORKER_URL + '/set-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, pst, password, name: name || null }),
+      });
+      if (!res.ok) throw new Error('set-password failed');
+      return res.json();
     }
 
     async function checkStudentId() {
@@ -859,6 +861,7 @@
             window.location.href='../index.html';
           } else {
             sessionStorage.setItem('lu62b_firstTimeSetup',JSON.stringify(studentData));
+            sessionStorage.setItem('lu62b_pst', result.pst || '');
             window.location.href='password-setup.html';
           }
         } else {
@@ -922,9 +925,8 @@
       btn.innerText='Verifying...'; btn.disabled=true;
       try {
         const otpResult = await verifyOtpWithServer(studentData.id, otp);
-        if (!otpResult.valid) { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; btn.innerText='Reset Password'; btn.disabled=false; return; }
-        const hash = await bcrypt.hash(npwd, 10);
-        await savePasswordHash(studentData.id, hash);
+        if (!otpResult.valid || !otpResult.pst) { errEl.innerText='Invalid OTP.'; errEl.style.display='block'; btn.innerText='Reset Password'; btn.disabled=false; return; }
+        await setPasswordViaWorker(studentData.id, otpResult.pst, npwd);
         const u = buildStudentSession(studentData);
         localStorage.setItem('lu62b_student',JSON.stringify(u));
         window.location.href='../index.html';

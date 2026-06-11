@@ -291,7 +291,34 @@ export default {
         const stored = await env.SMS_RATE.get(`otp:${String(student_id)}`);
         if (!stored || stored !== String(otp).trim()) return jsonResp(cors, { valid: false });
         await env.SMS_RATE.delete(`otp:${String(student_id)}`);
-        return jsonResp(cors, { valid: true });
+        // Issue a short-lived password-set token so a later /set-password write can
+        // be authorised server-side (the public anon key can no longer write the hash).
+        const pst = crypto.randomUUID();
+        await env.SMS_RATE.put(`pwtok:${String(student_id)}`, pst, { expirationTtl: 600 });
+        return jsonResp(cors, { valid: true, pst });
+      }
+
+      // ── POST /set-password { student_id, pst, password, name? } ──────────────
+      // The only path that writes password_hash. `pst` proves a fresh OTP was just
+      // verified; the hash is computed inside Postgres (set_student_password RPC,
+      // service_role). Direct anon writes to student_passwords are revoked.
+      if (p === '/set-password' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id, pst, password, name } = await request.json();
+        if (!student_id || !pst || !password) return errResp(cors, 400, 'Missing fields');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (String(password).length < 6) return errResp(cors, 400, 'Password too short');
+        if (!env.SMS_RATE || !env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const tok = await env.SMS_RATE.get(`pwtok:${String(student_id)}`);
+        if (!tok || tok !== String(pst)) return errResp(cors, 401, 'Verification expired — please request a new OTP');
+        await env.SMS_RATE.delete(`pwtok:${String(student_id)}`);
+        const r = await fetch(`${SUPA_URL}/rest/v1/rpc/set_student_password`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_student_id: String(student_id), p_password: String(password), p_name: (name ? String(name) : null) }),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 503, 'Supabase unavailable');
+        return jsonResp(cors, { ok: true });
       }
 
       // ── POST /my-phone  { student_id, birth_date } — returns verified student's own phone ──
