@@ -458,12 +458,6 @@
   </style>
 </head>
 <body>
-  <div class="bg-canvas">
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-  </div>
-  <div class="grid-overlay"></div>
 
   <div class="wrapper">
     <nav class="topbar fade-in">
@@ -688,7 +682,6 @@
       <div class="sem-modal" id="semModalInner"></div>
     </div>
 
-    
       <footer>
       <div class="footer-brand">CSE 62B · PORTAL</div>
       <div class="footer-links">
@@ -1308,7 +1301,6 @@
       document.getElementById('dCreditFraction').textContent = `${done} / ${total} cr`;
       document.getElementById('dCreditBar').style.width = pct + '%';
     }
-
 
     function updateGoal() {
       if (!resData) return;

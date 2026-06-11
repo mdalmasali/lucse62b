@@ -3,30 +3,9 @@ const STUDENT_SYNC_INTERVAL = 60000;
 const WORKER_URL = 'https://lucse62b-api.sy164425.workers.dev';
 
 document.addEventListener('DOMContentLoaded', () => {
-  createParticles();
   updateTodayDate();
   initStudentDirectory();
 });
-
-function createParticles() {
-  const particlesContainer = document.getElementById('particles');
-  if (!particlesContainer) return;
-
-  // Fewer particles on mobile/low-end devices
-  const count = window.matchMedia('(max-width: 768px)').matches ? 12 : 22;
-  const frag  = document.createDocumentFragment();
-
-  for (let i = 0; i < count; i++) {
-    const particle = document.createElement('div');
-    const size = Math.random() * 4 + 2;
-    particle.className = 'particle';
-    particle.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}vw;`
-      + `background:${Math.random()>0.5?'rgba(109,40,217,0.5)':'rgba(14,165,233,0.5)'};`
-      + `animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*5}s;`;
-    frag.appendChild(particle);
-  }
-  particlesContainer.appendChild(frag);
-}
 
 function updateTodayDate() {
   const dateEl = document.getElementById('today-date');

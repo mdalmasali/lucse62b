@@ -1459,12 +1459,6 @@
 </style>
 </head>
 <body>
-  <div class="bg-canvas">
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-  </div>
-  <div class="grid-overlay"></div>
 
   <div class="wrapper">
     <nav class="topbar fade-in">
@@ -1826,7 +1820,6 @@
         /* Regular 62B courses from localStorage (saved by routine.js on load) */
         let all62B = [];
         try { all62B = JSON.parse(localStorage.getItem(`lu62b_62bcourses_${currentUser.id}`) || '[]'); } catch(e) {}
-
 
         let excluded = new Set();
         try { excluded = new Set(JSON.parse(localStorage.getItem(`lu62b_excl_${currentUser.id}`) || '[]')); } catch(e) {}

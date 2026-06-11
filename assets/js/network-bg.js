@@ -53,8 +53,18 @@
       if (running) requestAnimationFrame(draw);
     });
 
+    /* Palette adapts to the active theme — darker, denser ink on light mode so
+       the nodes/lines stay visible against a bright background. */
+    function palette() {
+      var light = document.documentElement.getAttribute('data-theme') === 'light';
+      return light
+        ? { line: '124,58,237', lineMax: 0.3, node: 'rgba(91,33,182,.85)', cursor: '2,132,199', cursorDot: 'rgba(2,132,199,.95)' }
+        : { line: '124,58,237', lineMax: 0.18, node: 'rgba(167,139,250,.85)', cursor: '56,189,248', cursorDot: 'rgba(56,189,248,.9)' };
+    }
+
     function draw() {
       if (!running) return;
+      var P = palette();
       x.clearRect(0, 0, W, H);
       for (var i = 0; i < N.length; i++) {
         var a = N[i];
@@ -72,7 +82,7 @@
           var b = N[j], dx = a.x - b.x, dy = a.y - b.y, dd = Math.hypot(dx, dy);
           if (dd < LINK) {
             x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y);
-            x.strokeStyle = 'rgba(124,58,237,' + (0.18 * (1 - dd / LINK)) + ')';
+            x.strokeStyle = 'rgba(' + P.line + ',' + (P.lineMax * (1 - dd / LINK)) + ')';
             x.lineWidth = 1; x.stroke();
           }
         }
@@ -80,18 +90,18 @@
           var cd = Math.hypot(a.x - mouse.x, a.y - mouse.y);
           if (cd < 190) {
             x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(mouse.x, mouse.y);
-            x.strokeStyle = 'rgba(56,189,248,' + (0.5 * (1 - cd / 190)) + ')';
+            x.strokeStyle = 'rgba(' + P.cursor + ',' + (0.5 * (1 - cd / 190)) + ')';
             x.lineWidth = 1; x.stroke();
           }
         }
       }
       for (var k = 0; k < N.length; k++) {
         x.beginPath(); x.arc(N[k].x, N[k].y, 1.8, 0, 6.283);
-        x.fillStyle = 'rgba(167,139,250,.85)'; x.fill();
+        x.fillStyle = P.node; x.fill();
       }
       if (mouse.on) {
         x.beginPath(); x.arc(mouse.x, mouse.y, 3, 0, 6.283);
-        x.fillStyle = 'rgba(56,189,248,.9)'; x.fill();
+        x.fillStyle = P.cursorDot; x.fill();
       }
       requestAnimationFrame(draw);
     }

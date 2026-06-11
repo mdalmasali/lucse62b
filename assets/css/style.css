@@ -39,61 +39,8 @@ body {
   overscroll-behavior-y: contain;
 }
 
-/* ── Animated Background ── */
-.bg-canvas {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-}
-.bg-orb {
-  position: absolute; border-radius: 50%; filter: blur(80px);
-  animation: orbFloat 12s ease-in-out infinite alternate;
-  will-change: transform;
-  transform: translateZ(0);
-}
-.bg-orb-1 {
-  width: 600px; height: 600px;
-  top: -200px; left: -200px;
-  background: radial-gradient(circle, rgba(109,40,217,0.18) 0%, transparent 70%);
-  animation-delay: 0s;
-}
-.bg-orb-2 {
-  width: 500px; height: 500px;
-  bottom: -150px; right: -150px;
-  background: radial-gradient(circle, rgba(14,165,233,0.14) 0%, transparent 70%);
-  animation-delay: -4s;
-}
-.bg-orb-3 {
-  width: 300px; height: 300px;
-  top: 40%; left: 40%;
-  background: radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%);
-  animation-delay: -8s;
-}
-@keyframes orbFloat {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(30px, -30px) scale(1.08); }
-}
-
-/* Subtle grid */
-.grid-overlay {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
-/* Particle layer — replaced by the interactive network background (network-bg.js) */
-.particles { display: none; }
-.particle {
-  position: absolute; border-radius: 50%;
-  animation: particleRise linear infinite; opacity: 0;
-  will-change: transform, opacity;
-}
-@keyframes particleRise {
-  0%   { transform: translateY(110vh) scale(0); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.3; }
-  100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
-}
+/* ── Background ── handled by the interactive network constellation (network-bg.js).
+   The old orb / grid / particle layers were removed in favour of it. */
 
 /* ── Layout ── */
 .wrapper {
@@ -1376,12 +1323,6 @@ footer {
   .hamburger { display: flex; }
   .theme-toggle-btn { margin-left: auto; margin-right: 6px; }
 
-  /* Reduce orb blur on mobile — cheaper GPU work */
-  .bg-orb { filter: blur(40px); }
-  .bg-orb-1 { width: 280px; height: 280px; }
-  .bg-orb-2 { width: 240px; height: 240px; }
-  .bg-orb-3 { width: 160px; height: 160px; }
-
   /* Folder card — use active instead of hover for touch */
   .folder-card:active {
     transform: translateY(-3px) scale(0.97);
@@ -1776,18 +1717,6 @@ html[data-theme="light"] .gc-unit { background: rgba(0,0,0,0.04); }
 html[data-theme="light"] .gc-unit::before { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.08), transparent); }
 html[data-theme="light"] .gc-progress-track { background: rgba(0,0,0,0.07); }
 
-/* Background orbs — vibrant and visible */
-html[data-theme="light"] .bg-orb-1 { background: radial-gradient(circle, rgba(109,40,217,0.22) 0%, transparent 70%); }
-html[data-theme="light"] .bg-orb-2 { background: radial-gradient(circle, rgba(14,165,233,0.16) 0%, transparent 70%); }
-html[data-theme="light"] .bg-orb-3 { background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%); }
-
-/* Grid overlay */
-html[data-theme="light"] .grid-overlay {
-  background-image:
-    linear-gradient(rgba(109,40,217,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(109,40,217,0.05) 1px, transparent 1px);
-}
-
 /* Mobile nav overlay */
 html[data-theme="light"] .mobile-nav-overlay { background: rgba(245,243,255,0.97); }
 html[data-theme="light"] .mobile-nav-close { background: rgba(109,40,217,0.08); border-color: rgba(109,40,217,0.18); }
@@ -1949,7 +1878,7 @@ html[data-theme="light"] .theme-opt { background: rgba(0,0,0,0.03); }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .bg-orb, .particle, .avatar-glow, .bday-flame { animation: none !important; }
+  .avatar-glow, .bday-flame { animation: none !important; }
 }
 
 /* ── Scrollbar styling ── */
