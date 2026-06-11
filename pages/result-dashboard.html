@@ -940,6 +940,7 @@
               course_title: c.course_title,
               course_code:  c.course_code,
               grade:   c.grade,
+              gpa:     parseFloat(c.gpa) || 0,
               credit:  parseFloat(c.credit) || 0,
               mark:    m.Total || 0,
               marks:   m.Total || 0,
@@ -1171,28 +1172,28 @@
       renderRetake(sems);
       renderTrajectory(sems);
 
+      /* LU API no longer returns per-course marks (/100), but it does return a
+         per-course GPA — so the extremes are grade/GPA based. Highest = a top
+         course; Lowest = the genuinely weakest graded course (best retake target). */
+      const _GP = {'A+':4.00,'A':3.75,'A-':3.50,'B+':3.25,'B':3.00,'B-':2.75,'C+':2.50,'C':2.25,'D':2.00,'F':0.00};
+      const gpOf = c => (c.gpa > 0 ? c.gpa : (_GP[(c.grade||'').trim()] ?? -1));
       let hi = null, lo = null;
       sems.forEach(s => (s.courses||[]).forEach(c => {
-        const m = c.mark || 0;
-        if (m > 0) {
-          if (!hi || m > hi.mark) hi = {...c};
-          if (!lo || m < lo.mark) lo = {...c};
-        }
+        const g = gpOf(c);
+        if (g < 0) return;                      // skip ungraded / unknown
+        if (!hi || g > gpOf(hi)) hi = {...c};
+        if (!lo || g < gpOf(lo)) lo = {...c};
       }));
-      document.getElementById('dExtremes').innerHTML = `
-        ${hi ? `<div class="res-extreme high">
-          <div class="res-extreme-hdr"><span>🏆</span> Highest Mark</div>
-          <div class="res-extreme-course">${hi.course_title||hi.course_code||'N/A'}</div>
-          <div class="res-extreme-mark">${hi.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
-          <div class="res-extreme-grade">Grade: ${hi.grade||'N/A'}</div>
-        </div>` : ''}
-        ${lo ? `<div class="res-extreme low">
-          <div class="res-extreme-hdr"><span>📉</span> Lowest Mark</div>
-          <div class="res-extreme-course">${lo.course_title||lo.course_code||'N/A'}</div>
-          <div class="res-extreme-mark">${lo.mark}<small style="font-size:.55em;font-weight:400;color:var(--text-secondary)"> /100</small></div>
-          <div class="res-extreme-grade">Grade: ${lo.grade||'N/A'}</div>
-        </div>` : ''}
-      `;
+      const extCard = (c, cls, icon, label) => `
+        <div class="res-extreme ${cls}">
+          <div class="res-extreme-hdr"><span>${icon}</span> ${label}</div>
+          <div class="res-extreme-course">${c.course_title||c.course_code||'N/A'}</div>
+          <div class="res-extreme-mark">${(c.grade||'N/A')}</div>
+          <div class="res-extreme-grade">GPA ${gpOf(c).toFixed(2)} · ${c.course_code||''}</div>
+        </div>`;
+      document.getElementById('dExtremes').innerHTML =
+        (hi ? extCard(hi, 'high', '🏆', 'Best Result') : '') +
+        (lo && lo.course_code !== (hi && hi.course_code) ? extCard(lo, 'low', '📉', 'Lowest Result') : '');
     }
 
     /* ── Retake & Improvement ── */
