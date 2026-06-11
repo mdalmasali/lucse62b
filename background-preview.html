@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Background Preview · CSE 62B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#030305; --accent:#7c3aed; --accent2:#0ea5e9; --accent3:#f59e0b;
+    --accent-bright:#a78bfa; --text:#f8fafc; --muted:#94a3b8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',sans-serif; color:var(--text);
+    background:var(--bg); overflow-x:hidden; min-height:100vh;
+  }
+
+  /* ============ shared bg layer ============ */
+  .bgfx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+  .bgfx.hidden{display:none;}
+
+  /* ── 1. AURORA ── */
+  #bg-aurora{background:
+    radial-gradient(120% 120% at 50% 0%, #0a0618 0%, #030305 55%);}
+  #bg-aurora .au{position:absolute; border-radius:50%; filter:blur(70px); opacity:.55; will-change:transform;}
+  #bg-aurora .au1{width:55vw;height:55vw; top:-15vw;left:-10vw;
+    background:radial-gradient(circle,rgba(124,58,237,.55),transparent 65%); animation:auFloat 18s ease-in-out infinite alternate;}
+  #bg-aurora .au2{width:48vw;height:48vw; bottom:-14vw;right:-8vw;
+    background:radial-gradient(circle,rgba(14,165,233,.45),transparent 65%); animation:auFloat 22s ease-in-out infinite alternate-reverse;}
+  #bg-aurora .au3{width:40vw;height:40vw; top:35%;left:38%;
+    background:radial-gradient(circle,rgba(236,72,153,.35),transparent 65%); animation:auFloat 26s ease-in-out infinite alternate;}
+  @keyframes auFloat{from{transform:translate(0,0) scale(1);}to{transform:translate(6vw,-5vw) scale(1.15);}}
+
+  /* ── 2. STARFIELD + NEBULA ── */
+  #bg-stars{background:radial-gradient(130% 100% at 80% 10%, #0b0a1f 0%, #04030a 60%, #020205 100%);}
+  #bg-stars .neb{position:absolute; border-radius:50%; filter:blur(90px); opacity:.5;}
+  #bg-stars .neb1{width:50vw;height:50vw;top:-12vw;right:-8vw;background:radial-gradient(circle,rgba(99,102,241,.4),transparent 65%);}
+  #bg-stars .neb2{width:42vw;height:42vw;bottom:-14vw;left:-10vw;background:radial-gradient(circle,rgba(14,165,233,.3),transparent 65%);}
+  #bg-stars .stars,#bg-stars .stars2{position:absolute;inset:0;}
+  #bg-stars .stars{animation:twinkle 4s ease-in-out infinite;}
+  #bg-stars .stars2{animation:twinkle 6s ease-in-out infinite reverse;}
+  @keyframes twinkle{0%,100%{opacity:.5;}50%{opacity:1;}}
+
+  /* ── 3. SYNTHWAVE GRID ── */
+  #bg-grid{background:linear-gradient(180deg,#05030f 0%,#0a0820 45%,#1a0b2e 100%);}
+  #bg-grid .glow{position:absolute;left:0;right:0;bottom:30%;height:40%;
+    background:radial-gradient(ellipse 60% 100% at 50% 100%,rgba(168,85,247,.45),transparent 70%);filter:blur(20px);}
+  #bg-grid .floor{position:absolute;left:-25%;right:-25%;bottom:0;height:55%;
+    background-image:
+      linear-gradient(rgba(168,85,247,.55) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(56,189,248,.45) 1px,transparent 1px);
+    background-size:48px 48px;
+    transform:perspective(340px) rotateX(62deg);
+    transform-origin:bottom center;
+    animation:gridRun 2.2s linear infinite; opacity:.8;}
+  @keyframes gridRun{from{background-position:0 0;}to{background-position:0 48px;}}
+  #bg-grid .sun{position:absolute;left:50%;bottom:42%;transform:translateX(-50%);
+    width:240px;height:240px;border-radius:50%;
+    background:linear-gradient(180deg,#f0abfc,#a855f7 50%,#6d28d9);filter:blur(2px);opacity:.85;
+    box-shadow:0 0 90px rgba(168,85,247,.6);}
+
+  /* ── 4. MESH + GRAIN ── */
+  #bg-mesh{background:
+      radial-gradient(40% 50% at 15% 20%, rgba(124,58,237,.45), transparent 60%),
+      radial-gradient(45% 55% at 85% 15%, rgba(14,165,233,.35), transparent 60%),
+      radial-gradient(50% 60% at 75% 90%, rgba(236,72,153,.30), transparent 60%),
+      radial-gradient(45% 55% at 10% 85%, rgba(16,185,129,.22), transparent 60%),
+      #050409;
+    background-size:200% 200%; animation:meshShift 24s ease-in-out infinite alternate;}
+  @keyframes meshShift{from{background-position:0% 0%;}to{background-position:100% 100%;}}
+  /* ── 5. NETWORK / CONSTELLATION (CS-themed) ── */
+  #bg-net{background:radial-gradient(120% 100% at 50% 0%, #0a0816 0%, #040308 60%, #020205 100%);}
+  #bg-net canvas{position:absolute;inset:0;width:100%;height:100%;}
+
+  #bg-mesh .grain{position:absolute;inset:-200%;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift .6s steps(3) infinite;}
+  @keyframes grainShift{to{transform:translate(8%,8%);}}
+
+  /* subtle grid overlay (shared, optional look) */
+  .gridlines{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:62px 62px;}
+  .gridlines.off{display:none;}
+
+  /* ============ foreground sample content ============ */
+  .wrap{position:relative;z-index:2;max-width:980px;margin:0 auto;padding:90px 24px 60px;}
+  .nav{display:flex;align-items:center;justify-content:space-between;
+    background:rgba(3,3,5,.6);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:14px 22px;margin-bottom:40px;}
+  .nav b{font-family:'Space Grotesk';letter-spacing:1.5px;color:var(--accent-bright);font-size:1.1rem;}
+  .nav span{color:var(--muted);font-size:.85rem;margin-left:18px;}
+  .hero h1{font-family:'Space Grotesk';font-size:3.4rem;font-weight:700;
+    background:linear-gradient(135deg,#c4b5fd,#38bdf8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;}
+  .hero p{color:var(--muted);max-width:520px;line-height:1.7;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:34px;}
+  .card{background:rgba(15,15,25,.55);backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:22px;}
+  .card h3{font-size:1rem;margin-bottom:6px;}
+  .card p{color:var(--muted);font-size:.85rem;line-height:1.6;}
+  .card i{display:inline-block;width:40px;height:40px;border-radius:12px;margin-bottom:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));}
+
+  /* ============ control bar ============ */
+  .ctrl{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
+    background:rgba(8,8,16,.82);backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px;
+    box-shadow:0 18px 50px rgba(0,0,0,.6);max-width:94vw;}
+  .ctrl button{font-family:'Inter';font-size:.82rem;font-weight:700;color:var(--muted);
+    background:transparent;border:1px solid transparent;border-radius:11px;padding:8px 14px;cursor:pointer;transition:.18s;}
+  .ctrl button:hover{color:#fff;}
+  .ctrl button.on{color:#fff;background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(14,165,233,.3));border-color:rgba(167,139,250,.5);}
+  .ctrl .sep{width:1px;background:rgba(255,255,255,.12);margin:4px 4px;}
+  .ctrl .gridbtn.on{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;}
+  .hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:50;
+    font-size:.78rem;color:var(--muted);background:rgba(8,8,16,.7);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;}
+</style>
+</head>
+<body>
+
+<!-- background layers -->
+<div class="bgfx" id="bg-aurora"><div class="au au1"></div><div class="au au2"></div><div class="au au3"></div></div>
+<div class="bgfx hidden" id="bg-stars"><div class="neb neb1"></div><div class="neb neb2"></div><canvas class="stars" id="starCanvas"></canvas></div>
+<div class="bgfx hidden" id="bg-grid"><div class="sun"></div><div class="glow"></div><div class="floor"></div></div>
+<div class="bgfx hidden" id="bg-mesh"><div class="grain"></div></div>
+<div class="bgfx hidden" id="bg-net"><div class="neb neb1" style="position:absolute;width:46vw;height:46vw;top:-12vw;left:-8vw;border-radius:50%;filter:blur(90px);opacity:.4;background:radial-gradient(circle,rgba(124,58,237,.45),transparent 65%)"></div><canvas id="netCanvas"></canvas></div>
+<div class="gridlines off" id="gridlines"></div>
+
+<div class="hint">Background Preview — try each option, then tell me which one 👇</div>
+
+<!-- sample content to judge readability -->
+<div class="wrap">
+  <div class="nav"><b>CSE 62B · PORTAL</b><span>Home · Notice · Classwork · Results · Profile</span></div>
+  <div class="hero">
+    <h1>CSE 62B</h1>
+    <p>Official digital portal for the Department of Computer Science &amp; Engineering, Batch 62, Section B. This is sample content so you can see how cards and text sit on each background.</p>
+  </div>
+  <div class="cards">
+    <div class="card"><i></i><h3>Class Routine</h3><p>Your weekly schedule, always up to date with section changes.</p></div>
+    <div class="card"><i></i><h3>Results</h3><p>CGPA tracker, trajectory analysis and retake impact calculator.</p></div>
+    <div class="card"><i></i><h3>Resources</h3><p>Slides, notes and drive links organized by course.</p></div>
+  </div>
+</div>
+
+<!-- controls -->
+<div class="ctrl">
+  <button class="on" data-bg="aurora">🌌 Aurora</button>
+  <button data-bg="stars">✨ Starfield</button>
+  <button data-bg="grid">🌐 Synthwave Grid</button>
+  <button data-bg="mesh">🎨 Mesh + Grain</button>
+  <button data-bg="net">🔗 Network</button>
+  <div class="sep"></div>
+  <button class="gridbtn" id="gridToggle">▦ Grid lines</button>
+</div>
+
+<script>
+  var layers = { aurora:'bg-aurora', stars:'bg-stars', grid:'bg-grid', mesh:'bg-mesh', net:'bg-net' };
+  document.querySelectorAll('.ctrl button[data-bg]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.ctrl button[data-bg]').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      Object.values(layers).forEach(function(id){ document.getElementById(id).classList.add('hidden'); });
+      document.getElementById(layers[btn.dataset.bg]).classList.remove('hidden');
+    });
+  });
+  document.getElementById('gridToggle').addEventListener('click', function(){
+    this.classList.toggle('on');
+    document.getElementById('gridlines').classList.toggle('off');
+  });
+
+  /* starfield canvas */
+  (function(){
+    var c = document.getElementById('starCanvas'), x = c.getContext('2d'), stars = [];
+    function size(){ c.width = innerWidth; c.height = innerHeight; }
+    size(); addEventListener('resize', size);
+    for (var i=0;i<160;i++) stars.push({x:Math.random()*innerWidth, y:Math.random()*innerHeight, r:Math.random()*1.4+0.2, a:Math.random()});
+    (function draw(){
+      x.clearRect(0,0,c.width,c.height);
+      for (var i=0;i<stars.length;i++){ var s=stars[i];
+        s.a += (Math.random()-0.5)*0.05; if(s.a<0.1)s.a=0.1; if(s.a>1)s.a=1;
+        x.beginPath(); x.arc(s.x,s.y,s.r,0,6.283);
+        x.fillStyle='rgba(255,255,255,'+s.a+')'; x.fill();
+      }
+      requestAnimationFrame(draw);
+    })();
+  })();
+
+  /* network / constellation canvas (CS-themed: nodes + edges) */
+  (function(){
+    var c = document.getElementById('netCanvas'), x = c.getContext('2d'), N = [], COUNT = 70, LINK = 150;
+    function size(){ c.width = innerWidth; c.height = innerHeight; }
+    size(); addEventListener('resize', size);
+    for (var i=0;i<COUNT;i++) N.push({
+      x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+      vx:(Math.random()-0.5)*0.4, vy:(Math.random()-0.5)*0.4
+    });
+    (function draw(){
+      x.clearRect(0,0,c.width,c.height);
+      for (var i=0;i<N.length;i++){ var a=N[i];
+        a.x+=a.vx; a.y+=a.vy;
+        if(a.x<0||a.x>c.width)a.vx*=-1; if(a.y<0||a.y>c.height)a.vy*=-1;
+        for (var j=i+1;j<N.length;j++){ var b=N[j], dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
+          if(d<LINK){ x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(b.x,b.y);
+            x.strokeStyle='rgba(124,58,237,'+(0.18*(1-d/LINK))+')'; x.lineWidth=1; x.stroke(); }
+        }
+      }
+      for (var k=0;k<N.length;k++){ var n=N[k];
+        x.beginPath(); x.arc(n.x,n.y,1.8,0,6.283);
+        x.fillStyle='rgba(167,139,250,.85)'; x.fill();
+      }
+      requestAnimationFrame(draw);
+    })();
+  })();
+</script>
+</body>
+</html>
