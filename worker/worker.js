@@ -87,6 +87,45 @@ export default {
         return await gvizProxy(id, tab, cors, env);
       }
 
+      // ── GET /fifa?dates=YYYYMMDD[-YYYYMMDD] — World Cup 2026 scores (ESPN proxy) ──
+      // FIFA26: temporary World Cup theme endpoint — safe to delete after the tournament.
+      if (p === '/fifa') {
+        const dates = url.searchParams.get('dates') || '';
+        if (dates && !/^\d{8}(-\d{8})?$/.test(dates)) return errResp(cors, 400, 'Invalid dates');
+        const u = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
+                + (dates ? '?dates=' + dates : '');
+        const r = await fetch(u, { cf: { cacheTtl: 60, cacheEverything: true } });
+        if (!r.ok) return errResp(cors, 502, 'Upstream error');
+        const data = await r.json();
+        const matches = (data.events || []).map(ev => {
+          const c  = (ev.competitions || [])[0] || {};
+          const st = ev.status || {};
+          return {
+            id:        ev.id,
+            date:      ev.date,
+            round:     ev.season?.slug || '',
+            state:     st.type?.state || 'pre',          // pre | in | post
+            completed: !!st.type?.completed,
+            clock:     st.displayClock || '',
+            detail:    st.type?.shortDetail || '',
+            venue:     c.venue?.fullName || '',
+            city:      c.venue?.address?.city || '',
+            teams: (c.competitors || []).map(t => ({
+              abbr:   t.team?.abbreviation || '',
+              name:   t.team?.shortDisplayName || t.team?.displayName || '',
+              logo:   t.team?.logo || '',
+              score:  t.score != null ? String(t.score) : '',
+              home:   t.homeAway === 'home',
+              winner: !!t.winner,
+            })).sort((a, b) => (b.home ? 1 : 0) - (a.home ? 1 : 0)),
+          };
+        });
+        return new Response(JSON.stringify({ matches }), {
+          headers: { ...cors, 'Content-Type': 'application/json',
+                     'Cache-Control': 'public, max-age=60' },
+        });
+      }
+
       // ── GET /hidden-cols?id=SHEET_ID — hidden column indices per tab ──
       // GVIZ doesn't expose hidden columns, so we read columnMetadata via the
       // Sheets API. Lets the site mirror columns the user hid in the sheet.

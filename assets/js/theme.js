@@ -49,3 +49,6 @@
     updateAllButtons(current());
   }
 })();
+
+/* FIFA26: temporary World Cup 2026 theme — delete this line (and the two fifa26 asset files) to remove */
+document.head.appendChild(Object.assign(document.createElement('script'), { src: '/assets/js/fifa26.js', defer: true }));
