@@ -955,6 +955,9 @@ async function runMonitor(env) {
      enrolled checks on even hours, the heavier per-student result check on
      odd hours. Each branch fits comfortably under the limit on its own. */
   try {
+    /* What's New announcements have no push path of their own — broadcast them
+       every hour (cheap: one read + at most one wake-push to all subscribers). */
+    await checkSiteUpdates(env).catch(() => {});
     if (hour % 2 === 0) {
       await Promise.allSettled([
         checkClassRoutine(env).catch(() => {}),
@@ -1401,6 +1404,31 @@ async function checkNotices(env) {
               + (fresh.length > 5 ? `\n…and ${fresh.length - 5} more` : '');
   /* Open our own Notice page (the student sees every notice there). */
   await insertNotification(env, 'lu_notice', title, body, '/pages/notice.html');
+  await sendPushToAll(env);
+}
+
+/* ── What's New Monitor ──
+   Site updates (the What's New page) are inserted straight into the DB and have
+   no push path of their own. Each cron run checks whether the newest site_update
+   is newer than the last one we announced; if so it wakes every subscriber (the
+   service worker then shows the latest notification — the DB trigger already
+   inserted the matching 'whats_new' row). Seeds a baseline on first run so old
+   updates aren't re-announced. */
+async function checkSiteUpdates(env) {
+  if (!env.SUPA_KEY) return;
+  const r = await fetch(
+    `${SUPA_URL}/rest/v1/site_updates?select=created_at&order=created_at.desc&limit=1`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  if (!r || !r.ok) return;
+  const rows = await r.json();
+  if (!rows.length || !rows[0].created_at) return;
+  const latest = rows[0].created_at;
+  const stored = await supabaseGetState(env, 'site_updates');
+  if (!stored) { await supabaseUpsertState(env, 'site_updates', String(latest), { last: latest }); return; }
+  const lastSeen = stored.state_data?.last || '';
+  if (lastSeen && new Date(latest).getTime() <= new Date(lastSeen).getTime()) return;
+  await supabaseUpsertState(env, 'site_updates', String(latest), { last: latest });
   await sendPushToAll(env);
 }
 
