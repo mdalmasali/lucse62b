@@ -35,7 +35,10 @@
         "@id": "https://lucse62b.xyz/#website",
         "url": "https://lucse62b.xyz/",
         "name": "CSE 62B Portal",
-        "description": "Official digital portal for CSE Batch 62, Section B at Leading University",
+        "alternateName": ["LU CSE 62B", "Leading University CSE 62B", "Leading University CSE Batch 62 Section B"],
+        "description": "Official digital portal for CSE Batch 62, Section B at Leading University, Sylhet",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://lucse62b.xyz/#organization" },
         "potentialAction": {
           "@type": "SearchAction",
           "target": "https://lucse62b.xyz/pages/students.html?q={search_term_string}",
@@ -43,15 +46,28 @@
         }
       },
       {
-        "@type": "Organization",
+        "@type": "EducationalOrganization",
         "@id": "https://lucse62b.xyz/#organization",
         "name": "CSE 62B — Leading University",
+        "alternateName": ["LU CSE 62B", "Leading University CSE Batch 62 Section B"],
         "url": "https://lucse62b.xyz/",
         "logo": {
           "@type": "ImageObject",
           "url": "https://lucse62b.xyz/assets/images/lu-logo.png"
         },
-        "description": "Department of Computer Science & Engineering, Batch 62, Section B, Leading University, Sylhet"
+        "description": "Department of Computer Science & Engineering, Batch 62, Section B, Leading University, Sylhet, Bangladesh",
+        "parentOrganization": {
+          "@type": "CollegeOrUniversity",
+          "name": "Leading University",
+          "alternateName": "LU",
+          "url": "https://lus.ac.bd/",
+          "sameAs": "https://en.wikipedia.org/wiki/Leading_University"
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Sylhet",
+          "addressCountry": "BD"
+        }
       }
     ]
   }
