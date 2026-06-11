@@ -444,7 +444,7 @@ async function loadRetakeImprove(body) {
       sheetRows(cpgData)
         .filter(r => r[1] && !['code', 'title', 'course'].includes((r[1] || '').toLowerCase()))
         .forEach(r => {
-          const code = (r[1] || '').trim().toUpperCase();
+          const code = _normCourseCode((r[1] || '').trim());
           if (code) courseNameMap[code] = r[0]?.trim() || '';
         });
     }
@@ -460,7 +460,7 @@ async function loadRetakeImprove(body) {
       const startIdx = (firstVal === 'batch' || firstVal === 'semester') ? 1 : 0;
       for (let i = startIdx; i < offerRows.length; i++) {
         const r = offerRows[i];
-        const code = (r[1] || '').trim().toUpperCase();
+        const code = _normCourseCode((r[1] || '').trim());
         const title = (r[2] || '').trim();
         if (code && title) courseNameMap[code] = title;
       }
@@ -472,7 +472,7 @@ async function loadRetakeImprove(body) {
       sheetRows(cpgData)
         .filter(r => r[1] && !['code','title','course'].includes((r[1]||'').toLowerCase()))
         .forEach(r => {
-          const code = (r[1]||'').trim().toUpperCase();
+          const code = _normCourseCode((r[1]||'').trim());
           const cr   = parseFloat(r[2]);
           if (code && cr > 0) creditMap[code] = cr;
         });
@@ -484,7 +484,7 @@ async function loadRetakeImprove(body) {
       const hdr = (crRows[0]?.[0]||'').toLowerCase().trim();
       const si  = (hdr==='batch'||hdr==='semester')?1:0;
       for(let i=si;i<crRows.length;i++){
-        const r=crRows[i]; const code=(r[1]||'').trim().toUpperCase(); const cr=parseFloat(r[3]);
+        const r=crRows[i]; const code=_normCourseCode((r[1]||'').trim()); const cr=parseFloat(r[3]);
         if(code&&cr>0) creditMap[code]=cr;
       }
     }
