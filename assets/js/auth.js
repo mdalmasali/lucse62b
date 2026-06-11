@@ -169,6 +169,19 @@
   }
 
   function _showDobGate(sid) {
+    // DOB already LU-verified once and stored in Supabase — used as a trusted
+    // fallback when the LU portal is down or misbehaving, so users are never
+    // locked out of their own account by an LU outage.
+    var _supaDob = null;
+
+    function _passGate(dob) {
+      localStorage.setItem('lu62b_dob_'    + sid, dob);
+      localStorage.setItem('lu62b_dob_ok_' + sid, '1');
+      _workerPost('/dob-sync', { student_id: sid, dob: dob }).catch(function () {});
+      var g = document.getElementById('_lu-dob-gate');
+      if (g) g.remove();
+    }
+
     var style = document.createElement('style');
     style.textContent = `
       @keyframes _dobFadeIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
@@ -274,11 +287,13 @@
         btn.innerHTML = '<span class="_dob-spin"></span> Verifying with LU portal…';
 
         var result = await _luVerifyDob(sid, dob);
+        if (result !== 'ok' && _supaDob && dob === _supaDob) {
+          // LU portal failed but the entered DOB matches the previously
+          // LU-verified record in Supabase — accept it.
+          result = 'ok';
+        }
         if (result === 'ok') {
-          localStorage.setItem('lu62b_dob_'    + sid, dob);
-          localStorage.setItem('lu62b_dob_ok_' + sid, '1');
-          _workerPost('/dob-sync', { student_id: sid, dob: dob }).catch(function () {});
-          gate.remove();
+          _passGate(dob);
         } else if (result === 'wrong') {
           err.textContent = 'Date of Birth is incorrect. Please check your certificate and try again.';
           btn.disabled = false;
@@ -297,25 +312,27 @@
       // 1. Try localStorage DOB first
       var storedDob = localStorage.getItem('lu62b_dob_' + sid);
 
-      // 2. If not in localStorage, try worker/Supabase
-      if (!storedDob) {
-        try {
-          var chk = await _workerPost('/dob-check', { student_id: sid });
-          if (chk && chk.has_dob) {
-            var got = await _workerPost('/dob-get', { student_id: sid });
-            if (got && got.dob) storedDob = got.dob;
-          }
-        } catch (e) {}
-      }
+      // 2. Always fetch the Supabase record — it's the trusted fallback
+      try {
+        var chk = await _workerPost('/dob-check', { student_id: sid });
+        if (chk && chk.has_dob) {
+          var got = await _workerPost('/dob-get', { student_id: sid });
+          if (got && got.dob) _supaDob = got.dob;
+        }
+      } catch (e) {}
+      if (!storedDob) storedDob = _supaDob;
 
       // 3. If we have a candidate DOB, silently verify it with the LU API
       if (storedDob) {
         var result = await _luVerifyDob(sid, storedDob);
+        if (result !== 'ok' && _supaDob && storedDob === _supaDob) {
+          // LU portal down/misbehaving but this DOB was already LU-verified
+          // once (Supabase only stores it after a successful verification) —
+          // trust it instead of locking the user out.
+          result = 'ok';
+        }
         if (result === 'ok') {
-          localStorage.setItem('lu62b_dob_'    + sid, storedDob);
-          localStorage.setItem('lu62b_dob_ok_' + sid, '1');
-          _workerPost('/dob-sync', { student_id: sid, dob: storedDob }).catch(function () {});
-          gate.remove();
+          _passGate(storedDob);
           return;
         }
         // Wrong DOB — clear it so user starts fresh; network error — pre-fill so they can retry
