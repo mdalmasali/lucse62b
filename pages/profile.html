@@ -1772,16 +1772,17 @@
       try {
         const authHdr = { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
           'Content-Type': 'application/json', 'Prefer': 'return=representation' };
-        // PATCH updates the existing row; if nothing was updated, INSERT a new one
+        // PATCH updates the existing row; if nothing was updated, INSERT a new one.
+        // select=student_id keeps the returned row free of password_hash (anon has no read on it).
         const pr = await fetch(
-          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}`,
+          `${SUPA_URL}/rest/v1/student_passwords?student_id=eq.${encodeURIComponent(studentId)}&select=student_id`,
           { method: 'PATCH', headers: authHdr, body: JSON.stringify({ dob }) }
         );
         const updated = pr.ok ? await pr.json() : [];
         if (!Array.isArray(updated) || !updated.length) {
           await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
             method: 'POST',
-            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
             body: JSON.stringify({ student_id: studentId, dob })
           });
         }
@@ -1790,7 +1791,8 @@
 
     async function savePasswordHash(studentId, hash) {
       await fetch(`${SUPA_URL}/rest/v1/student_passwords`, {
-        method: 'POST', headers: SUPA_HEADERS,
+        method: 'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify({ student_id: studentId, password_hash: hash })
       });
     }

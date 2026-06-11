@@ -655,28 +655,29 @@
       }
     }
 
-    /* -- Supabase helpers -- */
-    const _SB_HDR = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+    /* -- Supabase helpers --
+       Verification goes through SECURITY DEFINER RPCs so the bcrypt hashes
+       never leave the database. The anon role has NO read access to the
+       student_passwords table — it can only call these checks. */
+    const _SB_HDR     = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+    const _SB_RPC_HDR = { ..._SB_HDR, 'Content-Type': 'application/json' };
 
     async function hasPassword(studentId) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/student_passwords?select=student_id&student_id=eq.${encodeURIComponent(studentId)}&limit=1`,
-        { headers: _SB_HDR }
-      );
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/student_has_password`, {
+        method: 'POST', headers: _SB_RPC_HDR,
+        body: JSON.stringify({ p_student_id: studentId })
+      });
       if (!res.ok) throw new Error('Supabase error');
-      const rows = await res.json();
-      return rows.length > 0;
+      return (await res.json()) === true;
     }
 
     async function verifyPassword(studentId, plainPassword) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/student_passwords?select=password_hash&student_id=eq.${encodeURIComponent(studentId)}&limit=1`,
-        { headers: _SB_HDR }
-      );
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/verify_student_password`, {
+        method: 'POST', headers: _SB_RPC_HDR,
+        body: JSON.stringify({ p_student_id: studentId, p_password: plainPassword })
+      });
       if (!res.ok) throw new Error('Supabase error');
-      const rows = await res.json();
-      if (!rows.length) return false;
-      return bcrypt.compare(plainPassword, rows[0].password_hash);
+      return (await res.json()) === true;
     }
 
     async function savePasswordHash(studentId, passwordHash) {
@@ -684,7 +685,8 @@
         method: 'POST',
         headers: {
           'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify({ student_id: studentId, password_hash: passwordHash, updated_at: new Date().toISOString() })
       });
