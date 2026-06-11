@@ -472,17 +472,8 @@ async function loadRetakeImprove(body) {
       }
     }
 
-    /* ── Credit map (code → credit hours, from CPG_Courses + LU_Course_Offer) ── */
+    /* ── Credit map (code → credit hours, from LU_Course_Offer; API fills gaps) ── */
     const creditMap = {};
-    if (cpgData) {
-      sheetRows(cpgData)
-        .filter(r => r[1] && !['code','title','course'].includes((r[1]||'').toLowerCase()))
-        .forEach(r => {
-          const code = _normCourseCode((r[1]||'').trim());
-          const cr   = parseFloat(r[2]);
-          if (code && cr > 0) creditMap[code] = cr;
-        });
-    }
     if (courseOfferData) {
       const crRows = (courseOfferData.table?.rows||[]).map(r=>(r.c||[]).map(c=>{
         if(!c)return''; if(c.f!=null&&c.f!=='')return String(c.f).trim(); return c.v!=null?String(c.v).trim():'';
