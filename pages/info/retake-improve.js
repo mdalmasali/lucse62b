@@ -131,6 +131,14 @@ function _riMutateManual(code, action, type) {
 window._riAddManual    = (code, type) => _riMutateManual(code, 'add',    type);
 window._riRemoveManual = (code, type) => _riMutateManual(code, 'remove', type);
 
+function _riCrBadge(cr) {
+  if (!cr) return '';
+  const display = parseFloat(cr) % 1 === 0 ? String(Math.round(parseFloat(cr))) : String(parseFloat(cr));
+  return `<span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:5px;
+    background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.2);
+    white-space:nowrap;flex-shrink:0;">${display}&thinsp;cr</span>`;
+}
+
 window._riToggleEnroll = async function(courseCode, batch, section, type) {
   const d = window._riData;
   if (!d || !d.userId) return;
@@ -458,6 +466,29 @@ async function loadRetakeImprove(body) {
       }
     }
 
+    /* ── Credit map (code → credit hours, from CPG_Courses + LU_Course_Offer) ── */
+    const creditMap = {};
+    if (cpgData) {
+      sheetRows(cpgData)
+        .filter(r => r[1] && !['code','title','course'].includes((r[1]||'').toLowerCase()))
+        .forEach(r => {
+          const code = (r[1]||'').trim().toUpperCase();
+          const cr   = parseFloat(r[2]);
+          if (code && cr > 0) creditMap[code] = cr;
+        });
+    }
+    if (courseOfferData) {
+      const crRows = (courseOfferData.table?.rows||[]).map(r=>(r.c||[]).map(c=>{
+        if(!c)return''; if(c.f!=null&&c.f!=='')return String(c.f).trim(); return c.v!=null?String(c.v).trim():'';
+      }));
+      const hdr = (crRows[0]?.[0]||'').toLowerCase().trim();
+      const si  = (hdr==='batch'||hdr==='semester')?1:0;
+      for(let i=si;i<crRows.length;i++){
+        const r=crRows[i]; const code=(r[1]||'').trim().toUpperCase(); const cr=parseFloat(r[3]);
+        if(code&&cr>0) creditMap[code]=cr;
+      }
+    }
+
     /* ── Initials → full teacher name map ── */
     const initialsMap = {};
     if (teacherData?.table) {
@@ -561,7 +592,7 @@ async function loadRetakeImprove(body) {
     window._riData = {
       apiRetake, apiImprove, manualRetake, manualImprove,
       retakeList, improveList,
-      getSectionsForCourse, courseNameMap, nameToCode, initialsMap, sem,
+      getSectionsForCourse, courseNameMap, creditMap, nameToCode, initialsMap, sem,
       busy62BMap, offDays, userId: user?.id || null, enrollments,
       studentName: user?.name || '',
       sectionEnrollees: {},
@@ -1006,6 +1037,7 @@ function _riRenderContent(el, codeList, isRetake) {
           <span class="ac-retake-tag ${tagClass}">${tagLabel}</span>
           ${manualBadge}
           ${title ? `<span style="font-size:0.92rem;font-weight:700;color:var(--text);">${escH(title)}</span>` : ''}
+          ${_riCrBadge((d.creditMap||{})[codeUp])}
           ${removeBtn}
         </div>
         ${bodyHtml}
@@ -1082,6 +1114,7 @@ function _riRenderMyList(el) {
           <span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:5px;
             background:${badgeBg};color:${badgeColor};letter-spacing:0.05em;">${label}</span>
           ${name ? `<span style="font-size:0.85rem;font-weight:700;color:var(--text);">${escH(name)}</span>` : ''}
+          ${_riCrBadge((d.creditMap||{})[e.course_code])}
         </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.74rem;color:var(--text-secondary);">
           <span><strong style="color:var(--accent-bright);">${escH(e.batch || '')}${escH(e.section || '')}</strong></span>
@@ -1194,6 +1227,7 @@ function _riRenderClassmates(el) {
             <span style="font-size:0.75rem;font-weight:800;padding:3px 10px;border-radius:6px;
               background:${color}1a;color:${color};letter-spacing:0.04em;">${escH(code)}</span>
             ${name ? `<span style="font-size:0.9rem;font-weight:700;color:var(--text);">${escH(name)}</span>` : ''}
+            ${_riCrBadge((d.creditMap||{})[code])}
             <span style="margin-left:auto;font-size:0.7rem;color:var(--text-secondary);">${list.length} student${list.length !== 1 ? 's' : ''}</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;">${people}</div>
@@ -1221,6 +1255,7 @@ function _riRenderClassmates(el) {
             <span style="font-family:monospace;font-size:0.76rem;font-weight:800;color:${color};
               background:${color}1a;padding:2px 7px;border-radius:5px;flex-shrink:0;">${escH(code)}</span>
             ${cname ? `<span style="font-size:0.8rem;color:var(--text);flex:1;min-width:100px;">${escH(cname)}</span>` : '<span style="flex:1;"></span>'}
+            ${_riCrBadge((d.creditMap||{})[code])}
             ${typeBadge(r.type)}
             ${secChip(r)}
           </div>`;
