@@ -1190,13 +1190,20 @@
       const IMPROVE = new Set(['B-','C+','C','D']);
       const rank = g => ['F','D','C','C+','B-','B','B+','A-','A','A+'].indexOf((g||'').trim());
       const norm = c => { const s=(c||'').toUpperCase().replace(/[^A-Z0-9]/g,''); const m=s.match(/^([A-Z]+)(\d.*)$/); return m?`${m[1]}-${m[2]}`:s; };
-      /* Keep only each course's BEST attempt */
-      const bestByCode = {};
+      /* Keep only each course's BEST attempt; track max credit across all attempts
+         (F courses have 0 earned credit in LU data, but actual credit is non-zero) */
+      const bestByCode = {}, maxCrByCode = {};
       sems.forEach(sem => (sem.courses||[]).forEach(c => {
         const code = norm(c.course_code), r = rank(c.grade);
         if (!code || r < 0) return;
+        const cr = parseFloat(c.credit) || 0;
+        maxCrByCode[code] = Math.max(maxCrByCode[code] || 0, cr);
         if (!bestByCode[code] || r > bestByCode[code]._r) bestByCode[code] = { ...c, semester_name: sem.semester_name, _r: r };
       }));
+      Object.keys(bestByCode).forEach(code => {
+        const real = maxCrByCode[code] || 0;
+        if (real > (parseFloat(bestByCode[code].credit) || 0)) bestByCode[code] = { ...bestByCode[code], credit: real };
+      });
       const retake = [], improve = [];
       Object.values(bestByCode).forEach(c => {
         if (c.grade === 'F')           retake.push(c);
@@ -1214,17 +1221,23 @@
       const tgtGP    = GP_MAP[_riTarget] ?? 4.00;
       const impact   = c => {
         const cr = parseFloat(c.credit) || 0;
-        if (!cr || !totCr) return 0;
+        if (!totCr) return 0;
+        if (!cr) return null; // credit unknown — can't calculate
         const oldGP = GP_MAP[c.grade] ?? 0;
         if (c.grade === 'F') return (curWt + tgtGP * cr) / (totCr + cr) - curCGPA;
         return (curWt - oldGP * cr + tgtGP * cr) / totCr - curCGPA;
       };
 
-      /* Merge + sort by impact descending */
+      /* Merge + sort by impact descending; null impact (unknown credit) goes last */
       const all = [
         ...retake.map(c  => ({...c, _type:'retake',  _d: impact(c)})),
         ...improve.map(c => ({...c, _type:'improve', _d: impact(c)})),
-      ].sort((a, b) => b._d - a._d);
+      ].sort((a, b) => {
+        if (a._d === null && b._d === null) return 0;
+        if (a._d === null) return 1;
+        if (b._d === null) return -1;
+        return b._d - a._d;
+      });
 
       const grades   = ['A+','A','A-','B+','B','B-'];
       const selector = `<div class="ri-selector">
@@ -1234,17 +1247,19 @@
 
       const row = (c, i) => {
         const d    = c._d;
-        const newCG = (curCGPA + d).toFixed(2);
-        const dStr  = (d >= 0 ? '+' : '') + d.toFixed(2);
-        const cls   = d > 0.005 ? (i === 0 ? ' top' : '') : d < -0.005 ? ' neg' : ' zero';
+        const unknown = d === null;
+        const newCG = unknown ? '?' : (curCGPA + d).toFixed(2);
+        const dStr  = unknown ? '?' : (d >= 0 ? '+' : '') + d.toFixed(2);
+        const cls   = unknown ? ' zero' : d > 0.005 ? (i === 0 ? ' top' : '') : d < -0.005 ? ' neg' : ' zero';
+        const crDisplay = (parseFloat(c.credit) || 0) > 0 ? `${c.credit} cr` : `<span style="color:#f59e0b;" title="LU does not report credit for failed courses">? cr</span>`;
         return `<div class="retake-row ${c._type==='retake'?'fail-row':'improve-row'}">
           <div class="retake-info">
             <div class="retake-name">${c.course_title||c.course_code||'N/A'}</div>
-            <div class="retake-meta">${c.course_code||''} &nbsp;·&nbsp; ${c.credit||0} cr &nbsp;·&nbsp; ${c.semester_name||''}</div>
+            <div class="retake-meta">${c.course_code||''} &nbsp;·&nbsp; ${crDisplay} &nbsp;·&nbsp; ${c.semester_name||''}</div>
           </div>
           <span class="retake-grade ${c._type==='retake'?'fail':'improve'}">${c.grade}</span>
           <span class="retake-tag ${c._type}">${c._type==='retake'?'Retake':'Improve'}</span>
-          <span class="retake-delta${cls}">${i===0&&d>0.005?'⭐ ':''}${dStr}<br><small style="opacity:.65;font-weight:500">${newCG} CG</small></span>
+          <span class="retake-delta${cls}">${!unknown&&i===0&&d>0.005?'⭐ ':''}${dStr}<br><small style="opacity:.65;font-weight:500">${newCG} CG</small></span>
         </div>`;
       };
 
