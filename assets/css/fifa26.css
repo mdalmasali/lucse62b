@@ -101,6 +101,10 @@ html[data-theme="light"] #fifa26-banner {
 .f26-ticker:hover .f26-track { animation-play-state: paused; }
 @keyframes f26-scroll { to { transform: translateX(-100%); } }
 .f26-track.f26-static { animation: none; padding-left: 0; }
+.f26-ticker.f26-nomask {
+  -webkit-mask-image: none; mask-image: none;
+  display: flex; justify-content: center;
+}
 
 .f26-tick-item {
   display: inline-flex; align-items: center; gap: 8px;

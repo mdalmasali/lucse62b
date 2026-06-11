@@ -123,14 +123,17 @@
     liveSeen = false;
     var tk = todayKey();
     var today = matches.filter(function (m) { return bdDateKey(m.date) === tk; });
+    var wrap = el.parentElement;
     if (today.length) {
       var html = today.map(tickItem).join('<span style="color:rgba(251,191,36,.4);">•</span>');
       el.innerHTML = html + '<span style="color:rgba(251,191,36,.4);">•</span>' + html; /* loop seamlessly */
       el.classList.remove('f26-static');
+      if (wrap) wrap.classList.remove('f26-nomask');
       el.style.setProperty('--f26-speed', Math.max(22, today.length * 9) + 's');
     } else {
       el.innerHTML = nextMatchCountdownHTML(matches);
       el.classList.add('f26-static');
+      if (wrap) wrap.classList.add('f26-nomask');
     }
   }
 
@@ -145,7 +148,7 @@
     b.innerHTML =
       '<span class="f26-ball">⚽</span>' +
       '<span class="f26-title"><b>WORLD CUP 26</b><small>USA · CAN · MEX</small></span>' +
-      '<span class="f26-ticker"><span class="f26-track f26-static" id="f26-track">' +
+      '<span class="f26-ticker f26-nomask"><span class="f26-track f26-static" id="f26-track">' +
         '<span class="f26-tick-item">Loading matches…</span></span></span>' +
       '<button class="f26-cta" id="f26-open"><i class="fa-solid fa-trophy"></i><span>&nbsp;Match Center</span></button>' +
       '<button class="f26-hide" id="f26-hide" title="Hide for this session">×</button>';
