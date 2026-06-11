@@ -1,85 +1,80 @@
 # 🏆 FIFA World Cup 2026 Theme — Removal Guide
 
-World Cup শেষ হলে (Final: **July 19, 2026**) site কে আগের normal state এ ফেরাতে
-নিচের steps follow করো। সব মিলিয়ে **২টা file delete + ২টা file edit**।
+World Cup শেষ হলে (Final: **July 19, 2026**) site কে আগের normal state এ ফেরাতে এই guide।
 
 > ⏰ Note: Theme টা এমনিতেই **July 21, 2026** এর পর auto-disable হয়ে যাবে
 > (`fifa26.js` এর ভেতরে date check আছে)। কিন্তু code পরিষ্কার রাখতে
-> নিচের মতো পুরোপুরি remove করে দেওয়া ভালো।
+> পুরোপুরি remove করে দেওয়া ভালো।
 
 ---
 
-## Step 1 — ২টা file DELETE করো
+## ⚡ ONE-CLICK REMOVAL (recommended)
 
-| File | কী ছিল |
+Project root এ **`remove-fifa26.bat`** আছে — ওটা **double-click** করলেই সব হয়ে যাবে:
+
+1. ✅ Theme files delete (`fifa26.js`, `fifa26.css`)
+2. ✅ `theme.js` থেকে loader line remove
+3. ✅ `worker.js` থেকে `/fifa` route remove (FIFA26-START/END markers ধরে)
+4. ✅ Worker re-deploy (`npx wrangler deploy`)
+5. ✅ এই guide + script নিজেও delete
+6. ✅ Git commit + push
+
+ব্যস! তারপর site hard-refresh (`Ctrl+Shift+R`) করে verify করো।
+
+---
+
+## 📋 FIFA26 theme এ কী কী আছে (full inventory)
+
+### নতুন files (delete করতে হবে):
+| File | কী আছে |
 |------|--------|
-| `assets/js/fifa26.js` | পুরো theme logic — banner, live scores, match center modal |
-| `assets/css/fifa26.css` | Theme এর সব styling — color shift, banner, modal |
+| `assets/js/fifa26.js` | পুরো theme logic — banner, live ticker, match center modal, live tracker (timeline+stats), watch buttons, countdown |
+| `assets/css/fifa26.css` | সব styling — green/gold color shift, banner, modal, match cards, timeline, stat bars, watch chips |
+| `remove-fifa26.bat` | One-click removal script (নিজেই নিজেকে delete করে) |
+| `FIFA26-REMOVAL.md` | এই file |
 
-```
-del "assets\js\fifa26.js"
-del "assets\css\fifa26.css"
-```
+### Modified files (FIFA26 অংশ মুছতে হবে):
 
-## Step 2 — `assets/js/theme.js` থেকে loader line মুছো
-
-File এর **একদম শেষে** এই ২টা line আছে — delete করে দাও:
-
+**`assets/js/theme.js`** — একদম শেষের ২ line:
 ```js
 /* FIFA26: temporary World Cup 2026 theme — delete this line (and the two fifa26 asset files) to remove */
 document.head.appendChild(Object.assign(document.createElement('script'), { src: '/assets/js/fifa26.js', defer: true }));
 ```
 
-## Step 3 — `worker/worker.js` থেকে `/fifa` route মুছো (optional কিন্তু recommended)
+**`worker/worker.js`** — `// FIFA26-START` থেকে `// FIFA26-END` পর্যন্ত পুরো block।
+এর ভেতরে আছে `/fifa` route:
+- `/fifa?dates=YYYYMMDD[-YYYYMMDD]` → match scores/schedule (ESPN proxy, 60s cache)
+- `/fifa?event=ID` → match detail: goal/card/sub timeline + stats (30s cache)
 
-`worker/worker.js` এ এই comment দিয়ে শুরু হওয়া block টা খুঁজো:
+Worker change এর পর re-deploy লাগবে: `cd worker && npx wrangler deploy`
 
-```js
-// ── GET /fifa?dates=YYYYMMDD[-YYYYMMDD] — World Cup 2026 scores (ESPN proxy) ──
-// FIFA26: temporary World Cup theme endpoint — safe to delete after the tournament.
-if (p === '/fifa') {
-```
+### External dependencies (কোনো cleanup লাগবে না):
+- ESPN public API (worker দিয়ে proxy হয়) — কোনো key/account নেই
+- Watch links: tsports.com, toffeelive.com, bioscopelive.com — শুধু external link
 
-পুরো `if (p === '/fifa') { ... }` block টা delete করো
-(পরের route `// ── GET /hidden-cols...` এর আগ পর্যন্ত)।
-
-তারপর worker re-deploy করো:
-
-```
-cd worker
-npx wrangler deploy
-```
-
-## Step 4 — এই file টাও delete করো
-
-```
-del "FIFA26-REMOVAL.md"
-```
-
-## Step 5 — Commit & push
-
-```
-git add -A
-git commit -m "chore: remove FIFA World Cup 2026 theme (tournament over)"
-git push
-```
-
----
-
-## ✅ Verify
-
-1. Site hard-refresh করো (`Ctrl+Shift+R`)
-2. উপরের সবুজ-সোনালি World Cup banner আর নেই
-3. Site এর accent color আবার আগের **purple** (`#7c3aed`) এ ফিরে এসেছে
-4. Console এ কোনো `fifa26.js 404` error নেই
-
-## 🧹 Bonus cleanup (optional)
-
-Visitors দের browser এ কিছু cache data থেকে যেতে পারে — এগুলো ক্ষতিকর না,
-এমনিতেই পড়ে থাকবে। চাইলে কখনো clear করার দরকার নেই:
-- `localStorage`: `f26_c_*` keys (match data cache)
+### Visitors দের browser এ থাকা data (harmless, এমনিই expire হবে):
+- `localStorage`: `f26_c_*` (match data cache)
 - `sessionStorage`: `f26_off` (banner hide flag)
 
 ---
 
-*Theme added: June 11, 2026 (commit `8ed2429`)*
+## 🔧 Manual removal (script কাজ না করলে)
+
+1. Delete: `assets/js/fifa26.js`, `assets/css/fifa26.css`
+2. `assets/js/theme.js` → শেষের FIFA26 comment + loader line delete
+3. `worker/worker.js` → `// FIFA26-START` থেকে `// FIFA26-END` পর্যন্ত delete
+4. `cd worker && npx wrangler deploy`
+5. Delete: `FIFA26-REMOVAL.md`, `remove-fifa26.bat`
+6. `git add -A && git commit -m "chore: remove FIFA26 theme" && git push`
+
+## ✅ Verify
+
+1. Site hard-refresh (`Ctrl+Shift+R`)
+2. সবুজ-সোনালি World Cup banner নেই
+3. Accent color আবার purple (`#7c3aed`)
+4. Console এ `fifa26.js 404` error নেই
+5. `https://lucse62b-api.sy164425.workers.dev/fifa` → 404 দেয়
+
+---
+
+*Theme added: June 11, 2026 · Live tracker + watch buttons added same day*

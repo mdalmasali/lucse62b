@@ -174,7 +174,103 @@
   }
 
   /* ── MATCH CENTER ── */
-  var mcTab = 'today', mcTimer = null, cdTimer = null;
+  var mcTab = 'today', mcTimer = null, cdTimer = null, expandedId = null;
+
+  /* Official BD streaming options (rights: BTV/T Sports/Somoy consortium + Toffee/Bioscope OTT) */
+  var WATCH = [
+    { n: 'T Sports', tag: 'FREE TV', u: 'https://www.tsports.com' },
+    { n: 'Toffee',   tag: '',        u: 'https://toffeelive.com' },
+    { n: 'Bioscope', tag: '',        u: 'https://www.bioscopelive.com' },
+  ];
+  function watchRow() {
+    return '<div class="f26-watch">' +
+      '<span class="f26-watch-lbl"><i class="fa-solid fa-tv"></i> Watch</span>' +
+      WATCH.map(function (w) {
+        return '<a class="f26-watch-chip" target="_blank" rel="noopener" href="' + w.u + '">' +
+          esc(w.n) + (w.tag ? ' <b>' + w.tag + '</b>' : '') + '</a>';
+      }).join('') + '</div>';
+  }
+
+  /* ── live match detail (timeline + stats) ── */
+  var detailCache = {};
+  function fetchDetail(id) {
+    var c = detailCache[id];
+    if (c && Date.now() - c.t < 3e4) return Promise.resolve(c.d);
+    return fetch(WORKER + '/fifa?event=' + encodeURIComponent(id))
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (d) { detailCache[id] = { t: Date.now(), d: d }; return d; });
+  }
+  var EV_ICO = {
+    'goal': '⚽', 'own-goal': '⚽', 'penalty---scored': '⚽',
+    'penalty---missed': '❌', 'yellow-card': '🟨', 'red-card': '🟥', 'substitution': '🔄',
+  };
+  var EV_TAG = { 'own-goal': 'OG', 'penalty---scored': 'PEN', 'penalty---missed': 'PEN MISS' };
+
+  function renderDetail(el, id) {
+    el.innerHTML = '<div class="f26-loading" style="padding:12px;font-size:1rem;"><i class="fa-solid fa-futbol"></i></div>';
+    fetchDetail(id).then(function (d) {
+      var html = '';
+      var s = d.stats || [];
+      if (s.length === 2) {
+        var h = s.filter(function (x) { return x.home; })[0] || s[0];
+        var a = s.filter(function (x) { return !x.home; })[0] || s[1];
+        if (h.possessionPct != null && a.possessionPct != null) {
+          var hp = parseFloat(h.possessionPct) || 50;
+          html += '<div class="f26-poss"><b>' + esc(h.possessionPct) + '%</b>' +
+            '<div class="f26-poss-bar"><span style="width:' + hp + '%"></span></div>' +
+            '<b>' + esc(a.possessionPct) + '%</b></div>' +
+            '<div class="f26-poss-lbl">Possession</div>';
+        }
+        var ROWS = [['totalShots', 'Shots'], ['shotsOnTarget', 'On Target'],
+                    ['wonCorners', 'Corners'], ['foulsCommitted', 'Fouls'], ['saves', 'Saves']];
+        var srows = ROWS.filter(function (r) { return h[r[0]] != null || a[r[0]] != null; })
+          .map(function (r) {
+            return '<div class="f26-srow"><b>' + esc(h[r[0]] || '0') + '</b><span>' + r[1] + '</span><b>' + esc(a[r[0]] || '0') + '</b></div>';
+          }).join('');
+        if (srows) html += '<div class="f26-stats">' + srows + '</div>';
+      }
+      var evs = (d.events || []).slice().reverse();   /* latest first */
+      if (evs.length) {
+        html += '<div class="f26-tl">' + evs.map(function (e) {
+          return '<div class="f26-ev"><span class="f26-ev-t">' + esc(e.t) + '</span>' +
+            '<span class="f26-ev-i">' + (EV_ICO[e.type] || '·') + '</span>' +
+            '<span class="f26-ev-x">' + esc(e.text) + (EV_TAG[e.type] ? ' <i>(' + EV_TAG[e.type] + ')</i>' : '') + '</span></div>';
+        }).join('') + '</div>';
+      }
+      el.innerHTML = html || '<div class="f26-empty" style="padding:14px;">No match events yet.</div>';
+    }).catch(function () {
+      el.innerHTML = '<div class="f26-empty" style="padding:14px;">Could not load details.</div>';
+    });
+  }
+
+  function attachExpand(body) {
+    if (body.dataset.f26x) return;
+    body.dataset.f26x = '1';
+    body.addEventListener('click', function (e) {
+      if (e.target.closest('a')) return;
+      var card = e.target.closest('.f26-match[data-mid]');
+      if (!card) return;
+      var det = card.querySelector('.f26-detail');
+      if (det) { det.remove(); card.classList.remove('f26-open'); expandedId = null; return; }
+      expandedId = card.dataset.mid;
+      det = document.createElement('div');
+      det.className = 'f26-detail';
+      card.appendChild(det);
+      card.classList.add('f26-open');
+      renderDetail(det, expandedId);
+    });
+  }
+
+  function reExpand(body) {
+    if (!expandedId) return;
+    var card = body.querySelector('.f26-match[data-mid="' + expandedId + '"]');
+    if (!card) return;
+    var det = document.createElement('div');
+    det.className = 'f26-detail';
+    card.appendChild(det);
+    card.classList.add('f26-open');
+    renderDetail(det, expandedId);
+  }
 
   function statusBadge(m) {
     if (m.state === 'in')   return '<span class="f26-status live"><span class="f26-live-dot"></span>' + esc(m.clock || 'LIVE') + '</span>';
@@ -182,7 +278,7 @@
     return '<span class="f26-status pre">' + esc(bdTime(m.date)) + '</span>';
   }
 
-  function matchCard(m, withRound) {
+  function matchCard(m, withRound, inToday) {
     var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
     var mid = (m.state === 'pre')
       ? '<span class="f26-vs-time">' + esc(bdTime(m.date)) + '</span>'
@@ -191,11 +287,15 @@
       ? '<span class="f26-venue">' + (withRound && m.round ? '<span class="f26-round-pill">' + esc(roundLabel(m.round)) + '</span> · ' : '')
         + '<i class="fa-solid fa-location-dot" style="opacity:.5;"></i> ' + esc(m.venue) + (m.city ? ', ' + esc(m.city) : '') + '</span>'
       : '';
-    return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + '">' +
+    var watch = (inToday && m.state !== 'post') ? watchRow() : '';
+    var expandable = m.state !== 'pre';   /* live + finished → timeline & stats */
+    var hint = expandable ? '<span class="f26-venue" style="opacity:.55;"><i class="fa-solid fa-chevron-down"></i> tap for events &amp; stats</span>' : '';
+    return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + '"' +
+      (expandable ? ' data-mid="' + esc(m.id) + '"' : '') + '>' +
       '<span class="f26-team' + (a.winner ? ' f26-win' : '') + '">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '') + '<b>' + esc(a.name) + '</b></span>' +
       '<span class="f26-mid">' + mid + statusBadge(m) + '</span>' +
       '<span class="f26-team away' + (b.winner ? ' f26-win' : '') + '"><b>' + esc(b.name) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '') + '</span>' +
-      venue + '</div>';
+      venue + watch + hint + '</div>';
   }
 
   function fmtCD(ms) {
@@ -231,9 +331,11 @@
       if (!today.length) {
         html += '<div class="f26-empty">No matches today (Bangladesh time) — check the full schedule ⚽</div>';
       } else {
-        html += today.map(function (m) { return matchCard(m, true); }).join('');
+        html += today.map(function (m) { return matchCard(m, true, true); }).join('');
       }
       body.innerHTML = html;
+      attachExpand(body);
+      reExpand(body);
       startCD();
     }).catch(function () {
       if (mcTab === 'today') body.innerHTML = '<div class="f26-empty">Could not load matches — try again shortly.</div>';
@@ -274,6 +376,7 @@
         html += matchCard(m, true);
       });
       body.innerHTML = html || '<div class="f26-empty">Schedule unavailable.</div>';
+      attachExpand(body);
       var anchor = document.getElementById('f26-today-anchor');
       if (anchor) anchor.scrollIntoView({ block: 'start' });
     }).catch(function () {

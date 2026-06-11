@@ -87,9 +87,35 @@ export default {
         return await gvizProxy(id, tab, cors, env);
       }
 
-      // ── GET /fifa?dates=YYYYMMDD[-YYYYMMDD] — World Cup 2026 scores (ESPN proxy) ──
-      // FIFA26: temporary World Cup theme endpoint — safe to delete after the tournament.
+      // FIFA26-START — temporary World Cup 2026 endpoints, delete this whole block after the tournament
+      // ── GET /fifa?dates=YYYYMMDD[-YYYYMMDD] — scores · /fifa?event=ID — match detail (ESPN proxy) ──
       if (p === '/fifa') {
+        const evId = url.searchParams.get('event') || '';
+        if (evId) {
+          if (!/^\d{1,12}$/.test(evId)) return errResp(cors, 400, 'Invalid event');
+          const su = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=' + evId;
+          const sr = await fetch(su, { cf: { cacheTtl: 30, cacheEverything: true } });
+          if (!sr.ok) return errResp(cors, 502, 'Upstream error');
+          const sd   = await sr.json();
+          const KEEP = ['goal', 'own-goal', 'penalty---scored', 'penalty---missed', 'yellow-card', 'red-card', 'substitution'];
+          const events = (sd.keyEvents || [])
+            .filter(e => KEEP.includes(e.type?.type))
+            .map(e => ({
+              type: e.type?.type || '',
+              t:    e.clock?.displayValue || '',
+              text: e.shortText || (e.text || '').slice(0, 140),
+            }));
+          const STATS = ['possessionPct', 'totalShots', 'shotsOnTarget', 'wonCorners', 'foulsCommitted', 'yellowCards', 'saves'];
+          const stats = (sd.boxscore?.teams || []).map(t => {
+            const o = { abbr: t.team?.abbreviation || '', home: t.homeAway === 'home' };
+            (t.statistics || []).forEach(s => { if (STATS.includes(s.name)) o[s.name] = s.displayValue; });
+            return o;
+          });
+          return new Response(JSON.stringify({ events, stats }), {
+            headers: { ...cors, 'Content-Type': 'application/json',
+                       'Cache-Control': 'public, max-age=30' },
+          });
+        }
         const dates = url.searchParams.get('dates') || '';
         if (dates && !/^\d{8}(-\d{8})?$/.test(dates)) return errResp(cors, 400, 'Invalid dates');
         const u = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
@@ -125,6 +151,7 @@ export default {
                      'Cache-Control': 'public, max-age=60' },
         });
       }
+      // FIFA26-END
 
       // ── GET /hidden-cols?id=SHEET_ID — hidden column indices per tab ──
       // GVIZ doesn't expose hidden columns, so we read columnMetadata via the
