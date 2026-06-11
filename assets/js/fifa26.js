@@ -45,6 +45,17 @@
     if (!slug) return '';
     return slug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
+  /* knockout slots aren't decided yet — turn ESPN codes into readable labels:
+     "1A" → Group A Winner · "2K" → Group K Runner-up · "3RD A/B/…" → 3rd Place */
+  function teamLabel(t) {
+    var n = ((t && t.name) || '').trim(), m;
+    if ((m = n.match(/^1([A-L])$/i)))      return 'Group ' + m[1].toUpperCase() + ' Winner';
+    if ((m = n.match(/^2([A-L])$/i)))      return 'Group ' + m[1].toUpperCase() + ' Runner-up';
+    if ((m = n.match(/^3RD\s*(.+)$/i)))    return '3rd Place ' + m[1];
+    if ((m = n.match(/^W\s?(\d+)$/i)))     return 'Winner M' + m[1];
+    if ((m = n.match(/^L\s?(\d+)$/i)))     return 'Loser M' + m[1];
+    return n;
+  }
 
   /* ── data fetch (with tiny localStorage cache) ── */
   function fetchMatches(dates, ttlMs) {
@@ -372,9 +383,9 @@
     return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + (isMyMatch(m) ? ' f26-mine' : '') + '"' +
       (expandable ? ' data-mid="' + esc(m.id) + '"' : '') + '>' +
       (isMyMatch(m) ? '<span class="f26-mine-star">⭐</span>' : '') +
-      '<span class="f26-team' + (a.winner ? ' f26-win' : '') + '">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '') + '<b>' + esc(a.name) + '</b></span>' +
+      '<span class="f26-team' + (a.winner ? ' f26-win' : '') + '">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '<b>' + esc(teamLabel(a)) + '</b></span>' +
       '<span class="f26-mid">' + mid + statusBadge(m) + '</span>' +
-      '<span class="f26-team away' + (b.winner ? ' f26-win' : '') + '"><b>' + esc(b.name) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '') + '</span>' +
+      '<span class="f26-team away' + (b.winner ? ' f26-win' : '') + '"><b>' + esc(teamLabel(b)) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '</span>' +
       venue + watch + hint + '</div>';
   }
 
@@ -769,12 +780,12 @@
         html += '<div class="f26-pred" data-mid="' + esc(m.id) + '" data-at="' + new Date(m.date).getTime() + '">' +
           '<div class="f26-pred-when">' + esc(bdDateLabel(m.date)) + ' · ' + esc(bdTime(m.date)) + '</div>' +
           '<div class="f26-pred-mid">' +
-            '<span class="f26-team">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '') + '<b>' + esc(a.name) + '</b></span>' +
+            '<span class="f26-team">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '<b>' + esc(teamLabel(a)) + '</b></span>' +
             (locked
               ? '<span class="f26-pred-lock"><i class="fa-solid fa-lock"></i></span>'
               : '<span class="f26-pred-io"><select class="f26-ps" data-side="h">' + selOpts(p ? p.home_score : undefined) + '</select>' +
                 '<i>–</i><select class="f26-ps" data-side="a">' + selOpts(p ? p.away_score : undefined) + '</select></span>') +
-            '<span class="f26-team away"><b>' + esc(b.name) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '') + '</span>' +
+            '<span class="f26-team away"><b>' + esc(teamLabel(b)) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '</span>' +
           '</div>' +
           (locked
             ? '<div class="f26-pred-foot">Kickoff passed — predictions locked' + (p ? ' · yours: ' + p.home_score + '–' + p.away_score : '') + '</div>'
@@ -861,9 +872,18 @@
           rounds[m.round].push(m);
         });
         html += '<div class="f26-sec-h" style="margin-top:20px;"><i class="fa-solid fa-sitemap"></i> KNOCKOUT STAGE</div>';
+        var tk = todayKey();
         order.forEach(function (r) {
-          html += '<div class="f26-date-h">' + esc(roundLabel(r)) + '</div>' +
-            rounds[r].map(function (m) { return matchCard(m, false, false); }).join('');
+          html += '<div class="f26-date-h">' + esc(roundLabel(r)) + '</div>';
+          var lastK = '';
+          rounds[r].forEach(function (m) {
+            var k = bdDateKey(m.date);
+            if (k !== lastK) {
+              lastK = k;
+              html += '<div class="f26-ko-date">' + (k === tk ? '🔥 TODAY · ' : '') + esc(bdDateLabel(m.date)) + '</div>';
+            }
+            html += matchCard(m, false, k === tk);
+          });
         });
       }
 

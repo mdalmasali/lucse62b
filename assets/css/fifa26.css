@@ -307,6 +307,19 @@ html[data-theme="light"] .f26-venue { color: #6b7280; }
 .f26-loading { text-align: center; padding: 40px; color: #34d399; font-size: 1.4rem; }
 .f26-loading i { animation: f26-ballspin 1.2s linear infinite; display: inline-block; }
 
+/* knockout placeholder slot (team not decided yet) */
+.f26-tbd {
+  width: 26px; height: 26px; flex-shrink: 0; font-size: .8rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.05); border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.08); opacity: .7;
+}
+.f26-ko-date {
+  font-size: .62rem; font-weight: 700; color: rgba(209,250,229,.45);
+  letter-spacing: .8px; margin: 8px 0 6px; padding-left: 2px;
+}
+html[data-theme="light"] .f26-ko-date { color: #6b7280; }
+
 /* round pill in schedule */
 .f26-round-pill {
   font-size: .56rem; font-weight: 800; letter-spacing: .8px;
