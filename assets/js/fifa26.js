@@ -18,7 +18,6 @@
 
   if (!ENABLED) return;
   if (new Date() > new Date(WC_END + 'T23:59:59+06:00')) return;   // tournament over
-  if (sessionStorage.getItem('f26_off') === '1') { applyThemeOnly(); return; }
 
   /* ── helpers ── */
   function esc(s) {
@@ -244,19 +243,11 @@
       '<span class="f26-title"><b>WORLD CUP 26</b><small>USA · CAN · MEX</small></span>' +
       '<span class="f26-ticker f26-nomask"><span class="f26-track f26-static" id="f26-track">' +
         '<span class="f26-tick-item">Loading matches…</span></span></span>' +
-      '<button class="f26-cta" id="f26-open"><i class="fa-solid fa-trophy"></i><span>&nbsp;Match Center</span></button>' +
-      '<button class="f26-hide" id="f26-hide" title="Hide for this session">×</button>';
+      '<button class="f26-cta" id="f26-open"><i class="fa-solid fa-trophy"></i><span>&nbsp;Match Center</span></button>';
     document.body.insertBefore(b, document.body.firstChild);
 
     b.addEventListener('click', function () { openMC(); });
     document.getElementById('f26-open').addEventListener('click', function (e) { e.stopPropagation(); openMC(); });
-    document.getElementById('f26-hide').addEventListener('click', function (e) {
-      e.stopPropagation();
-      sessionStorage.setItem('f26_off', '1');
-      b.remove();
-      var mc = document.getElementById('fifa26-mc'); if (mc) mc.remove();
-      clearInterval(bannerTimer);
-    });
   }
 
   /* ── MATCH CENTER ── */
