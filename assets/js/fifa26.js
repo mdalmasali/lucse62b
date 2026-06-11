@@ -70,6 +70,70 @@
     return f(a) + '-' + f(b);
   }
 
+  /* ── Supabase (class squad + predictions) ── */
+  var SUPA     = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+
+  function getUser() {
+    try { return JSON.parse(localStorage.getItem('lu62b_student') || 'null'); } catch (e) { return null; }
+  }
+  function supaGet(path) {
+    return fetch(SUPA + '/rest/v1/' + path, {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+    }).then(function (r) { if (!r.ok) throw new Error('supa ' + r.status); return r.json(); });
+  }
+  function supaUpsert(table, row) {
+    return fetch(SUPA + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify(row),
+    });
+  }
+
+  /* ── my team ── */
+  function myTeam() {
+    try { return JSON.parse(localStorage.getItem('f26_team') || 'null'); } catch (e) { return null; }
+  }
+  function setMyTeam(t) {
+    localStorage.setItem('f26_team', JSON.stringify(t));
+    var u = getUser();
+    if (u && u.id) {
+      supaUpsert('fifa26_teams', {
+        student_id: u.id, student_name: u.name || '',
+        team_abbr: t.abbr, team_name: t.name,
+      }).catch(function () {});
+    }
+  }
+
+  /* class squad (everyone's teams) — cached 5 min */
+  var _squad = null, _squadT = 0;
+  function fetchSquad(force) {
+    if (_squad && !force && Date.now() - _squadT < 3e5) return Promise.resolve(_squad);
+    return supaGet('fifa26_teams?select=student_id,student_name,team_abbr,team_name&order=updated_at.desc')
+      .then(function (rows) { _squad = rows || []; _squadT = Date.now(); return _squad; })
+      .catch(function () { return _squad || []; });
+  }
+
+  /* unique team list derived from the schedule (skips TBD knockout slots) */
+  function teamsFromMatches(ms) {
+    var seen = {}, out = [];
+    ms.forEach(function (m) {
+      (m.teams || []).forEach(function (t) {
+        if (!t.abbr || !t.name || /tbd|winner|runner/i.test(t.name) || seen[t.abbr]) return;
+        seen[t.abbr] = 1;
+        out.push({ abbr: t.abbr, name: t.name, logo: t.logo || '' });
+      });
+    });
+    return out.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
+  function isMyMatch(m) {
+    var mt = myTeam();
+    return !!(mt && (m.teams || []).some(function (t) { return t.abbr === mt.abbr; }));
+  }
+
   /* ── theme-only bits (also applied when banner dismissed) ── */
   function applyThemeOnly() {
     document.documentElement.setAttribute('data-fifa26', '1');
@@ -125,7 +189,28 @@
     var today = matches.filter(function (m) { return bdDateKey(m.date) === tk; });
     var wrap = el.parentElement;
     if (today.length) {
-      var html = today.map(tickItem).join('<span style="color:rgba(251,191,36,.4);">•</span>');
+      /* my team's matches first + a YOUR TEAM flash */
+      var mt = myTeam(), extra = '';
+      if (mt) {
+        today.sort(function (x, y) { return (isMyMatch(y) ? 1 : 0) - (isMyMatch(x) ? 1 : 0); });
+        if (isMyMatch(today[0])) {
+          extra = '<span class="f26-tick-item f26-tick-mine">⭐ ' + esc(mt.abbr) + ' — YOUR TEAM plays today!</span>' +
+                  '<span style="color:rgba(251,191,36,.4);">•</span>';
+        }
+      }
+      /* class banter: both teams supported by classmates */
+      if (_squad && _squad.length) {
+        var cnt = {};
+        _squad.forEach(function (r) { cnt[r.team_abbr] = (cnt[r.team_abbr] || 0) + 1; });
+        today.forEach(function (m) {
+          var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
+          if (cnt[a.abbr] && cnt[b.abbr]) {
+            extra += '<span class="f26-tick-item">🔥 ' + esc(a.abbr) + ' <b style="color:#fbbf24;">' + cnt[a.abbr] + ' : ' + cnt[b.abbr] + '</b> ' + esc(b.abbr) + ' classmates!</span>' +
+                     '<span style="color:rgba(251,191,36,.4);">•</span>';
+          }
+        });
+      }
+      var html = extra + today.map(tickItem).join('<span style="color:rgba(251,191,36,.4);">•</span>');
       el.innerHTML = html + '<span style="color:rgba(251,191,36,.4);">•</span>' + html; /* loop seamlessly */
       el.classList.remove('f26-static');
       if (wrap) wrap.classList.remove('f26-nomask');
@@ -146,6 +231,7 @@
   }
 
   function refreshBanner() {
+    fetchSquad();   /* warm the cache so the ticker can show class banter */
     fetchMatches(todayWindow(), liveSeen ? 6e4 : 3e5).then(renderTicker).catch(function () {});
   }
 
@@ -290,8 +376,9 @@
     var watch = (inToday && m.state !== 'post') ? watchRow() : '';
     var expandable = m.state !== 'pre';   /* live + finished → timeline & stats */
     var hint = expandable ? '<span class="f26-venue" style="opacity:.55;"><i class="fa-solid fa-chevron-down"></i> tap for events &amp; stats</span>' : '';
-    return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + '"' +
+    return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + (isMyMatch(m) ? ' f26-mine' : '') + '"' +
       (expandable ? ' data-mid="' + esc(m.id) + '"' : '') + '>' +
+      (isMyMatch(m) ? '<span class="f26-mine-star">⭐</span>' : '') +
       '<span class="f26-team' + (a.winner ? ' f26-win' : '') + '">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '') + '<b>' + esc(a.name) + '</b></span>' +
       '<span class="f26-mid">' + mid + statusBadge(m) + '</span>' +
       '<span class="f26-team away' + (b.winner ? ' f26-win' : '') + '"><b>' + esc(b.name) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '') + '</span>' +
@@ -384,13 +471,296 @@
     });
   }
 
+  /* ══════════ MY TEAM tab ══════════ */
+  function squadHTML(squad, teams) {
+    var me = getUser() || {};
+    var html = '<div class="f26-sec-h"><i class="fa-solid fa-users"></i> CLASS SQUAD — who supports whom</div>';
+    if (!squad.length) return html + '<div class="f26-empty">No one has picked a team yet — be the first! 😎</div>';
+    var logoOf = {};
+    teams.forEach(function (t) { logoOf[t.abbr] = t.logo; });
+    var byTeam = {};
+    squad.forEach(function (r) {
+      if (!byTeam[r.team_abbr]) byTeam[r.team_abbr] = { name: r.team_name, members: [] };
+      byTeam[r.team_abbr].members.push({ n: r.student_name || r.student_id, me: r.student_id === me.id });
+    });
+    var rows = Object.keys(byTeam).map(function (ab) { return { ab: ab, name: byTeam[ab].name, members: byTeam[ab].members }; })
+      .sort(function (a, b) { return b.members.length - a.members.length; });
+    var max = rows[0].members.length || 1;
+    return html + rows.map(function (r) {
+      var names = r.members.map(function (m) {
+        return '<span class="f26-sq-name' + (m.me ? ' me' : '') + '">' + esc(m.n) + (m.me ? ' (you)' : '') + '</span>';
+      }).join('');
+      return '<div class="f26-sq-row">' +
+        '<div class="f26-sq-top">' +
+          (logoOf[r.ab] ? '<img src="' + esc(logoOf[r.ab]) + '" alt="">' : '') +
+          '<b>' + esc(r.name || r.ab) + '</b>' +
+          '<span class="f26-sq-cnt">' + r.members.length + '</span>' +
+        '</div>' +
+        '<div class="f26-sq-bar"><span style="width:' + Math.round(r.members.length / max * 100) + '%"></span></div>' +
+        '<div class="f26-sq-names">' + names + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderMyTeam() {
+    var body = document.getElementById('f26-mc-body');
+    if (!body) return;
+    Promise.all([fetchMatches(WC_RANGE, 18e5), fetchSquad(true)]).then(function (res) {
+      if (mcTab !== 'myteam') return;
+      var matches = res[0], squad = res[1];
+      var teams = teamsFromMatches(matches);
+      var mt = myTeam(), html = '';
+
+      if (!mt) {
+        html += '<p class="f26-sec-note">Pick the team you support ⚽ — your matches glow gold, the banner cheers for you, and you join the Class Squad below.</p>';
+        html += '<div class="f26-flag-grid">' + teams.map(function (t) {
+          return '<button class="f26-flag" data-abbr="' + esc(t.abbr) + '" data-name="' + esc(t.name) + '">' +
+            (t.logo ? '<img src="' + esc(t.logo) + '" alt="">' : '') +
+            '<b>' + esc(t.abbr) + '</b><small>' + esc(t.name) + '</small></button>';
+        }).join('') + '</div>';
+      } else {
+        var logo = (teams.filter(function (t) { return t.abbr === mt.abbr; })[0] || {}).logo || '';
+        var mine = matches.filter(isMyMatch).sort(function (x, y) { return new Date(x.date) - new Date(y.date); });
+        var next = mine.filter(function (m) { return m.state === 'pre' && new Date(m.date) > new Date(); })[0];
+
+        html += '<div class="f26-team-hero">' +
+          (logo ? '<img src="' + esc(logo) + '" alt="">' : '') +
+          '<div><small>YOU SUPPORT</small><b>' + esc(mt.name) + '</b></div>' +
+          '<button class="f26-team-change" id="f26-change-team">Change</button>' +
+        '</div>';
+
+        if (next) {
+          html += '<div class="f26-cd"><span class="f26-cd-label"><i class="fa-regular fa-clock"></i> ' +
+            esc(mt.abbr) + '’s next match — ' + esc(bdDateLabel(next.date)) + '</span>' +
+            '<span class="f26-cd-digits" id="f26-cd" data-at="' + new Date(next.date).getTime() + '">--:--:--</span></div>';
+        }
+        if (mine.length) {
+          html += '<div class="f26-sec-h"><i class="fa-solid fa-futbol"></i> ' + esc(mt.abbr) + ' MATCHES</div>';
+          html += mine.map(function (m) { return matchCard(m, true, bdDateKey(m.date) === todayKey()); }).join('');
+        }
+      }
+
+      html += squadHTML(squad, teams);
+      body.innerHTML = html;
+      startCD();
+      attachExpand(body);
+
+      body.querySelectorAll('.f26-flag').forEach(function (el) {
+        el.addEventListener('click', function () {
+          setMyTeam({ abbr: el.dataset.abbr, name: el.dataset.name });
+          renderMyTeam();
+          refreshBanner();
+        });
+      });
+      var chg = document.getElementById('f26-change-team');
+      if (chg) chg.addEventListener('click', function () {
+        localStorage.removeItem('f26_team');
+        renderMyTeam();
+      });
+    }).catch(function () {
+      if (mcTab === 'myteam') body.innerHTML = '<div class="f26-empty">Could not load — try again shortly.</div>';
+    });
+  }
+
+  /* ══════════ PREDICT tab ══════════ */
+  var _preds = null, _predsT = 0;
+  function fetchPreds(force) {
+    if (_preds && !force && Date.now() - _predsT < 6e4) return Promise.resolve(_preds);
+    return supaGet('fifa26_predictions?select=student_id,student_name,match_id,home_score,away_score,updated_at')
+      .then(function (rows) { _preds = rows || []; _predsT = Date.now(); return _preds; })
+      .catch(function () { return _preds || []; });
+  }
+  /* 3 pts exact score · 1 pt correct outcome · prediction must predate kickoff */
+  function scorePred(p, m) {
+    if (!m || m.state !== 'post') return null;
+    if (new Date(p.updated_at) > new Date(m.date)) return null;   /* edited after kickoff */
+    var t = m.teams || [], h = parseInt((t[0] || {}).score, 10), a = parseInt((t[1] || {}).score, 10);
+    if (isNaN(h) || isNaN(a)) return null;
+    if (p.home_score === h && p.away_score === a) return 3;
+    return Math.sign(p.home_score - p.away_score) === Math.sign(h - a) ? 1 : 0;
+  }
+
+  function renderPredict() {
+    var body = document.getElementById('f26-mc-body');
+    if (!body) return;
+    Promise.all([fetchMatches(WC_RANGE, 18e5), fetchPreds(true)]).then(function (res) {
+      if (mcTab !== 'predict') return;
+      var matches = res[0], preds = res[1];
+      var me = getUser() || {};
+      var byId = {};
+      matches.forEach(function (m) { byId[m.id] = m; });
+
+      /* leaderboard */
+      var board = {};
+      preds.forEach(function (p) {
+        var pts = scorePred(p, byId[p.match_id]);
+        if (pts == null) return;
+        if (!board[p.student_id]) board[p.student_id] = { name: p.student_name || p.student_id, pts: 0, exact: 0, n: 0 };
+        board[p.student_id].pts += pts;
+        board[p.student_id].n++;
+        if (pts === 3) board[p.student_id].exact++;
+      });
+      var ranked = Object.keys(board).map(function (id) { return { id: id, b: board[id] }; })
+        .sort(function (x, y) { return y.b.pts - x.b.pts || y.b.exact - x.b.exact; });
+
+      var html = '<p class="f26-sec-note">🎯 Predict the score before kickoff — <b>3 pts</b> exact score, <b>1 pt</b> correct result. Climb the class leaderboard!</p>';
+
+      if (ranked.length) {
+        html += '<div class="f26-sec-h"><i class="fa-solid fa-ranking-star"></i> CLASS LEADERBOARD</div><div class="f26-lb">';
+        ranked.slice(0, 10).forEach(function (r, i) {
+          var medal = ['🥇', '🥈', '🥉'][i] || (i + 1);
+          html += '<div class="f26-lb-row' + (r.id === me.id ? ' me' : '') + '">' +
+            '<span class="f26-lb-rank">' + medal + '</span>' +
+            '<span class="f26-lb-name">' + esc(r.b.name) + (r.id === me.id ? ' (you)' : '') + '</span>' +
+            '<span class="f26-lb-meta">' + r.b.exact + ' exact · ' + r.b.n + ' scored</span>' +
+            '<span class="f26-lb-pts">' + r.b.pts + '</span>' +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      /* my predictions map */
+      var minePred = {};
+      preds.forEach(function (p) { if (p.student_id === me.id) minePred[p.match_id] = p; });
+
+      /* predictable matches: today + upcoming (pre), max 12 */
+      var upcoming = matches.filter(function (m) { return m.state === 'pre'; })
+        .sort(function (x, y) { return new Date(x.date) - new Date(y.date); }).slice(0, 12);
+
+      html += '<div class="f26-sec-h"><i class="fa-solid fa-wand-magic-sparkles"></i> MAKE YOUR PREDICTIONS</div>';
+      if (!upcoming.length) html += '<div class="f26-empty">No upcoming matches to predict.</div>';
+      var selOpts = function (v) {
+        var o = '';
+        for (var i = 0; i <= 9; i++) o += '<option value="' + i + '"' + (v === i ? ' selected' : '') + '>' + i + '</option>';
+        return o;
+      };
+      upcoming.forEach(function (m) {
+        var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
+        var p = minePred[m.id];
+        var locked = new Date(m.date) <= new Date();
+        html += '<div class="f26-pred" data-mid="' + esc(m.id) + '" data-at="' + new Date(m.date).getTime() + '">' +
+          '<div class="f26-pred-when">' + esc(bdDateLabel(m.date)) + ' · ' + esc(bdTime(m.date)) + '</div>' +
+          '<div class="f26-pred-mid">' +
+            '<span class="f26-team">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '') + '<b>' + esc(a.name) + '</b></span>' +
+            (locked
+              ? '<span class="f26-pred-lock"><i class="fa-solid fa-lock"></i></span>'
+              : '<span class="f26-pred-io"><select class="f26-ps" data-side="h">' + selOpts(p ? p.home_score : undefined) + '</select>' +
+                '<i>–</i><select class="f26-ps" data-side="a">' + selOpts(p ? p.away_score : undefined) + '</select></span>') +
+            '<span class="f26-team away"><b>' + esc(b.name) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '') + '</span>' +
+          '</div>' +
+          (locked
+            ? '<div class="f26-pred-foot">Kickoff passed — predictions locked' + (p ? ' · yours: ' + p.home_score + '–' + p.away_score : '') + '</div>'
+            : '<button class="f26-pred-save">' + (p ? '✓ Saved ' + p.home_score + '–' + p.away_score + ' — change?' : 'Save Prediction') + '</button>') +
+        '</div>';
+      });
+
+      /* my scored history */
+      var hist = preds.filter(function (p) { return p.student_id === me.id; })
+        .map(function (p) { return { p: p, m: byId[p.match_id], pts: scorePred(p, byId[p.match_id]) }; })
+        .filter(function (x) { return x.pts != null; })
+        .sort(function (x, y) { return new Date(y.m.date) - new Date(x.m.date); }).slice(0, 8);
+      if (hist.length) {
+        html += '<div class="f26-sec-h"><i class="fa-solid fa-clock-rotate-left"></i> YOUR RESULTS</div>';
+        hist.forEach(function (x) {
+          var t = x.m.teams || [], a = t[0] || {}, b = t[1] || {};
+          html += '<div class="f26-hist"><span>' + esc(a.abbr) + ' <b>' + esc(a.score) + '–' + esc(b.score) + '</b> ' + esc(b.abbr) + '</span>' +
+            '<span class="f26-hist-you">you: ' + x.p.home_score + '–' + x.p.away_score + '</span>' +
+            '<span class="f26-hist-pts p' + x.pts + '">+' + x.pts + '</span></div>';
+        });
+      }
+
+      body.innerHTML = html;
+
+      body.querySelectorAll('.f26-pred-save').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var card = btn.closest('.f26-pred');
+          if (Date.now() >= parseInt(card.dataset.at, 10)) {
+            btn.textContent = '🔒 Kickoff passed — locked';
+            btn.disabled = true;
+            return;
+          }
+          var h = parseInt(card.querySelector('.f26-ps[data-side="h"]').value, 10);
+          var a = parseInt(card.querySelector('.f26-ps[data-side="a"]').value, 10);
+          var u = getUser();
+          if (!u || !u.id) { btn.textContent = 'Log in first'; return; }
+          btn.disabled = true;
+          btn.textContent = 'Saving…';
+          supaUpsert('fifa26_predictions', {
+            student_id: u.id, student_name: u.name || '',
+            match_id: card.dataset.mid, home_score: h, away_score: a,
+          }).then(function (r) {
+            btn.disabled = false;
+            btn.textContent = r.ok ? ('✓ Saved ' + h + '–' + a + ' — change?') : 'Failed — try again';
+            _predsT = 0;   /* bust cache */
+          }).catch(function () { btn.disabled = false; btn.textContent = 'Failed — try again'; });
+        });
+      });
+    }).catch(function () {
+      if (mcTab === 'predict') body.innerHTML = '<div class="f26-empty">Could not load — try again shortly.</div>';
+    });
+  }
+
+  /* ══════════ GROUPS tab ══════════ */
+  var _stand = null, _standT = 0;
+  function fetchStandings() {
+    if (_stand && Date.now() - _standT < 3e5) return Promise.resolve(_stand);
+    return fetch(WORKER + '/fifa?standings=1')
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+      .then(function (d) { _stand = d.groups || []; _standT = Date.now(); return _stand; });
+  }
+
+  function renderGroups() {
+    var body = document.getElementById('f26-mc-body');
+    if (!body) return;
+    Promise.all([fetchStandings(), fetchMatches(WC_RANGE, 18e5)]).then(function (res) {
+      if (mcTab !== 'groups') return;
+      var groups = res[0], matches = res[1];
+      var mt = myTeam();
+      var html = '<div class="f26-sec-h"><i class="fa-solid fa-table-list"></i> GROUP STANDINGS</div><div class="f26-groups">';
+      groups.forEach(function (g) {
+        html += '<div class="f26-group"><div class="f26-group-h">' + esc(g.name) + '</div>' +
+          '<div class="f26-group-row f26-group-head"><span></span><span>Team</span><b>P</b><b>W</b><b>D</b><b>L</b><b>GD</b><b>Pts</b></div>' +
+          g.teams.map(function (t) {
+            return '<div class="f26-group-row' + (mt && t.abbr === mt.abbr ? ' mine' : '') + '">' +
+              (t.logo ? '<img src="' + esc(t.logo) + '" alt="">' : '<span></span>') +
+              '<span>' + esc(t.abbr) + '</span>' +
+              '<b>' + esc(t.p) + '</b><b>' + esc(t.w) + '</b><b>' + esc(t.d) + '</b><b>' + esc(t.l) + '</b><b>' + esc(t.gd) + '</b>' +
+              '<b class="pts">' + esc(t.pts) + '</b></div>';
+          }).join('') + '</div>';
+      });
+      html += '</div>';
+
+      /* knockout rounds from the schedule */
+      var ko = matches.filter(function (m) { return m.round && m.round !== 'group-stage'; });
+      if (ko.length) {
+        var rounds = {}, order = [];
+        ko.sort(function (x, y) { return new Date(x.date) - new Date(y.date); }).forEach(function (m) {
+          if (!rounds[m.round]) { rounds[m.round] = []; order.push(m.round); }
+          rounds[m.round].push(m);
+        });
+        html += '<div class="f26-sec-h" style="margin-top:20px;"><i class="fa-solid fa-sitemap"></i> KNOCKOUT STAGE</div>';
+        order.forEach(function (r) {
+          html += '<div class="f26-date-h">' + esc(roundLabel(r)) + '</div>' +
+            rounds[r].map(function (m) { return matchCard(m, false, false); }).join('');
+        });
+      }
+
+      body.innerHTML = html;
+      attachExpand(body);
+    }).catch(function () {
+      if (mcTab === 'groups') body.innerHTML = '<div class="f26-empty">Could not load standings — try again shortly.</div>';
+    });
+  }
+
+  var TAB_R = { today: renderToday, schedule: renderSchedule, myteam: renderMyTeam, predict: renderPredict, groups: renderGroups };
   function switchTab(tab) {
     mcTab = tab;
-    var bt = document.getElementById('f26-tab-today'), bs = document.getElementById('f26-tab-sched');
-    if (bt) bt.classList.toggle('on', tab === 'today');
-    if (bs) bs.classList.toggle('on', tab === 'schedule');
+    Object.keys(TAB_R).forEach(function (k) {
+      var b = document.getElementById('f26-tab-' + k);
+      if (b) b.classList.toggle('on', k === tab);
+    });
     document.getElementById('f26-mc-body').innerHTML = '<div class="f26-loading"><i class="fa-solid fa-futbol"></i></div>';
-    if (tab === 'today') renderToday(); else renderSchedule();
+    (TAB_R[tab] || renderToday)();
   }
 
   function buildMC() {
@@ -405,8 +775,11 @@
           '<button class="f26-mc-close" id="f26-mc-close"><i class="fa-solid fa-xmark"></i></button>' +
         '</div>' +
         '<div class="f26-tabs">' +
-          '<button class="f26-tab on" id="f26-tab-today"><i class="fa-solid fa-bolt"></i> Today &amp; Live</button>' +
-          '<button class="f26-tab" id="f26-tab-sched"><i class="fa-regular fa-calendar-days"></i> Full Schedule</button>' +
+          '<button class="f26-tab on" id="f26-tab-today"><i class="fa-solid fa-bolt"></i><span> Today</span></button>' +
+          '<button class="f26-tab" id="f26-tab-schedule"><i class="fa-regular fa-calendar-days"></i><span> Schedule</span></button>' +
+          '<button class="f26-tab" id="f26-tab-myteam"><i class="fa-solid fa-heart"></i><span> My Team</span></button>' +
+          '<button class="f26-tab" id="f26-tab-predict"><i class="fa-solid fa-bullseye"></i><span> Predict</span></button>' +
+          '<button class="f26-tab" id="f26-tab-groups"><i class="fa-solid fa-table-list"></i><span> Groups</span></button>' +
         '</div>' +
         '<div class="f26-mc-body" id="f26-mc-body"></div>' +
       '</div>';
@@ -414,8 +787,10 @@
 
     document.getElementById('f26-mc-close').addEventListener('click', closeMC);
     mc.addEventListener('click', function (e) { if (e.target === mc) closeMC(); });
-    document.getElementById('f26-tab-today').addEventListener('click', function () { switchTab('today'); });
-    document.getElementById('f26-tab-sched').addEventListener('click', function () { switchTab('schedule'); });
+    Object.keys(TAB_R).forEach(function (k) {
+      var b = document.getElementById('f26-tab-' + k);
+      if (b) b.addEventListener('click', function () { switchTab(k); });
+    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMC(); });
   }
 
@@ -440,6 +815,17 @@
   function boot() {
     applyThemeOnly();
     buildBanner();
+    /* restore my team from Supabase on a fresh device/browser */
+    var u = getUser();
+    if (u && u.id && !myTeam()) {
+      supaGet('fifa26_teams?student_id=eq.' + encodeURIComponent(u.id) + '&select=team_abbr,team_name')
+        .then(function (rows) {
+          if (rows && rows[0]) {
+            localStorage.setItem('f26_team', JSON.stringify({ abbr: rows[0].team_abbr, name: rows[0].team_name }));
+            refreshBanner();
+          }
+        }).catch(function () {});
+    }
     refreshBanner();
     bannerTimer = setInterval(refreshBanner, 9e4);
   }

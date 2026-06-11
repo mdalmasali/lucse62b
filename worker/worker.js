@@ -90,6 +90,33 @@ export default {
       // FIFA26-START — temporary World Cup 2026 endpoints, delete this whole block after the tournament
       // ── GET /fifa?dates=YYYYMMDD[-YYYYMMDD] — scores · /fifa?event=ID — match detail (ESPN proxy) ──
       if (p === '/fifa') {
+        // /fifa?standings=1 → group tables
+        if (url.searchParams.get('standings')) {
+          const stu = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026';
+          const str = await fetch(stu, { cf: { cacheTtl: 300, cacheEverything: true } });
+          if (!str.ok) return errResp(cors, 502, 'Upstream error');
+          const std = await str.json();
+          const groups = (std.children || []).map(g => ({
+            name: g.name || '',
+            teams: ((g.standings || {}).entries || []).map(e => {
+              const stat = n => {
+                const s = (e.stats || []).find(x => x.name === n);
+                return s ? s.displayValue : '0';
+              };
+              return {
+                abbr: e.team?.abbreviation || '',
+                name: e.team?.displayName || '',
+                logo: (e.team?.logos || [])[0]?.href || '',
+                p: stat('gamesPlayed'), w: stat('wins'), d: stat('ties'), l: stat('losses'),
+                gd: stat('pointDifferential'), pts: stat('points'), rank: parseInt(stat('rank')) || 0,
+              };
+            }).sort((a, b) => a.rank - b.rank),
+          }));
+          return new Response(JSON.stringify({ groups }), {
+            headers: { ...cors, 'Content-Type': 'application/json',
+                       'Cache-Control': 'public, max-age=300' },
+          });
+        }
         const evId = url.searchParams.get('event') || '';
         if (evId) {
           if (!/^\d{1,12}$/.test(evId)) return errResp(cors, 400, 'Invalid event');

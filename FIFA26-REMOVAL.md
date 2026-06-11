@@ -21,6 +21,10 @@ Project root এ **`remove-fifa26.bat`** আছে — ওটা **double-click*
 
 ব্যস! তারপর site hard-refresh (`Ctrl+Shift+R`) করে verify করো।
 
+> ⚠️ শুধু **Supabase tables** script delete করতে পারে না — নিচের
+> "Supabase tables" section এর SQL টা dashboard এ run করে দিও (optional,
+> ফেলে রাখলেও ক্ষতি নেই)।
+
 ---
 
 ## 📋 FIFA26 theme এ কী কী আছে (full inventory)
@@ -28,8 +32,8 @@ Project root এ **`remove-fifa26.bat`** আছে — ওটা **double-click*
 ### নতুন files (delete করতে হবে):
 | File | কী আছে |
 |------|--------|
-| `assets/js/fifa26.js` | পুরো theme logic — banner, live ticker, match center modal, live tracker (timeline+stats), watch buttons, countdown |
-| `assets/css/fifa26.css` | সব styling — green/gold color shift, banner, modal, match cards, timeline, stat bars, watch chips |
+| `assets/js/fifa26.js` | পুরো theme logic — banner, live ticker, match center modal (৫টা tab: Today/Schedule/My Team/Predict/Groups), live tracker, watch buttons, team picker, class squad, prediction league, leaderboard, standings |
+| `assets/css/fifa26.css` | সব styling — green/gold color shift, banner, modal, match cards, timeline, stat bars, watch chips, flag grid, squad bars, prediction UI, leaderboard, group tables |
 | `remove-fifa26.bat` | One-click removal script (নিজেই নিজেকে delete করে) |
 | `FIFA26-REMOVAL.md` | এই file |
 
@@ -45,8 +49,22 @@ document.head.appendChild(Object.assign(document.createElement('script'), { src:
 এর ভেতরে আছে `/fifa` route:
 - `/fifa?dates=YYYYMMDD[-YYYYMMDD]` → match scores/schedule (ESPN proxy, 60s cache)
 - `/fifa?event=ID` → match detail: goal/card/sub timeline + stats (30s cache)
+- `/fifa?standings=1` → group standings (5min cache)
 
 Worker change এর পর re-deploy লাগবে: `cd worker && npx wrangler deploy`
+
+### Supabase tables (manual cleanup — script এটা পারে না):
+
+Supabase dashboard → SQL Editor এ এটা run করো:
+
+```sql
+-- FIFA26 cleanup
+drop table if exists public.fifa26_predictions;
+drop table if exists public.fifa26_teams;
+drop function if exists public.fifa26_touch();
+```
+
+(Migration name ছিল: `fifa26_teams_and_predictions`)
 
 ### External dependencies (কোনো cleanup লাগবে না):
 - ESPN public API (worker দিয়ে proxy হয়) — কোনো key/account নেই
