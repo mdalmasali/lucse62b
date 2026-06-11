@@ -134,6 +134,14 @@
       el.innerHTML = nextMatchCountdownHTML(matches);
       el.classList.add('f26-static');
       if (wrap) wrap.classList.add('f26-nomask');
+      /* if the static text doesn't fit (mobile), fall back to scrolling */
+      requestAnimationFrame(function () {
+        if (wrap && el.scrollWidth > wrap.clientWidth + 2) {
+          el.classList.remove('f26-static');
+          wrap.classList.remove('f26-nomask');
+          el.style.setProperty('--f26-speed', '16s');
+        }
+      });
     }
   }
 

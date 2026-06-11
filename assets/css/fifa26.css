@@ -143,10 +143,16 @@ html[data-theme="light"] #fifa26-banner {
 .f26-hide:hover { color: #fff; }
 
 @media (max-width: 640px) {
-  #fifa26-banner { padding: 6px 12px; gap: 10px; }
+  #fifa26-banner { padding: 6px 10px; gap: 9px; }
   .f26-title small { display: none; }
+  .f26-title b { font-size: .72rem; letter-spacing: 1px; }
+  .f26-ball { font-size: .95rem; }
+  .f26-tick-item { font-size: .72rem; }
   .f26-cta span { display: none; }
   .f26-cta { padding: 5px 9px; border-radius: 50%; }
+}
+@media (max-width: 400px) {
+  .f26-title { display: none; }   /* ball + ticker + buttons only */
 }
 
 /* ════════════════ MATCH CENTER MODAL ════════════════ */
