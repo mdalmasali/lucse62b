@@ -509,6 +509,13 @@
       .res-imp-paste{margin-top:10px;}
       .res-imp-paste summary{font-size:.76rem;color:var(--muted);cursor:pointer;}
       .res-imp-paste textarea{width:100%;margin-top:8px;min-height:90px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
+      .res-imp-ways{display:flex;flex-direction:column;gap:8px;margin:0 0 14px;}
+      .res-imp-way{display:flex;gap:9px;align-items:flex-start;background:rgba(124,58,237,.06);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:.76rem;color:var(--text-secondary);line-height:1.5;}
+      .res-imp-way .riw-ic{flex-shrink:0;font-size:1rem;line-height:1.4;}
+      .res-imp-way b{color:var(--text);}
+      .res-imp-or{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--muted);font-size:.74rem;}
+      .res-imp-or::before,.res-imp-or::after{content:"";flex:1;height:1px;background:var(--border);}
+      .res-imp-ta{width:100%;min-height:84px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
       /* Login card + tutorial video side by side (video fills the empty right space) */
       #loginView{display:flex;justify-content:center;align-items:flex-start;gap:48px;flex-wrap:wrap;width:100%;margin:0 auto;}
       #loginView .res-login-box{margin:60px 0 40px;flex:1 1 460px;max-width:560px;min-width:0;}
@@ -585,20 +592,21 @@
             here keeps working from it.
           </div>
           <ol class="res-imp-steps">
-            <li>Open <a href="https://lus.ac.bd/result/" target="_blank" rel="noopener">lus.ac.bd/result/ <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72em;"></i></a></li>
-            <li>Enter your ID &amp; DOB, solve the verification, tap <b>View Result</b>.</li>
-            <li>When your result shows, save the page — press <b>Ctrl+S</b> (<b>⌘S</b> on Mac), choose <b>“Webpage, HTML Only”</b>.</li>
-            <li>Upload that saved file below 👇</li>
+            <li>Open <a href="https://lus.ac.bd/result/" target="_blank" rel="noopener">lus.ac.bd/result/ <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72em;"></i></a>, enter your ID &amp; DOB, solve the verification, tap <b>View Result</b>.</li>
+            <li>Bring that result into this page — pick whichever fits your device 👇</li>
           </ol>
+          <div class="res-imp-ways">
+            <div class="res-imp-way"><span class="riw-ic">💻</span><div><b>Computer</b> — press <b>Ctrl+S</b> (<b>⌘S</b> on Mac), save as <b>“HTML Only”</b>, then upload that file.</div></div>
+            <div class="res-imp-way"><span class="riw-ic">📱</span><div><b>Android (Chrome)</b> — menu <b>⋮ → Download</b>, then upload the saved file.</div></div>
+            <div class="res-imp-way"><span class="riw-ic">📱</span><div><b>iPhone / any phone</b> — tap &amp; hold on the result → <b>Select All → Copy</b>, then <b>paste</b> it in the box below.</div></div>
+          </div>
           <label class="res-imp-file" id="resImportDrop">
-            <input type="file" id="resImportFile" accept=".html,.htm,text/html" onchange="onImportFile(this)">
+            <input type="file" id="resImportFile" accept=".html,.htm,.mhtml,.mht,text/html" onchange="onImportFile(this)">
             <i class="fa-solid fa-file-arrow-up"></i>
-            <span id="resImportFileName">Choose your saved result file (.html)</span>
+            <span id="resImportFileName">Upload saved result file (.html / .mhtml)</span>
           </label>
-          <details class="res-imp-paste">
-            <summary>or paste the page source instead</summary>
-            <textarea id="resImportText" placeholder="Paste the full result page HTML here…"></textarea>
-          </details>
+          <div class="res-imp-or"><span>or paste the copied result</span></div>
+          <textarea id="resImportText" class="res-imp-ta" placeholder="Paste here — after Select All → Copy on the LU result page…"></textarea>
           <button class="rbtn" id="resImportBtn" onclick="doImport()" style="margin-top:12px;">
             <i class="fa-solid fa-cloud-arrow-up"></i> Import my result
           </button>
@@ -1099,6 +1107,81 @@
       return { success: !!(student.id && Object.keys(results).length), student, results };
     }
 
+    /* Android Chrome's "Download page" saves .mhtml — pull the HTML part out of it. */
+    function decodeQP(s) {
+      s = s.replace(/=\r?\n/g, '');
+      const bytes = [];
+      for (let i = 0; i < s.length; i++) {
+        if (s[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(s.substr(i + 1, 2))) { bytes.push(parseInt(s.substr(i + 1, 2), 16)); i += 2; }
+        else bytes.push(s.charCodeAt(i) & 0xff);
+      }
+      try { return new TextDecoder('utf-8').decode(new Uint8Array(bytes)); } catch (e) { return s; }
+    }
+    function mhtmlToHtml(raw) {
+      if (!/content-type:\s*multipart\/related/i.test(raw) && !/^(From:|MIME-Version:)/im.test(raw)) return null;
+      const bm = raw.match(/boundary="?([^";\r\n]+)"?/i);
+      if (!bm) return null;
+      for (const part of raw.split('--' + bm[1])) {
+        if (!/content-type:\s*text\/html/i.test(part)) continue;
+        const enc = (part.match(/content-transfer-encoding:\s*([\w-]+)/i) || [])[1] || '';
+        const idx = part.search(/\r?\n\r?\n/);
+        if (idx < 0) continue;
+        let body = part.slice(idx).replace(/^\r?\n\r?\n/, '');
+        if (/quoted-printable/i.test(enc)) body = decodeQP(body);
+        else if (/base64/i.test(enc)) { try { body = decodeURIComponent(escape(atob(body.replace(/\s+/g, '')))); } catch (e) {} }
+        return body;
+      }
+      return null;
+    }
+
+    /* Phone "Select All → Copy" gives tab-separated table text (no HTML tags).
+       Parse that into the same result shape. */
+    function parseLuResultText(text) {
+      text = String(text).replace(/\r/g, '').replace(/ /g, ' ');
+      const lines = text.split('\n').map(l => l.replace(/[ \t]+$/, '').replace(/^[ \t]+/, '')).filter(Boolean);
+      const student = {};
+      const map = { studentid:'id', name:'name', semester:'semester', program:'degree', department:'department', creditcompleted:'credit', cgpa:'cgpa', grade:'grade' };
+      for (const l of lines) {
+        const parts = l.split(/\t+/).map(s => s.trim()).filter(x => x !== '');
+        for (let i = 0; i < parts.length - 1; i++) {
+          const k = parts[i].toLowerCase().replace(/[^a-z]/g, '');
+          if (map[k] && parts[i + 1] && student[map[k]] === undefined) student[map[k]] = parts[i + 1];
+        }
+      }
+      const results = {};
+      const semRe = /\b(Spring|Summer|Fall)\s*[-–]?\s*(20\d{2})\b/i;
+      const gradeRe = /^(A\+|A|A-|B\+|B|B-|C\+|C|D|F)$/i;
+      const codeRe = /^[A-Z]{2,4}[ -]?\d{3,4}$/i;
+      let curSem = null;
+      for (const l of lines) {
+        const sm = l.match(semRe);
+        if (sm && l.replace(semRe, '').replace(/[^a-z]/gi, '').length < 3) {
+          curSem = { name: sm[1] + ' - ' + sm[2], courses: [] };
+          (results[sm[2]] = results[sm[2]] || []).push(curSem);
+          continue;
+        }
+        const cols = l.split(/\t+/).map(s => s.trim()).filter(x => x !== '');
+        if (curSem && cols.length >= 5) {
+          const code = cols[0], grade = cols[cols.length - 1];
+          if (codeRe.test(code) && gradeRe.test(grade)) {
+            const credit = parseFloat(cols[cols.length - 3]) || 0, gp = parseFloat(cols[cols.length - 2]) || 0;
+            curSem.courses.push({ course_code: code, course_title: cols.slice(1, cols.length - 3).join(' '), credit, gpa: gp, grade });
+          }
+        }
+      }
+      Object.values(results).flat().forEach(s => { let g = 0, c = 0; s.courses.forEach(x => { g += x.gpa * x.credit; c += x.credit; }); s.gpa = c ? +(g / c).toFixed(2) : 0; s.credit = c; s.grade = ''; });
+      for (const y of Object.keys(results)) { results[y] = results[y].filter(s => s.courses.length); if (!results[y].length) delete results[y]; }
+      return { success: !!(student.id && Object.keys(results).length), student, results };
+    }
+
+    /* Accept whatever the user brings: HTML file, Android .mhtml, or copied text. */
+    function importParse(raw) {
+      const html = mhtmlToHtml(raw) || raw;
+      let d = parseLuResult(html);
+      if (d.success) return d;
+      return parseLuResultText(raw);
+    }
+
     function toggleImport() {
       const p = document.getElementById('resImport');
       p.style.display = p.style.display === 'none' ? 'block' : 'none';
@@ -1194,14 +1277,14 @@
         errEl.style.display = 'block'; return;
       }
       const file = document.getElementById('resImportFile').files[0];
-      let html = document.getElementById('resImportText').value.trim();
+      let raw = document.getElementById('resImportText').value.trim();
       btn.disabled = true; btn.innerHTML = '<span class="rspinner"></span> Importing…';
       try {
-        if (file) html = await file.text();
-        if (!html) throw new Error('Choose your saved result file, or paste the page source.');
-        const data = parseLuResult(html);
-        if (!data.success || !data.student.id) throw new Error('Could not read a result from that file. Make sure you saved the page AFTER your result was shown.');
-        if (String(data.student.id) !== String(id)) throw new Error(`That file is for ID ${data.student.id}, not ${id}.`);
+        if (file) raw = await file.text();
+        if (!raw) throw new Error('Upload your saved result file, or paste the copied result.');
+        const data = importParse(raw);
+        if (!data.success || !data.student.id) throw new Error('Couldn\'t read a result from that. Make sure you uploaded/copied it AFTER your result was shown on the LU page (full page, not just part of it).');
+        if (String(data.student.id) !== String(id)) throw new Error(`That result is for ID ${data.student.id}, not ${id}.`);
         const r = await fetch(WORKER_URL + '/result-import', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: id, birth_date: dob, data })
