@@ -509,6 +509,20 @@
       .res-imp-paste{margin-top:10px;}
       .res-imp-paste summary{font-size:.76rem;color:var(--muted);cursor:pointer;}
       .res-imp-paste textarea{width:100%;margin-top:8px;min-height:90px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
+      .res-imp-cols{display:flex;gap:18px;align-items:flex-start;margin-top:4px;}
+      .res-imp-left{flex:1;min-width:0;}
+      .res-imp-right{width:300px;flex-shrink:0;}
+      @media(max-width:680px){ .res-imp-cols{flex-direction:column;} .res-imp-right{width:100%;} }
+      .res-vid-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+      .res-vid-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border);cursor:pointer;}
+      .res-vid-frame img{width:100%;height:100%;object-fit:cover;display:block;}
+      .res-vid-frame iframe{width:100%;height:100%;border:0;display:block;}
+      .res-vid-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.22);transition:background .2s;}
+      .res-vid-frame:hover .res-vid-play{background:rgba(0,0,0,.08);}
+      .res-vid-btn{width:56px;height:39px;border-radius:11px;background:rgba(255,0,0,.88);display:flex;align-items:center;justify-content:center;transition:.2s;box-shadow:0 4px 14px rgba(0,0,0,.4);}
+      .res-vid-frame:hover .res-vid-btn{background:#ff0000;transform:scale(1.06);}
+      .res-vid-btn i{color:#fff;font-size:1rem;margin-left:3px;}
+      .res-vid-hint{font-size:.72rem;color:var(--muted);margin-top:8px;line-height:1.5;}
       .res-imported-notice{display:flex;gap:10px;align-items:flex-start;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:12px 14px;margin:0 0 18px;font-size:.8rem;color:#fbbf24;line-height:1.55;}
       .res-imported-notice .rin-x{flex-shrink:0;font-size:1rem;margin-top:1px;}
       .res-imported-notice b{color:#fde68a;}
@@ -557,6 +571,8 @@
             can't pass — so automatic fetch is blocked. Bring your result in once and everything
             here keeps working from it.
           </div>
+          <div class="res-imp-cols">
+           <div class="res-imp-left">
           <ol class="res-imp-steps">
             <li>Open <a href="https://lus.ac.bd/result/" target="_blank" rel="noopener">lus.ac.bd/result/ <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72em;"></i></a></li>
             <li>Enter your ID &amp; DOB, solve the verification, tap <b>View Result</b>.</li>
@@ -576,6 +592,15 @@
             <i class="fa-solid fa-cloud-arrow-up"></i> Import my result
           </button>
           <div class="rerror" id="resImportErr"></div>
+           </div>
+           <div class="res-imp-right">
+             <div class="res-vid" id="resVid" style="display:none;">
+               <div class="res-vid-title" id="resVidTitle"><i class="fa-brands fa-youtube" style="color:#ff0000;"></i> Watch: how to import</div>
+               <div class="res-vid-frame" id="resVidFrame"></div>
+               <div class="res-vid-hint">Can't fetch automatically? This 1-min video shows the steps.</div>
+             </div>
+           </div>
+          </div>
         </div>
 
         <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:20px;">
@@ -1068,7 +1093,7 @@
     function toggleImport() {
       const p = document.getElementById('resImport');
       p.style.display = p.style.display === 'none' ? 'block' : 'none';
-      if (p.style.display === 'block') p.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      if (p.style.display === 'block') { loadTutorialVideo(); p.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
     }
     /* Import is self-only — hide the option entirely while viewing someone else's
        result (you can still VIEW theirs, just not import/overwrite it). */
@@ -1086,7 +1111,42 @@
       return allowed;
     }
     function revealImport() {
-      if (updateImportVisibility()) document.getElementById('resImport').style.display = 'block';
+      if (updateImportVisibility()) { document.getElementById('resImport').style.display = 'block'; loadTutorialVideo(); }
+    }
+
+    /* Tutorial video — link lives in the "Tutorial Video" sheet tab (Title | Link),
+       so it can be changed without touching code. Click-to-play: the YouTube iframe
+       is only injected after the user clicks the thumbnail (keeps the page light). */
+    let _tutLoaded = false;
+    function ytId(url) { const m = String(url).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([A-Za-z0-9_-]{6,})/); return m ? m[1] : ''; }
+    async function loadTutorialVideo() {
+      if (_tutLoaded) return;
+      const wrap = document.getElementById('resVid');
+      if (!wrap) return;
+      try {
+        const r = await fetch(WORKER_URL + '/sheet?name=' + encodeURIComponent('Tutorial Video'));
+        if (!r.ok) { wrap.style.display = 'none'; return; }
+        const data = await r.json();
+        const rows = (data.table?.rows || []).map(row => (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : ''));
+        let title = '', link = '';
+        for (const row of rows) {
+          const cell = row.find(x => /youtu\.?be|youtube\.com/i.test(x));
+          if (cell) { link = cell; title = (row.find(x => x && x !== cell) || '').trim(); break; }
+        }
+        const id = ytId(link);
+        if (!id) { wrap.style.display = 'none'; return; }
+        _tutLoaded = true;
+        const tEl = document.getElementById('resVidTitle');
+        tEl.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i> ';
+        tEl.appendChild(document.createTextNode(title || 'How to import your result'));
+        const frame = document.getElementById('resVidFrame');
+        frame.innerHTML = '<img src="https://i.ytimg.com/vi/' + id + '/hqdefault.jpg" alt="Tutorial thumbnail" loading="lazy">' +
+                          '<div class="res-vid-play"><span class="res-vid-btn"><i class="fa-solid fa-play"></i></span></div>';
+        frame.onclick = function () {
+          frame.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0" title="How to import your result" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+        };
+        wrap.style.display = 'block';
+      } catch (e) { wrap.style.display = 'none'; }
     }
     function onImportFile(input) {
       const f = input.files && input.files[0];
