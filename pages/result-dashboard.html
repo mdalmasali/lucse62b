@@ -1138,20 +1138,18 @@
        Parse that into the same result shape. */
     function parseLuResultText(text) {
       text = String(text).replace(/\r/g, '').replace(/ /g, ' ');
-      const lines = text.split('\n').map(l => l.replace(/[ \t]+$/, '').replace(/^[ \t]+/, '')).filter(Boolean);
-      const student = {};
-      const map = { studentid:'id', name:'name', semester:'semester', program:'degree', department:'department', creditcompleted:'credit', cgpa:'cgpa', grade:'grade' };
-      for (const l of lines) {
-        const parts = l.split(/\t+/).map(s => s.trim()).filter(x => x !== '');
-        for (let i = 0; i < parts.length - 1; i++) {
-          const k = parts[i].toLowerCase().replace(/[^a-z]/g, '');
-          if (map[k] && parts[i + 1] && student[map[k]] === undefined) student[map[k]] = parts[i + 1];
-        }
-      }
+      const lines = text.split('\n').map(l => l.replace(/\t/g, ' ').replace(/[ ]{2,}/g, ' ').trim()).filter(Boolean);
+      const all = lines.join('\n');
+      const grab = (re) => { const m = all.match(re); return m ? m[1].trim() : ''; };
+      const student = {
+        id:     grab(/Student\s*ID[^0-9]{0,6}(\d{8,16})/i),
+        cgpa:   grab(/CGPA[^0-9]{0,8}([\d.]+)/i),
+        credit: grab(/Credit\s*Completed[^0-9]{0,8}([\d.]+)/i),
+        name:   grab(/\bName\b[:\s]+([A-Za-z][A-Za-z.\- ]{2,60}?)(?:\s+Semester|\s+Program|\s+Department|\n|$)/i),
+      };
       const results = {};
       const semRe = /\b(Spring|Summer|Fall)\s*[-–]?\s*(20\d{2})\b/i;
-      const gradeRe = /^(A\+|A|A-|B\+|B|B-|C\+|C|D|F)$/i;
-      const codeRe = /^[A-Z]{2,4}[ -]?\d{3,4}$/i;
+      const courseRe = /^([A-Za-z]{2,4}[-\s]?\d{3,4})\s+(.+?)\s+([\d.]+)\s+([\d.]+)\s+(A\+|A-|A|B\+|B-|B|C\+|C|D|F)(?=\s|$)/i;
       let curSem = null;
       for (const l of lines) {
         const sm = l.match(semRe);
@@ -1160,13 +1158,15 @@
           (results[sm[2]] = results[sm[2]] || []).push(curSem);
           continue;
         }
-        const cols = l.split(/\t+/).map(s => s.trim()).filter(x => x !== '');
-        if (curSem && cols.length >= 5) {
-          const code = cols[0], grade = cols[cols.length - 1];
-          if (codeRe.test(code) && gradeRe.test(grade)) {
-            const credit = parseFloat(cols[cols.length - 3]) || 0, gp = parseFloat(cols[cols.length - 2]) || 0;
-            curSem.courses.push({ course_code: code, course_title: cols.slice(1, cols.length - 3).join(' '), credit, gpa: gp, grade });
-          }
+        const cm = l.match(courseRe);
+        if (cm && curSem) {
+          curSem.courses.push({
+            course_code: cm[1].toUpperCase().replace(/\s+/g, '-'),
+            course_title: cm[2].trim(),
+            credit: parseFloat(cm[3]) || 0,
+            gpa: parseFloat(cm[4]) || 0,
+            grade: cm[5].toUpperCase(),
+          });
         }
       }
       Object.values(results).flat().forEach(s => { let g = 0, c = 0; s.courses.forEach(x => { g += x.gpa * x.credit; c += x.credit; }); s.gpa = c ? +(g / c).toFixed(2) : 0; s.credit = c; s.grade = ''; });
