@@ -377,9 +377,48 @@ export default {
       if (p === '/result' && request.method === 'POST') {
         const { student_id, birth_date } = await request.json();
         if (!student_id || !birth_date) return errResp(cors, 400, 'Missing student_id or birth_date');
+        // Prefer a user-imported result — LU's live endpoint now requires a CAPTCHA,
+        // so the uploaded copy is the source of truth (DOB-gated, same as live).
+        const imported = await getImportedResult(env, student_id, birth_date);
+        if (imported) return new Response(imported, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
         const text = await luResultCached(env, student_id, birth_date);
         if (text.trimStart().startsWith('<')) return errResp(cors, 503, 'LUS temporarily unavailable');
         return new Response(text, { headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+
+      // ── POST /result-import { student_id, birth_date, data } ─────────────
+      //   Stores a result the student fetched from LU themselves (after solving
+      //   LU's Cloudflare verification) and parsed in the browser. DOB-gated so
+      //   nobody can plant a result under someone else's ID.
+      if (p === '/result-import' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const { student_id, birth_date, data } = await request.json();
+        if (!student_id || !birth_date || !data || typeof data !== 'object') return errResp(cors, 400, 'Missing fields');
+        if (!/^\d{8,16}$/.test(String(student_id))) return errResp(cors, 400, 'Invalid ID');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(birth_date))) return errResp(cors, 400, 'Invalid date');
+        if (!data.success || !data.student || String(data.student.id || '') !== String(student_id))
+          return errResp(cors, 400, 'Uploaded result does not match this Student ID');
+        if (!env.SUPA_KEY) return errResp(cors, 500, 'Not configured');
+        const storedDob = await getStoredDob(env, student_id);
+        if (storedDob && storedDob !== String(birth_date)) return errResp(cors, 401, 'DOB does not match our records');
+        if (!storedDob) {
+          await fetch(`${SUPA_URL}/rest/v1/rpc/set_student_dob`, {
+            method: 'POST',
+            headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p_student_id: String(student_id), p_dob: String(birth_date) }),
+          }).catch(() => {});
+        }
+        const stored = { ...data, imported: true, imported_at: new Date().toISOString() };
+        const r = await fetch(`${SUPA_URL}/rest/v1/student_results`, {
+          method: 'POST',
+          headers: {
+            'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+            'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal',
+          },
+          body: JSON.stringify({ student_id: String(student_id), data: stored, uploaded_at: stored.imported_at }),
+        }).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 503, 'Save failed');
+        return jsonResp(cors, { ok: true, imported_at: stored.imported_at });
       }
 
       // ── GET /gallery?folder=FOLDER_ID[&limit=N] — images from folder or subfolders ──
@@ -839,6 +878,34 @@ async function luResultCached(env, student_id, birth_date) {
     } catch (e) {}
   }
   return text || '{"success":false,"error":"unavailable","message":"LU portal unavailable. Please try again shortly."}';
+}
+
+/* DOB on file for a student (via SECURITY DEFINER RPC, service_role). */
+async function getStoredDob(env, student_id) {
+  if (!env.SUPA_KEY) return null;
+  const r = await fetch(`${SUPA_URL}/rest/v1/rpc/get_student_dob`, {
+    method: 'POST',
+    headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_student_id: String(student_id) }),
+  }).catch(() => null);
+  if (!r || !r.ok) return null;
+  const d = await r.json().catch(() => null);
+  return d ? String(d) : null;
+}
+
+/* A previously-imported result for this student, returned only if the DOB matches
+   (same gate as live results). Returns the stored JSON as text, or null. */
+async function getImportedResult(env, student_id, birth_date) {
+  const dob = await getStoredDob(env, student_id);
+  if (!dob || dob !== String(birth_date)) return null;
+  const r = await fetch(
+    `${SUPA_URL}/rest/v1/student_results?student_id=eq.${encodeURIComponent(student_id)}&select=data&limit=1`,
+    { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+  ).catch(() => null);
+  if (!r || !r.ok) return null;
+  const rows = await r.json().catch(() => null);
+  if (!rows || !rows.length || !rows[0].data) return null;
+  return JSON.stringify(rows[0].data);
 }
 
 function jsonResp(cors, data) {

@@ -491,6 +491,29 @@
     </div>
 
     <!-- ── Login View ── -->
+    <style>
+      .res-imp-toggle{margin-top:14px;background:none;border:0;color:var(--muted);font-size:.8rem;cursor:pointer;font-family:inherit;text-decoration:underline;}
+      .res-imp-toggle:hover{color:var(--accent-bright);}
+      .res-imp{margin-top:14px;text-align:left;background:rgba(124,58,237,.06);border:1px solid var(--border);border-radius:14px;padding:16px;}
+      .res-imp-note{font-size:.78rem;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;}
+      .res-imp-note i{color:var(--accent-bright);margin-right:4px;}
+      .res-imp-steps{margin:0 0 12px;padding-left:18px;font-size:.8rem;color:var(--text-secondary);line-height:1.75;}
+      .res-imp-steps a{color:var(--accent-bright);font-weight:600;text-decoration:none;}
+      .res-imp-steps b{color:var(--text);}
+      .res-imp-file{display:flex;align-items:center;gap:10px;justify-content:center;border:1.5px dashed var(--border);border-radius:12px;padding:14px;cursor:pointer;font-size:.82rem;color:var(--text-secondary);transition:.2s;text-align:center;}
+      .res-imp-file:hover{border-color:var(--accent-bright);color:var(--text);background:rgba(124,58,237,.05);}
+      .res-imp-file input{display:none;}
+      .res-imp-file i{color:var(--accent-bright);font-size:1.1rem;}
+      .res-imp-file.ok{border-color:rgba(52,211,153,.5);color:#34d399;background:rgba(52,211,153,.06);}
+      .res-imp-file.ok i{color:#34d399;}
+      .res-imp-paste{margin-top:10px;}
+      .res-imp-paste summary{font-size:.76rem;color:var(--muted);cursor:pointer;}
+      .res-imp-paste textarea{width:100%;margin-top:8px;min-height:90px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
+      .res-imported-notice{display:flex;gap:10px;align-items:flex-start;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:12px 14px;margin:0 0 18px;font-size:.8rem;color:#fbbf24;line-height:1.55;}
+      .res-imported-notice .rin-x{flex-shrink:0;font-size:1rem;margin-top:1px;}
+      .res-imported-notice b{color:#fde68a;}
+      .res-imported-notice button{margin-top:8px;background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.4);color:#fbbf24;border-radius:8px;padding:6px 12px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit;}
+    </style>
     <div id="loginView">
       <div class="res-login-box fade-in delay-1">
         <i class="fa-solid fa-chart-bar res-login-icon"></i>
@@ -523,6 +546,38 @@
         </button>
         <div class="rerror" id="rError"></div>
 
+        <!-- Manual import — shown when LU's CAPTCHA blocks the live fetch -->
+        <button type="button" class="res-imp-toggle" id="resImportToggle" onclick="toggleImport()">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Result not loading? Import it manually
+        </button>
+        <div class="res-imp" id="resImport" style="display:none;">
+          <div class="res-imp-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            LU now requires a Cloudflare verification (CAPTCHA) to view results, which servers
+            can't pass — so automatic fetch is blocked. Bring your result in once and everything
+            here keeps working from it.
+          </div>
+          <ol class="res-imp-steps">
+            <li>Open <a href="https://lus.ac.bd/result/" target="_blank" rel="noopener">lus.ac.bd/result/ <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72em;"></i></a></li>
+            <li>Enter your ID &amp; DOB, solve the verification, tap <b>View Result</b>.</li>
+            <li>When your result shows, save the page — press <b>Ctrl+S</b> (<b>⌘S</b> on Mac), choose <b>“Webpage, HTML Only”</b>.</li>
+            <li>Upload that saved file below 👇</li>
+          </ol>
+          <label class="res-imp-file" id="resImportDrop">
+            <input type="file" id="resImportFile" accept=".html,.htm,text/html" onchange="onImportFile(this)">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <span id="resImportFileName">Choose your saved result file (.html)</span>
+          </label>
+          <details class="res-imp-paste">
+            <summary>or paste the page source instead</summary>
+            <textarea id="resImportText" placeholder="Paste the full result page HTML here…"></textarea>
+          </details>
+          <button class="rbtn" id="resImportBtn" onclick="doImport()" style="margin-top:12px;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Import my result
+          </button>
+          <div class="rerror" id="resImportErr"></div>
+        </div>
+
         <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:20px;">
           <i class="fa-solid fa-arrow-left"></i> Back to Home
         </a>
@@ -541,6 +596,17 @@
       <div class="section-header fade-in" style="margin-top:40px; margin-bottom:20px;">
         <span class="section-label">📊 Academic Result</span>
         <div class="section-line"></div>
+      </div>
+
+      <!-- Disclaimer shown when the displayed result came from an uploaded file -->
+      <div class="res-imported-notice" id="resImportedNotice" style="display:none;">
+        <i class="fa-solid fa-circle-info rin-x"></i>
+        <div>
+          This result is from a file you uploaded<span id="resImportedWhen"></span>. It is <b>not live</b> —
+          LU now needs a verification to view results, so any change there won't appear here automatically.
+          To refresh, download your latest result from LU again and re-upload it.
+          <br><button onclick="openImportFromDash()"><i class="fa-solid fa-cloud-arrow-up"></i> Update / re-upload result</button>
+        </div>
       </div>
 
       <!-- Profile strip -->
@@ -840,6 +906,7 @@
       try {
         resData = await callAPI(id, dob);
         renderDashboard();
+        updateImportedNotice();
         document.getElementById('loginView').style.display    = 'none';
         document.getElementById('dashboardView').style.display = 'block';
         updateOwnResultUI();
@@ -847,7 +914,9 @@
         if (isOwn) isViewingOwnResult = false;
         const isLocal = location.protocol === 'file:';
         const localNote = isLocal ? '<br><small style="color:#94a3b8;font-size:0.8em;">You are on a local file. Try from the live site instead.</small>' : '';
-        showErr(`${e.message}${localNote} <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Check directly on LU portal →</a>`);
+        /* LU's live endpoint now sits behind a Cloudflare CAPTCHA → guide the user to import. */
+        showErr(`LU now requires a verification (CAPTCHA) to view results, so it can't be fetched automatically. Import your result instead — steps are just below. <br><br><a href="https://lus.ac.bd/result/" target="_blank" style="color:#a78bfa;font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open LU result page →</a>${localNote}`);
+        revealImport();
         updateOwnResultUI();
       } finally {
         btn.disabled = false;
@@ -894,6 +963,8 @@
         degree:            rs.Degree        || s.degree || '',
         cgpa:              parseFloat(s.cgpa)   || 0,
         total_credit:      parseFloat(s.credit) || 0,
+        imported:          !!raw.imported,
+        imported_at:       raw.imported_at || '',
         courses_completed: semesters.reduce((acc, sem) => acc + sem.courses.length, 0),
         blood_group:  rs.Blood_group  || '',
         waiver:       rs.Waiver       || '',
@@ -941,6 +1012,125 @@
         }
       }
       throw new Error('LUS is currently blocking all external servers. Please check your results directly on lus.ac.bd/result/.');
+    }
+
+    /* ── Manual import (LU live now needs a Cloudflare CAPTCHA servers can't pass) ── */
+    /* Parse a saved LU result page (server-rendered HTML) into the same JSON shape
+       the live API used to return. Regex-based so it runs anywhere. */
+    function parseLuResult(html) {
+      const strip = s => s.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ')
+        .replace(/&#0?39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
+      const student = {};
+      const cardM = html.match(/<table[^>]*>(?:(?!<\/table>)[\s\S])*?Student ID(?:(?!<\/table>)[\s\S])*?<\/table>/i);
+      if (cardM) {
+        const cells = [...cardM[0].matchAll(/<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi)].map(m => strip(m[2]));
+        const map = { studentid:'id', name:'name', semester:'semester', program:'degree',
+                      department:'department', creditcompleted:'credit', cgpa:'cgpa', grade:'grade' };
+        for (let i = 0; i < cells.length - 1; i++) {
+          const k = cells[i].toLowerCase().replace(/[^a-z]/g,'');
+          if (map[k]) { student[map[k]] = cells[i+1]; i++; }
+        }
+      }
+      const results = {};
+      const tableRe = /<table[^>]*class="[^"]*result-table[^"]*"[^>]*>([\s\S]*?)<\/table>/gi;
+      let tm;
+      while ((tm = tableRe.exec(html)) !== null) {
+        const before = html.slice(0, tm.index);
+        const hM = [...before.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)].pop();
+        const semName = hM ? strip(hM[1]) : 'Semester';
+        const ym = semName.match(/(20\d{2})/);
+        const year = ym ? ym[1] : 'Other';
+        const bodyM = tm[1].match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+        const body = bodyM ? bodyM[1] : tm[1];
+        const courses = [];
+        let gpSum = 0, crSum = 0;
+        [...body.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].forEach(r => {
+          const tds = [...r[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => strip(m[1]));
+          if (tds.length < 5) return;
+          const code = tds[0];
+          if (!code || /course\s*code/i.test(code)) return;
+          const credit = parseFloat(tds[2]) || 0, gp = parseFloat(tds[3]) || 0;
+          courses.push({ course_code: code, course_title: tds[1], credit, gpa: gp, grade: tds[4] });
+          gpSum += gp * credit; crSum += credit;
+        });
+        if (!courses.length) continue;
+        (results[year] = results[year] || []).push({
+          name: semName, gpa: crSum ? +(gpSum/crSum).toFixed(2) : 0, credit: crSum, grade: '', courses
+        });
+      }
+      return { success: !!(student.id && Object.keys(results).length), student, results };
+    }
+
+    function toggleImport() {
+      const p = document.getElementById('resImport');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+      if (p.style.display === 'block') p.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+    function revealImport() {
+      document.getElementById('resImport').style.display = 'block';
+    }
+    function onImportFile(input) {
+      const f = input.files && input.files[0];
+      const drop = document.getElementById('resImportDrop');
+      const name = document.getElementById('resImportFileName');
+      if (f) { name.textContent = f.name; drop.classList.add('ok'); }
+      else   { name.textContent = 'Choose your saved result file (.html)'; drop.classList.remove('ok'); }
+    }
+    function openImportFromDash() {
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('loginView').style.display = 'block';
+      revealImport();
+      document.getElementById('resImport').scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    async function doImport() {
+      const errEl = document.getElementById('resImportErr');
+      const btn   = document.getElementById('resImportBtn');
+      errEl.style.display = 'none';
+      const id  = document.getElementById('rStudentId').value.trim();
+      const day = document.getElementById('rDay').value, mon = document.getElementById('rMonth').value, yr = document.getElementById('rYear').value;
+      if (!id || !day || !mon || !yr) { errEl.textContent = 'Fill in your Student ID and Date of Birth above first.'; errEl.style.display = 'block'; return; }
+      const dob = `${yr}-${mon}-${day}`;
+      const file = document.getElementById('resImportFile').files[0];
+      let html = document.getElementById('resImportText').value.trim();
+      btn.disabled = true; btn.innerHTML = '<span class="rspinner"></span> Importing…';
+      try {
+        if (file) html = await file.text();
+        if (!html) throw new Error('Choose your saved result file, or paste the page source.');
+        const data = parseLuResult(html);
+        if (!data.success || !data.student.id) throw new Error('Could not read a result from that file. Make sure you saved the page AFTER your result was shown.');
+        if (String(data.student.id) !== String(id)) throw new Error(`That file is for ID ${data.student.id}, not ${id}.`);
+        const r = await fetch(WORKER_URL + '/result-import', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: id, birth_date: dob, data })
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.error || `Import failed (HTTP ${r.status}).`);
+        document.getElementById('resImport').style.display = 'none';
+        document.getElementById('resImportText').value = '';
+        hideErr();
+        await fetchResults(isViewingOwnResult);   /* now served from the imported copy */
+      } catch (e) {
+        errEl.innerHTML = e.message; errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Import my result';
+      }
+    }
+
+    function updateImportedNotice() {
+      const n = document.getElementById('resImportedNotice');
+      if (!n) return;
+      if (resData && resData.imported) {
+        let when = '';
+        if (resData.imported_at) {
+          const d = new Date(resData.imported_at);
+          if (!isNaN(d)) when = ' on ' + d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+        }
+        document.getElementById('resImportedWhen').textContent = when;
+        n.style.display = 'flex';
+      } else {
+        n.style.display = 'none';
+      }
     }
 
     /* ── Render ── */
