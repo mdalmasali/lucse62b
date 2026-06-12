@@ -535,6 +535,7 @@
       }
       .res-vid-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
       .res-vid-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border);cursor:pointer;}
+      .res-vid-frame.portrait{aspect-ratio:9/16;max-width:300px;margin:0 auto;}
       .res-vid-frame img{width:100%;height:100%;object-fit:cover;display:block;}
       .res-vid-frame iframe{width:100%;height:100%;border:0;display:block;}
       .res-vid-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.22);transition:background .2s;}
@@ -596,9 +597,8 @@
             <li>Bring that result into this page — pick whichever fits your device 👇</li>
           </ol>
           <div class="res-imp-ways">
-            <div class="res-imp-way"><span class="riw-ic">💻</span><div><b>Computer</b> — press <b>Ctrl+S</b> (<b>⌘S</b> on Mac), save as <b>“HTML Only”</b>, then upload that file.</div></div>
-            <div class="res-imp-way"><span class="riw-ic">📱</span><div><b>Android (Chrome)</b> — menu <b>⋮ → Download</b>, then upload the saved file.</div></div>
-            <div class="res-imp-way"><span class="riw-ic">📱</span><div><b>iPhone / any phone</b> — tap &amp; hold on the result → <b>Select All → Copy</b>, then <b>paste</b> it in the box below.</div></div>
+            <div class="res-imp-way"><span class="riw-ic">💻</span><div><b>Computer</b> — press <b>Ctrl+S</b> (<b>⌘S</b> on Mac), save as <b>“HTML Only”</b>, then upload that file below.</div></div>
+            <div class="res-imp-way"><span class="riw-ic">📱</span><div><b>Phone</b> — on the result page, tap &amp; hold any text → <b>Select All → Copy</b>, then <b>paste</b> it in the box below.</div></div>
           </div>
           <label class="res-imp-file" id="resImportDrop">
             <input type="file" id="resImportFile" accept=".html,.htm,.mhtml,.mht,text/html" onchange="onImportFile(this)">
@@ -1220,11 +1220,20 @@
         if (!r.ok) { wrap.style.display = 'none'; return; }
         const data = await r.json();
         const rows = (data.table?.rows || []).map(row => (row.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : ''));
-        let title = '', link = '';
+        /* Sheet has one row per device (title marks "Mobile" vs "PC/Laptop").
+           Show the phone clip to phones and the desktop one to computers. */
+        const vids = [];
         for (const row of rows) {
-          const cell = row.find(x => /youtu\.?be|youtube\.com/i.test(x));
-          if (cell) { link = cell; title = (row.find(x => x && x !== cell) || '').trim(); break; }
+          const lnk = row.find(x => /youtu\.?be|youtube\.com/i.test(x));
+          if (!lnk) continue;
+          const ttl = (row.find(x => x && x !== lnk) || '').trim();
+          vids.push({ title: ttl, link: lnk, mobile: /mobile|phone|android|ios/i.test(ttl) });
         }
+        if (!vids.length) { wrap.style.display = 'none'; return; }
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '')
+                         || (window.matchMedia && window.matchMedia('(max-width:768px)').matches);
+        const pick = isMobile ? (vids.find(v => v.mobile) || vids[0]) : (vids.find(v => !v.mobile) || vids[0]);
+        const title = pick.title, link = pick.link;
         const id = ytId(link);
         if (!id) { wrap.style.display = 'none'; return; }
         _tutLoaded = true;
@@ -1232,6 +1241,7 @@
         tEl.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ff0000;"></i> ';
         tEl.appendChild(document.createTextNode(title || 'How to import your result'));
         const frame = document.getElementById('resVidFrame');
+        frame.classList.toggle('portrait', pick.mobile || /\/shorts\//i.test(link));
         frame.innerHTML = '<img src="https://i.ytimg.com/vi/' + id + '/hqdefault.jpg" alt="Tutorial thumbnail" loading="lazy">' +
                           '<div class="res-vid-play"><span class="res-vid-btn"><i class="fa-solid fa-play"></i></span></div>';
         frame.onclick = function () {
