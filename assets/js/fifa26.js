@@ -222,11 +222,23 @@
           }
         });
       }
-      var html = extra + today.map(tickItem).join('<span style="color:rgba(34,211,238,.4);">•</span>');
-      el.innerHTML = html + '<span style="color:rgba(34,211,238,.4);">•</span>' + html; /* loop seamlessly */
-      el.classList.remove('f26-static');
-      if (wrap) wrap.classList.remove('f26-nomask');
-      el.style.setProperty('--f26-speed', Math.max(22, today.length * 9) + 's');
+      var sep  = '<span style="color:rgba(34,211,238,.4);">•</span>';
+      var html = extra + today.map(tickItem).join(sep);
+      /* Render one copy first and measure it WITHOUT the scroll padding. Only
+         duplicate (for a seamless marquee loop) when a single copy actually
+         overflows the bar — otherwise a couple of matches on a wide screen show
+         up twice side by side. Fits → show once, centred and static. */
+      el.innerHTML = html;
+      el.classList.add('f26-static');
+      if (wrap) wrap.classList.add('f26-nomask');
+      requestAnimationFrame(function () {
+        if (wrap && el.scrollWidth > wrap.clientWidth + 2) {
+          el.innerHTML = html + sep + html;        /* loop seamlessly */
+          el.classList.remove('f26-static');
+          wrap.classList.remove('f26-nomask');
+          el.style.setProperty('--f26-speed', Math.max(22, today.length * 9) + 's');
+        }
+      });
     } else {
       el.innerHTML = nextMatchCountdownHTML(matches);
       el.classList.add('f26-static');
