@@ -16,3 +16,6 @@ worker/.wrangler/
 .dev.vars*
 !.dev.vars.example
 !.env.example
+# Saved LU result pages (personal data, local-only)
+Result *Leading University*.html
+*Leading University*.html
