@@ -844,6 +844,10 @@
           }
         }
       } catch(e) {}
+
+      const _sid = document.getElementById('rStudentId');
+      if (_sid) _sid.addEventListener('input', updateImportVisibility);
+      updateImportVisibility();
     })();
 
     async function autoLoadMyResult() {
@@ -1066,8 +1070,23 @@
       p.style.display = p.style.display === 'none' ? 'block' : 'none';
       if (p.style.display === 'block') p.scrollIntoView({ behavior:'smooth', block:'nearest' });
     }
+    /* Import is self-only — hide the option entirely while viewing someone else's
+       result (you can still VIEW theirs, just not import/overwrite it). */
+    function updateImportVisibility() {
+      let ownId = null, isDemo = false;
+      try {
+        const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (raw) { const u = JSON.parse(raw); isDemo = !!(u.isDemo || String(u.id||'').toUpperCase() === 'DEMO'); if (!isDemo && u.id) ownId = String(u.id); }
+      } catch (e) {}
+      const id = (document.getElementById('rStudentId').value || '').trim();
+      const allowed = !isDemo && (!ownId || !id || id === ownId);
+      const toggle = document.getElementById('resImportToggle');
+      if (toggle) toggle.style.display = allowed ? '' : 'none';
+      if (!allowed) document.getElementById('resImport').style.display = 'none';
+      return allowed;
+    }
     function revealImport() {
-      document.getElementById('resImport').style.display = 'block';
+      if (updateImportVisibility()) document.getElementById('resImport').style.display = 'block';
     }
     function onImportFile(input) {
       const f = input.files && input.files[0];
@@ -1091,6 +1110,20 @@
       const day = document.getElementById('rDay').value, mon = document.getElementById('rMonth').value, yr = document.getElementById('rYear').value;
       if (!id || !day || !mon || !yr) { errEl.textContent = 'Fill in your Student ID and Date of Birth above first.'; errEl.style.display = 'block'; return; }
       const dob = `${yr}-${mon}-${day}`;
+
+      /* Self-import only: you can VIEW another student's result, but you may only
+         IMPORT (write) your own — so nobody can plant a result under someone
+         else's ID, even if they happen to know that person's DOB. */
+      let ownId = null, isDemo = false;
+      try {
+        const raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+        if (raw) { const u = JSON.parse(raw); isDemo = !!(u.isDemo || String(u.id||'').toUpperCase() === 'DEMO'); if (!isDemo && u.id) ownId = String(u.id); }
+      } catch (e) {}
+      if (isDemo) { errEl.textContent = 'Importing is not available in demo mode.'; errEl.style.display = 'block'; return; }
+      if (ownId && id !== ownId) {
+        errEl.innerHTML = 'You can only import <b>your own</b> result. Enter your own Student ID &amp; Date of Birth above to import.';
+        errEl.style.display = 'block'; return;
+      }
       const file = document.getElementById('resImportFile').files[0];
       let html = document.getElementById('resImportText').value.trim();
       btn.disabled = true; btn.innerHTML = '<span class="rspinner"></span> Importing…';
