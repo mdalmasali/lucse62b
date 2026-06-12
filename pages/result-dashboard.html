@@ -530,8 +530,10 @@
       html[data-theme="light"] #loginView .res-vid{background:rgba(255,255,255,0.95);box-shadow:0 24px 50px rgba(0,0,0,0.1);}
       @media(max-width:900px){
         #loginView{flex-direction:column;align-items:center;gap:0;}
-        #loginView .res-login-box{margin:40px 0 0;width:100%;max-width:420px;}
-        #loginView .res-vid{margin:20px 0 40px;width:100%;max-width:520px;box-sizing:border-box;flex-basis:auto;}
+        /* When the video shows (= live fetch failed), put it ABOVE the form so
+           phone users actually notice the import guide instead of it hiding below. */
+        #loginView .res-vid{order:-1;margin:28px 0 6px;width:100%;max-width:520px;box-sizing:border-box;flex-basis:auto;}
+        #loginView .res-login-box{margin:14px 0 40px;width:100%;max-width:420px;}
       }
       .res-vid-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
       .res-vid-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border);cursor:pointer;}
@@ -1248,6 +1250,11 @@
           frame.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0" title="How to import your result" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>';
         };
         wrap.style.display = 'block';
+        /* On phones the video sits above the form — bring it into view so the
+           user sees the guide as soon as the live fetch fails. */
+        if (window.matchMedia && window.matchMedia('(max-width:900px)').matches) {
+          setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+        }
       } catch (e) { wrap.style.display = 'none'; }
     }
     function onImportFile(input) {
