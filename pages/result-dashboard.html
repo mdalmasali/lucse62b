@@ -509,10 +509,21 @@
       .res-imp-paste{margin-top:10px;}
       .res-imp-paste summary{font-size:.76rem;color:var(--muted);cursor:pointer;}
       .res-imp-paste textarea{width:100%;margin-top:8px;min-height:90px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
-      .res-imp-cols{display:flex;gap:18px;align-items:flex-start;margin-top:4px;}
-      .res-imp-left{flex:1;min-width:0;}
-      .res-imp-right{width:300px;flex-shrink:0;}
-      @media(max-width:680px){ .res-imp-cols{flex-direction:column;} .res-imp-right{width:100%;} }
+      /* Login card + tutorial video side by side (video fills the empty right space) */
+      #loginView{display:flex;justify-content:center;align-items:flex-start;gap:28px;flex-wrap:wrap;}
+      #loginView .res-login-box{margin:60px 0 40px;flex:0 1 420px;min-width:0;}
+      #loginView .res-vid{
+        flex:0 1 360px;min-width:280px;margin-top:60px;position:sticky;top:90px;
+        background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;
+        backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+        box-shadow:0 24px 50px rgba(0,0,0,0.35);
+      }
+      html[data-theme="light"] #loginView .res-vid{background:rgba(255,255,255,0.95);box-shadow:0 24px 50px rgba(0,0,0,0.1);}
+      @media(max-width:900px){
+        #loginView{flex-direction:column;align-items:center;}
+        #loginView .res-login-box{margin:40px 0 0;width:100%;max-width:420px;}
+        #loginView .res-vid{position:static;margin:20px 0 40px;width:100%;max-width:420px;box-sizing:border-box;}
+      }
       .res-vid-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
       .res-vid-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border);cursor:pointer;}
       .res-vid-frame img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -571,8 +582,6 @@
             can't pass — so automatic fetch is blocked. Bring your result in once and everything
             here keeps working from it.
           </div>
-          <div class="res-imp-cols">
-           <div class="res-imp-left">
           <ol class="res-imp-steps">
             <li>Open <a href="https://lus.ac.bd/result/" target="_blank" rel="noopener">lus.ac.bd/result/ <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.72em;"></i></a></li>
             <li>Enter your ID &amp; DOB, solve the verification, tap <b>View Result</b>.</li>
@@ -592,15 +601,6 @@
             <i class="fa-solid fa-cloud-arrow-up"></i> Import my result
           </button>
           <div class="rerror" id="resImportErr"></div>
-           </div>
-           <div class="res-imp-right">
-             <div class="res-vid" id="resVid" style="display:none;">
-               <div class="res-vid-title" id="resVidTitle"><i class="fa-brands fa-youtube" style="color:#ff0000;"></i> Watch: how to import</div>
-               <div class="res-vid-frame" id="resVidFrame"></div>
-               <div class="res-vid-hint">Can't fetch automatically? This 1-min video shows the steps.</div>
-             </div>
-           </div>
-          </div>
         </div>
 
         <a href="../index.html" style="color:var(--muted);text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:20px;">
@@ -613,6 +613,13 @@
           </button>
         </div>
       </div>
+
+      <!-- Tutorial video — sits beside the Result Portal card (stacks below on mobile) -->
+      <aside class="res-vid fade-in delay-1" id="resVid" style="display:none;">
+        <div class="res-vid-title" id="resVidTitle"><i class="fa-brands fa-youtube" style="color:#ff0000;"></i> Watch: how to import</div>
+        <div class="res-vid-frame" id="resVidFrame"></div>
+        <div class="res-vid-hint">Can't fetch automatically? This 1-min video walks you through importing your result.</div>
+      </aside>
     </div>
 
     <!-- ── Dashboard View ── -->
