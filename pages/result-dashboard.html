@@ -510,19 +510,21 @@
       .res-imp-paste summary{font-size:.76rem;color:var(--muted);cursor:pointer;}
       .res-imp-paste textarea{width:100%;margin-top:8px;min-height:90px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:10px;font-size:.75rem;font-family:monospace;resize:vertical;box-sizing:border-box;}
       /* Login card + tutorial video side by side (video fills the empty right space) */
-      #loginView{display:flex;justify-content:center;align-items:flex-start;gap:28px;flex-wrap:wrap;}
+      #loginView{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap;max-width:1180px;margin:0 auto;}
       #loginView .res-login-box{margin:60px 0 40px;flex:0 1 420px;min-width:0;}
       #loginView .res-vid{
-        flex:0 1 360px;min-width:280px;margin-top:60px;position:sticky;top:90px;
-        background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;
+        flex:1 1 520px;min-width:320px;max-width:620px;margin:60px 0 40px;align-self:center;
+        background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;
         backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
         box-shadow:0 24px 50px rgba(0,0,0,0.35);
       }
+      #loginView .res-vid .res-vid-title{font-size:1rem;margin-bottom:14px;}
+      #loginView .res-vid .res-vid-hint{font-size:.82rem;margin-top:12px;}
       html[data-theme="light"] #loginView .res-vid{background:rgba(255,255,255,0.95);box-shadow:0 24px 50px rgba(0,0,0,0.1);}
       @media(max-width:900px){
-        #loginView{flex-direction:column;align-items:center;}
+        #loginView{flex-direction:column;align-items:center;gap:0;}
         #loginView .res-login-box{margin:40px 0 0;width:100%;max-width:420px;}
-        #loginView .res-vid{position:static;margin:20px 0 40px;width:100%;max-width:420px;box-sizing:border-box;}
+        #loginView .res-vid{margin:20px 0 40px;width:100%;max-width:520px;box-sizing:border-box;flex-basis:auto;}
       }
       .res-vid-title{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
       .res-vid-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border);cursor:pointer;}
