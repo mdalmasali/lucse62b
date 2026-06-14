@@ -1,4 +1,4 @@
-const CACHE     = 'lu62b-v48';
+const CACHE     = 'lu62b-v49';
 const _SW_SUPA  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _SW_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
@@ -102,7 +102,8 @@ self.addEventListener('fetch', e => {
     p.endsWith('.js')
   ) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      // Bypass the browser HTTP cache so deploys show up immediately (no hard-refresh)
+      fetch(e.request, { cache: 'no-store' }).then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));

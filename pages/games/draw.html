@@ -110,11 +110,11 @@
     .game-main { display: flex; gap: 12px; flex: 1; }
 
     /* Left: Player scores */
-    .game-players-panel { width: 150px; flex-shrink: 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .game-players-panel { width: 185px; flex-shrink: 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
     .score-player-item { display: flex; align-items: center; gap: 7px; padding: 6px 0; border-bottom: 1px solid var(--border); }
     .score-player-item:last-child { border-bottom: none; }
     .score-avatar { width: 26px; height: 26px; border-radius: 50%; font-size: .6rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .score-name { font-size: .75rem; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .score-name { font-size: .75rem; font-weight: 600; flex: 1; min-width: 0; line-height: 1.25; overflow-wrap: anywhere; }
     .score-pts { font-size: .75rem; font-weight: 800; color: #34d399; }
     .score-player-item.drawing .score-name { color: #fbbf24; }
     .score-player-item.guessed .score-name::after { content: ' ✓'; color: #34d399; }
