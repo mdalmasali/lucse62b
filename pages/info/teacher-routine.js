@@ -294,14 +294,17 @@ async function doTeacherSearch() {
 /* ── Grid renderer ── */
 function buildTeacherGrid(todayName) {
   if (!_teacherCache) return '';
-  const { schedule, groups } = _teacherCache;
+  const { schedule, courseInfo, groups } = _teacherCache;
   if (!groups || !groups.length) return '<div class="rt-grid-empty-msg">No schedule data found.</div>';
 
   const renderCourses = courses => courses.map(slot => {
     const color    = courseColor(slot.code);
+    const info     = (courseInfo || {})[slot.code?.toUpperCase()] || {};
+    const name     = info.name || '';
     const batchSec = `${slot.batch || ''}${slot.section ? '-' + slot.section : ''}`;
     return `<div class="rt-gc" style="background:${color}12;border-color:${color}33;">
-      <span class="rt-gc-code" style="color:${color};">${escH(slot.code)}</span>
+      <span class="rt-gc-name" style="color:${color};font-weight:800;font-size:0.62rem;line-height:1.22;letter-spacing:0.01em;text-align:center;">${escH(name || slot.code)}</span>
+      ${name ? `<span class="rt-gc-code" style="color:${color};opacity:0.55;font-size:0.5rem;font-weight:700;letter-spacing:0.04em;">${escH(slot.code)}</span>` : ''}
       <span class="rt-gc-teacher">${escH(batchSec)}</span>
       ${slot.room ? `<span class="rt-gc-room">${escH(slot.room)}</span>` : ''}
     </div>`;

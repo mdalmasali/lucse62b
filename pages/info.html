@@ -727,18 +727,19 @@
   <script src="../assets/js/script.js"></script>
   <script>
     const MENU = [
-      { id: 'routine',         label: 'Class Routine',          icon: 'fa-solid fa-calendar-week',         color: '#a78bfa' },
-      { id: 'teacher-routine',label: 'Teacher Class Routine',  icon: 'fa-solid fa-chalkboard-user',       color: '#34d399' },
-      { id: 'course-offer',   label: 'Course Offer',           icon: 'fa-solid fa-book-open',             color: '#38bdf8' },
-      { id: 'all-course',     label: 'All Batch Course Offer', icon: 'fa-solid fa-layer-group',           color: '#34d399' },
-      { id: 'bus',            label: 'Bus Schedule',           icon: 'fa-solid fa-bus',                   color: '#fbbf24' },
-      { id: 'semester',       label: 'Semester Info',          icon: 'fa-solid fa-graduation-cap',        color: '#f472b6' },
-      { id: 'group-links',    label: 'All Course Group Link',  icon: 'fa-solid fa-link',                  color: '#818cf8' },
-      { id: 'teachers',       label: 'Teacher Contact List',   icon: 'fa-solid fa-address-book',          color: '#fb923c' },
-      { id: 'bkash',          label: 'bKash Payment / Fees',   icon: 'fa-solid fa-mobile-screen-button',  color: '#e879f9' },
-      { id: 'mid-routine',      label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
-      { id: 'final-routine',   label: 'Final Term Routine',    icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
-      { id: 'retake-improve',  label: 'Retake & Improve',      icon: 'fa-solid fa-rotate-right',          color: '#f43f5e' },
+      { id: 'routine',          label: 'Class Routine',          icon: 'fa-solid fa-calendar-week',         color: '#a78bfa' },
+      { id: 'teacher-routine', label: 'Teacher Class Routine',  icon: 'fa-solid fa-chalkboard-user',       color: '#34d399' },
+      { id: 'course-teachers', label: 'Course Teachers',        icon: 'fa-solid fa-person-chalkboard',     color: '#22d3ee' },
+      { id: 'course-offer',    label: 'Course Offer',           icon: 'fa-solid fa-book-open',             color: '#38bdf8' },
+      { id: 'all-course',      label: 'All Batch Course Offer', icon: 'fa-solid fa-layer-group',           color: '#34d399' },
+      { id: 'bus',             label: 'Bus Schedule',           icon: 'fa-solid fa-bus',                   color: '#fbbf24' },
+      { id: 'semester',        label: 'Semester Info',          icon: 'fa-solid fa-graduation-cap',        color: '#f472b6' },
+      { id: 'group-links',     label: 'All Course Group Link',  icon: 'fa-solid fa-link',                  color: '#818cf8' },
+      { id: 'teachers',        label: 'Teacher Contact List',   icon: 'fa-solid fa-address-book',          color: '#fb923c' },
+      { id: 'bkash',           label: 'bKash Payment / Fees',   icon: 'fa-solid fa-mobile-screen-button',  color: '#e879f9' },
+      { id: 'mid-routine',     label: 'Mid Term Routine',       icon: 'fa-solid fa-calendar-check',        color: '#4ade80' },
+      { id: 'final-routine',   label: 'Final Term Routine',     icon: 'fa-solid fa-calendar-xmark',        color: '#f87171' },
+      { id: 'retake-improve',  label: 'Retake & Improve',       icon: 'fa-solid fa-rotate-right',          color: '#f43f5e' },
     ];
 
     let activeId = null;
@@ -905,18 +906,19 @@
     }
 
     const SECTION_SCRIPTS = {
-      'routine':         'info/routine.js',
-      'teacher-routine': 'info/teacher-routine.js',
-      'mid-routine':     'info/exam.js',
-      'final-routine':   'info/exam.js',
-      'teachers':        'info/teachers.js',
-      'group-links':     'info/group-links.js',
-      'bkash':           'info/bkash.js',
-      'course-offer':   'info/course-offer.js',
-      'bus':             'info/bus.js',
-      'semester':        'info/semester.js',
+      'routine':          'info/routine.js',
+      'teacher-routine':  'info/teacher-routine.js',
+      'course-teachers':  'info/course-teachers.js',
+      'mid-routine':      'info/exam.js',
+      'final-routine':    'info/exam.js',
+      'teachers':         'info/teachers.js',
+      'group-links':      'info/group-links.js',
+      'bkash':            'info/bkash.js',
+      'course-offer':     'info/course-offer.js',
+      'bus':              'info/bus.js',
+      'semester':         'info/semester.js',
       'all-course':       'info/all-course.js',
-      'retake-improve':  'info/retake-improve.js',
+      'retake-improve':   'info/retake-improve.js',
     };
 
     async function loadContent(item) {
@@ -925,8 +927,9 @@
         try { await loadScript(SECTION_SCRIPTS[item.id]); } catch(_) {}
       }
       
-      if (item.id === 'routine')         { loadRoutine(body);               return; }
+      if (item.id === 'routine')          { loadRoutine(body);               return; }
       if (item.id === 'teacher-routine') { loadTeacherRoutine(body);        return; }
+      if (item.id === 'course-teachers') { loadCourseTeachers(body);        return; }
       if (item.id === 'mid-routine')     { loadExamRoutine(body, 'mid');    return; }
       if (item.id === 'final-routine')   { loadExamRoutine(body, 'final');  return; }
       if (item.id === 'teachers')        { loadTeachers(body);              return; }
