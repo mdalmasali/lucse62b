@@ -13,26 +13,32 @@
   <link rel="stylesheet" href="../assets/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    .games-wrap { max-width: 860px; margin: 32px auto 80px; padding: 0 16px; }
+    .games-wrap { max-width: 1080px; margin: 32px auto 80px; padding: 0 16px; }
+
+    /* Two-column body: games on the left, standings on the right */
+    .games-body { display: flex; gap: 28px; align-items: flex-start; margin-top: 16px; }
+    .games-main-col { flex: 1; min-width: 0; }
+    .standings-aside { width: 340px; flex-shrink: 0; position: sticky; top: 24px; }
 
     /* Overall standings */
-    .standings-section { margin-top: 48px; }
-    .standings-head { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 18px; }
-    .standings-head h2 { font-family: 'Space Grotesk',sans-serif; font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg,#fbbf24,#fb923c); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .standings-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
-    .standings-row { display: grid; grid-template-columns: 44px 1fr auto auto auto; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .standings-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+    .standings-head h2 { font-family: 'Space Grotesk',sans-serif; font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg,#fbbf24,#fb923c); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .standings-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+    .standings-row { display: grid; grid-template-columns: 30px 1fr auto auto auto; gap: 8px; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); }
     .standings-row:last-child { border-bottom: none; }
-    .standings-row.head { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); padding: 10px 18px; }
+    .standings-row.head { font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); padding: 9px 14px; }
     .standings-row.top1 { background: linear-gradient(90deg, rgba(251,191,36,.08), transparent); }
-    .st-rank { font-size: 1.05rem; font-weight: 800; text-align: center; }
-    .st-name { font-weight: 700; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .st-col { font-size: .82rem; font-weight: 700; text-align: right; min-width: 46px; }
+    .st-rank { font-size: 1rem; font-weight: 800; text-align: center; }
+    .st-name { font-weight: 700; font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .st-col { font-size: .8rem; font-weight: 700; text-align: right; min-width: 30px; }
     .st-col.pts { color: #fbbf24; }
-    .st-col.lbl { color: var(--text-secondary); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
-    .standings-empty { text-align: center; color: var(--text-secondary); font-size: .86rem; padding: 26px 16px; }
-    @media (max-width: 560px) {
-      .standings-row { grid-template-columns: 34px 1fr auto auto; gap: 8px; padding: 11px 12px; }
-      .st-wins-col { display: none; }
+    .standings-empty { text-align: center; color: var(--text-secondary); font-size: .84rem; padding: 26px 16px; line-height: 1.6; }
+    .standings-aside .games-note { margin-top: 10px; }
+
+    @media (max-width: 860px) {
+      .games-body { flex-direction: column; }
+      .standings-aside { width: 100%; position: static; margin-top: 20px; }
+      .standings-head { justify-content: center; }
     }
 
     .games-hero { text-align: center; padding: 48px 0 40px; }
@@ -118,47 +124,51 @@
       <p>Play with friends on Discord. No login needed — or login for your name to auto-fill.</p>
     </div>
 
-    <div class="games-grid fade-in delay-1">
+    <div class="games-body">
+      <!-- Left: game cards -->
+      <div class="games-main-col fade-in delay-1">
+        <div class="games-grid">
 
-      <a href="games/imposter.html" class="game-card imposter">
-        <span class="game-card-arrow">↗</span>
-        <div class="game-card-icon">🕵️</div>
-        <div class="game-card-name">Find the Imposter</div>
-        <div class="game-card-desc">One player is the imposter who doesn't know the secret word. Can the crew identify them before it's too late?</div>
-        <div class="game-card-tags">
-          <span class="game-tag">Social Deduction</span>
-          <span class="game-tag">2–12 Players</span>
-          <span class="game-tag">Multiplayer</span>
+          <a href="games/imposter.html" class="game-card imposter">
+            <span class="game-card-arrow">↗</span>
+            <div class="game-card-icon">🕵️</div>
+            <div class="game-card-name">Find the Imposter</div>
+            <div class="game-card-desc">One player is the imposter who doesn't know the secret word. Can the crew identify them before it's too late?</div>
+            <div class="game-card-tags">
+              <span class="game-tag">Social Deduction</span>
+              <span class="game-tag">2–12 Players</span>
+              <span class="game-tag">Multiplayer</span>
+            </div>
+          </a>
+
+          <a href="games/draw.html" class="game-card draw">
+            <span class="game-card-arrow">↗</span>
+            <div class="game-card-icon">🎨</div>
+            <div class="game-card-name">Draw & Guess</div>
+            <div class="game-card-desc">One player draws a secret word while everyone else races to guess it. The faster you guess, the more points you score!</div>
+            <div class="game-card-tags">
+              <span class="game-tag">Drawing</span>
+              <span class="game-tag">2–12 Players</span>
+              <span class="game-tag">Multiplayer</span>
+            </div>
+          </a>
+
         </div>
-      </a>
+        <p class="games-note">More games coming soon.</p>
+      </div>
 
-      <a href="games/draw.html" class="game-card draw">
-        <span class="game-card-arrow">↗</span>
-        <div class="game-card-icon">🎨</div>
-        <div class="game-card-name">Draw & Guess</div>
-        <div class="game-card-desc">One player draws a secret word while everyone else races to guess it. The faster you guess, the more points you score!</div>
-        <div class="game-card-tags">
-          <span class="game-tag">Drawing</span>
-          <span class="game-tag">2–12 Players</span>
-          <span class="game-tag">Multiplayer</span>
+      <!-- Right: Overall Standings -->
+      <aside class="standings-aside fade-in delay-2">
+        <div class="standings-head">
+          <span style="font-size:1.5rem">🏆</span>
+          <h2>Overall Standings</h2>
         </div>
-      </a>
-
+        <div class="standings-card" id="standingsCard">
+          <div class="standings-empty">Loading standings…</div>
+        </div>
+        <p class="games-note">Combined across all games · logged-in players only</p>
+      </aside>
     </div>
-
-    <!-- Overall Standings -->
-    <section class="standings-section fade-in delay-2">
-      <div class="standings-head">
-        <span style="font-size:1.6rem">🏆</span>
-        <h2>Overall Standings</h2>
-      </div>
-      <div class="standings-card" id="standingsCard">
-        <div class="standings-empty">Loading standings…</div>
-      </div>
-      <p class="games-note">Combined across all games · logged-in players only</p>
-    </section>
-
-    <p class="games-note">More games coming soon.</p>
   </main>
 
   <footer class="site-footer fade-in">
