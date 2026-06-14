@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>Games · CSE 62B</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <style>
+    .games-wrap { max-width: 860px; margin: 32px auto 80px; padding: 0 16px; }
+
+    .games-hero { text-align: center; padding: 48px 0 40px; }
+    .games-hero-icon { font-size: 4rem; line-height: 1; margin-bottom: 16px; animation: heroFloat 3s ease-in-out infinite; }
+    @keyframes heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .games-hero h1 { font-family: 'Space Grotesk',sans-serif; font-size: 2.4rem; font-weight: 900; background: linear-gradient(135deg,#a78bfa,#f472b6,#fb923c); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom: 10px; }
+    .games-hero p { color: var(--text-secondary); font-size: .95rem; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 16px; }
+
+    .game-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px 28px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 14px; transition: transform .2s, box-shadow .2s, border-color .2s; position: relative; overflow: hidden; }
+    .game-card::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s; border-radius: 24px; pointer-events: none; }
+    .game-card:hover { transform: translateY(-4px); }
+
+    .game-card.imposter { --c1: #a78bfa; --c2: #f472b6; box-shadow: 0 0 30px rgba(167,139,250,.08); }
+    .game-card.imposter::before { background: radial-gradient(circle at 50% 0%, rgba(167,139,250,.12), transparent 70%); }
+    .game-card.imposter:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 12px 40px rgba(167,139,250,.2); }
+    .game-card.imposter:hover::before { opacity: 1; }
+
+    .game-card.draw { --c1: #34d399; --c2: #60a5fa; box-shadow: 0 0 30px rgba(52,211,153,.08); }
+    .game-card.draw::before { background: radial-gradient(circle at 50% 0%, rgba(52,211,153,.12), transparent 70%); }
+    .game-card.draw:hover { border-color: rgba(52,211,153,.4); box-shadow: 0 12px 40px rgba(52,211,153,.2); }
+    .game-card.draw:hover::before { opacity: 1; }
+
+    .game-card-icon { font-size: 3.5rem; line-height: 1; }
+    .game-card-name { font-family: 'Space Grotesk',sans-serif; font-size: 1.4rem; font-weight: 700; }
+    .game-card.imposter .game-card-name { background: linear-gradient(135deg, var(--c1), var(--c2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .game-card.draw .game-card-name { background: linear-gradient(135deg, var(--c1), var(--c2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .game-card-desc { color: var(--text-secondary); font-size: .88rem; line-height: 1.6; flex: 1; }
+    .game-card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .game-tag { font-size: .68rem; font-weight: 700; padding: 3px 9px; border-radius: 8px; text-transform: uppercase; letter-spacing: .05em; }
+    .game-card.imposter .game-tag { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.25); }
+    .game-card.draw .game-tag { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.25); }
+    .game-card-arrow { position: absolute; top: 20px; right: 20px; font-size: 1.2rem; color: var(--text-secondary); transition: color .2s, transform .2s; }
+    .game-card:hover .game-card-arrow { color: var(--accent-bright); transform: translate(2px,-2px); }
+
+    .games-note { text-align: center; margin-top: 40px; color: var(--text-secondary); font-size: .82rem; }
+
+    @media (max-width: 480px) {
+      .games-hero h1 { font-size: 1.9rem; }
+      .game-card { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <nav class="topbar fade-in">
+    <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+    <ul class="topbar-links">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="games.html" style="color:var(--accent-bright);font-weight:600;">Games</a></li>
+      <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+    </ul>
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main class="games-wrap">
+    <div class="games-hero fade-in">
+      <div class="games-hero-icon">🎮</div>
+      <h1>Games</h1>
+      <p>Play with friends on Discord. Login required — everyone joins from their own device.</p>
+    </div>
+
+    <div class="games-grid fade-in delay-1">
+
+      <a href="games/imposter.html" class="game-card imposter">
+        <span class="game-card-arrow">↗</span>
+        <div class="game-card-icon">🕵️</div>
+        <div class="game-card-name">Find the Imposter</div>
+        <div class="game-card-desc">One player is the imposter who doesn't know the secret word. Can the crew identify them before it's too late?</div>
+        <div class="game-card-tags">
+          <span class="game-tag">Social Deduction</span>
+          <span class="game-tag">2–12 Players</span>
+          <span class="game-tag">Multiplayer</span>
+        </div>
+      </a>
+
+      <a href="games/draw.html" class="game-card draw">
+        <span class="game-card-arrow">↗</span>
+        <div class="game-card-icon">🎨</div>
+        <div class="game-card-name">Draw & Guess</div>
+        <div class="game-card-desc">One player draws a secret word while everyone else races to guess it. The faster you guess, the more points you score!</div>
+        <div class="game-card-tags">
+          <span class="game-tag">Drawing</span>
+          <span class="game-tag">2–12 Players</span>
+          <span class="game-tag">Multiplayer</span>
+        </div>
+      </a>
+
+    </div>
+
+    <p class="games-note">More games coming soon.</p>
+  </main>
+
+  <footer class="site-footer fade-in">
+    <div class="footer-brand">CSE 62B · PORTAL</div>
+    <div class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="students.html">Students Directory</a>
+      <a href="info.html">Class Info</a>
+      <a href="games.html">Games</a>
+      <a href="user-guide.html">User Guide</a>
+      <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+    </div>
+    <div class="footer-note">© 2026 CSE 62 B. All Rights Reserved.</div>
+  </footer>
+</div>
+
+<script src="../assets/js/auth.js"></script>
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.getAttribute('data-theme') === 'light';
+    html.setAttribute('data-theme', isLight ? '' : 'light');
+    localStorage.setItem('cse62b-theme', isLight ? '' : 'light');
+  }
+  document.getElementById('hamburger')?.addEventListener('click', () => {
+    document.querySelector('.topbar-links')?.classList.toggle('open');
+  });
+</script>
+</body>
+</html>

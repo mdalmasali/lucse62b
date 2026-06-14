@@ -1,7 +1,7 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>window.location.replace('games/imposter.html');</script>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="manifest" href="/manifest.json">
@@ -10,7 +10,7 @@
   <title>Find the Imposter | CSE 62B</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     .game-wrap { max-width: 860px; margin: 32px auto 80px; padding: 0 16px; }
@@ -218,10 +218,10 @@
 <body>
 <div class="wrapper">
   <nav class="topbar fade-in">
-    <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+    <a href="../../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
     <ul class="topbar-links">
-      <li><a href="../index.html">Home</a></li>
-      <li><a href="game.html" class="active">Game</a></li>
+      <li><a href="../../index.html">Home</a></li>
+      <li><a href="imposter.html" class="active">Game</a></li>
     </ul>
     <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Toggle theme">
       <i class="fa-solid fa-circle-half-stroke"></i>
@@ -230,8 +230,8 @@
   </nav>
   <div class="mobile-nav-overlay" id="mobileNav">
     <button class="mobile-nav-close" id="mobileNavClose">✕</button>
-    <a href="../index.html">Home</a>
-    <a href="game.html">Game</a>
+    <a href="../../index.html">Home</a>
+    <a href="imposter.html">Game</a>
   </div>
 
   <div class="game-wrap">
@@ -504,7 +504,7 @@
 <!-- Toast -->
 <div class="g-toast" id="gToast"></div>
 
-<script src="../assets/js/theme.js"></script>
+<script src="../../assets/js/theme.js"></script>
 <script>
 // ══════════════════════════════════════════
 //  Find the Imposter — Game Logic
@@ -1397,7 +1397,7 @@ document.getElementById('mobileNavClose')?.addEventListener('click', () => docum
   } catch(e) {}
 
   if (!session || !session.id) {
-    window.location.replace('login.html?next=game.html');
+    window.location.replace('../login.html?next=games/imposter.html');
     return;
   }
 
@@ -1441,3 +1441,4 @@ document.getElementById('mobileNavClose')?.addEventListener('click', () => docum
 </script>
 </body>
 </html>
+
