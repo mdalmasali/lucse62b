@@ -739,8 +739,7 @@
       { id: 'final-routine',   label: 'Final Term',       icon: 'fa-solid fa-calendar-xmark',       color: '#f87171', group: 'Routines' },
       { id: 'retake-improve',  label: 'Retake & Improve', icon: 'fa-solid fa-rotate-right',         color: '#f43f5e', group: 'Routines' },
       /* ── Academics ── */
-      { id: 'course-offer',    label: 'Course Offer',     icon: 'fa-solid fa-book-open',            color: '#38bdf8', group: 'Academics' },
-      { id: 'all-course',      label: 'All Courses',      icon: 'fa-solid fa-layer-group',          color: '#34d399', group: 'Academics' },
+      { id: 'course-offer',    label: 'Course Offer',     icon: 'fa-solid fa-layer-group',          color: '#38bdf8', group: 'Academics' },
       { id: 'semester',        label: 'Semester Info',    icon: 'fa-solid fa-graduation-cap',       color: '#f472b6', group: 'Academics' },
       /* ── General ── */
       { id: 'bus',             label: 'Bus Schedule',     icon: 'fa-solid fa-bus',                  color: '#fbbf24', group: 'General' },
@@ -908,10 +907,9 @@
       'teachers':         'info/teachers.js',
       'group-links':      'info/group-links.js',
       'bkash':            'info/bkash.js',
-      'course-offer':     'info/course-offer.js',
+      'course-offer':     'info/all-course.js',
       'bus':              'info/bus.js',
       'semester':         'info/semester.js',
-      'all-course':       'info/all-course.js',
       'retake-improve':   'info/retake-improve.js',
     };
 
@@ -929,14 +927,12 @@
       if (item.id === 'teachers')        { loadTeachers(body);              return; }
       if (item.id === 'group-links')     { loadGroupLinks(body);            return; }
       if (item.id === 'bkash')           { loadBkash(body);                 return; }
-      if (item.id === 'course-offer')   { loadCourseOffer(body);           return; }
+      if (item.id === 'course-offer')   { loadAllCourse(body);             return; }
       if (item.id === 'bus')            { loadBus(body);                   return; }
       if (item.id === 'semester')      { loadSemester(body);              return; }
-      if (item.id === 'all-course')      { loadAllCourse(body);        return; }
       if (item.id === 'retake-improve')  { loadRetakeImprove(body);    return; }
 
       const COMING = {
-        'course-offer':  'Current semester course offer will be shown here.',
         'teachers':      'Teacher contact numbers and emails will be shown here.',
         'bkash':         'bKash payment number and fees codes will be shown here.',
       };
