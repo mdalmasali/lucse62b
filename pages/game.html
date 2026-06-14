@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>Find the Imposter | CSE 62B</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    .game-wrap { max-width: 860px; margin: 32px auto 80px; padding: 0 16px; }
+
+    /* Screens */
+    .g-screen { display: none; }
+    .g-screen.active { display: block; }
+
+    /* ── Home ── */
+    .g-hero { text-align: center; padding: 40px 0 32px; }
+    .g-hero-icon { font-size: 4.5rem; line-height: 1; margin-bottom: 16px; animation: heroFloat 3s ease-in-out infinite; }
+    @keyframes heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .g-hero h1 { font-family: 'Space Grotesk',sans-serif; font-size: 2.2rem; font-weight: 900; background: linear-gradient(135deg,#a78bfa,#f472b6,#fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+    .g-hero p { color: var(--text-secondary); font-size: .95rem; max-width: 420px; margin: 0 auto; line-height: 1.6; }
+
+    .g-home-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px; margin-bottom: 16px; backdrop-filter: blur(16px); }
+    .g-home-card-title { font-size: .72rem; font-weight: 700; color: var(--accent-bright); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; }
+    .g-name-input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: inherit; font-size: .95rem; outline: none; transition: border-color .2s; }
+    .g-name-input:focus { border-color: var(--accent); }
+    html[data-theme="light"] .g-name-input { background: rgba(0,0,0,.04); }
+
+    .g-home-btns { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .g-join-row { display: flex; gap: 8px; flex: 1; min-width: 200px; }
+    .g-join-row input { flex: 1; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; font-size: 1rem; }
+
+    /* ── Buttons ── */
+    .g-btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border: none; border-radius: 12px; font-family: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s, opacity .2s; white-space: nowrap; }
+    .g-btn:hover { transform: translateY(-2px); }
+    .g-btn:active { transform: translateY(0); }
+    .g-btn:disabled { opacity: .4; pointer-events: none; }
+    .g-btn.primary { background: linear-gradient(135deg,#7c3aed,#a855f7); color: #fff; box-shadow: 0 4px 20px rgba(124,58,237,.35); }
+    .g-btn.primary:hover { box-shadow: 0 8px 28px rgba(124,58,237,.5); }
+    .g-btn.secondary { background: rgba(255,255,255,.07); border: 1px solid var(--border-light); color: var(--text); }
+    .g-btn.secondary:hover { background: rgba(255,255,255,.12); }
+    .g-btn.danger { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: #f87171; }
+    .g-btn.danger:hover { background: rgba(239,68,68,.25); }
+    .g-btn.large { padding: 14px 32px; font-size: 1rem; border-radius: 14px; }
+    .g-btn.full { width: 100%; justify-content: center; }
+    html[data-theme="light"] .g-btn.secondary { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.15); color: var(--text); }
+
+    /* ── Lobby ── */
+    .lobby-header { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .lobby-code-wrap { display: flex; align-items: center; gap: 10px; }
+    .lobby-code-label { font-size: .68rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .08em; }
+    .lobby-code { font-family: 'Space Grotesk',monospace; font-size: 2rem; font-weight: 900; color: var(--accent-bright); letter-spacing: 4px; }
+    .lobby-copy-btn { background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.25); color: var(--accent-bright); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: .85rem; transition: background .2s; }
+    .lobby-copy-btn:hover { background: rgba(167,139,250,.2); }
+    .lobby-status { font-size: .82rem; color: var(--text-secondary); margin-left: auto; }
+
+    .lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media(max-width: 640px) { .lobby-grid { grid-template-columns: 1fr; } }
+
+    .g-panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px 18px; backdrop-filter: blur(16px); }
+    .g-panel-title { font-size: .72rem; font-weight: 700; color: var(--accent-bright); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .g-panel-title span { color: var(--text-secondary); font-size: .85em; font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+    /* Players list */
+    .player-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .player-item:last-child { border-bottom: none; }
+    .player-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .player-name { font-size: .9rem; font-weight: 600; flex: 1; }
+    .player-badge { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .badge-host { background: rgba(251,191,36,.15); color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+    .badge-you { background: rgba(167,139,250,.15); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
+    .badge-ready { background: rgba(52,211,153,.15); color: #34d399; border: 1px solid rgba(52,211,153,.3); }
+    .badge-pending { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+
+    /* Settings */
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: .83rem; color: var(--text-secondary); font-weight: 500; flex-shrink: 0; }
+    .setting-row select { appearance: none; -webkit-appearance: none; background-color: rgba(15,15,25,.95); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a78bfa' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; border: 1px solid rgba(124,58,237,.3); border-radius: 8px; color: var(--text); font-family: inherit; font-size: .82rem; padding: 6px 28px 6px 10px; outline: none; cursor: pointer; min-width: 110px; transition: border-color .2s; }
+    .setting-row select:focus { border-color: var(--accent); }
+    html[data-theme="light"] .setting-row select { background-color: #fff; border-color: rgba(124,58,237,.25); }
+
+    .toggle-group { display: flex; gap: 4px; }
+    .toggle-btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .toggle-btn.active { background: rgba(124,58,237,.2); border-color: rgba(124,58,237,.5); color: var(--accent-bright); }
+
+    /* Toggle switch */
+    .g-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+    .g-switch input { opacity: 0; width: 0; height: 0; }
+    .g-switch-slider { position: absolute; inset: 0; background: rgba(255,255,255,.1); border-radius: 22px; cursor: pointer; transition: .3s; border: 1px solid var(--border); }
+    .g-switch-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--text-secondary); border-radius: 50%; transition: .3s; }
+    .g-switch input:checked + .g-switch-slider { background: rgba(124,58,237,.4); border-color: rgba(124,58,237,.6); }
+    .g-switch input:checked + .g-switch-slider:before { transform: translateX(18px); background: var(--accent-bright); }
+
+    /* Pending approvals */
+    .pending-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .pending-item:last-child { border-bottom: none; }
+    .pending-item .pending-name { flex: 1; font-size: .88rem; font-weight: 600; }
+    .pending-btns { display: flex; gap: 6px; }
+    .pending-btns button { padding: 4px 10px; border: none; border-radius: 7px; font-family: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
+    .approve-btn { background: rgba(52,211,153,.2); color: #34d399; }
+    .reject-btn { background: rgba(239,68,68,.15); color: #f87171; }
+
+    /* Start section */
+    .start-wrap { text-align: center; padding: 8px 0 4px; }
+    .start-hint { font-size: .8rem; color: var(--text-secondary); margin-bottom: 12px; min-height: 20px; }
+    .waiting-msg { text-align: center; padding: 16px; color: var(--text-secondary); font-size: .9rem; }
+
+    /* Settings view (non-host) */
+    .settings-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: .77rem; color: var(--text-secondary); margin: 3px; }
+    .settings-chip strong { color: var(--text); }
+    .setting-col { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+    .custom-num-input { width: 86px; padding: 5px 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(124,58,237,.35); border-radius: 8px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none; text-align: center; }
+    .custom-num-input:focus { border-color: var(--accent); }
+    html[data-theme="light"] .custom-num-input { background: rgba(0,0,0,.04); }
+
+    /* ── Role Reveal ── */
+    .role-reveal-wrap { display: flex; flex-direction: column; align-items: center; padding: 32px 16px; gap: 24px; }
+    .role-card { background: var(--card); border: 2px solid var(--border); border-radius: 24px; padding: 40px 36px; text-align: center; max-width: 380px; width: 100%; backdrop-filter: blur(20px); transition: border-color .3s; }
+    .role-card.crewmate { border-color: rgba(52,211,153,.4); box-shadow: 0 0 40px rgba(52,211,153,.1); }
+    .role-card.imposter { border-color: rgba(239,68,68,.4); box-shadow: 0 0 40px rgba(239,68,68,.12); }
+    .role-icon { font-size: 4rem; line-height: 1; margin-bottom: 12px; }
+    .role-label-text { font-size: 1.05rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 20px; }
+    .role-label-text.crew { color: #34d399; }
+    .role-label-text.imp { color: #f87171; }
+    .role-word-box { background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.2); border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; }
+    .role-word-lbl { font-size: .68rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+    .role-word-val { font-family: 'Space Grotesk',sans-serif; font-size: 2rem; font-weight: 900; color: var(--text); }
+    .role-tip { font-size: .82rem; color: var(--text-secondary); line-height: 1.5; }
+    .ready-status { text-align: center; font-size: .85rem; color: var(--text-secondary); }
+    .ready-status strong { color: var(--accent-bright); }
+    .ready-dots { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+    .ready-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+    .ready-dot.done { background: #34d399; }
+
+    /* ── Discussion / Vote Phase ── */
+    .phase-wrap { padding: 16px 0; }
+    .phase-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 20px; }
+    .phase-title { font-family: 'Space Grotesk',sans-serif; font-size: 1.3rem; font-weight: 700; }
+    .phase-timer { font-family: 'Space Grotesk',monospace; font-size: 1.6rem; font-weight: 900; color: var(--accent-bright); }
+    .phase-timer.urgent { color: #f87171; animation: timerPulse .5s ease-in-out infinite; }
+    @keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    .word-strip { background: linear-gradient(135deg,rgba(124,58,237,.1),rgba(6,182,212,.07)); border: 1px solid rgba(124,58,237,.2); border-radius: 14px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    .word-strip-lbl { font-size: .7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .08em; }
+    .word-strip-val { font-family: 'Space Grotesk',sans-serif; font-size: 1.4rem; font-weight: 900; }
+    .word-strip-val.unknown { color: var(--text-secondary); font-size: 1.1rem; font-style: italic; }
+
+    .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .pg-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; transition: border-color .2s; }
+    .pg-card.is-you { border-color: rgba(167,139,250,.4); }
+    .pg-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .95rem; font-weight: 800; color: #fff; margin: 0 auto 8px; }
+    .pg-name { font-size: .83rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pg-sub { font-size: .7rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Voting ── */
+    .vote-hint { text-align: center; color: var(--text-secondary); font-size: .9rem; margin-bottom: 20px; }
+    .vote-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .vote-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 10px; text-align: center; cursor: pointer; transition: all .2s; position: relative; }
+    .vote-card:hover:not(.voted-for):not(.cant-vote) { border-color: rgba(124,58,237,.5); background: rgba(124,58,237,.06); transform: translateY(-2px); }
+    .vote-card.voted-for { border-color: rgba(124,58,237,.6); background: rgba(124,58,237,.1); }
+    .vote-card.voted-for::after { content: '✓'; position: absolute; top: 6px; right: 8px; font-size: .75rem; color: var(--accent-bright); font-weight: 900; }
+    .vote-card.cant-vote { opacity: .4; pointer-events: none; }
+    .vote-my-pick { text-align: center; color: var(--accent-bright); font-weight: 600; font-size: .88rem; padding: 8px; }
+
+    /* ── Results ── */
+    .result-banner { text-align: center; padding: 32px 20px; }
+    .result-outcome { font-family: 'Space Grotesk',sans-serif; font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+    .result-outcome.crew-win { color: #34d399; }
+    .result-outcome.imp-win { color: #f87171; }
+    .result-outcome.no-vote { color: var(--accent-bright); }
+    .result-sub { font-size: .9rem; color: var(--text-secondary); }
+
+    .reveal-card { background: var(--card); border: 1px solid rgba(239,68,68,.3); border-radius: 18px; padding: 20px; margin: 16px 0; text-align: center; box-shadow: 0 0 30px rgba(239,68,68,.08); }
+    .reveal-label { font-size: .7rem; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+    .reveal-names { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .reveal-name-chip { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); border-radius: 12px; padding: 8px 14px; }
+    .reveal-name-chip .pg-avatar { width: 32px; height: 32px; font-size: .75rem; margin: 0; }
+    .reveal-name-chip .name { font-weight: 700; font-size: .9rem; }
+
+    .vote-results { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin: 16px 0; }
+    .vr-title { font-size: .7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; }
+    .vr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .vr-row:last-child { border-bottom: none; }
+    .vr-voter { font-size: .85rem; flex: 1; }
+    .vr-arrow { color: var(--text-secondary); font-size: .8rem; }
+    .vr-target { font-size: .85rem; font-weight: 600; flex: 1; text-align: right; }
+    .vr-target.was-imp { color: #f87171; }
+
+    .score-panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin: 16px 0; display: flex; justify-content: center; gap: 40px; text-align: center; }
+    .score-team { }
+    .score-val { font-family: 'Space Grotesk',sans-serif; font-size: 2.4rem; font-weight: 900; line-height: 1; }
+    .score-val.crew { color: #34d399; }
+    .score-val.imp { color: #f87171; }
+    .score-lbl { font-size: .72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+
+    .result-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+
+    /* ── Loading overlay ── */
+    .g-loading { position: fixed; inset: 0; background: rgba(3,3,5,.8); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .g-loading-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--text); font-size: .95rem; }
+    .g-loading-inner i { font-size: 2rem; color: var(--accent-bright); }
+
+    /* ── Toast ── */
+    .g-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9998; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+    .toast-item { background: rgba(15,15,25,.95); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 18px; font-size: .85rem; font-weight: 600; color: var(--text); white-space: nowrap; animation: toastIn .3s cubic-bezier(.34,1.56,.64,1); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .toast-item.success { border-color: rgba(52,211,153,.4); color: #34d399; }
+    .toast-item.error { border-color: rgba(239,68,68,.4); color: #f87171; }
+    @keyframes toastIn { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <nav class="topbar fade-in">
+    <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+    <ul class="topbar-links">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="game.html" class="active">Game</a></li>
+    </ul>
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Toggle theme">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </nav>
+  <div class="mobile-nav-overlay" id="mobileNav">
+    <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+    <a href="../index.html">Home</a>
+    <a href="game.html">Game</a>
+  </div>
+
+  <div class="game-wrap">
+
+    <!-- ══ HOME ══ -->
+    <div id="s-home" class="g-screen active">
+      <div class="g-hero">
+        <div class="g-hero-icon">🕵️</div>
+        <h1>Find the Imposter</h1>
+        <p>Everyone gets a word — except one person. Find the imposter before they blend in!</p>
+      </div>
+      <div class="g-home-card" id="playerInfoCard" style="display:none">
+        <div class="g-home-card-title"><i class="fa-solid fa-user"></i> Playing as</div>
+        <div id="playerInfoDisplay" style="display:flex;align-items:center;gap:12px;padding:4px 0">
+          <div id="playerInfoAvatar"></div>
+          <div>
+            <div id="playerInfoName" style="font-size:1rem;font-weight:700"></div>
+            <div id="playerInfoId" style="font-size:.75rem;color:var(--text-secondary)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="g-home-card">
+        <div class="g-home-card-title"><i class="fa-solid fa-gamepad"></i> Play</div>
+        <div class="g-home-btns">
+          <button id="btnCreate" class="g-btn primary">
+            <i class="fa-solid fa-plus"></i> Create Room
+          </button>
+          <div class="g-join-row">
+            <input id="joinCodeInput" class="g-name-input" type="text" placeholder="ROOM CODE" maxlength="6" autocomplete="off" style="text-transform:uppercase;letter-spacing:3px;font-weight:800"/>
+            <button id="btnJoin" class="g-btn secondary">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i> Join
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;font-size:.78rem;color:var(--text-secondary);">
+        Stay on Discord with friends — share the room code and play here.
+      </div>
+    </div>
+
+    <!-- ══ LOBBY ══ -->
+    <div id="s-lobby" class="g-screen">
+      <div class="lobby-header">
+        <div class="lobby-code-wrap">
+          <span class="lobby-code-label">Room Code</span>
+          <div class="lobby-code" id="lobbyCode">——</div>
+          <button class="lobby-copy-btn" id="btnCopyCode" title="Copy"><i class="fa-solid fa-copy"></i></button>
+        </div>
+        <div class="lobby-status" id="lobbyStatus">Waiting for players...</div>
+      </div>
+
+      <div class="lobby-grid">
+        <!-- Players -->
+        <div class="g-panel">
+          <div class="g-panel-title"><i class="fa-solid fa-users"></i> Players <span id="playerCountBadge">0/8</span></div>
+          <div id="playersList"></div>
+          <!-- Pending (private room, host only) -->
+          <div id="pendingSection" style="display:none">
+            <div class="g-panel-title" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px"><i class="fa-solid fa-bell" style="color:#fbbf24"></i> Waiting Approval</div>
+            <div id="pendingList"></div>
+          </div>
+        </div>
+
+        <!-- Settings (host) / View (non-host) -->
+        <div class="g-panel" id="settingsPanel">
+          <div class="g-panel-title"><i class="fa-solid fa-sliders"></i> Settings</div>
+          <!-- Word Pack -->
+          <div class="setting-row">
+            <span class="setting-label">Word Pack</span>
+            <select id="setWordPack">
+              <option value="random">🎲 Random</option>
+              <option value="movies">🎬 Movies</option>
+              <option value="sports">⚽ Sports</option>
+              <option value="animals">🦁 Animals</option>
+              <option value="food">🍕 Food</option>
+              <option value="bangla">🇧🇩 বাংলা</option>
+            </select>
+          </div>
+          <!-- Imposter Count -->
+          <div class="setting-row">
+            <span class="setting-label">Imposters</span>
+            <div class="setting-col">
+              <div class="toggle-group" id="impCountGroup">
+                <button class="toggle-btn active" data-val="1">1</button>
+                <button class="toggle-btn" data-val="2">2</button>
+                <button class="toggle-btn" data-val="3">3</button>
+                <button class="toggle-btn" data-val="custom">···</button>
+              </div>
+              <input type="number" id="impCustomInput" class="custom-num-input" min="1" max="10" placeholder="count" style="display:none"/>
+            </div>
+          </div>
+          <!-- Discussion Time -->
+          <div class="setting-row">
+            <span class="setting-label">Discussion</span>
+            <div class="setting-col">
+              <select id="setDiscussTime">
+                <option value="30">30 sec</option>
+                <option value="60" selected>1 min</option>
+                <option value="120">2 min</option>
+                <option value="0">No timer</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <input type="number" id="discussCustomInput" class="custom-num-input" min="5" max="600" placeholder="seconds" style="display:none"/>
+            </div>
+          </div>
+          <!-- Voting Time -->
+          <div class="setting-row" id="voteTimeRow">
+            <span class="setting-label">Voting</span>
+            <div class="setting-col">
+              <select id="setVoteTime">
+                <option value="30">30 sec</option>
+                <option value="60" selected>1 min</option>
+                <option value="0">No timer</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <input type="number" id="voteCustomInput" class="custom-num-input" min="5" max="300" placeholder="seconds" style="display:none"/>
+            </div>
+          </div>
+          <!-- Rounds -->
+          <div class="setting-row">
+            <span class="setting-label">Rounds</span>
+            <div class="setting-col">
+              <div class="toggle-group" id="roundsGroup">
+                <button class="toggle-btn active" data-val="1">1</button>
+                <button class="toggle-btn" data-val="3">3</button>
+                <button class="toggle-btn" data-val="5">5</button>
+                <button class="toggle-btn" data-val="custom">···</button>
+              </div>
+              <input type="number" id="roundsCustomInput" class="custom-num-input" min="1" max="20" placeholder="rounds" style="display:none"/>
+            </div>
+          </div>
+          <!-- Max Players -->
+          <div class="setting-row">
+            <span class="setting-label">Max Players</span>
+            <div class="setting-col">
+              <select id="setMaxPlayers">
+                <option value="4">4</option>
+                <option value="6">6</option>
+                <option value="8" selected>8</option>
+                <option value="10">10</option>
+                <option value="12">12</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <input type="number" id="maxPlayersCustomInput" class="custom-num-input" min="3" max="30" placeholder="players" style="display:none"/>
+            </div>
+          </div>
+          <!-- Room Privacy -->
+          <div class="setting-row">
+            <span class="setting-label">Room</span>
+            <div class="toggle-group" id="privacyGroup">
+              <button class="toggle-btn active" data-val="false">Public</button>
+              <button class="toggle-btn" data-val="true">Private</button>
+            </div>
+          </div>
+          <!-- Skip Vote -->
+          <div class="setting-row">
+            <span class="setting-label">Skip Vote</span>
+            <label class="g-switch"><input type="checkbox" id="setSkipVote"><span class="g-switch-slider"></span></label>
+          </div>
+          <!-- Reveal at End -->
+          <div class="setting-row">
+            <span class="setting-label">Reveal Imposter</span>
+            <label class="g-switch"><input type="checkbox" id="setRevealEnd" checked><span class="g-switch-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- Settings view for non-host -->
+        <div class="g-panel" id="settingsView" style="display:none">
+          <div class="g-panel-title"><i class="fa-solid fa-circle-info"></i> Game Settings</div>
+          <div id="settingsViewContent" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px"></div>
+        </div>
+      </div>
+
+      <!-- Host: start button -->
+      <div id="startWrap" class="start-wrap" style="display:none">
+        <div class="start-hint" id="startHint"></div>
+        <button id="btnStart" class="g-btn primary large full" disabled>
+          <i class="fa-solid fa-play"></i> Start Game
+        </button>
+      </div>
+
+      <!-- Non-host: waiting -->
+      <div class="waiting-msg" id="waitingMsg" style="display:none">
+        <i class="fa-solid fa-spinner fa-spin"></i> Waiting for the host to start...
+      </div>
+
+      <!-- Leave room -->
+      <div style="text-align:center;margin-top:16px">
+        <button id="btnLeave" class="g-btn danger"><i class="fa-solid fa-door-open"></i> Leave Room</button>
+      </div>
+    </div>
+
+    <!-- ══ ROLE REVEAL ══ -->
+    <div id="s-role" class="g-screen">
+      <div class="role-reveal-wrap">
+        <div class="role-card" id="roleCard">
+          <div class="role-icon" id="roleIcon"></div>
+          <div class="role-label-text" id="roleLabel"></div>
+          <div class="role-word-box" id="roleWordBox">
+            <div class="role-word-lbl">The Word is</div>
+            <div class="role-word-val" id="roleWord"></div>
+          </div>
+          <div class="role-tip" id="roleTip"></div>
+        </div>
+        <div class="ready-status">
+          <div id="readyCountText"></div>
+          <div class="ready-dots" id="readyDots"></div>
+        </div>
+        <button id="btnReady" class="g-btn primary large">
+          <i class="fa-solid fa-check"></i> I'm Ready!
+        </button>
+        <button id="btnStartDiscuss" class="g-btn primary large" style="display:none">
+          <i class="fa-solid fa-comments"></i> Start Discussion
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ DISCUSSION ══ -->
+    <div id="s-discuss" class="g-screen">
+      <div class="phase-wrap">
+        <div class="phase-header">
+          <div class="phase-title">💬 Discussion</div>
+          <div class="phase-timer" id="discussTimer">—</div>
+        </div>
+        <div class="word-strip" id="discussWordStrip"></div>
+        <div class="players-grid" id="discussPlayers"></div>
+        <div id="endDiscussWrap" style="display:none;text-align:center;margin-top:4px">
+          <button id="btnEndDiscuss" class="g-btn secondary">
+            <i class="fa-solid fa-forward-step"></i> End Discussion Early
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VOTING ══ -->
+    <div id="s-vote" class="g-screen">
+      <div class="phase-wrap">
+        <div class="phase-header">
+          <div class="phase-title">🗳️ Vote</div>
+          <div class="phase-timer" id="voteTimer">—</div>
+        </div>
+        <p class="vote-hint">Who do you think is the imposter? Cast your vote!</p>
+        <div class="vote-grid" id="voteGrid"></div>
+        <div class="vote-my-pick" id="myVoteDisplay" style="display:none">
+          You voted for: <strong id="myVoteTarget"></strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RESULTS ══ -->
+    <div id="s-result" class="g-screen">
+      <div class="result-banner" id="resultBanner"></div>
+      <div id="revealSection" style="display:none"></div>
+      <div id="voteResultSection" style="display:none"></div>
+      <div id="scoreSection" style="display:none"></div>
+      <div class="result-actions" id="resultActions"></div>
+    </div>
+
+  </div><!-- /.game-wrap -->
+</div><!-- /.wrapper -->
+
+<!-- Loading overlay -->
+<div class="g-loading" id="gLoading" style="display:none">
+  <div class="g-loading-inner">
+    <i class="fa-solid fa-spinner fa-spin"></i>
+    <span id="gLoadingMsg">Loading...</span>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="g-toast" id="gToast"></div>
+
+<script src="../assets/js/theme.js"></script>
+<script>
+// ══════════════════════════════════════════
+//  Find the Imposter — Game Logic
+// ══════════════════════════════════════════
+
+const SUPABASE_URL = 'https://ftvtlqxpalwvyserujuh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Word Packs ──────────────────────────────────────────────────────────────
+const WORD_PACKS = {
+  random: { label: 'Random Mix', icon: '🎲', words: [] },
+  movies: { label: 'Movies', icon: '🎬', words: ['Avatar','Inception','Titanic','The Dark Knight','Interstellar','Parasite','Joker','Avengers','Frozen','Lion King','The Matrix','Gravity','Forrest Gump','Gladiator','The Godfather','Braveheart','Saving Private Ryan','Spirited Away','Your Name','Spider-Man','Black Panther','Coco','Finding Nemo','Shrek','Up'] },
+  sports: { label: 'Sports', icon: '⚽', words: ['Cricket','Football','Basketball','Tennis','Badminton','Swimming','Boxing','Golf','Volleyball','Cycling','Wrestling','Archery','Table Tennis','Hockey','Kabaddi','Athletics','Gymnastics','Judo','Karate','Shooting','Fencing','Rowing','Snooker','Dart','Skiing'] },
+  animals: { label: 'Animals', icon: '🦁', words: ['Lion','Tiger','Elephant','Giraffe','Penguin','Dolphin','Eagle','Crocodile','Kangaroo','Koala','Cheetah','Gorilla','Panda','Polar Bear','Zebra','Hippo','Rhino','Parrot','Flamingo','Octopus','Shark','Whale','Butterfly','Peacock','Chameleon'] },
+  food: { label: 'Food', icon: '🍕', words: ['Pizza','Biryani','Sushi','Burger','Pasta','Tacos','Ramen','Kebab','Samosa','Lasagna','Pancake','Cheesecake','Naan','Fried Rice','Shawarma','Falafel','Spring Roll','Dim Sum','Curry','Dumpling','Gelato','Croissant','Momos','Pho','Baklava'] },
+  bangla: { label: 'বাংলা', icon: '🇧🇩', words: ['ঢাকা','রিকশা','ইলিশ','সুন্দরবন','পদ্মা','শাপলা','কাঁঠাল','পহেলা বৈশাখ','জামদানি','নকশীকাঁথা','ভাপা পিঠা','মুক্তিযুদ্ধ','মেলা','পুকুর','নৌকা','ঘুড়ি','লুডু','ক্যারম','শীতের সকাল','বৃষ্টি','চা','ইট ভাটা','হাওর','বাঁশ বন','মসজিদ'] }
+};
+WORD_PACKS.random.words = Object.entries(WORD_PACKS).filter(([k]) => k !== 'random').flatMap(([,p]) => p.words);
+
+// ── State ────────────────────────────────────────────────────────────────────
+const G = {
+  playerId: null,
+  playerName: null,
+  roomCode: null,
+  room: null,       // game_rooms row
+  players: [],      // game_players rows
+  me: null,         // my game_players row
+  isHost: false,
+  channel: null,
+  timerInterval: null,
+  myVote: null,
+  // local settings (host)
+  settings: { wordPack:'random', imposterCount:1, discussionTime:60, votingTime:60, rounds:1, maxPlayers:8, isPrivate:false, allowAnyName:true, skipVote:false, revealAtEnd:true }
+};
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function $id(id) { return document.getElementById(id); }
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast-item' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  $id('gToast').appendChild(el);
+  setTimeout(() => el.style.opacity = '0', 2200);
+  setTimeout(() => el.remove(), 2600);
+}
+
+function showLoading(msg = 'Loading...') {
+  $id('gLoadingMsg').textContent = msg;
+  $id('gLoading').style.display = 'flex';
+}
+function hideLoading() { $id('gLoading').style.display = 'none'; }
+
+function navigate(screenId) {
+  document.querySelectorAll('.g-screen').forEach(s => s.classList.remove('active'));
+  $id(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function genPlayerId() {
+  let id = localStorage.getItem('game_pid');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    localStorage.setItem('game_pid', id);
+  }
+  return id;
+}
+
+function genRoomCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function getPlayerColor(name) {
+  let h = 0;
+  for (const c of (name || '?')) h = ((h << 5) - h) + c.charCodeAt(0);
+  const colors = ['#7c3aed','#2563eb','#dc2626','#059669','#d97706','#db2777','#0891b2','#65a30d','#9333ea','#c2410c'];
+  return colors[Math.abs(h) % colors.length];
+}
+
+function getInitials(name) {
+  return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function avatarHtml(name, size = 34) {
+  const bg = getPlayerColor(name);
+  return `<div class="player-avatar" style="width:${size}px;height:${size}px;background:${bg};font-size:${size * .35}px">${getInitials(name)}</div>`;
+}
+
+function fmtTime(secs) {
+  if (secs <= 0) return '0:00';
+  const m = Math.floor(secs / 60), s = secs % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function pickWord(pack) {
+  const words = WORD_PACKS[pack]?.words || WORD_PACKS.random.words;
+  return words[Math.floor(Math.random() * words.length)];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Supabase helpers ─────────────────────────────────────────────────────────
+async function getRoom(code) {
+  const { data, error } = await sb.from('game_rooms').select('*').eq('room_code', code).single();
+  if (error) return null;
+  return data;
+}
+
+async function getPlayers(code) {
+  const { data } = await sb.from('game_players').select('*').eq('room_code', code).order('joined_at');
+  return data || [];
+}
+
+async function updateRoom(code, patch) {
+  const { error } = await sb.from('game_rooms').update(patch).eq('room_code', code);
+  return !error;
+}
+
+async function updatePlayer(code, playerId, patch) {
+  const { error } = await sb.from('game_players').update(patch).eq('room_code', code).eq('player_id', playerId);
+  return !error;
+}
+
+// ── Realtime ─────────────────────────────────────────────────────────────────
+function subscribeToRoom(code) {
+  if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
+  G.channel = sb.channel(`room:${code}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_rooms', filter: `room_code=eq.${code}` }, async payload => {
+      G.room = payload.new || await getRoom(code);
+      G.isHost = G.playerId === G.room?.host_id;
+      await refreshPlayers();
+      renderCurrentScreen();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `room_code=eq.${code}` }, async () => {
+      await refreshPlayers();
+      renderCurrentScreen();
+    })
+    .subscribe();
+}
+
+async function refreshPlayers() {
+  G.players = await getPlayers(G.roomCode);
+  G.me = G.players.find(p => p.player_id === G.playerId) || null;
+}
+
+// ── Render: Lobby ─────────────────────────────────────────────────────────────
+function renderLobby() {
+  if (!G.room || !G.roomCode) return;
+  $id('lobbyCode').textContent = G.roomCode;
+
+  const approved = G.players.filter(p => p.is_approved);
+  const pending  = G.players.filter(p => !p.is_approved);
+  $id('playerCountBadge').textContent = `${approved.length}/${G.room.max_players}`;
+
+  // Players list
+  $id('playersList').innerHTML = approved.map(p => {
+    const isMe = p.player_id === G.playerId;
+    const badges = [];
+    if (p.is_host) badges.push(`<span class="player-badge badge-host">Host</span>`);
+    if (isMe) badges.push(`<span class="player-badge badge-you">You</span>`);
+    if (p.is_ready) badges.push(`<span class="player-badge badge-ready">Ready</span>`);
+    return `<div class="player-item">${avatarHtml(p.player_name)}<span class="player-name">${p.player_name}</span>${badges.join('')}</div>`;
+  }).join('') || '<div style="color:var(--text-secondary);font-size:.85rem;padding:8px 0">No players yet</div>';
+
+  $id('lobbyStatus').textContent = approved.length < 2 ? `Need at least 2 players` : `${approved.length} players in lobby`;
+
+  // Pending section (private room, host only)
+  if (G.isHost && G.room.is_private && pending.length) {
+    $id('pendingSection').style.display = 'block';
+    $id('pendingList').innerHTML = pending.map(p => `
+      <div class="pending-item">
+        ${avatarHtml(p.player_name, 30)}
+        <span class="pending-name">${p.player_name}</span>
+        <div class="pending-btns">
+          <button class="approve-btn" onclick="approvePlayer('${p.player_id}')">✓</button>
+          <button class="reject-btn" onclick="rejectPlayer('${p.player_id}')">✗</button>
+        </div>
+      </div>`).join('');
+  } else {
+    $id('pendingSection').style.display = 'none';
+  }
+
+  // Settings panel visibility
+  if (G.isHost) {
+    $id('settingsPanel').style.display = 'block';
+    $id('settingsView').style.display = 'none';
+    $id('startWrap').style.display = 'block';
+    $id('waitingMsg').style.display = 'none';
+    // Sync local settings display with DB
+    syncSettingsUI();
+    // Start button state
+    const canStart = approved.length >= 2;
+    $id('btnStart').disabled = !canStart;
+    $id('startHint').textContent = canStart ? 'All set — start when everyone is here!' : `Need at least 2 players (${approved.length}/2)`;
+    // Voting time row visibility
+    $id('voteTimeRow').style.display = G.settings.skipVote ? 'none' : 'flex';
+  } else {
+    $id('settingsPanel').style.display = 'none';
+    $id('settingsView').style.display = 'block';
+    $id('startWrap').style.display = 'none';
+    $id('waitingMsg').style.display = 'block';
+    // Show settings as chips
+    const icons = { wordPack: '🎲', imposterCount: '🕵️', discussionTime: '💬', votingTime: '🗳️', rounds: '🔄', maxPlayers: '👥' };
+    const packLabel = WORD_PACKS[G.room.word_pack]?.label || G.room.word_pack;
+    const dtLabel = G.room.discussion_time === 0 ? 'No timer' : G.room.discussion_time < 60 ? `${G.room.discussion_time}s` : `${G.room.discussion_time/60}min`;
+    const vtLabel = G.room.voting_time === 0 ? 'No timer' : G.room.voting_time < 60 ? `${G.room.voting_time}s` : `${G.room.voting_time/60}min`;
+    const chips = [
+      ['Pack', packLabel],
+      ['Imposters', G.room.imposter_count],
+      ['Discussion', dtLabel],
+      ...(G.room.skip_vote ? [] : [['Vote', vtLabel]]),
+      ['Rounds', G.room.rounds_total],
+      ['Players', G.room.max_players],
+      ...(G.room.is_private ? [['Room', 'Private']] : []),
+      ...(G.room.skip_vote ? [['No Vote', '✓']] : []),
+      ...(G.room.reveal_at_end ? [['Reveal', '✓']] : []),
+    ];
+    $id('settingsViewContent').innerHTML = chips.map(([k, v]) => `<div class="settings-chip">${k}: <strong>${v}</strong></div>`).join('');
+  }
+}
+
+function syncSettingsUI() {
+  if (!G.room) return;
+  // Sync local settings object
+  G.settings.wordPack = G.room.word_pack;
+  G.settings.discussionTime = G.room.discussion_time;
+  G.settings.votingTime = G.room.voting_time;
+  G.settings.maxPlayers = G.room.max_players;
+  G.settings.imposterCount = G.room.imposter_count;
+  G.settings.rounds = G.room.rounds_total;
+  G.settings.isPrivate = G.room.is_private;
+  G.settings.allowAnyName = G.room.allow_any_name;
+  G.settings.skipVote = G.room.skip_vote;
+  G.settings.revealAtEnd = G.room.reveal_at_end;
+
+  $id('setWordPack').value = G.room.word_pack;
+
+  // Discussion time — show custom input if value not in preset list
+  const presetDt = ['0','30','60','120'];
+  if (presetDt.includes(String(G.room.discussion_time))) {
+    $id('setDiscussTime').value = G.room.discussion_time;
+    hideCustomInput('discussCustomInput');
+  } else {
+    $id('setDiscussTime').value = 'custom';
+    $id('discussCustomInput').value = G.room.discussion_time;
+    $id('discussCustomInput').style.display = 'block';
+  }
+
+  // Voting time
+  const presetVt = ['0','30','60'];
+  if (presetVt.includes(String(G.room.voting_time))) {
+    $id('setVoteTime').value = G.room.voting_time;
+    hideCustomInput('voteCustomInput');
+  } else {
+    $id('setVoteTime').value = 'custom';
+    $id('voteCustomInput').value = G.room.voting_time;
+    $id('voteCustomInput').style.display = 'block';
+  }
+
+  // Max players
+  const presetMp = ['4','6','8','10','12'];
+  if (presetMp.includes(String(G.room.max_players))) {
+    $id('setMaxPlayers').value = G.room.max_players;
+    hideCustomInput('maxPlayersCustomInput');
+  } else {
+    $id('setMaxPlayers').value = 'custom';
+    $id('maxPlayersCustomInput').value = G.room.max_players;
+    $id('maxPlayersCustomInput').style.display = 'block';
+  }
+
+  // Imposter count toggle (preset: 1,2,3)
+  const presetImp = ['1','2','3'];
+  if (presetImp.includes(String(G.room.imposter_count))) {
+    setActiveToggle('impCountGroup', String(G.room.imposter_count));
+    hideCustomInput('impCustomInput');
+  } else {
+    setActiveToggle('impCountGroup', 'custom');
+    $id('impCustomInput').value = G.room.imposter_count;
+    $id('impCustomInput').style.display = 'block';
+  }
+
+  // Rounds toggle (preset: 1,3,5)
+  const presetRounds = ['1','3','5'];
+  if (presetRounds.includes(String(G.room.rounds_total))) {
+    setActiveToggle('roundsGroup', String(G.room.rounds_total));
+    hideCustomInput('roundsCustomInput');
+  } else {
+    setActiveToggle('roundsGroup', 'custom');
+    $id('roundsCustomInput').value = G.room.rounds_total;
+    $id('roundsCustomInput').style.display = 'block';
+  }
+
+  setActiveToggle('privacyGroup', String(G.room.is_private));
+  $id('setSkipVote').checked = G.room.skip_vote;
+  $id('setRevealEnd').checked = G.room.reveal_at_end;
+}
+
+function setActiveToggle(groupId, val) {
+  $id(groupId)?.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === val);
+  });
+}
+
+// ── Render: Role Reveal ───────────────────────────────────────────────────────
+function renderRoleReveal() {
+  const isImposter = G.me?.is_imposter;
+  const card = $id('roleCard');
+  card.className = 'role-card ' + (isImposter ? 'imposter' : 'crewmate');
+  $id('roleIcon').textContent = isImposter ? '🕵️' : '👥';
+  $id('roleLabel').className = 'role-label-text ' + (isImposter ? 'imp' : 'crew');
+  $id('roleLabel').textContent = isImposter ? 'IMPOSTER' : 'CREWMATE';
+  if (isImposter) {
+    $id('roleWordBox').style.display = 'none';
+    $id('roleTip').textContent = "You don't know the word. Blend in — don't get caught!";
+  } else {
+    $id('roleWordBox').style.display = 'block';
+    $id('roleWord').textContent = G.room.word;
+    $id('roleTip').textContent = 'Give clues about the word — but don\'t say it directly. Find the imposter!';
+  }
+
+  const ready = G.players.filter(p => p.is_approved && p.is_ready).length;
+  const total = G.players.filter(p => p.is_approved).length;
+  $id('readyCountText').textContent = `${ready}/${total} players ready`;
+  $id('readyDots').innerHTML = G.players.filter(p => p.is_approved).map(p =>
+    `<div class="ready-dot ${p.is_ready ? 'done' : ''}" title="${p.player_name}"></div>`
+  ).join('');
+
+  const alreadyReady = G.me?.is_ready;
+  $id('btnReady').style.display = alreadyReady ? 'none' : 'inline-flex';
+
+  if (G.isHost && ready === total) {
+    $id('btnStartDiscuss').style.display = 'inline-flex';
+  } else {
+    $id('btnStartDiscuss').style.display = 'none';
+  }
+}
+
+// ── Render: Discussion ────────────────────────────────────────────────────────
+function renderDiscussion() {
+  const isImp = G.me?.is_imposter;
+  $id('discussWordStrip').innerHTML = `
+    <div>
+      <div class="word-strip-lbl">The Word</div>
+    </div>
+    <div class="word-strip-val ${isImp ? 'unknown' : ''}">${isImp ? '??? — You are the imposter!' : (G.room?.word || '')}</div>`;
+
+  $id('discussPlayers').innerHTML = G.players.filter(p => p.is_approved).map(p => `
+    <div class="pg-card ${p.player_id === G.playerId ? 'is-you' : ''}">
+      ${avatarHtml(p.player_name, 48)}
+      <div class="pg-name">${p.player_name}</div>
+      <div class="pg-sub">${p.player_id === G.playerId ? 'You' : ''}</div>
+    </div>`).join('');
+
+  $id('endDiscussWrap').style.display = G.isHost ? 'block' : 'none';
+  startTimer('discuss');
+}
+
+// ── Render: Voting ─────────────────────────────────────────────────────────────
+function renderVoting() {
+  const others = G.players.filter(p => p.is_approved && p.player_id !== G.playerId);
+  $id('voteGrid').innerHTML = others.map(p => {
+    const voted = G.myVote === p.player_id;
+    return `<div class="vote-card ${voted ? 'voted-for' : ''} ${G.myVote && !voted ? 'cant-vote' : ''}" onclick="castVote('${p.player_id}','${p.player_name}')">
+      ${avatarHtml(p.player_name, 48)}
+      <div class="pg-name" style="margin-top:8px">${p.player_name}</div>
+    </div>`;
+  }).join('');
+
+  if (G.myVote) {
+    const target = G.players.find(p => p.player_id === G.myVote);
+    $id('myVoteDisplay').style.display = 'block';
+    $id('myVoteTarget').textContent = target?.player_name || '—';
+  } else {
+    $id('myVoteDisplay').style.display = 'none';
+  }
+
+  startTimer('vote');
+}
+
+// ── Render: Results ───────────────────────────────────────────────────────────
+function renderResults() {
+  stopTimer();
+  const approved = G.players.filter(p => p.is_approved);
+  const imposters = approved.filter(p => p.is_imposter);
+
+  // Tally votes
+  const voteCounts = {};
+  approved.forEach(p => { if (p.vote_for) voteCounts[p.vote_for] = (voteCounts[p.vote_for] || 0) + 1; });
+
+  let winner = null;
+  if (!G.room.skip_vote) {
+    const maxVotes = Math.max(0, ...Object.values(voteCounts));
+    const topVoted = Object.entries(voteCounts).filter(([,v]) => v === maxVotes).map(([k]) => k);
+    if (topVoted.length === 1 && imposters.some(p => p.player_id === topVoted[0])) {
+      winner = 'crewmates';
+    } else if (maxVotes > 0) {
+      winner = 'imposters';
+    } else {
+      winner = 'imposters';
+    }
+    // Update score
+    if (winner === 'crewmates') G.room.crewmate_score = (G.room.crewmate_score || 0) + 1;
+    else G.room.imposter_score = (G.room.imposter_score || 0) + 1;
+  }
+
+  // Banner
+  let bannerHtml = '';
+  if (G.room.skip_vote) {
+    bannerHtml = `<div class="result-outcome no-vote">Discussion Over! 🎉</div><div class="result-sub">No vote — announce on Discord who you think the imposter is!</div>`;
+  } else if (winner === 'crewmates') {
+    bannerHtml = `<div class="result-outcome crew-win">Crewmates Win! 🎉</div><div class="result-sub">You successfully identified the imposter!</div>`;
+  } else {
+    bannerHtml = `<div class="result-outcome imp-win">Imposter Wins! 🕵️</div><div class="result-sub">The imposter fooled everyone!</div>`;
+  }
+  $id('resultBanner').innerHTML = bannerHtml;
+
+  // Reveal imposters
+  if (G.room.reveal_at_end) {
+    $id('revealSection').style.display = 'block';
+    $id('revealSection').innerHTML = `
+      <div class="reveal-card">
+        <div class="reveal-label">🕵️ The Imposter(s) Were</div>
+        <div class="reveal-names">${imposters.map(p => `
+          <div class="reveal-name-chip">
+            ${avatarHtml(p.player_name, 32)}
+            <span class="name">${p.player_name}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    $id('revealSection').style.display = 'none';
+  }
+
+  // Vote breakdown
+  if (!G.room.skip_vote) {
+    $id('voteResultSection').style.display = 'block';
+    const rows = approved.filter(p => p.vote_for).map(p => {
+      const target = approved.find(t => t.player_id === p.vote_for);
+      const targetIsImp = imposters.some(i => i.player_id === p.vote_for);
+      return `<div class="vr-row">
+        <span class="vr-voter">${p.player_name}</span>
+        <span class="vr-arrow">→</span>
+        <span class="vr-target ${targetIsImp ? 'was-imp' : ''}">${target?.player_name || '—'}${targetIsImp ? ' 🕵️' : ''}</span>
+      </div>`;
+    });
+    $id('voteResultSection').innerHTML = `<div class="vote-results"><div class="vr-title">Vote Results</div>${rows.join('') || '<div style="color:var(--text-secondary);font-size:.85rem">No votes cast</div>'}</div>`;
+  } else {
+    $id('voteResultSection').style.display = 'none';
+  }
+
+  // Score (multi-round)
+  if (G.room.rounds_total > 1) {
+    $id('scoreSection').style.display = 'block';
+    $id('scoreSection').innerHTML = `<div class="score-panel">
+      <div class="score-team"><div class="score-val crew">${G.room.crewmate_score || 0}</div><div class="score-lbl">Crewmates</div></div>
+      <div class="score-team"><div class="score-val imp">${G.room.imposter_score || 0}</div><div class="score-lbl">Imposters</div></div>
+    </div>`;
+  }
+
+  // Actions
+  const hasMoreRounds = G.room.rounds_current < G.room.rounds_total;
+  let actionsHtml = '';
+  if (G.isHost) {
+    if (hasMoreRounds) {
+      actionsHtml += `<button class="g-btn primary" onclick="nextRound()"><i class="fa-solid fa-rotate-right"></i> Start Round ${G.room.rounds_current + 1}</button>`;
+    }
+    actionsHtml += `<button class="g-btn secondary" onclick="backToLobby()"><i class="fa-solid fa-house"></i> Back to Lobby</button>`;
+  } else {
+    actionsHtml = `<div class="waiting-msg"><i class="fa-solid fa-clock"></i> Waiting for host...</div>`;
+  }
+  $id('resultActions').innerHTML = actionsHtml;
+}
+
+// ── Render dispatcher ─────────────────────────────────────────────────────────
+function renderCurrentScreen() {
+  if (!G.room) return;
+  const status = G.room.status;
+  if (status === 'lobby') { navigate('s-lobby'); renderLobby(); }
+  else if (status === 'role_reveal') { navigate('s-role'); renderRoleReveal(); }
+  else if (status === 'discuss') { navigate('s-discuss'); renderDiscussion(); }
+  else if (status === 'vote') { navigate('s-vote'); renderVoting(); }
+  else if (status === 'result') { navigate('s-result'); renderResults(); }
+}
+
+// ── Timer ──────────────────────────────────────────────────────────────────────
+function startTimer(phase) {
+  stopTimer();
+  const timerId = phase === 'discuss' ? 'discussTimer' : 'voteTimer';
+  if (!G.room.phase_ends_at) { $id(timerId).textContent = '∞'; return; }
+
+  G.timerInterval = setInterval(async () => {
+    const remaining = Math.max(0, Math.round((new Date(G.room.phase_ends_at) - Date.now()) / 1000));
+    const el = $id(timerId);
+    if (el) {
+      el.textContent = fmtTime(remaining);
+      el.className = 'phase-timer' + (remaining <= 10 && remaining > 0 ? ' urgent' : '');
+    }
+    if (remaining <= 0 && G.isHost) {
+      stopTimer();
+      if (phase === 'discuss') await advanceFromDiscuss();
+      else if (phase === 'vote') await advanceFromVote();
+    }
+  }, 500);
+}
+
+function stopTimer() {
+  if (G.timerInterval) { clearInterval(G.timerInterval); G.timerInterval = null; }
+}
+
+// ── Game Actions ───────────────────────────────────────────────────────────────
+async function createRoom() {
+  showLoading('Creating room...');
+  const code = genRoomCode();
+  const { error } = await sb.from('game_rooms').insert({
+    room_code: code,
+    host_id: G.playerId,
+    word_pack: G.settings.wordPack,
+    imposter_count: G.settings.imposterCount,
+    discussion_time: G.settings.discussionTime,
+    voting_time: G.settings.votingTime,
+    rounds_total: G.settings.rounds,
+    max_players: G.settings.maxPlayers,
+    is_private: G.settings.isPrivate,
+    allow_any_name: true,
+    skip_vote: G.settings.skipVote,
+    reveal_at_end: G.settings.revealAtEnd
+  });
+  if (error) { hideLoading(); toast('Could not create room: ' + error.message, 'error'); return; }
+
+  await sb.from('game_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName, is_host: true, is_approved: true });
+  G.roomCode = code;
+  G.room = await getRoom(code);
+  G.isHost = true;
+  await refreshPlayers();
+  subscribeToRoom(code);
+  localStorage.setItem('game_session', JSON.stringify({ roomCode: code, playerId: G.playerId, playerName: G.playerName }));
+  hideLoading();
+  navigate('s-lobby');
+  renderLobby();
+}
+
+async function joinRoom() {
+  const code = $id('joinCodeInput').value.trim().toUpperCase();
+  if (!code || code.length !== 6) { toast('Enter a 6-character room code!', 'error'); return; }
+
+  showLoading('Joining...');
+  const room = await getRoom(code);
+  if (!room) { hideLoading(); toast('Room not found!', 'error'); return; }
+  if (room.status !== 'lobby') { hideLoading(); toast('Game has already started!', 'error'); return; }
+
+  const existing = await getPlayers(code);
+  const approved = existing.filter(p => p.is_approved);
+  if (approved.length >= room.max_players) { hideLoading(); toast('Room is full!', 'error'); return; }
+
+  const alreadyIn = existing.find(p => p.player_id === G.playerId);
+  if (!alreadyIn) {
+    const isApproved = !room.is_private;
+    const { error } = await sb.from('game_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName, is_host: false, is_approved: isApproved });
+    if (error) { hideLoading(); toast('Could not join room!', 'error'); return; }
+    if (!isApproved) {
+      hideLoading();
+      toast('Waiting for host approval...', '');
+      G.roomCode = code;
+      G.room = room;
+      G.isHost = false;
+      await refreshPlayers();
+      subscribeToRoom(code);
+      localStorage.setItem('game_session', JSON.stringify({ roomCode: code, playerId: G.playerId, playerName: G.playerName }));
+      navigate('s-lobby');
+      renderLobby();
+      return;
+    }
+  }
+
+  G.roomCode = code;
+  G.room = room;
+  G.isHost = G.playerId === room.host_id;
+  await refreshPlayers();
+  subscribeToRoom(code);
+  localStorage.setItem('game_session', JSON.stringify({ roomCode: code, playerId: G.playerId, playerName: G.playerName }));
+  hideLoading();
+  navigate('s-lobby');
+  renderLobby();
+}
+
+async function approvePlayer(pid) {
+  await updatePlayer(G.roomCode, pid, { is_approved: true });
+  toast('Player approved!', 'success');
+}
+
+async function rejectPlayer(pid) {
+  await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', pid);
+  toast('Player rejected.', '');
+}
+
+async function startGame() {
+  if (!G.isHost) return;
+  const approved = G.players.filter(p => p.is_approved);
+  if (approved.length < 2) { toast('Need at least 2 players!', 'error'); return; }
+
+  showLoading('Starting game...');
+  const word = pickWord(G.room.word_pack);
+  const shuffled = shuffle(approved);
+  const impCount = Math.min(G.room.imposter_count, shuffled.length - 1);
+
+  // Assign imposters
+  for (let i = 0; i < shuffled.length; i++) {
+    const isImposter = i < impCount;
+    await updatePlayer(G.roomCode, shuffled[i].player_id, { is_imposter: isImposter, is_ready: false, vote_for: null });
+  }
+
+  await updateRoom(G.roomCode, { status: 'role_reveal', word, rounds_current: G.room.rounds_current });
+  hideLoading();
+}
+
+async function markReady() {
+  if (!G.me) return;
+  await updatePlayer(G.roomCode, G.playerId, { is_ready: true });
+  $id('btnReady').style.display = 'none';
+  toast('Ready!', 'success');
+}
+
+async function startDiscussion() {
+  if (!G.isHost) return;
+  const dt = G.room.discussion_time;
+  const phase_ends_at = dt > 0 ? new Date(Date.now() + dt * 1000).toISOString() : null;
+  await updateRoom(G.roomCode, { status: 'discuss', phase_ends_at });
+}
+
+async function advanceFromDiscuss() {
+  if (!G.isHost) return;
+  if (G.room.skip_vote) {
+    await updateRoom(G.roomCode, { status: 'result', phase_ends_at: null });
+  } else {
+    const vt = G.room.voting_time;
+    const phase_ends_at = vt > 0 ? new Date(Date.now() + vt * 1000).toISOString() : null;
+    await updateRoom(G.roomCode, { status: 'vote', phase_ends_at });
+  }
+}
+
+async function castVote(targetId, targetName) {
+  if (G.myVote) return;
+  G.myVote = targetId;
+  await updatePlayer(G.roomCode, G.playerId, { vote_for: targetId });
+  toast(`Voted for ${targetName}!`, 'success');
+
+  // Re-render voting
+  const players = await getPlayers(G.roomCode);
+  G.players = players;
+  renderVoting();
+
+  // Check if all voted (host auto-advances)
+  if (G.isHost) {
+    const approved = players.filter(p => p.is_approved);
+    const allVoted = approved.every(p => p.player_id === G.playerId ? true : p.vote_for);
+    if (allVoted) await advanceFromVote();
+  }
+}
+
+async function advanceFromVote() {
+  if (!G.isHost) return;
+  stopTimer();
+  // Recalculate scores before setting result
+  const players = await getPlayers(G.roomCode);
+  const imposters = players.filter(p => p.is_approved && p.is_imposter);
+  const voteCounts = {};
+  players.filter(p => p.is_approved).forEach(p => { if (p.vote_for) voteCounts[p.vote_for] = (voteCounts[p.vote_for] || 0) + 1; });
+  const maxVotes = Math.max(0, ...Object.values(voteCounts));
+  const topVoted = Object.entries(voteCounts).filter(([,v]) => v === maxVotes).map(([k]) => k);
+  let crewWon = topVoted.length === 1 && imposters.some(p => p.player_id === topVoted[0]);
+
+  const updates = {
+    status: 'result',
+    phase_ends_at: null,
+    crewmate_score: (G.room.crewmate_score || 0) + (crewWon ? 1 : 0),
+    imposter_score: (G.room.imposter_score || 0) + (crewWon ? 0 : 1)
+  };
+  await updateRoom(G.roomCode, updates);
+}
+
+async function nextRound() {
+  if (!G.isHost) return;
+  showLoading('Starting next round...');
+  // Reset player states
+  for (const p of G.players.filter(p => p.is_approved)) {
+    await updatePlayer(G.roomCode, p.player_id, { is_imposter: false, is_ready: false, vote_for: null });
+  }
+  const nextRound = (G.room.rounds_current || 1) + 1;
+  await updateRoom(G.roomCode, { status: 'lobby', word: null, phase_ends_at: null, rounds_current: nextRound });
+  G.myVote = null;
+  hideLoading();
+}
+
+async function backToLobby() {
+  if (!G.isHost) return;
+  showLoading('Returning to lobby...');
+  for (const p of G.players.filter(p => p.is_approved)) {
+    await updatePlayer(G.roomCode, p.player_id, { is_imposter: false, is_ready: false, vote_for: null });
+  }
+  await updateRoom(G.roomCode, { status: 'lobby', word: null, phase_ends_at: null, rounds_current: 1, crewmate_score: 0, imposter_score: 0 });
+  G.myVote = null;
+  hideLoading();
+}
+
+async function leaveRoom() {
+  if (!G.roomCode) return;
+  if (G.isHost) {
+    // Transfer host or delete room
+    const others = G.players.filter(p => p.is_approved && p.player_id !== G.playerId);
+    if (others.length) {
+      const newHost = others[0];
+      await updatePlayer(G.roomCode, newHost.player_id, { is_host: true });
+      await updateRoom(G.roomCode, { host_id: newHost.player_id });
+      await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
+    } else {
+      // Delete room
+      await sb.from('game_rooms').delete().eq('room_code', G.roomCode);
+    }
+  } else {
+    await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
+  }
+  if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
+  stopTimer();
+  localStorage.removeItem('game_session');
+  G.roomCode = null; G.room = null; G.players = []; G.me = null; G.myVote = null;
+  navigate('s-home');
+}
+
+// ── Settings change handlers (host only) ──────────────────────────────────────
+async function onSettingChange(key, val) {
+  if (!G.isHost) return;
+  G.settings[key] = val;
+  const patch = {};
+  if (key === 'wordPack')      patch.word_pack = val;
+  if (key === 'imposterCount') patch.imposter_count = parseInt(val);
+  if (key === 'discussionTime') patch.discussion_time = parseInt(val);
+  if (key === 'votingTime')    patch.voting_time = parseInt(val);
+  if (key === 'rounds')        patch.rounds_total = parseInt(val);
+  if (key === 'maxPlayers')    patch.max_players = parseInt(val);
+  if (key === 'isPrivate')     patch.is_private = val === 'true';
+  if (key === 'allowAnyName')  patch.allow_any_name = val === 'true';
+  if (key === 'skipVote')      patch.skip_vote = val;
+  if (key === 'revealAtEnd')   patch.reveal_at_end = val;
+  if (Object.keys(patch).length) await updateRoom(G.roomCode, patch);
+}
+
+// ── Event Listeners ────────────────────────────────────────────────────────────
+$id('btnCreate').addEventListener('click', createRoom);
+$id('btnJoin').addEventListener('click', joinRoom);
+$id('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+
+$id('btnCopyCode').addEventListener('click', () => {
+  navigator.clipboard.writeText(G.roomCode).then(() => toast('Code copied! 📋', 'success'));
+});
+
+$id('btnStart').addEventListener('click', startGame);
+$id('btnLeave').addEventListener('click', leaveRoom);
+$id('btnReady').addEventListener('click', markReady);
+$id('btnStartDiscuss').addEventListener('click', startDiscussion);
+$id('btnEndDiscuss').addEventListener('click', advanceFromDiscuss);
+
+// ── Custom input helpers ──────────────────────────────────────────────────────
+function showCustomInput(inputId, defaultVal) {
+  const el = $id(inputId);
+  el.style.display = 'block';
+  if (defaultVal !== undefined) el.value = defaultVal;
+  el.focus();
+}
+function hideCustomInput(inputId) { $id(inputId).style.display = 'none'; }
+
+// Settings: dropdowns
+$id('setWordPack').addEventListener('change', e => onSettingChange('wordPack', e.target.value));
+
+$id('setDiscussTime').addEventListener('change', e => {
+  if (e.target.value === 'custom') { showCustomInput('discussCustomInput', 90); }
+  else { hideCustomInput('discussCustomInput'); onSettingChange('discussionTime', e.target.value); }
+});
+$id('discussCustomInput').addEventListener('change', e => {
+  const v = Math.max(5, Math.min(600, parseInt(e.target.value) || 60));
+  e.target.value = v;
+  onSettingChange('discussionTime', String(v));
+});
+$id('discussCustomInput').addEventListener('blur', e => {
+  if (!e.target.value) return;
+  const v = Math.max(5, Math.min(600, parseInt(e.target.value) || 60));
+  e.target.value = v;
+  onSettingChange('discussionTime', String(v));
+});
+
+$id('setVoteTime').addEventListener('change', e => {
+  if (e.target.value === 'custom') { showCustomInput('voteCustomInput', 45); }
+  else { hideCustomInput('voteCustomInput'); onSettingChange('votingTime', e.target.value); }
+});
+$id('voteCustomInput').addEventListener('change', e => {
+  const v = Math.max(5, Math.min(300, parseInt(e.target.value) || 45));
+  e.target.value = v;
+  onSettingChange('votingTime', String(v));
+});
+$id('voteCustomInput').addEventListener('blur', e => {
+  if (!e.target.value) return;
+  const v = Math.max(5, Math.min(300, parseInt(e.target.value) || 45));
+  e.target.value = v;
+  onSettingChange('votingTime', String(v));
+});
+
+$id('setMaxPlayers').addEventListener('change', e => {
+  if (e.target.value === 'custom') { showCustomInput('maxPlayersCustomInput', 15); }
+  else { hideCustomInput('maxPlayersCustomInput'); onSettingChange('maxPlayers', e.target.value); }
+});
+$id('maxPlayersCustomInput').addEventListener('change', e => {
+  const v = Math.max(3, Math.min(30, parseInt(e.target.value) || 8));
+  e.target.value = v;
+  onSettingChange('maxPlayers', String(v));
+});
+$id('maxPlayersCustomInput').addEventListener('blur', e => {
+  if (!e.target.value) return;
+  const v = Math.max(3, Math.min(30, parseInt(e.target.value) || 8));
+  e.target.value = v;
+  onSettingChange('maxPlayers', String(v));
+});
+
+$id('setSkipVote').addEventListener('change', e => {
+  onSettingChange('skipVote', e.target.checked);
+  $id('voteTimeRow').style.display = e.target.checked ? 'none' : 'flex';
+});
+$id('setRevealEnd').addEventListener('change', e => onSettingChange('revealAtEnd', e.target.checked));
+
+// Settings: toggle buttons
+['impCountGroup','roundsGroup','privacyGroup'].forEach(groupId => {
+  const keyMap = { impCountGroup:'imposterCount', roundsGroup:'rounds', privacyGroup:'isPrivate' };
+  const customInputMap = { impCountGroup:'impCustomInput', roundsGroup:'roundsCustomInput' };
+  $id(groupId)?.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $id(groupId).querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const customId = customInputMap[groupId];
+      if (btn.dataset.val === 'custom' && customId) {
+        const defaults = { impCustomInput: 4, roundsCustomInput: 7 };
+        showCustomInput(customId, defaults[customId]);
+      } else {
+        if (customId) hideCustomInput(customId);
+        onSettingChange(keyMap[groupId], btn.dataset.val);
+      }
+    });
+  });
+});
+
+// Custom inputs for toggle groups
+$id('impCustomInput')?.addEventListener('change', e => {
+  const v = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+  e.target.value = v;
+  onSettingChange('imposterCount', String(v));
+});
+$id('impCustomInput')?.addEventListener('blur', e => {
+  if (!e.target.value) return;
+  const v = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+  e.target.value = v;
+  onSettingChange('imposterCount', String(v));
+});
+$id('roundsCustomInput')?.addEventListener('change', e => {
+  const v = Math.max(1, Math.min(20, parseInt(e.target.value) || 3));
+  e.target.value = v;
+  onSettingChange('rounds', String(v));
+});
+$id('roundsCustomInput')?.addEventListener('blur', e => {
+  if (!e.target.value) return;
+  const v = Math.max(1, Math.min(20, parseInt(e.target.value) || 3));
+  e.target.value = v;
+  onSettingChange('rounds', String(v));
+});
+
+// Mobile nav
+document.getElementById('hamburger')?.addEventListener('click', () => document.getElementById('mobileNav')?.classList.add('open'));
+document.getElementById('mobileNavClose')?.addEventListener('click', () => document.getElementById('mobileNav')?.classList.remove('open'));
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+(async function init() {
+  // Auth check — must be logged in
+  let session = null;
+  try {
+    session = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student') || 'null');
+  } catch(e) {}
+
+  if (!session || !session.id) {
+    window.location.replace('login.html?next=game.html');
+    return;
+  }
+
+  // Set player identity from login session
+  G.playerId = 'student_' + session.id;
+  G.playerName = session.name || session.id;
+
+  // Show player info card on home screen
+  const card = $id('playerInfoCard');
+  if (card) {
+    card.style.display = 'block';
+    const displayName = G.playerName;
+    $id('playerInfoAvatar').innerHTML = avatarHtml(displayName, 40);
+    $id('playerInfoName').textContent = displayName;
+    $id('playerInfoId').textContent = 'ID: ' + session.id;
+  }
+
+  // Restore active game session
+  try {
+    const saved = JSON.parse(localStorage.getItem('game_session') || 'null');
+    if (saved?.roomCode && saved?.playerId === G.playerId) {
+      const room = await getRoom(saved.roomCode);
+      if (room && room.status !== 'finished') {
+        showLoading('Resuming game...');
+        G.roomCode = saved.roomCode;
+        G.room = room;
+        G.isHost = G.playerId === room.host_id;
+        await refreshPlayers();
+        if (G.me) {
+          subscribeToRoom(saved.roomCode);
+          hideLoading();
+          renderCurrentScreen();
+          return;
+        }
+        hideLoading();
+      }
+    }
+    localStorage.removeItem('game_session');
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
