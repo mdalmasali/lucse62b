@@ -733,6 +733,11 @@ function subscribeToRoom() {
         const { data: players } = await sb.from('draw_players').select('*').eq('room_code', code).order('joined_at');
         G.players = players || [];
         G.me = G.players.find(p => p.player_id === G.playerId);
+        // Self-heal: I'm clearly connected (processing events), so undo any stale "left" mark on me
+        if (G.me?.left_at) {
+          await sb.from('draw_players').update({ left_at: null }).eq('room_code', code).eq('player_id', G.playerId);
+          return;
+        }
         renderLobbyPlayers();
         renderGamePlayers();
         // If the current drawer left mid-turn, host advances to the next active player
@@ -773,6 +778,8 @@ function subscribeToRoom() {
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
+        // Re-subscribing means we're present → undo any stale "left" mark and rejoin play
+        if (G.roomCode) await sb.from('draw_players').update({ left_at: null }).eq('room_code', G.roomCode).eq('player_id', G.playerId);
         setTimeout(() => { G.presenceReady = true; }, 1500);
       }
     });

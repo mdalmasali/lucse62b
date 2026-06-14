@@ -717,6 +717,11 @@ function subscribeToRoom(code) {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `room_code=eq.${code}` }, async () => {
       await refreshPlayers();
+      // Self-heal: I'm clearly connected (processing events), so undo any stale "left" mark on me
+      if (G.me?.left_at) {
+        await sb.from('game_players').update({ left_at: null }).eq('room_code', code).eq('player_id', G.playerId);
+        return;
+      }
       renderCurrentScreen();
       // If someone left during voting, the remaining active players may now all have voted
       if (G.isHost && G.room?.status === 'vote') {
@@ -741,6 +746,8 @@ function subscribeToRoom(code) {
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
+        // Re-subscribing means we're present → undo any stale "left" mark and rejoin play
+        if (G.roomCode) await sb.from('game_players').update({ left_at: null }).eq('room_code', G.roomCode).eq('player_id', G.playerId);
         setTimeout(() => { G.presenceReady = true; }, 1500);
       }
     });
@@ -1415,24 +1422,26 @@ async function leaveRoom() {
   if (!G.roomCode) return;
   const activeGame = G.room?.status && G.room.status !== 'lobby';
   const others = G.players.filter(p => p.is_approved && !p.left_at && p.player_id !== G.playerId);
+  const code = G.roomCode;
+  // Tear down our channel first so we don't self-heal our own "left" mark below
+  if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
 
   if (others.length === 0) {
     // Last one out → disband the whole room (cascade removes players)
-    await sb.from('game_rooms').delete().eq('room_code', G.roomCode);
+    await sb.from('game_rooms').delete().eq('room_code', code);
   } else {
     if (G.isHost) {
       const newHost = others[0];
-      await updatePlayer(G.roomCode, newHost.player_id, { is_host: true });
-      await updateRoom(G.roomCode, { host_id: newHost.player_id });
+      await updatePlayer(code, newHost.player_id, { is_host: true });
+      await updateRoom(code, { host_id: newHost.player_id });
     }
     if (activeGame) {
       // Mid-game: keep the row but mark left → no turn/vote, shown as "left"
-      await updatePlayer(G.roomCode, G.playerId, { left_at: new Date().toISOString(), is_host: false });
+      await updatePlayer(code, G.playerId, { left_at: new Date().toISOString(), is_host: false });
     } else {
-      await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
+      await sb.from('game_players').delete().eq('room_code', code).eq('player_id', G.playerId);
     }
   }
-  if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
   stopTimer();
   localStorage.removeItem('game_session');
   G.roomCode = null; G.room = null; G.players = []; G.me = null; G.myVote = null;
