@@ -333,13 +333,22 @@
   /* In-site live TV — HTTPS HLS streams (open CORS, verified to deliver real
      segments from BD), played with hls.js. Availability/region may still vary. */
   var TV_CHANNELS = [
+    { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8', note: '🇧🇷', hevc: true },
     { n: 'World Cup (Sky)',  u: 'https://d1211whpimeups.cloudfront.net/smil:rtbgo/chunklist.m3u8', note: '⚽' },
-    { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/1080p-vtt/index.m3u8', note: '🇧🇷' },
     { n: 'beIN Xtra',        u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
     { n: 'beIN Sports Ñ',    u: 'https://amg01334-beinsportsllc-beinxtraesp-localnow-aekzc.amagi.tv/playlist.m3u8', note: '🇪🇸' },
     { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master.m3u8', note: '🇺🇸' },
     { n: 'Real Madrid TV',   u: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8', note: '⚪' },
   ];
+  function canHevc() {
+    try {
+      if (window.MediaSource && MediaSource.isTypeSupported) {
+        if (MediaSource.isTypeSupported('video/mp4; codecs="hvc1.1.6.L120.B0"') ||
+            MediaSource.isTypeSupported('video/mp4; codecs="hev1.1.6.L120.B0"')) return true;
+      }
+      return document.createElement('video').canPlayType('video/mp4; codecs="hvc1.1.6.L120.B0"') !== '';
+    } catch (e) { return false; }
+  }
   function watchRow(state) {
     var label = state === 'in' ? '<span class="f26-live-dot"></span> Watch Live Now' : '<i class="fa-solid fa-tv"></i> Live TV';
     return '<div class="f26-watch">' +
@@ -413,7 +422,17 @@
     vid.muted = true;
     if (um) um.style.display = 'block';
     if (_hls) { try { _hls.destroy(); } catch (e) {} _hls = null; }
+    var nativeHls = vid.canPlayType('application/vnd.apple.mpegurl');
+    var hevcMsg = '⚠️ <b>' + esc(ch.n) + '</b> streams in <b>HEVC (H.265)</b>, which this browser can\'t decode.<br>' +
+      'Open the site in <b>Safari</b>, or on Windows install <b>“HEVC Video Extensions”</b> (Microsoft Store) then use <b>Edge</b>. ' +
+      'It also plays in <b>VLC / PotPlayer</b> with this link.';
     var started = function () { msg.style.display = 'none'; vid.play().catch(function () {}); };
+    var failHevcOrGeneric = function () {
+      msg.innerHTML = ch.hevc ? hevcMsg : '⚠️ <b>' + esc(ch.n) + '</b> isn\'t playable in the browser right now (codec or region). Try another channel above.';
+      msg.style.display = 'flex'; if (um) um.style.display = 'none';
+    };
+    /* HEVC channel + browser can't decode HEVC → tell the user up front (still try, in case detection is wrong) */
+    if (ch.hevc && !canHevc() && !nativeHls) failHevcOrGeneric();
     loadHls().then(function () {
       if (window.Hls && window.Hls.isSupported()) {
         _hls = new window.Hls({ lowLatencyMode: true, enableWorker: true, backBufferLength: 30 });
@@ -423,11 +442,10 @@
         _hls.on(window.Hls.Events.ERROR, function (ev, data) {
           if (!data || !data.fatal) return;
           if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { _hls.startLoad(); return; }       /* retry */
-          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) { _hls.recoverMediaError(); return; }  /* codec/buffer hiccup */
-          msg.innerHTML = '⚠️ <b>' + esc(ch.n) + '</b> isn\'t playable in the browser right now (codec or region). Try another channel above.';
-          msg.style.display = 'flex'; if (um) um.style.display = 'none';
+          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !ch.hevc) { _hls.recoverMediaError(); return; }
+          failHevcOrGeneric();
         });
-      } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+      } else if (nativeHls) {
         vid.src = ch.u;
         vid.onloadedmetadata = started;
         vid.onerror = function () { msg.innerHTML = '⚠️ Couldn\'t play <b>' + esc(ch.n) + '</b>. Try another channel.'; msg.style.display = 'flex'; if (um) um.style.display = 'none'; };
