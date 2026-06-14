@@ -11,8 +11,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     .games-wrap { max-width: 860px; margin: 32px auto 80px; padding: 0 16px; }
+
+    /* Overall standings */
+    .standings-section { margin-top: 48px; }
+    .standings-head { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 18px; }
+    .standings-head h2 { font-family: 'Space Grotesk',sans-serif; font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg,#fbbf24,#fb923c); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .standings-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+    .standings-row { display: grid; grid-template-columns: 44px 1fr auto auto auto; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .standings-row:last-child { border-bottom: none; }
+    .standings-row.head { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); padding: 10px 18px; }
+    .standings-row.top1 { background: linear-gradient(90deg, rgba(251,191,36,.08), transparent); }
+    .st-rank { font-size: 1.05rem; font-weight: 800; text-align: center; }
+    .st-name { font-weight: 700; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .st-col { font-size: .82rem; font-weight: 700; text-align: right; min-width: 46px; }
+    .st-col.pts { color: #fbbf24; }
+    .st-col.lbl { color: var(--text-secondary); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
+    .standings-empty { text-align: center; color: var(--text-secondary); font-size: .86rem; padding: 26px 16px; }
+    @media (max-width: 560px) {
+      .standings-row { grid-template-columns: 34px 1fr auto auto; gap: 8px; padding: 11px 12px; }
+      .st-wins-col { display: none; }
+    }
 
     .games-hero { text-align: center; padding: 48px 0 40px; }
     .games-hero-icon { font-size: 4rem; line-height: 1; margin-bottom: 16px; animation: heroFloat 3s ease-in-out infinite; }
@@ -125,6 +146,18 @@
 
     </div>
 
+    <!-- Overall Standings -->
+    <section class="standings-section fade-in delay-2">
+      <div class="standings-head">
+        <span style="font-size:1.6rem">🏆</span>
+        <h2>Overall Standings</h2>
+      </div>
+      <div class="standings-card" id="standingsCard">
+        <div class="standings-empty">Loading standings…</div>
+      </div>
+      <p class="games-note">Combined across all games · logged-in players only</p>
+    </section>
+
     <p class="games-note">More games coming soon.</p>
   </main>
 
@@ -153,6 +186,45 @@
   document.getElementById('hamburger')?.addEventListener('click', () => {
     document.querySelector('.topbar-links')?.classList.toggle('open');
   });
+
+  // ── Overall Standings ──
+  (async function loadStandings() {
+    const card = document.getElementById('standingsCard');
+    if (!card || typeof supabase === 'undefined') return;
+    const sb = supabase.createClient(
+      'https://ftvtlqxpalwvyserujuh.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM'
+    );
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    try {
+      const { data, error } = await sb.from('game_standings')
+        .select('*').order('total_points', { ascending: false }).limit(20);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        card.innerHTML = '<div class="standings-empty">No games played yet. Be the first to top the board! 🎮</div>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      let me = null;
+      try { me = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student') || 'null'); } catch(e){}
+      const myId = me?.id ? 'student_' + me.id : null;
+      const head = `<div class="standings-row head">
+        <span style="text-align:center">#</span><span>Player</span>
+        <span class="st-col">Pts</span><span class="st-col st-wins-col">Wins</span><span class="st-col">Played</span>
+      </div>`;
+      const rows = data.map((p, i) => `
+        <div class="standings-row ${i === 0 ? 'top1' : ''}" ${p.player_id === myId ? 'style="outline:1px solid rgba(52,211,153,.4)"' : ''}>
+          <span class="st-rank">${medals[i] || (i + 1)}</span>
+          <span class="st-name">${esc(p.player_name) || 'Player'}${p.player_id === myId ? ' <span style="color:#34d399;font-size:.7rem;font-weight:800">YOU</span>' : ''}</span>
+          <span class="st-col pts">${p.total_points}</span>
+          <span class="st-col st-wins-col">${p.wins}</span>
+          <span class="st-col">${p.games_played}</span>
+        </div>`).join('');
+      card.innerHTML = head + rows;
+    } catch (e) {
+      card.innerHTML = '<div class="standings-empty">Could not load standings.</div>';
+    }
+  })();
 </script>
 </body>
 </html>

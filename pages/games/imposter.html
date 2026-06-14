@@ -69,6 +69,9 @@
 
     /* Players list */
     .player-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .conn-dot.on { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,.7); }
+    .conn-dot.off { background: #6b7280; }
     .player-item:last-child { border-bottom: none; }
     .player-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: #fff; flex-shrink: 0; }
     .player-name { font-size: .9rem; font-weight: 600; flex: 1; }
@@ -474,6 +477,9 @@
         <button id="btnStartDiscuss" class="g-btn primary large" style="display:none">
           <i class="fa-solid fa-comments"></i> Start Discussion
         </button>
+        <button id="btnEndGameRole" class="g-btn secondary" style="display:none">
+          <i class="fa-solid fa-flag-checkered"></i> End Game
+        </button>
       </div>
     </div>
 
@@ -490,6 +496,9 @@
           <button id="btnEndDiscuss" class="g-btn secondary">
             <i class="fa-solid fa-forward-step"></i> End Discussion Early
           </button>
+          <button id="btnEndGameDiscuss" class="g-btn secondary">
+            <i class="fa-solid fa-flag-checkered"></i> End Game
+          </button>
         </div>
       </div>
     </div>
@@ -505,6 +514,11 @@
         <div class="vote-grid" id="voteGrid"></div>
         <div class="vote-my-pick" id="myVoteDisplay" style="display:none">
           You voted for: <strong id="myVoteTarget"></strong>
+        </div>
+        <div id="voteHostWrap" style="display:none;text-align:center;margin-top:10px">
+          <button id="btnEndGameVote" class="g-btn secondary">
+            <i class="fa-solid fa-flag-checkered"></i> End Game
+          </button>
         </div>
       </div>
     </div>
@@ -579,6 +593,8 @@ const G = {
   channel: null,
   timerInterval: null,
   myVote: null,
+  online: new Set(),
+  presenceReady: false,
   // local settings (host)
   settings: { wordPack:'random', imposterCount:1, discussionTime:60, votingTime:60, rounds:1, maxPlayers:8, isPrivate:false, guestsAllowed:true, allowAnyName:true, skipVote:false, revealAtEnd:true }
 };
@@ -642,9 +658,17 @@ function fmtTime(secs) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-function pickWord(pack) {
+function pickWord(pack, used) {
   const words = WORD_PACKS[pack]?.words || WORD_PACKS.random.words;
-  return words[Math.floor(Math.random() * words.length)];
+  const usedList = used || [];
+  let pool = words.filter(w => !usedList.includes(w));
+  // Pool exhausted -> recycle, but avoid immediately repeating the last word
+  if (pool.length === 0) {
+    const last = usedList[usedList.length - 1];
+    pool = words.filter(w => w !== last);
+    if (pool.length === 0) pool = words;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function shuffle(arr) {
@@ -691,8 +715,36 @@ function subscribeToRoom(code) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `room_code=eq.${code}` }, async () => {
       await refreshPlayers();
       renderCurrentScreen();
+      // If someone left during voting, the remaining active players may now all have voted
+      if (G.isHost && G.room?.status === 'vote') {
+        const active = G.players.filter(p => p.is_approved && !p.left_at);
+        if (active.length > 0 && active.every(p => p.vote_for)) await advanceFromVote();
+      }
     })
-    .subscribe();
+    .on('presence', { event: 'sync' }, () => { refreshPresence(); })
+    .on('presence', { event: 'join' }, ({ newPresences }) => {
+      if (!G.presenceReady) return;
+      newPresences.forEach(p => { if (p.player_id !== G.playerId) toast(`${p.player_name} connected 🟢`, ''); });
+    })
+    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      if (!G.presenceReady) return;
+      leftPresences.forEach(p => { if (p.player_id !== G.playerId) toast(`${p.player_name} disconnected ⚪`, ''); });
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
+        setTimeout(() => { G.presenceReady = true; }, 1500);
+      }
+    });
+}
+
+function refreshPresence() {
+  if (!G.channel) return;
+  const state = G.channel.presenceState();
+  const ids = new Set();
+  Object.values(state).forEach(arr => arr.forEach(p => { if (p.player_id) ids.add(p.player_id); }));
+  G.online = ids;
+  if (G.room) renderCurrentScreen();
 }
 
 async function refreshPlayers() {
@@ -705,8 +757,8 @@ function renderLobby() {
   if (!G.room || !G.roomCode) return;
   $id('lobbyCode').textContent = G.roomCode;
 
-  const approved = G.players.filter(p => p.is_approved);
-  const pending  = G.players.filter(p => !p.is_approved);
+  const approved = G.players.filter(p => p.is_approved && !p.left_at);
+  const pending  = G.players.filter(p => !p.is_approved && !p.left_at);
   $id('playerCountBadge').textContent = `${approved.length}/${G.room.max_players}`;
 
   // Players list
@@ -716,7 +768,8 @@ function renderLobby() {
     if (p.is_host) badges.push(`<span class="player-badge badge-host">Host</span>`);
     if (isMe) badges.push(`<span class="player-badge badge-you">You</span>`);
     if (p.is_ready) badges.push(`<span class="player-badge badge-ready">Ready</span>`);
-    return `<div class="player-item">${avatarHtml(p.player_name)}<span class="player-name">${p.player_name}</span>${badges.join('')}</div>`;
+    const dot = `<span class="conn-dot ${G.online.has(p.player_id) ? 'on' : 'off'}" title="${G.online.has(p.player_id) ? 'Online' : 'Offline'}"></span>`;
+    return `<div class="player-item">${avatarHtml(p.player_name)}${dot}<span class="player-name">${p.player_name}</span>${badges.join('')}</div>`;
   }).join('') || '<div style="color:var(--text-secondary);font-size:.85rem;padding:8px 0">No players yet</div>';
 
   $id('lobbyStatus').textContent = approved.length < 2 ? `Need at least 2 players` : `${approved.length} players in lobby`;
@@ -878,10 +931,10 @@ function renderRoleReveal() {
     $id('roleTip').textContent = 'Give clues about the word — but don\'t say it directly. Find the imposter!';
   }
 
-  const ready = G.players.filter(p => p.is_approved && p.is_ready).length;
-  const total = G.players.filter(p => p.is_approved).length;
+  const ready = G.players.filter(p => p.is_approved && !p.left_at && p.is_ready).length;
+  const total = G.players.filter(p => p.is_approved && !p.left_at).length;
   $id('readyCountText').textContent = `${ready}/${total} players ready`;
-  $id('readyDots').innerHTML = G.players.filter(p => p.is_approved).map(p =>
+  $id('readyDots').innerHTML = G.players.filter(p => p.is_approved && !p.left_at).map(p =>
     `<div class="ready-dot ${p.is_ready ? 'done' : ''}" title="${p.player_name}"></div>`
   ).join('');
 
@@ -893,6 +946,7 @@ function renderRoleReveal() {
   } else {
     $id('btnStartDiscuss').style.display = 'none';
   }
+  $id('btnEndGameRole').style.display = G.isHost ? 'inline-flex' : 'none';
 }
 
 // ── Render: Discussion ────────────────────────────────────────────────────────
@@ -904,7 +958,7 @@ function renderDiscussion() {
     </div>
     <div class="word-strip-val ${isImp ? 'unknown' : ''}">${isImp ? '??? — You are the imposter!' : (G.room?.word || '')}</div>`;
 
-  $id('discussPlayers').innerHTML = G.players.filter(p => p.is_approved).map(p => `
+  $id('discussPlayers').innerHTML = G.players.filter(p => p.is_approved && !p.left_at).map(p => `
     <div class="pg-card ${p.player_id === G.playerId ? 'is-you' : ''}">
       ${avatarHtml(p.player_name, 48)}
       <div class="pg-name">${p.player_name}</div>
@@ -917,7 +971,7 @@ function renderDiscussion() {
 
 // ── Render: Voting ─────────────────────────────────────────────────────────────
 function renderVoting() {
-  const others = G.players.filter(p => p.is_approved && p.player_id !== G.playerId);
+  const others = G.players.filter(p => p.is_approved && !p.left_at && p.player_id !== G.playerId);
   $id('voteGrid').innerHTML = others.map(p => {
     const voted = G.myVote === p.player_id;
     return `<div class="vote-card ${voted ? 'voted-for' : ''} ${G.myVote && !voted ? 'cant-vote' : ''}" onclick="castVote('${p.player_id}','${p.player_name}')">
@@ -934,6 +988,7 @@ function renderVoting() {
     $id('myVoteDisplay').style.display = 'none';
   }
 
+  $id('voteHostWrap').style.display = G.isHost ? 'block' : 'none';
   startTimer('vote');
 }
 
@@ -1029,6 +1084,24 @@ function renderResults() {
     actionsHtml = `<div class="waiting-msg"><i class="fa-solid fa-clock"></i> Waiting for host...</div>`;
   }
   $id('resultActions').innerHTML = actionsHtml;
+
+  // Match finished → record overall standings once (host only)
+  if (G.isHost && !hasMoreRounds) recordImposterStandings();
+}
+
+// Award overall standings at the end of an imposter match (logged-in players only)
+async function recordImposterStandings() {
+  if (!G.isHost || !G.room || G.room.standings_done) return;
+  G.room.standings_done = true; // set first to close the re-entry window
+  await updateRoom(G.roomCode, { standings_done: true });
+  const crewWon = (G.room.crewmate_score || 0) >= (G.room.imposter_score || 0);
+  const players = G.players.filter(p => p.is_approved);
+  for (const p of players) {
+    if (!p.player_id?.startsWith('student_')) continue;
+    const isWinner = crewWon ? !p.is_imposter : !!p.is_imposter;
+    const pts = 5 + (isWinner ? 10 : 0);
+    await sb.rpc('bump_standing', { p_id: p.player_id, p_name: p.player_name, p_points: pts, p_won: isWinner, p_bucket: 'imposter' });
+  }
 }
 
 // ── Render dispatcher ─────────────────────────────────────────────────────────
@@ -1129,6 +1202,9 @@ async function joinRoom() {
     if (!wasInGame) {
       const { error } = await sb.from('game_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName, is_host: false, is_approved: true });
       if (error) { hideLoading(); toast('Could not rejoin!', 'error'); return; }
+    } else {
+      // Was marked "left" — clear it so they rejoin active play
+      await sb.from('game_players').update({ left_at: null }).eq('room_code', code).eq('player_id', G.playerId);
     }
     G.roomCode = code;
     G.room = room;
@@ -1188,11 +1264,12 @@ async function rejectPlayer(pid) {
 
 async function startGame() {
   if (!G.isHost) return;
-  const approved = G.players.filter(p => p.is_approved);
+  const approved = G.players.filter(p => p.is_approved && !p.left_at);
   if (approved.length < 2) { toast('Need at least 2 players!', 'error'); return; }
 
   showLoading('Starting game...');
-  const word = pickWord(G.room.word_pack);
+  const used = G.room.used_words || [];
+  const word = pickWord(G.room.word_pack, used);
   const shuffled = shuffle(approved);
   const impCount = Math.min(G.room.imposter_count, shuffled.length - 1);
 
@@ -1202,7 +1279,7 @@ async function startGame() {
     await updatePlayer(G.roomCode, shuffled[i].player_id, { is_imposter: isImposter, is_ready: false, vote_for: null });
   }
 
-  await updateRoom(G.roomCode, { status: 'role_reveal', word, rounds_current: G.room.rounds_current });
+  await updateRoom(G.roomCode, { status: 'role_reveal', word, used_words: [...used, word], rounds_current: G.room.rounds_current });
   hideLoading();
 }
 
@@ -1242,9 +1319,9 @@ async function castVote(targetId, targetName) {
   G.players = players;
   renderVoting();
 
-  // Check if all voted (host auto-advances)
+  // Check if all voted (host auto-advances) — players who left don't need to vote
   if (G.isHost) {
-    const approved = players.filter(p => p.is_approved);
+    const approved = players.filter(p => p.is_approved && !p.left_at);
     const allVoted = approved.every(p => p.player_id === G.playerId ? true : p.vote_for);
     if (allVoted) await advanceFromVote();
   }
@@ -1271,6 +1348,14 @@ async function advanceFromVote() {
   await updateRoom(G.roomCode, updates);
 }
 
+// Host ends the whole match → jump to final result screen (no more rounds)
+async function endGame() {
+  if (!G.isHost) return;
+  if (!confirm('End the match for everyone and show final standings?')) return;
+  stopTimer();
+  await updateRoom(G.roomCode, { status: 'result', phase_ends_at: null, rounds_current: G.room.rounds_total });
+}
+
 async function nextRound() {
   if (!G.isHost) return;
   showLoading('Starting next round...');
@@ -1287,30 +1372,36 @@ async function nextRound() {
 async function backToLobby() {
   if (!G.isHost) return;
   showLoading('Returning to lobby...');
-  for (const p of G.players.filter(p => p.is_approved)) {
+  // Clear out players who left mid-game so the lobby is fresh
+  await sb.from('game_players').delete().eq('room_code', G.roomCode).not('left_at', 'is', null);
+  for (const p of G.players.filter(p => p.is_approved && !p.left_at)) {
     await updatePlayer(G.roomCode, p.player_id, { is_imposter: false, is_ready: false, vote_for: null });
   }
-  await updateRoom(G.roomCode, { status: 'lobby', word: null, phase_ends_at: null, rounds_current: 1, crewmate_score: 0, imposter_score: 0 });
+  await updateRoom(G.roomCode, { status: 'lobby', word: null, phase_ends_at: null, rounds_current: 1, crewmate_score: 0, imposter_score: 0, used_words: [], standings_done: false });
   G.myVote = null;
   hideLoading();
 }
 
 async function leaveRoom() {
   if (!G.roomCode) return;
-  if (G.isHost) {
-    // Transfer host or delete room
-    const others = G.players.filter(p => p.is_approved && p.player_id !== G.playerId);
-    if (others.length) {
+  const activeGame = G.room?.status && G.room.status !== 'lobby';
+  const others = G.players.filter(p => p.is_approved && !p.left_at && p.player_id !== G.playerId);
+
+  if (others.length === 0) {
+    // Last one out → disband the whole room (cascade removes players)
+    await sb.from('game_rooms').delete().eq('room_code', G.roomCode);
+  } else {
+    if (G.isHost) {
       const newHost = others[0];
       await updatePlayer(G.roomCode, newHost.player_id, { is_host: true });
       await updateRoom(G.roomCode, { host_id: newHost.player_id });
-      await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
-    } else {
-      // Delete room
-      await sb.from('game_rooms').delete().eq('room_code', G.roomCode);
     }
-  } else {
-    await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
+    if (activeGame) {
+      // Mid-game: keep the row but mark left → no turn/vote, shown as "left"
+      await updatePlayer(G.roomCode, G.playerId, { left_at: new Date().toISOString(), is_host: false });
+    } else {
+      await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
+    }
   }
   if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
   stopTimer();
@@ -1352,6 +1443,9 @@ $id('btnLeave').addEventListener('click', leaveRoom);
 $id('btnReady').addEventListener('click', markReady);
 $id('btnStartDiscuss').addEventListener('click', startDiscussion);
 $id('btnEndDiscuss').addEventListener('click', advanceFromDiscuss);
+$id('btnEndGameRole').addEventListener('click', endGame);
+$id('btnEndGameDiscuss').addEventListener('click', endGame);
+$id('btnEndGameVote').addEventListener('click', endGame);
 
 // ── Custom input helpers ──────────────────────────────────────────────────────
 function showCustomInput(inputId, defaultVal) {
@@ -1505,6 +1599,9 @@ document.getElementById('mobileNavClose')?.addEventListener('click', () => docum
       });
     }
   }
+
+  // Keep Supabase fresh: clear out stale/empty rooms in the background
+  sb.rpc('cleanup_stale_game_rooms', { max_age_hours: 6 }).then(() => {}).catch(() => {});
 
   // Restore active game session
   try {

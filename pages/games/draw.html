@@ -118,6 +118,11 @@
     .score-pts { font-size: .75rem; font-weight: 800; color: #34d399; }
     .score-player-item.drawing .score-name { color: #fbbf24; }
     .score-player-item.guessed .score-name::after { content: ' ✓'; color: #34d399; }
+    .score-player-item.left { opacity: .45; }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .conn-dot.on { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,.7); }
+    .conn-dot.off { background: #6b7280; }
+    .left-tag { font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #f87171; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.25); border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
 
     /* Center: Canvas */
     .game-canvas-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -353,6 +358,7 @@
         <div class="game-drawer-info" id="gDrawerInfo">—</div>
         <div class="game-hint" id="gHint"></div>
         <div class="game-timer" id="gTimer">—</div>
+        <button id="endGameBtn" class="dg-btn secondary" onclick="endGame()" style="display:none;padding:7px 13px;font-size:.78rem;">End Game</button>
         <button class="dg-btn danger" onclick="leaveRoom()" style="padding:7px 13px;font-size:.78rem;">Leave</button>
       </div>
 
@@ -492,7 +498,9 @@ const G = {
   hintReveal1: false, hintReveal2: false,
   prevScores: {},
   roundEndTimer: null,
-  usedWords: []
+  usedWords: [],
+  online: new Set(),
+  presenceReady: false
 };
 
 /* ── Init ── */
@@ -533,6 +541,9 @@ function init() {
   initCanvas();
   initColorPalette();
   initToolbar();
+
+  // Keep Supabase fresh: clear out stale/empty rooms in the background
+  sb.rpc('cleanup_stale_game_rooms', { max_age_hours: 6 }).then(() => {}).catch(() => {});
 
   document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendGuess(); });
   document.getElementById('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
@@ -617,6 +628,9 @@ async function joinRoom() {
     if (!wasInGame) {
       const { error: pe } = await sb.from('draw_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName });
       if (pe) { showHomeError('Could not rejoin: ' + pe.message); return; }
+    } else {
+      // Was marked "left" — clear it so they re-enter the rotation
+      await sb.from('draw_players').update({ left_at: null }).eq('room_code', code).eq('player_id', G.playerId);
     }
     G.roomCode = code;
     G.isHost = room.host_id === G.playerId;
@@ -699,6 +713,11 @@ function subscribeToRoom() {
         } else {
           updateGameUI();
         }
+        // After a host handoff, the new host advances if the current drawer has left
+        if (G.isHost && (room.status === 'drawing' || room.status === 'word_pick')) {
+          const drawerActive = G.players.some(p => p.player_id === room.current_drawer && !p.left_at);
+          if (!drawerActive) nextTurn();
+        }
       }
     )
     .on('postgres_changes', { event: '*', schema: 'public', table: 'draw_players', filter: `room_code=eq.${code}` },
@@ -708,6 +727,11 @@ function subscribeToRoom() {
         G.me = G.players.find(p => p.player_id === G.playerId);
         renderLobbyPlayers();
         renderGamePlayers();
+        // If the current drawer left mid-turn, host advances to the next active player
+        if (G.isHost && (G.room?.status === 'drawing' || G.room?.status === 'word_pick')) {
+          const drawerActive = G.players.some(p => p.player_id === G.room.current_drawer && !p.left_at);
+          if (!drawerActive) { nextTurn(); return; }
+        }
         // Check if all non-drawers guessed (host advances)
         if (G.isHost && G.room?.status === 'drawing') checkAllGuessed();
       }
@@ -724,7 +748,47 @@ function subscribeToRoom() {
     .on('broadcast', { event: 'clear' }, () => {
       if (!G.isDrawer) clearCanvasLocal();
     })
-    .subscribe();
+    .on('presence', { event: 'sync' }, () => { refreshPresence(); })
+    .on('presence', { event: 'join' }, ({ newPresences }) => {
+      if (!G.presenceReady) return;
+      newPresences.forEach(p => { if (p.player_id !== G.playerId) drawToast(`${p.player_name} connected`, 'in'); });
+    })
+    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      if (!G.presenceReady) return;
+      leftPresences.forEach(p => { if (p.player_id !== G.playerId) drawToast(`${p.player_name} disconnected`, 'out'); });
+    })
+    .subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
+        setTimeout(() => { G.presenceReady = true; }, 1500);
+      }
+    });
+}
+
+/* ── Presence (live connect/disconnect) ── */
+function refreshPresence() {
+  if (!G.channel) return;
+  const state = G.channel.presenceState();
+  const ids = new Set();
+  Object.values(state).forEach(arr => arr.forEach(p => { if (p.player_id) ids.add(p.player_id); }));
+  G.online = ids;
+  renderLobbyPlayers();
+  renderGamePlayers();
+}
+
+let drawToastTimer = null;
+function drawToast(msg, dir) {
+  let el = document.getElementById('dgToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dgToast';
+    el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;font-size:.82rem;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.3);transition:opacity .25s;display:flex;align-items:center;gap:8px;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span style="font-size:.7rem">${dir === 'in' ? '🟢' : '⚪'}</span> ${esc(msg)}`;
+  el.style.opacity = '1';
+  clearTimeout(drawToastTimer);
+  drawToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2600);
 }
 
 /* ── Render / Screens ── */
@@ -754,15 +818,17 @@ function renderLobby() {
 function renderLobbyPlayers() {
   const list = document.getElementById('lobbyPlayerList');
   if (!list) return;
-  list.innerHTML = G.players.map(p => `
+  const shown = G.players.filter(p => !p.left_at);
+  list.innerHTML = shown.map(p => `
     <div class="player-item">
       <div class="player-avatar" style="background:${avatarColor(p.player_id)}">${p.player_name.charAt(0).toUpperCase()}</div>
+      <span class="conn-dot ${G.online.has(p.player_id) ? 'on' : 'off'}" title="${G.online.has(p.player_id) ? 'Online' : 'Offline'}"></span>
       <div class="player-name">${esc(p.player_name)}</div>
       ${G.room?.host_id === p.player_id ? '<span class="player-badge badge-host">Host</span>' : ''}
       ${p.player_id === G.playerId ? '<span class="player-badge badge-you">You</span>' : ''}
     </div>`).join('');
   const count = document.getElementById('lobbyPlayerCount');
-  if (count) count.textContent = `${G.players.length} / ${G.room?.max_players || 8}`;
+  if (count) count.textContent = `${shown.length} / ${G.room?.max_players || 8}`;
   updateLobbyStartBtn();
 }
 
@@ -886,9 +952,8 @@ function updateLobbyStartBtn() {
 /* ── Start Game ── */
 async function startGame() {
   if (!G.isHost || G.players.length < 2) return;
-  const order = shuffle([...G.players.map(p => p.player_id)]);
-  G.usedWords = [];
-  const choices = pickWords(3);
+  const order = shuffle([...activePlayers().map(p => p.player_id)]);
+  const choices = pickWords(3, []);
   await sb.from('draw_players').update({ score: 0, has_guessed: false }).eq('room_code', G.roomCode);
   await sb.from('draw_rooms').update({
     status: 'word_pick',
@@ -899,6 +964,7 @@ async function startGame() {
     word_choices: choices,
     current_word: null,
     current_hint: null,
+    used_words: [],
     phase_ends_at: null
   }).eq('room_code', G.roomCode);
 }
@@ -932,6 +998,16 @@ function updateGameUI() {
 
   renderGamePlayers();
   updateToolbarState();
+  const endBtn = document.getElementById('endGameBtn');
+  if (endBtn) endBtn.style.display = G.isHost ? 'inline-flex' : 'none';
+}
+
+/* ── End Game (host) ── */
+async function endGame() {
+  if (!G.isHost) return;
+  if (!confirm('End the game for everyone and show final standings?')) return;
+  stopTimer();
+  await sb.from('draw_rooms').update({ status: 'game_over' }).eq('room_code', G.roomCode);
 }
 
 function showWordPickOverlay() {
@@ -959,13 +1035,14 @@ function hideWordPickOverlay() {
 
 async function pickWord(word) {
   if (!G.isDrawer) return;
-  G.usedWords.push(word);
+  const newUsed = [...(G.room?.used_words || []), word];
   const hint = wordToHint(word);
   const phaseEnd = new Date(Date.now() + G.room.draw_time * 1000).toISOString();
   await sb.from('draw_rooms').update({
     status: 'drawing',
     current_word: word,
     current_hint: hint,
+    used_words: newUsed,
     phase_ends_at: phaseEnd
   }).eq('room_code', G.roomCode);
   await sb.from('draw_players').update({ has_guessed: false }).eq('room_code', G.roomCode);
@@ -1024,7 +1101,7 @@ async function revealHintLetter() {
 /* ── Scoring & End Round ── */
 function checkAllGuessed() {
   if (G.room?.status !== 'drawing') return;
-  const nonDrawers = G.players.filter(p => p.player_id !== G.room.current_drawer);
+  const nonDrawers = G.players.filter(p => p.player_id !== G.room.current_drawer && !p.left_at);
   if (nonDrawers.length > 0 && nonDrawers.every(p => p.has_guessed)) endRound();
 }
 
@@ -1074,15 +1151,20 @@ async function showRoundEnd() {
 async function nextTurn() {
   if (!G.isHost) return;
   const order = G.room.draw_order || [];
-  const nextIndex = (G.room.draw_index || 0) + 1;
+  const activeIds = new Set(activePlayers().map(p => p.player_id));
 
   await sb.from('draw_players').update({ has_guessed: false }).eq('room_code', G.roomCode);
+
+  // Advance to the next index whose player is still in the game (skip those who left)
+  let nextIndex = (G.room.draw_index || 0) + 1;
+  while (nextIndex < order.length && !activeIds.has(order[nextIndex])) nextIndex++;
 
   if (nextIndex >= order.length) {
     if (G.room.round_current >= G.room.rounds_total) {
       await sb.from('draw_rooms').update({ status: 'game_over' }).eq('room_code', G.roomCode);
     } else {
-      const newOrder = shuffle([...order]);
+      const newOrder = shuffle([...activeIds]);
+      if (newOrder.length === 0) { await sb.from('draw_rooms').update({ status: 'game_over' }).eq('room_code', G.roomCode); return; }
       const choices = pickWords(3);
       await sb.from('draw_rooms').update({
         status: 'word_pick',
@@ -1125,14 +1207,28 @@ async function showGameOver() {
       <div class="gameover-pname">${esc(p.player_name)}</div>
       <div class="gameover-pscore">${p.score} pts</div>
     </div>`).join('');
+
+  // Record overall standings once (host only, logged-in players)
+  if (G.isHost && G.room && !G.room.standings_done) {
+    G.room.standings_done = true; // set first to close the re-entry window
+    await sb.from('draw_rooms').update({ standings_done: true }).eq('room_code', G.roomCode);
+    const top = G.players[0]?.score || 0;
+    for (const p of G.players) {
+      if (!p.player_id?.startsWith('student_')) continue;
+      const won = top > 0 && p.score === top;
+      await sb.rpc('bump_standing', { p_id: p.player_id, p_name: p.player_name, p_points: p.score || 0, p_won: won, p_bucket: 'draw' });
+    }
+  }
 }
 
 async function backToLobby() {
   if (!G.isHost) return;
   await sb.from('draw_players').update({ score: 0, has_guessed: false }).eq('room_code', G.roomCode);
+  await sb.from('draw_players').delete().eq('room_code', G.roomCode).not('left_at', 'is', null);
   await sb.from('draw_rooms').update({
     status: 'lobby', current_drawer: null, current_word: null, current_hint: null,
-    word_choices: [], draw_order: [], draw_index: 0, round_current: 0, phase_ends_at: null
+    word_choices: [], draw_order: [], draw_index: 0, round_current: 0, phase_ends_at: null,
+    used_words: [], standings_done: false
   }).eq('room_code', G.roomCode);
 }
 
@@ -1140,13 +1236,15 @@ async function backToLobby() {
 function renderGamePlayers() {
   const el = document.getElementById('gPlayerList');
   if (!el) return;
-  const sorted = [...G.players].sort((a, b) => b.score - a.score);
+  const sorted = [...G.players].sort((a, b) => (a.left_at ? 1 : 0) - (b.left_at ? 1 : 0) || b.score - a.score);
   el.innerHTML = sorted.map(p => {
-    const isDrawing = p.player_id === G.room?.current_drawer;
+    const left = !!p.left_at;
+    const isDrawing = !left && p.player_id === G.room?.current_drawer;
     return `
-      <div class="score-player-item ${isDrawing ? 'drawing' : p.has_guessed ? 'guessed' : ''}">
+      <div class="score-player-item ${left ? 'left' : isDrawing ? 'drawing' : p.has_guessed ? 'guessed' : ''}">
         <div class="score-avatar" style="background:${avatarColor(p.player_id)}">${p.player_name.charAt(0).toUpperCase()}</div>
-        <div class="score-name">${esc(p.player_name)}</div>
+        ${left ? '' : `<span class="conn-dot ${G.online.has(p.player_id) ? 'on' : 'off'}"></span>`}
+        <div class="score-name">${esc(p.player_name)}${left ? ' <span class="left-tag">left</span>' : ''}</div>
         <div class="score-pts">${p.score}</div>
       </div>`;
   }).join('');
@@ -1212,13 +1310,22 @@ async function leaveRoom() {
   stopTimer();
   if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
   localStorage.removeItem('dg_session');
-  if (G.roomCode && G.playerId) {
-    await sb.from('draw_players').delete().eq('room_code', G.roomCode).eq('player_id', G.playerId);
-    const { data: remaining } = await sb.from('draw_players').select('player_id').eq('room_code', G.roomCode);
-    if (!remaining || remaining.length === 0) {
-      await sb.from('draw_rooms').delete().eq('room_code', G.roomCode);
-    } else if (G.isHost) {
-      await sb.from('draw_rooms').update({ host_id: remaining[0].player_id }).eq('room_code', G.roomCode);
+  const code = G.roomCode, pid = G.playerId, wasHost = G.isHost;
+  const status = G.room?.status;
+  if (code && pid) {
+    const activeGame = status && status !== 'lobby';
+    if (activeGame) {
+      // Mid-game: keep the row (for scoreboard/history) but mark as left → turn is skipped
+      await sb.from('draw_players').update({ left_at: new Date().toISOString() }).eq('room_code', code).eq('player_id', pid);
+    } else {
+      await sb.from('draw_players').delete().eq('room_code', code).eq('player_id', pid);
+    }
+    const { data: remaining } = await sb.from('draw_players').select('player_id,left_at').eq('room_code', code);
+    const stillActive = (remaining || []).filter(p => !p.left_at && p.player_id !== pid);
+    if (stillActive.length === 0) {
+      await sb.from('draw_rooms').delete().eq('room_code', code);
+    } else if (wasHost) {
+      await sb.from('draw_rooms').update({ host_id: stillActive[0].player_id }).eq('room_code', code);
     }
   }
   G.roomCode = null; G.room = null; G.players = []; G.me = null;
@@ -1376,8 +1483,13 @@ function updateToolbarState() {
 function wordToHint(word) { return word.replace(/[a-zA-Z]/g, '_'); }
 function formatHint(hint) { return hint.split('').join(' '); }
 
-function pickWords(n) {
-  const available = WORDS.filter(w => !G.usedWords.includes(w));
+function activePlayers() {
+  return G.players.filter(p => !p.left_at);
+}
+
+function pickWords(n, used) {
+  const usedList = used || G.room?.used_words || [];
+  const available = WORDS.filter(w => !usedList.includes(w));
   const pool = available.length >= n ? available : WORDS;
   const picked = [];
   const copy = [...pool];
