@@ -330,12 +330,15 @@
   /* ── MATCH CENTER ── */
   var mcTab = 'today', mcTimer = null, cdTimer = null, expandedId = null;
 
-  /* In-site live TV — HTTPS HLS streams (open CORS), played with hls.js */
+  /* In-site live TV — HTTPS HLS streams (open CORS, verified to deliver real
+     segments from BD), played with hls.js. Availability/region may still vary. */
   var TV_CHANNELS = [
+    { n: 'World Cup (Sky)',  u: 'https://d1211whpimeups.cloudfront.net/smil:rtbgo/chunklist.m3u8', note: '⚽' },
     { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/1080p-vtt/index.m3u8', note: '🇧🇷' },
-    { n: 'beIN Sports Xtra', u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
-    { n: 'FOX Sports',       u: 'https://d1jzu95oc8fgt3.cloudfront.net/FOX_Sports720p.m3u8', note: '🇺🇸' },
-    { n: 'World Cup Live',   u: 'https://streamsportixa.ajmainearafat.workers.dev/live.m3u8', note: '⚽' },
+    { n: 'beIN Xtra',        u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
+    { n: 'beIN Sports Ñ',    u: 'https://amg01334-beinsportsllc-beinxtraesp-localnow-aekzc.amagi.tv/playlist.m3u8', note: '🇪🇸' },
+    { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master.m3u8', note: '🇺🇸' },
+    { n: 'Real Madrid TV',   u: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8', note: '⚪' },
   ];
   function watchRow(state) {
     var label = state === 'in' ? '<span class="f26-live-dot"></span> Watch Live Now' : '<i class="fa-solid fa-tv"></i> Live TV';
@@ -367,7 +370,8 @@
             '<span class="f26-tv-title"><span class="f26-live-dot"></span> Live TV</span>' +
             '<button class="f26-tv-close" aria-label="Close">✕</button>' +
           '</div>' +
-          '<div class="f26-tv-video"><video id="f26-tv-vid" playsinline controls></video>' +
+          '<div class="f26-tv-video"><video id="f26-tv-vid" playsinline controls muted></video>' +
+            '<button class="f26-tv-unmute" id="f26-tv-unmute"><i class="fa-solid fa-volume-xmark"></i> Tap to unmute</button>' +
             '<div class="f26-tv-msg" id="f26-tv-msg"></div></div>' +
           '<div class="f26-tv-chans" id="f26-tv-chans"></div>' +
           '<div class="f26-tv-note">Third-party live streams · quality & availability may vary by region.</div>' +
@@ -375,6 +379,14 @@
       document.body.appendChild(overlay);
       overlay.addEventListener('click', function (e) { if (e.target === overlay) closeTvPlayer(); });
       overlay.querySelector('.f26-tv-close').addEventListener('click', closeTvPlayer);
+      var um = overlay.querySelector('#f26-tv-unmute');
+      um.addEventListener('click', function () {
+        var v = document.getElementById('f26-tv-vid');
+        v.muted = false; v.volume = 1; v.play().catch(function () {});
+        um.style.display = 'none';
+      });
+      var vEl = overlay.querySelector('#f26-tv-vid');
+      vEl.addEventListener('volumechange', function () { if (!vEl.muted) um.style.display = 'none'; });
     }
     var chans = overlay.querySelector('#f26-tv-chans');
     chans.innerHTML = TV_CHANNELS.map(function (c, i) {
@@ -392,27 +404,33 @@
     var ch = TV_CHANNELS[idx]; if (!ch) return;
     var vid = document.getElementById('f26-tv-vid');
     var msg = document.getElementById('f26-tv-msg');
+    var um = document.getElementById('f26-tv-unmute');
     var chans = document.getElementById('f26-tv-chans');
     if (chans) chans.querySelectorAll('.f26-tv-chan').forEach(function (b, i) { b.classList.toggle('on', i === idx); });
     msg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to ' + esc(ch.n) + '…';
     msg.style.display = 'flex';
+    /* Browsers only allow autoplay when muted — start muted, offer an unmute button */
+    vid.muted = true;
+    if (um) um.style.display = 'block';
     if (_hls) { try { _hls.destroy(); } catch (e) {} _hls = null; }
+    var started = function () { msg.style.display = 'none'; vid.play().catch(function () {}); };
     loadHls().then(function () {
       if (window.Hls && window.Hls.isSupported()) {
-        _hls = new window.Hls({ lowLatencyMode: true, enableWorker: true });
+        _hls = new window.Hls({ lowLatencyMode: true, enableWorker: true, backBufferLength: 30 });
         _hls.loadSource(ch.u);
         _hls.attachMedia(vid);
-        _hls.on(window.Hls.Events.MANIFEST_PARSED, function () { msg.style.display = 'none'; vid.play().catch(function () {}); });
+        _hls.on(window.Hls.Events.MANIFEST_PARSED, started);
         _hls.on(window.Hls.Events.ERROR, function (ev, data) {
-          if (data && data.fatal) {
-            msg.innerHTML = '⚠️ Couldn\'t play <b>' + esc(ch.n) + '</b> — it may be geo-blocked or offline. Try another channel above.';
-            msg.style.display = 'flex';
-          }
+          if (!data || !data.fatal) return;
+          if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { _hls.startLoad(); return; }       /* retry */
+          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) { _hls.recoverMediaError(); return; }  /* codec/buffer hiccup */
+          msg.innerHTML = '⚠️ <b>' + esc(ch.n) + '</b> isn\'t playable in the browser right now (codec or region). Try another channel above.';
+          msg.style.display = 'flex'; if (um) um.style.display = 'none';
         });
       } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
         vid.src = ch.u;
-        vid.onloadedmetadata = function () { msg.style.display = 'none'; vid.play().catch(function () {}); };
-        vid.onerror = function () { msg.innerHTML = '⚠️ Couldn\'t play <b>' + esc(ch.n) + '</b>. Try another channel.'; msg.style.display = 'flex'; };
+        vid.onloadedmetadata = started;
+        vid.onerror = function () { msg.innerHTML = '⚠️ Couldn\'t play <b>' + esc(ch.n) + '</b>. Try another channel.'; msg.style.display = 'flex'; if (um) um.style.display = 'none'; };
       } else {
         msg.textContent = 'Your browser cannot play this stream.';
       }

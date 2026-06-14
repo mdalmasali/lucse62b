@@ -464,6 +464,14 @@ html[data-theme="light"] .f26-watch-lbl { color: #6b7280; }
   gap: 8px; text-align: center; padding: 20px; color: #e2e8f0; font-size: .85rem; font-weight: 600;
   background: rgba(0,0,0,.55);
 }
+.f26-tv-unmute {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  display: none; align-items: center; gap: 6px; cursor: pointer; z-index: 2;
+  font-size: .78rem; font-weight: 800; color: #fff;
+  background: rgba(239,68,68,.92); border: none; border-radius: 999px; padding: 8px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4);
+}
+.f26-tv-unmute:hover { background: #ef4444; }
 .f26-tv-chans { display: flex; gap: 8px; padding: 12px; flex-wrap: wrap; justify-content: center; }
 .f26-tv-chan {
   display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
