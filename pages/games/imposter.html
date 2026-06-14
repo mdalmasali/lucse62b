@@ -661,17 +661,34 @@ function fmtTime(secs) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
+// Device-local memory of recently used words, so a brand-new room doesn't
+// repeat the words from the last room on this device.
+function deviceUsedWords() {
+  try { return JSON.parse(localStorage.getItem('imp_used_words') || '[]'); } catch(e) { return []; }
+}
+function rememberWord(word, poolSize) {
+  try {
+    let list = deviceUsedWords().concat([word]);
+    const cap = Math.max(24, (poolSize || 60) - 40);
+    if (list.length > cap) list = list.slice(list.length - cap);
+    localStorage.setItem('imp_used_words', JSON.stringify(list));
+  } catch(e) {}
+}
+
 function pickWord(pack, used) {
   const words = WORD_PACKS[pack]?.words || WORD_PACKS.random.words;
   const usedList = used || [];
-  let pool = words.filter(w => !usedList.includes(w));
+  const avoid = new Set([...usedList, ...deviceUsedWords()]);
+  let pool = words.filter(w => !avoid.has(w));
   // Pool exhausted -> recycle, but avoid immediately repeating the last word
   if (pool.length === 0) {
     const last = usedList[usedList.length - 1];
     pool = words.filter(w => w !== last);
     if (pool.length === 0) pool = words;
   }
-  return pool[Math.floor(Math.random() * pool.length)];
+  const word = pool[Math.floor(Math.random() * pool.length)];
+  rememberWord(word, words.length);
+  return word;
 }
 
 function shuffle(arr) {
@@ -708,6 +725,9 @@ async function updatePlayer(code, playerId, patch) {
 // ── Realtime ─────────────────────────────────────────────────────────────────
 function subscribeToRoom(code) {
   if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
+  // Fresh presence baseline so the initial member list isn't announced as "connected"
+  G.presenceReady = false;
+  G.online = new Set();
   G.channel = sb.channel(`room:${code}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_rooms', filter: `room_code=eq.${code}` }, async payload => {
       G.room = payload.new || await getRoom(code);
@@ -737,17 +757,19 @@ function subscribeToRoom(code) {
         if (active.length > 0 && active.every(p => p.vote_for)) await advanceFromVote();
       }
     })
-    .on('presence', { event: 'sync' }, () => { refreshPresence(); })
+    .on('presence', { event: 'sync' }, () => { refreshPresence(); G.presenceReady = true; })
     .on('presence', { event: 'join' }, ({ newPresences }) => {
       newPresences.forEach(p => {
         if (G.discTimers[p.player_id]) { clearTimeout(G.discTimers[p.player_id]); delete G.discTimers[p.player_id]; }
-        if (G.presenceReady && p.player_id !== G.playerId) toast(`${p.player_name} connected 🟢`, '');
+        // Only announce genuinely new players (not myself, not someone already online)
+        if (G.presenceReady && p.player_id !== G.playerId && !G.online.has(p.player_id)) toast(`${p.player_name} connected 🟢`, '');
       });
     })
     .on('presence', { event: 'leave' }, ({ leftPresences }) => {
       leftPresences.forEach(p => {
         if (p.player_id === G.playerId) return;
-        if (G.presenceReady) toast(`${p.player_name} disconnected ⚪`, '');
+        // Only announce a real drop (still online before this event), not a presence flap
+        if (G.presenceReady && G.online.has(p.player_id)) toast(`${p.player_name} disconnected ⚪`, '');
         scheduleDisconnect(p.player_id);
       });
     })
@@ -756,7 +778,6 @@ function subscribeToRoom(code) {
         await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
         // Re-subscribing means we're present → undo any stale "left" mark and rejoin play
         if (G.roomCode) await sb.from('game_players').update({ left_at: null }).eq('room_code', G.roomCode).eq('player_id', G.playerId);
-        setTimeout(() => { G.presenceReady = true; }, 1500);
       }
     });
 }

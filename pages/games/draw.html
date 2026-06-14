@@ -701,6 +701,9 @@ async function loadRoom() {
 function subscribeToRoom() {
   if (G.channel) { sb.removeChannel(G.channel); G.channel = null; }
   const code = G.roomCode;
+  // Fresh presence baseline for this channel so the initial member list isn't announced as "connected"
+  G.presenceReady = false;
+  G.online = new Set();
 
   G.channel = sb.channel(`draw:${code}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'draw_rooms', filter: `room_code=eq.${code}` },
@@ -766,17 +769,19 @@ function subscribeToRoom() {
     .on('broadcast', { event: 'clear' }, () => {
       if (!G.isDrawer) clearCanvasLocal();
     })
-    .on('presence', { event: 'sync' }, () => { refreshPresence(); })
+    .on('presence', { event: 'sync' }, () => { refreshPresence(); G.presenceReady = true; })
     .on('presence', { event: 'join' }, ({ newPresences }) => {
       newPresences.forEach(p => {
         if (G.discTimers[p.player_id]) { clearTimeout(G.discTimers[p.player_id]); delete G.discTimers[p.player_id]; }
-        if (G.presenceReady && p.player_id !== G.playerId) drawToast(`${p.player_name} connected`, 'in');
+        // Only announce genuinely new players (not myself, not someone already online)
+        if (G.presenceReady && p.player_id !== G.playerId && !G.online.has(p.player_id)) drawToast(`${p.player_name} connected`, 'in');
       });
     })
     .on('presence', { event: 'leave' }, ({ leftPresences }) => {
       leftPresences.forEach(p => {
         if (p.player_id === G.playerId) return;
-        if (G.presenceReady) drawToast(`${p.player_name} disconnected`, 'out');
+        // Only announce a real drop (still gone after the event), not a presence flap
+        if (G.presenceReady && G.online.has(p.player_id)) drawToast(`${p.player_name} disconnected`, 'out');
         scheduleDisconnect(p.player_id);
       });
     })
@@ -785,7 +790,6 @@ function subscribeToRoom() {
         await G.channel.track({ player_id: G.playerId, player_name: G.playerName });
         // Re-subscribing means we're present → undo any stale "left" mark and rejoin play
         if (G.roomCode) await sb.from('draw_players').update({ left_at: null }).eq('room_code', G.roomCode).eq('player_id', G.playerId);
-        setTimeout(() => { G.presenceReady = true; }, 1500);
       }
     });
 }
@@ -1538,16 +1542,33 @@ function activePlayers() {
   return G.players.filter(p => !p.left_at);
 }
 
+// Device-local memory of recently shown words, so a brand-new room doesn't
+// repeat the words from the last room on this device.
+function deviceUsedWords() {
+  try { return JSON.parse(localStorage.getItem('dg_used_words') || '[]'); } catch(e) { return []; }
+}
+function rememberWords(words) {
+  try {
+    let list = deviceUsedWords().concat(words);
+    const cap = Math.max(30, WORDS.length - 40); // remember recent words but keep ~40 fresh to pick from
+    if (list.length > cap) list = list.slice(list.length - cap);
+    localStorage.setItem('dg_used_words', JSON.stringify(list));
+  } catch(e) {}
+}
+
 function pickWords(n, used) {
-  const usedList = used || G.room?.used_words || [];
-  const available = WORDS.filter(w => !usedList.includes(w));
-  const pool = available.length >= n ? available : WORDS;
+  const roomUsed = used || G.room?.used_words || [];
+  const avoid = new Set([...roomUsed, ...deviceUsedWords()]);
+  let pool = WORDS.filter(w => !avoid.has(w));
+  if (pool.length < n) pool = WORDS.filter(w => !roomUsed.includes(w)); // device memory exhausted → cycle
+  if (pool.length < n) pool = [...WORDS];
   const picked = [];
   const copy = [...pool];
   while (picked.length < n && copy.length > 0) {
     const i = Math.floor(Math.random() * copy.length);
     picked.push(copy.splice(i, 1)[0]);
   }
+  rememberWords(picked); // these choices won't show again on this device until the pool cycles
   return picked;
 }
 
