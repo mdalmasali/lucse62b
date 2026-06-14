@@ -119,7 +119,11 @@
     .score-player-item.drawing .score-name { color: #fbbf24; }
     .score-player-item.guessed .score-name::after { content: ' ✓'; color: #34d399; }
     .score-player-item.left { opacity: .45; }
+    .score-player-item.offline { opacity: .6; }
+    .off-tag { font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.25); border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
     .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .conn-dot.off { animation: connPulse 1.2s ease-in-out infinite; }
+    @keyframes connPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
     .conn-dot.on { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,.7); }
     .conn-dot.off { background: #6b7280; }
     .left-tag { font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #f87171; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.25); border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
@@ -500,7 +504,8 @@ const G = {
   roundEndTimer: null,
   usedWords: [],
   online: new Set(),
-  presenceReady: false
+  presenceReady: false,
+  discTimers: {}
 };
 
 /* ── Init ── */
@@ -668,6 +673,9 @@ async function rejoinRoom() {
   const { data: me } = await sb.from('draw_players').select('*').eq('room_code', G.roomCode).eq('player_id', G.playerId).single();
   if (!me) { localStorage.removeItem('dg_session'); showScreen('homeScreen'); return; }
 
+  // Reconnecting after a disconnect → clear the "left" mark so we're back in the rotation
+  if (me.left_at) await sb.from('draw_players').update({ left_at: null }).eq('room_code', G.roomCode).eq('player_id', G.playerId);
+
   G.isHost = room.host_id === G.playerId;
   await loadRoom();
   subscribeToRoom();
@@ -750,12 +758,17 @@ function subscribeToRoom() {
     })
     .on('presence', { event: 'sync' }, () => { refreshPresence(); })
     .on('presence', { event: 'join' }, ({ newPresences }) => {
-      if (!G.presenceReady) return;
-      newPresences.forEach(p => { if (p.player_id !== G.playerId) drawToast(`${p.player_name} connected`, 'in'); });
+      newPresences.forEach(p => {
+        if (G.discTimers[p.player_id]) { clearTimeout(G.discTimers[p.player_id]); delete G.discTimers[p.player_id]; }
+        if (G.presenceReady && p.player_id !== G.playerId) drawToast(`${p.player_name} connected`, 'in');
+      });
     })
     .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-      if (!G.presenceReady) return;
-      leftPresences.forEach(p => { if (p.player_id !== G.playerId) drawToast(`${p.player_name} disconnected`, 'out'); });
+      leftPresences.forEach(p => {
+        if (p.player_id === G.playerId) return;
+        if (G.presenceReady) drawToast(`${p.player_name} disconnected`, 'out');
+        scheduleDisconnect(p.player_id);
+      });
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
@@ -772,8 +785,29 @@ function refreshPresence() {
   const ids = new Set();
   Object.values(state).forEach(arr => arr.forEach(p => { if (p.player_id) ids.add(p.player_id); }));
   G.online = ids;
+  // Anyone back online → cancel their pending disconnect timer
+  Object.keys(G.discTimers).forEach(pid => {
+    if (ids.has(pid)) { clearTimeout(G.discTimers[pid]); delete G.discTimers[pid]; }
+  });
   renderLobbyPlayers();
   renderGamePlayers();
+}
+
+// After a grace period, if the player is still offline the host removes/marks them
+// (so a quick reload won't kick anyone, but a real disconnect skips their turn)
+function scheduleDisconnect(pid) {
+  if (G.discTimers[pid]) clearTimeout(G.discTimers[pid]);
+  G.discTimers[pid] = setTimeout(async () => {
+    delete G.discTimers[pid];
+    if (G.online.has(pid)) return;        // came back
+    if (!G.isHost || !G.roomCode) return; // only host mutates
+    if (G.room?.status === 'lobby') {
+      await sb.from('draw_players').delete().eq('room_code', G.roomCode).eq('player_id', pid);
+    } else {
+      await sb.from('draw_players').update({ left_at: new Date().toISOString() })
+        .eq('room_code', G.roomCode).eq('player_id', pid).is('left_at', null);
+    }
+  }, 7000);
 }
 
 let drawToastTimer = null;
@@ -1239,12 +1273,13 @@ function renderGamePlayers() {
   const sorted = [...G.players].sort((a, b) => (a.left_at ? 1 : 0) - (b.left_at ? 1 : 0) || b.score - a.score);
   el.innerHTML = sorted.map(p => {
     const left = !!p.left_at;
+    const offline = !left && !G.online.has(p.player_id);
     const isDrawing = !left && p.player_id === G.room?.current_drawer;
     return `
-      <div class="score-player-item ${left ? 'left' : isDrawing ? 'drawing' : p.has_guessed ? 'guessed' : ''}">
+      <div class="score-player-item ${left ? 'left' : offline ? 'offline' : isDrawing ? 'drawing' : p.has_guessed ? 'guessed' : ''}">
         <div class="score-avatar" style="background:${avatarColor(p.player_id)}">${p.player_name.charAt(0).toUpperCase()}</div>
-        ${left ? '' : `<span class="conn-dot ${G.online.has(p.player_id) ? 'on' : 'off'}"></span>`}
-        <div class="score-name">${esc(p.player_name)}${left ? ' <span class="left-tag">left</span>' : ''}</div>
+        ${left ? '' : `<span class="conn-dot ${offline ? 'off' : 'on'}"></span>`}
+        <div class="score-name">${esc(p.player_name)}${left ? ' <span class="left-tag">left</span>' : offline ? ' <span class="off-tag">offline</span>' : ''}</div>
         <div class="score-pts">${p.score}</div>
       </div>`;
   }).join('');

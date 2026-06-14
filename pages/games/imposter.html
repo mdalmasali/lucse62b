@@ -71,7 +71,9 @@
     .player-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .conn-dot.on { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,.7); }
-    .conn-dot.off { background: #6b7280; }
+    .conn-dot.off { background: #fbbf24; animation: connPulse 1.2s ease-in-out infinite; }
+    @keyframes connPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .off-tag { font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.25); border-radius: 6px; padding: 1px 6px; }
     .player-item:last-child { border-bottom: none; }
     .player-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: #fff; flex-shrink: 0; }
     .player-name { font-size: .9rem; font-weight: 600; flex: 1; }
@@ -595,6 +597,7 @@ const G = {
   myVote: null,
   online: new Set(),
   presenceReady: false,
+  discTimers: {},
   // local settings (host)
   settings: { wordPack:'random', imposterCount:1, discussionTime:60, votingTime:60, rounds:1, maxPlayers:8, isPrivate:false, guestsAllowed:true, allowAnyName:true, skipVote:false, revealAtEnd:true }
 };
@@ -723,12 +726,17 @@ function subscribeToRoom(code) {
     })
     .on('presence', { event: 'sync' }, () => { refreshPresence(); })
     .on('presence', { event: 'join' }, ({ newPresences }) => {
-      if (!G.presenceReady) return;
-      newPresences.forEach(p => { if (p.player_id !== G.playerId) toast(`${p.player_name} connected 🟢`, ''); });
+      newPresences.forEach(p => {
+        if (G.discTimers[p.player_id]) { clearTimeout(G.discTimers[p.player_id]); delete G.discTimers[p.player_id]; }
+        if (G.presenceReady && p.player_id !== G.playerId) toast(`${p.player_name} connected 🟢`, '');
+      });
     })
     .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-      if (!G.presenceReady) return;
-      leftPresences.forEach(p => { if (p.player_id !== G.playerId) toast(`${p.player_name} disconnected ⚪`, ''); });
+      leftPresences.forEach(p => {
+        if (p.player_id === G.playerId) return;
+        if (G.presenceReady) toast(`${p.player_name} disconnected ⚪`, '');
+        scheduleDisconnect(p.player_id);
+      });
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
@@ -744,7 +752,26 @@ function refreshPresence() {
   const ids = new Set();
   Object.values(state).forEach(arr => arr.forEach(p => { if (p.player_id) ids.add(p.player_id); }));
   G.online = ids;
+  Object.keys(G.discTimers).forEach(pid => {
+    if (ids.has(pid)) { clearTimeout(G.discTimers[pid]); delete G.discTimers[pid]; }
+  });
   if (G.room) renderCurrentScreen();
+}
+
+// Grace period before the host removes/marks a disconnected player
+function scheduleDisconnect(pid) {
+  if (G.discTimers[pid]) clearTimeout(G.discTimers[pid]);
+  G.discTimers[pid] = setTimeout(async () => {
+    delete G.discTimers[pid];
+    if (G.online.has(pid)) return;        // came back
+    if (!G.isHost || !G.roomCode) return; // only host mutates
+    if (G.room?.status === 'lobby') {
+      await sb.from('game_players').delete().eq('room_code', G.roomCode).eq('player_id', pid);
+    } else {
+      await sb.from('game_players').update({ left_at: new Date().toISOString() })
+        .eq('room_code', G.roomCode).eq('player_id', pid).is('left_at', null);
+    }
+  }, 7000);
 }
 
 async function refreshPlayers() {
@@ -768,8 +795,10 @@ function renderLobby() {
     if (p.is_host) badges.push(`<span class="player-badge badge-host">Host</span>`);
     if (isMe) badges.push(`<span class="player-badge badge-you">You</span>`);
     if (p.is_ready) badges.push(`<span class="player-badge badge-ready">Ready</span>`);
-    const dot = `<span class="conn-dot ${G.online.has(p.player_id) ? 'on' : 'off'}" title="${G.online.has(p.player_id) ? 'Online' : 'Offline'}"></span>`;
-    return `<div class="player-item">${avatarHtml(p.player_name)}${dot}<span class="player-name">${p.player_name}</span>${badges.join('')}</div>`;
+    const isOnline = G.online.has(p.player_id);
+    if (!isOnline) badges.push(`<span class="off-tag">offline</span>`);
+    const dot = `<span class="conn-dot ${isOnline ? 'on' : 'off'}" title="${isOnline ? 'Online' : 'Offline'}"></span>`;
+    return `<div class="player-item" ${isOnline ? '' : 'style="opacity:.6"'}>${avatarHtml(p.player_name)}${dot}<span class="player-name">${p.player_name}</span>${badges.join('')}</div>`;
   }).join('') || '<div style="color:var(--text-secondary);font-size:.85rem;padding:8px 0">No players yet</div>';
 
   $id('lobbyStatus').textContent = approved.length < 2 ? `Need at least 2 players` : `${approved.length} players in lobby`;
@@ -1615,6 +1644,11 @@ document.getElementById('mobileNavClose')?.addEventListener('click', () => docum
         G.isHost = G.playerId === room.host_id;
         await refreshPlayers();
         if (G.me) {
+          // Reconnecting after a disconnect → clear the "left" mark so we're back in play
+          if (G.me.left_at) {
+            await sb.from('game_players').update({ left_at: null }).eq('room_code', saved.roomCode).eq('player_id', G.playerId);
+            await refreshPlayers();
+          }
           subscribeToRoom(saved.roomCode);
           hideLoading();
           renderCurrentScreen();
