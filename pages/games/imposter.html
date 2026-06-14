@@ -1119,8 +1119,27 @@ async function joinRoom() {
   showLoading('Joining...');
   const room = await getRoom(code);
   if (!room) { hideLoading(); toast('Room not found!', 'error'); return; }
-  if (room.status !== 'lobby') { hideLoading(); toast('Game has already started!', 'error'); return; }
   if (G.isGuest && room.guests_allowed === false) { hideLoading(); toast('This room requires login!', 'error'); return; }
+
+  if (room.status !== 'lobby') {
+    if (G.isGuest) { hideLoading(); toast('Game has already started!', 'error'); return; }
+    // Logged-in user: rejoin running game
+    const runningPlayers = await getPlayers(code);
+    const wasInGame = runningPlayers.find(p => p.player_id === G.playerId);
+    if (!wasInGame) {
+      const { error } = await sb.from('game_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName, is_host: false, is_approved: true });
+      if (error) { hideLoading(); toast('Could not rejoin!', 'error'); return; }
+    }
+    G.roomCode = code;
+    G.room = room;
+    G.isHost = G.playerId === room.host_id;
+    await refreshPlayers();
+    subscribeToRoom(code);
+    localStorage.setItem('game_session', JSON.stringify({ roomCode: code, playerId: G.playerId, playerName: G.playerName }));
+    hideLoading();
+    renderCurrentScreen();
+    return;
+  }
 
   const existing = await getPlayers(code);
   const approved = existing.filter(p => p.is_approved);

@@ -606,8 +606,25 @@ async function joinRoom() {
 
   const { data: room, error } = await sb.from('draw_rooms').select('*').eq('room_code', code).single();
   if (error || !room) { showHomeError('Room not found.'); return; }
-  if (room.status !== 'lobby') { showHomeError('This game has already started.'); return; }
   if (G.isGuest && room.guests_allowed === false) { showHomeError('This room requires login. Please log in to join.'); return; }
+
+  if (room.status !== 'lobby') {
+    if (G.isGuest) { showHomeError('This game has already started.'); return; }
+    // Logged-in user: rejoin running game
+    const { data: allPlayers } = await sb.from('draw_players').select('player_id').eq('room_code', code);
+    const wasInGame = allPlayers?.find(p => p.player_id === G.playerId);
+    if (!wasInGame) {
+      const { error: pe } = await sb.from('draw_players').insert({ room_code: code, player_id: G.playerId, player_name: G.playerName });
+      if (pe) { showHomeError('Could not rejoin: ' + pe.message); return; }
+    }
+    G.roomCode = code;
+    G.isHost = room.host_id === G.playerId;
+    saveSession();
+    await loadRoom();
+    subscribeToRoom();
+    renderCurrentScreen();
+    return;
+  }
 
   const { data: existingPlayers } = await sb.from('draw_players').select('player_id').eq('room_code', code);
   if (existingPlayers && existingPlayers.length >= room.max_players) {
