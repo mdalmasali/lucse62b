@@ -574,11 +574,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── Word Packs ──────────────────────────────────────────────────────────────
 const WORD_PACKS = {
   random: { label: 'Random Mix', icon: '🎲', words: [] },
-  movies: { label: 'Movies', icon: '🎬', words: ['Avatar','Inception','Titanic','The Dark Knight','Interstellar','Parasite','Joker','Avengers','Frozen','Lion King','The Matrix','Gravity','Forrest Gump','Gladiator','The Godfather','Braveheart','Saving Private Ryan','Spirited Away','Your Name','Spider-Man','Black Panther','Coco','Finding Nemo','Shrek','Up'] },
-  sports: { label: 'Sports', icon: '⚽', words: ['Cricket','Football','Basketball','Tennis','Badminton','Swimming','Boxing','Golf','Volleyball','Cycling','Wrestling','Archery','Table Tennis','Hockey','Kabaddi','Athletics','Gymnastics','Judo','Karate','Shooting','Fencing','Rowing','Snooker','Dart','Skiing'] },
-  animals: { label: 'Animals', icon: '🦁', words: ['Lion','Tiger','Elephant','Giraffe','Penguin','Dolphin','Eagle','Crocodile','Kangaroo','Koala','Cheetah','Gorilla','Panda','Polar Bear','Zebra','Hippo','Rhino','Parrot','Flamingo','Octopus','Shark','Whale','Butterfly','Peacock','Chameleon'] },
-  food: { label: 'Food', icon: '🍕', words: ['Pizza','Biryani','Sushi','Burger','Pasta','Tacos','Ramen','Kebab','Samosa','Lasagna','Pancake','Cheesecake','Naan','Fried Rice','Shawarma','Falafel','Spring Roll','Dim Sum','Curry','Dumpling','Gelato','Croissant','Momos','Pho','Baklava'] },
-  bangla: { label: 'বাংলা', icon: '🇧🇩', words: ['ঢাকা','রিকশা','ইলিশ','সুন্দরবন','পদ্মা','শাপলা','কাঁঠাল','পহেলা বৈশাখ','জামদানি','নকশীকাঁথা','ভাপা পিঠা','মুক্তিযুদ্ধ','মেলা','পুকুর','নৌকা','ঘুড়ি','লুডু','ক্যারম','শীতের সকাল','বৃষ্টি','চা','ইট ভাটা','হাওর','বাঁশ বন','মসজিদ'] }
+  movies: { label: 'Movies', icon: '🎬', words: ['Avatar','Inception','Titanic','The Dark Knight','Interstellar','Parasite','Joker','Avengers','Frozen','Lion King','The Matrix','Gravity','Forrest Gump','Gladiator','The Godfather','Braveheart','Saving Private Ryan','Spirited Away','Your Name','Spider-Man','Black Panther','Coco','Finding Nemo','Shrek','Up','Toy Story','Jurassic Park','Star Wars','Harry Potter','The Lord of the Rings','Pirates of the Caribbean','Iron Man','Deadpool','Doctor Strange','Wall-E','Ratatouille','Inside Out','Kung Fu Panda','Moana','Aladdin','The Incredibles','Jumanji','Mad Max','Dune','Oppenheimer'] },
+  sports: { label: 'Sports', icon: '⚽', words: ['Cricket','Football','Basketball','Tennis','Badminton','Swimming','Boxing','Golf','Volleyball','Cycling','Wrestling','Archery','Table Tennis','Hockey','Kabaddi','Athletics','Gymnastics','Judo','Karate','Shooting','Fencing','Rowing','Snooker','Dart','Skiing','Surfing','Skateboarding','Rugby','Baseball','Handball','Polo','Squash','Sailing','Diving','Marathon','Weightlifting','Taekwondo','Climbing','Bowling','Ice Skating','Sumo','Snowboarding','Cross Country','Triathlon','Curling'] },
+  animals: { label: 'Animals', icon: '🦁', words: ['Lion','Tiger','Elephant','Giraffe','Penguin','Dolphin','Eagle','Crocodile','Kangaroo','Koala','Cheetah','Gorilla','Panda','Polar Bear','Zebra','Hippo','Rhino','Parrot','Flamingo','Octopus','Shark','Whale','Butterfly','Peacock','Chameleon','Camel','Owl','Wolf','Fox','Bear','Deer','Squirrel','Hedgehog','Sloth','Otter','Seal','Jellyfish','Seahorse','Lobster','Snail','Bat','Raccoon','Leopard','Jaguar','Toucan'] },
+  food: { label: 'Food', icon: '🍕', words: ['Pizza','Biryani','Sushi','Burger','Pasta','Tacos','Ramen','Kebab','Samosa','Lasagna','Pancake','Cheesecake','Naan','Fried Rice','Shawarma','Falafel','Spring Roll','Dim Sum','Curry','Dumpling','Gelato','Croissant','Momos','Pho','Baklava','Hot Dog','Waffle','Donut','Cupcake','Burrito','Nachos','Risotto','Paella','Gyro','Bagel','Pretzel','Macaron','Tiramisu','Brownie','Smoothie','Omelette','Sandwich','Noodles','Steak','Pudding'] },
+  bangla: { label: 'বাংলা', icon: '🇧🇩', words: ['ঢাকা','রিকশা','ইলিশ','সুন্দরবন','পদ্মা','শাপলা','কাঁঠাল','পহেলা বৈশাখ','জামদানি','নকশীকাঁথা','ভাপা পিঠা','মুক্তিযুদ্ধ','মেলা','পুকুর','নৌকা','ঘুড়ি','লুডু','ক্যারম','শীতের সকাল','বৃষ্টি','চা','ইট ভাটা','হাওর','বাঁশ বন','মসজিদ','চিতই পিঠা','মিষ্টি','রসগোল্লা','পান্তা ভাত','কদম ফুল','কোকিল','ধানক্ষেত','গরুর গাড়ি','তাল গাছ','শাপলা বিল','চাঁদনি রাত','বটগাছ','কুমির','জোনাকি','মাছ ধরা','পালকি','কাঁসা','হাট','বরই','আমড়া'] }
 };
 WORD_PACKS.random.words = Object.entries(WORD_PACKS).filter(([k]) => k !== 'random').flatMap(([,p]) => p.words);
 
@@ -661,33 +661,34 @@ function fmtTime(secs) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-// Device-local memory of recently used words, so a brand-new room doesn't
-// repeat the words from the last room on this device.
-function deviceUsedWords() {
-  try { return JSON.parse(localStorage.getItem('imp_used_words') || '[]'); } catch(e) { return []; }
+// Device-local word history: a word shown on this device won't repeat for 7 days.
+const WORD_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
+function wordLog() {
+  try { return JSON.parse(localStorage.getItem('imp_word_log') || '{}'); } catch(e) { return {}; }
 }
-function rememberWord(word, poolSize) {
+function logWord(word) {
   try {
-    let list = deviceUsedWords().concat([word]);
-    const cap = Math.max(24, (poolSize || 60) - 40);
-    if (list.length > cap) list = list.slice(list.length - cap);
-    localStorage.setItem('imp_used_words', JSON.stringify(list));
+    const log = wordLog(), now = Date.now();
+    log[word] = now;
+    for (const k in log) { if (now - log[k] > WORD_TTL) delete log[k]; } // prune old entries
+    localStorage.setItem('imp_word_log', JSON.stringify(log));
   } catch(e) {}
 }
 
 function pickWord(pack, used) {
-  const words = WORD_PACKS[pack]?.words || WORD_PACKS.random.words;
-  const usedList = used || [];
-  const avoid = new Set([...usedList, ...deviceUsedWords()]);
-  let pool = words.filter(w => !avoid.has(w));
-  // Pool exhausted -> recycle, but avoid immediately repeating the last word
+  const words = [...new Set(WORD_PACKS[pack]?.words || WORD_PACKS.random.words)];
+  const roomUsed = new Set(used || []);
+  const log = wordLog(), now = Date.now();
+  const candidates = words.filter(w => !roomUsed.has(w));
+  // Prefer words never shown, or shown more than a week ago
+  let pool = candidates.filter(w => !log[w] || (now - log[w]) > WORD_TTL);
   if (pool.length === 0) {
-    const last = usedList[usedList.length - 1];
-    pool = words.filter(w => w !== last);
-    if (pool.length === 0) pool = words;
+    // Whole pack seen within the week → pick the least-recently-shown word
+    pool = candidates.slice().sort((a, b) => (log[a] || 0) - (log[b] || 0)).slice(0, Math.max(1, Math.ceil(candidates.length * 0.3)));
+    if (pool.length === 0) pool = candidates.length ? candidates : words;
   }
   const word = pool[Math.floor(Math.random() * pool.length)];
-  rememberWord(word, words.length);
+  logWord(word);
   return word;
 }
 

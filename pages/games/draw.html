@@ -485,7 +485,27 @@ const WORDS = [
   'giraffe','lion','tiger','monkey','panda','dolphin','shark','whale','octopus','crab',
   'spider','bee','snail','turtle','frog','duck','owl','fox','wolf','bear',
   'running','jumping','swimming','sleeping','eating','laughing','dancing','singing','flying','fishing',
-  'superhero','wizard','pirate','astronaut','teacher','doctor','chef','firefighter','farmer','clown'
+  'superhero','wizard','pirate','astronaut','teacher','doctor','chef','firefighter','farmer','clown',
+  'umbrella','glasses','watch','ring','key','lock','ladder','hammer','saw','scissors',
+  'pencil','brush','crayon','balloon','candle','gift','ribbon','envelope','stamp','map',
+  'compass','anchor','flag','tent','campfire','backpack','sandwich','donut','lollipop','cupcake',
+  'cheese','egg','carrot','tomato','potato','corn','pepper','mushroom','onion','pumpkin',
+  'lemon','cherry','peach','pineapple','coconut','mango','avocado','broccoli','pear','kiwi',
+  'helicopter','submarine','tractor','ambulance','truck','scooter','skateboard','sailboat','canoe','jet',
+  'volcano','desert','island','waterfall','cave','glacier','valley','canyon','meadow','swamp',
+  'snake','lizard','dinosaur','dragon','unicorn','mermaid','ghost','alien','zombie','vampire',
+  'kangaroo','koala','zebra','rhino','hippo','camel','deer','rabbit','squirrel','hedgehog',
+  'parrot','peacock','flamingo','eagle','swan','rooster','chicken','goat','sheep','cow',
+  'horse','pig','mouse','bat','ant','ladybug','dragonfly','grasshopper','caterpillar','worm',
+  'jellyfish','starfish','seahorse','lobster','clam','coral','seaweed','pearl','treasure','compass',
+  'guitarist','painter','police','soldier','sailor','dancer','singer','magician','ninja','knight',
+  'snowflake','tornado','hurricane','earthquake','sunrise','sunset','eclipse','comet','planet','galaxy',
+  'igloo','pyramid','skyscraper','barn','church','stadium','library','museum','school','hospital',
+  'toothbrush','soap','towel','mirror','comb','razor','bandage','thermometer','syringe','pill',
+  'football','basketball','baseball','tennis','golf','bowling','hockey','volleyball','badminton','chess',
+  'violin','trumpet','flute','saxophone','harp','accordion','tambourine','xylophone','banjo','cello',
+  'waffle','pancake','noodles','burger','taco','sushi','pretzel','muffin','pie','jelly',
+  'rainbow','snowball','firework','balloon','kite','swing','slide','seesaw','trampoline','sandcastle'
 ];
 
 const COLORS = ['#000000','#808080','#ffffff','#8B4513','#FF0000','#FF6600','#FFFF00','#00CC00','#00CCCC','#0066FF','#9900CC','#FF66CC'];
@@ -1542,33 +1562,44 @@ function activePlayers() {
   return G.players.filter(p => !p.left_at);
 }
 
-// Device-local memory of recently shown words, so a brand-new room doesn't
-// repeat the words from the last room on this device.
-function deviceUsedWords() {
-  try { return JSON.parse(localStorage.getItem('dg_used_words') || '[]'); } catch(e) { return []; }
+// Device-local word history: a word shown on this device won't repeat for 7 days.
+const WORD_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
+const ALL_WORDS = [...new Set(WORDS)];    // de-duplicated pool
+
+function wordLog() {
+  try { return JSON.parse(localStorage.getItem('dg_word_log') || '{}'); } catch(e) { return {}; }
 }
-function rememberWords(words) {
+function logWords(words) {
   try {
-    let list = deviceUsedWords().concat(words);
-    const cap = Math.max(30, WORDS.length - 40); // remember recent words but keep ~40 fresh to pick from
-    if (list.length > cap) list = list.slice(list.length - cap);
-    localStorage.setItem('dg_used_words', JSON.stringify(list));
+    const log = wordLog(), now = Date.now();
+    words.forEach(w => { log[w] = now; });
+    for (const k in log) { if (now - log[k] > WORD_TTL) delete log[k]; } // prune old entries
+    localStorage.setItem('dg_word_log', JSON.stringify(log));
   } catch(e) {}
 }
 
 function pickWords(n, used) {
-  const roomUsed = used || G.room?.used_words || [];
-  const avoid = new Set([...roomUsed, ...deviceUsedWords()]);
-  let pool = WORDS.filter(w => !avoid.has(w));
-  if (pool.length < n) pool = WORDS.filter(w => !roomUsed.includes(w)); // device memory exhausted → cycle
-  if (pool.length < n) pool = [...WORDS];
+  const roomUsed = new Set(used || G.room?.used_words || []);
+  const log = wordLog(), now = Date.now();
+  const candidates = ALL_WORDS.filter(w => !roomUsed.has(w));
+  // Prefer words never shown, or shown more than a week ago
+  const fresh = candidates.filter(w => !log[w] || (now - log[w]) > WORD_TTL);
+  let pool;
+  if (fresh.length >= n) {
+    pool = fresh;
+  } else {
+    // Whole pool seen within the week → fall back to the least-recently-shown words
+    const lru = candidates.slice().sort((a, b) => (log[a] || 0) - (log[b] || 0));
+    pool = lru.slice(0, Math.max(n, Math.ceil(candidates.length * 0.4)));
+    if (pool.length < n) pool = candidates.length ? candidates : [...ALL_WORDS];
+  }
   const picked = [];
   const copy = [...pool];
   while (picked.length < n && copy.length > 0) {
     const i = Math.floor(Math.random() * copy.length);
     picked.push(copy.splice(i, 1)[0]);
   }
-  rememberWords(picked); // these choices won't show again on this device until the pool cycles
+  logWords(picked); // these won't reappear on this device for a week
   return picked;
 }
 
