@@ -349,10 +349,22 @@
       return document.createElement('video').canPlayType('video/mp4; codecs="hvc1.1.6.L120.B0"') !== '';
     } catch (e) { return false; }
   }
+  /* Official BD streaming options — reliable fallback that works on any ISP/browser */
+  var WATCH = [
+    { n: 'T Sports', tag: 'FREE TV', u: 'https://www.tsports.com' },
+    { n: 'Toffee',   tag: '',        u: 'https://toffeelive.com' },
+    { n: 'Bioscope', tag: '',        u: 'https://www.bioscopelive.com' },
+  ];
   function watchRow(state) {
     var label = state === 'in' ? '<span class="f26-live-dot"></span> Watch Live Now' : '<i class="fa-solid fa-tv"></i> Live TV';
     return '<div class="f26-watch">' +
       '<button class="f26-watch-live" data-tv-play="1">' + label + '</button>' +
+      '<div class="f26-watch-alt"><span class="f26-watch-lbl">Not playing? Watch on</span>' +
+        WATCH.map(function (w) {
+          return '<a class="f26-watch-chip" target="_blank" rel="noopener" href="' + w.u + '">' +
+            esc(w.n) + (w.tag ? ' <b>' + w.tag + '</b>' : '') + '</a>';
+        }).join('') +
+      '</div>' +
     '</div>';
   }
 

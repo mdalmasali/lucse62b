@@ -434,6 +434,10 @@ html[data-theme="light"] .f26-watch-lbl { color: #6b7280; }
 }
 .f26-watch-live:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,.45); }
 .f26-watch-live .f26-live-dot { background: #fff; }
+.f26-watch-alt {
+  grid-column: 1 / -1; width: 100%; display: flex; align-items: center; justify-content: center;
+  gap: 6px; flex-wrap: wrap; margin-top: 8px;
+}
 
 /* TV player modal */
 .f26-tv-overlay {
