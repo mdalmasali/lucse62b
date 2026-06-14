@@ -826,9 +826,15 @@
       var minePred = {};
       preds.forEach(function (p) { if (p.student_id === me.id) minePred[p.match_id] = p; });
 
-      /* predictable matches: today + upcoming (pre), max 12 */
-      var upcoming = matches.filter(function (m) { return m.state === 'pre'; })
-        .sort(function (x, y) { return new Date(x.date) - new Date(y.date); }).slice(0, 12);
+      /* predictable matches: upcoming (pre) + any live match you've already predicted
+         (so your saved pick stays visible, locked, once kickoff starts) */
+      var upcoming = matches.filter(function (m) {
+        return m.state === 'pre' || (m.state === 'in' && minePred[m.id]);
+      }).sort(function (x, y) {
+        var lx = x.state === 'in' ? 0 : 1, ly = y.state === 'in' ? 0 : 1;
+        if (lx !== ly) return lx - ly;            /* live ones first */
+        return new Date(x.date) - new Date(y.date);
+      }).slice(0, 12);
 
       html += '<div class="f26-sec-h"><i class="fa-solid fa-wand-magic-sparkles"></i> MAKE YOUR PREDICTIONS</div>';
       if (!upcoming.length) html += '<div class="f26-empty">No upcoming matches to predict.</div>';
@@ -840,9 +846,10 @@
       upcoming.forEach(function (m) {
         var t = m.teams || [], a = t[0] || {}, b = t[1] || {};
         var p = minePred[m.id];
-        var locked = new Date(m.date) <= new Date();
-        html += '<div class="f26-pred" data-mid="' + esc(m.id) + '" data-at="' + new Date(m.date).getTime() + '">' +
-          '<div class="f26-pred-when">' + esc(bdDateLabel(m.date)) + ' · ' + esc(bdTime(m.date)) + '</div>' +
+        var live = m.state === 'in';
+        var locked = live || new Date(m.date) <= new Date();
+        html += '<div class="f26-pred' + (live ? ' f26-pred-live' : '') + '" data-mid="' + esc(m.id) + '" data-at="' + new Date(m.date).getTime() + '">' +
+          '<div class="f26-pred-when">' + (live ? '<span class="f26-live-dot"></span> LIVE NOW' : esc(bdDateLabel(m.date)) + ' · ' + esc(bdTime(m.date))) + '</div>' +
           '<div class="f26-pred-mid">' +
             '<span class="f26-team">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '<b>' + esc(teamLabel(a)) + '</b></span>' +
             (locked
@@ -852,7 +859,9 @@
             '<span class="f26-team away"><b>' + esc(teamLabel(b)) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '</span>' +
           '</div>' +
           (locked
-            ? '<div class="f26-pred-foot">Kickoff passed — predictions locked' + (p ? ' · yours: ' + p.home_score + '–' + p.away_score : '') + '</div>'
+            ? '<div class="f26-pred-foot">' + (live
+                ? '<span class="f26-live-dot"></span> Live ' + esc(a.score) + '–' + esc(b.score) + ' · your pick: ' + (p ? '<b>' + p.home_score + '–' + p.away_score + '</b>' : '—') + ' <i class="fa-solid fa-lock" style="font-size:.8em;opacity:.7"></i>'
+                : 'Kickoff passed — predictions locked' + (p ? ' · yours: ' + p.home_score + '–' + p.away_score : '')) + '</div>'
             : '<button class="f26-pred-save">' + (p ? '✓ Saved ' + p.home_score + '–' + p.away_score + ' — change?' : 'Save Prediction') + '</button>') +
         '</div>';
       });
