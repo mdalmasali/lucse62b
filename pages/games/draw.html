@@ -240,14 +240,31 @@
     <a href="../../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
     <ul class="topbar-links">
       <li><a href="../../index.html">Home</a></li>
-      <li><a href="../games.html">Games</a></li>
+      <li><a href="../notice.html">Notice</a></li>
+      <li class="auth-only"><a href="../classwork.html">Classwork</a></li>
+      <li class="auth-only"><a href="../info.html">Info</a></li>
+      <li class="auth-only"><a href="../resources.html">Resources</a></li>
+      <li class="auth-only"><a href="../result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+      <li><a href="../cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
       <li><a href="../login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
     </ul>
-    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
       <i class="fa-solid fa-circle-half-stroke"></i>
     </button>
     <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
   </nav>
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNav">
+    <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+    <a href="../../index.html">Home</a>
+    <a href="../notice.html">Notice</a>
+    <a class="auth-only" href="../classwork.html">Classwork</a>
+    <a class="auth-only" href="../info.html">Info</a>
+    <a class="auth-only" href="../resources.html">Resources</a>
+    <a class="auth-only" href="../result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+    <a href="../cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+    <a href="../login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+  </div>
 
   <main class="dg-wrap">
 
@@ -261,10 +278,20 @@
 
       <div id="playingAsCard" class="dg-playing-as fade-in delay-1">
         <div class="dg-avatar" id="homeAvatar">?</div>
-        <div>
+        <div style="flex:1">
           <div class="dg-playing-label">Playing as</div>
-          <div class="dg-playing-name" id="homePlayerName">—</div>
-          <div class="dg-playing-id" id="homePlayerId"></div>
+          <!-- Logged-in user info -->
+          <div id="homeUserInfo">
+            <div class="dg-playing-name" id="homePlayerName">—</div>
+            <div class="dg-playing-id" id="homePlayerId"></div>
+          </div>
+          <!-- Guest name input -->
+          <div id="homeGuestInfo" style="display:none">
+            <input id="guestNameInput" class="dg-input" placeholder="Enter your name…" maxlength="20" style="height:34px;padding:0 10px;font-size:.9rem;margin-top:4px;width:100%;box-sizing:border-box;"/>
+            <div style="margin-top:5px;font-size:.72rem;color:var(--text-secondary);">
+              <a href="../login.html" style="color:var(--accent-bright);">Login</a> to save your progress &amp; identity
+            </div>
+          </div>
         </div>
       </div>
 
@@ -412,8 +439,10 @@
     <div class="footer-brand">CSE 62B · PORTAL</div>
     <div class="footer-links">
       <a href="../../index.html">Home</a>
+      <a href="../students.html">Students Directory</a>
+      <a href="../info.html">Class Info</a>
       <a href="../games.html">Games</a>
-      <a href="user-guide.html">User Guide</a>
+      <a href="../user-guide.html">User Guide</a>
       <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
     </div>
     <div class="footer-note">© 2026 CSE 62 B. All Rights Reserved.</div>
@@ -452,7 +481,7 @@ const COLORS = ['#000000','#808080','#ffffff','#8B4513','#FF0000','#FF6600','#FF
 
 /* Global state */
 const G = {
-  playerId: null, playerName: null,
+  playerId: null, playerName: null, isGuest: false,
   roomCode: null, room: null, players: [], me: null,
   isHost: false, isDrawer: false,
   channel: null, timerInterval: null,
@@ -469,15 +498,36 @@ const G = {
 function init() {
   let session = null;
   try { session = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student') || 'null'); } catch(e){}
-  if (!session || !session.id) { window.location.replace('../login.html?next=games/draw.html'); return; }
-  G.playerId = 'student_' + session.id;
-  G.playerName = session.name || ('Student ' + session.id);
 
-  document.getElementById('homePlayerName').textContent = G.playerName;
-  document.getElementById('homePlayerId').textContent = 'ID: ' + session.id;
-  const av = document.getElementById('homeAvatar');
-  av.textContent = G.playerName.charAt(0).toUpperCase();
-  av.style.background = avatarColor(G.playerId);
+  if (session && session.id) {
+    G.isGuest = false;
+    G.playerId = 'student_' + session.id;
+    G.playerName = session.name || ('Student ' + session.id);
+    document.getElementById('homePlayerName').textContent = G.playerName;
+    document.getElementById('homePlayerId').textContent = 'ID: ' + session.id;
+    const av = document.getElementById('homeAvatar');
+    av.textContent = G.playerName.charAt(0).toUpperCase();
+    av.style.background = avatarColor(G.playerId);
+  } else {
+    G.isGuest = true;
+    let gid = localStorage.getItem('game_guest_id');
+    if (!gid) { gid = 'guest_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('game_guest_id', gid); }
+    G.playerId = gid;
+    const savedName = localStorage.getItem('game_guest_name') || '';
+    G.playerName = savedName;
+    document.getElementById('homeUserInfo').style.display = 'none';
+    document.getElementById('homeGuestInfo').style.display = 'block';
+    const av = document.getElementById('homeAvatar');
+    if (savedName) { av.textContent = savedName.charAt(0).toUpperCase(); av.style.background = avatarColor(G.playerId); }
+    const gni = document.getElementById('guestNameInput');
+    if (savedName) gni.value = savedName;
+    gni.addEventListener('input', () => {
+      G.playerName = gni.value.trim();
+      av.textContent = G.playerName ? G.playerName.charAt(0).toUpperCase() : '?';
+      av.style.background = G.playerName ? avatarColor(G.playerId) : '';
+      if (G.playerName) localStorage.setItem('game_guest_name', G.playerName);
+    });
+  }
 
   initCanvas();
   initColorPalette();
@@ -510,6 +560,12 @@ function genCode() {
 
 /* ── Create Room ── */
 async function createRoom() {
+  if (G.isGuest) {
+    const n = document.getElementById('guestNameInput')?.value.trim() || '';
+    if (!n) { showHomeError('Please enter your name first!'); document.getElementById('guestNameInput')?.focus(); return; }
+    G.playerName = n;
+    localStorage.setItem('game_guest_name', n);
+  }
   const code = genCode();
   const { error } = await sb.from('draw_rooms').insert({
     room_code: code,
@@ -517,7 +573,8 @@ async function createRoom() {
     rounds_total: 3,
     draw_time: 80,
     max_players: 8,
-    is_private: false
+    is_private: false,
+    guests_allowed: true
   });
   if (error) { showHomeError('Failed to create room: ' + error.message); return; }
 
@@ -538,12 +595,19 @@ async function createRoom() {
 
 /* ── Join Room ── */
 async function joinRoom() {
+  if (G.isGuest) {
+    const n = document.getElementById('guestNameInput')?.value.trim() || '';
+    if (!n) { showHomeError('Please enter your name first!'); document.getElementById('guestNameInput')?.focus(); return; }
+    G.playerName = n;
+    localStorage.setItem('game_guest_name', n);
+  }
   const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
   if (code.length !== 6) { showHomeError('Enter a 6-character room code.'); return; }
 
   const { data: room, error } = await sb.from('draw_rooms').select('*').eq('room_code', code).single();
   if (error || !room) { showHomeError('Room not found.'); return; }
   if (room.status !== 'lobby') { showHomeError('This game has already started.'); return; }
+  if (G.isGuest && room.guests_allowed === false) { showHomeError('This room requires login. Please log in to join.'); return; }
 
   const { data: existingPlayers } = await sb.from('draw_players').select('player_id').eq('room_code', code);
   if (existingPlayers && existingPlayers.length >= room.max_players) {
@@ -728,15 +792,24 @@ function renderLobbySettings() {
           </select>
           <input id="maxPlayersCustom" class="setting-custom-input" type="number" min="2" max="20" placeholder="2-20" onchange="onCustomSettingChange('max_players',this.value,'sMaxPlayers','maxPlayersCustom')">
         </div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Guest Access</span>
+        <select id="sGuestsAllowed" onchange="onGuestsAllowedChange(this.value)">
+          <option value="true">🔓 Anyone</option>
+          <option value="false">🔒 Login Required</option>
+        </select>
       </div>`;
     syncLobbySettingsUI();
   } else {
     const r = G.room;
+    const guestLabel = r?.guests_allowed === false ? '🔒 Login Required' : '🔓 Anyone';
     panel.innerHTML = `
       <div style="color:var(--text-secondary);font-size:.85rem;line-height:2;">
         Rounds: <strong>${r?.rounds_total || 3}</strong><br>
         Draw Time: <strong>${r?.draw_time || 80}s</strong><br>
-        Max Players: <strong>${r?.max_players || 8}</strong>
+        Max Players: <strong>${r?.max_players || 8}</strong><br>
+        Guest Access: <strong>${guestLabel}</strong>
       </div>`;
   }
 }
@@ -746,6 +819,14 @@ function syncLobbySettingsUI() {
   syncSelectOrCustom('sRounds', 'roundsCustom', r.rounds_total, ['2','3','4','5']);
   syncSelectOrCustom('sDrawTime', 'drawTimeCustom', r.draw_time, ['60','80','100','120']);
   syncSelectOrCustom('sMaxPlayers', 'maxPlayersCustom', r.max_players, ['4','6','8','10','12']);
+  const gSel = document.getElementById('sGuestsAllowed');
+  if (gSel) gSel.value = r.guests_allowed === false ? 'false' : 'true';
+}
+
+async function onGuestsAllowedChange(val) {
+  const allowed = val !== 'false';
+  await sb.from('draw_rooms').update({ guests_allowed: allowed }).eq('room_code', G.roomCode);
+  G.room = { ...G.room, guests_allowed: allowed };
 }
 
 function syncSelectOrCustom(selId, inputId, val, presets) {

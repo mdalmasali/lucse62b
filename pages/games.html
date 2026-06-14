@@ -62,22 +62,39 @@
     <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
     <ul class="topbar-links">
       <li><a href="../index.html">Home</a></li>
-      <li><a href="games.html" style="color:var(--accent-bright);font-weight:600;">Games</a></li>
+      <li><a href="notice.html">Notice</a></li>
+      <li class="auth-only"><a href="classwork.html">Classwork</a></li>
+      <li class="auth-only"><a href="info.html">Info</a></li>
+      <li class="auth-only"><a href="resources.html">Resources</a></li>
+      <li class="auth-only"><a href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+      <li><a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
       <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
     </ul>
-    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
       <i class="fa-solid fa-circle-half-stroke"></i>
     </button>
     <button class="hamburger" id="hamburger" aria-label="Open menu">
       <span></span><span></span><span></span>
     </button>
   </nav>
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNav">
+    <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+    <a href="../index.html">Home</a>
+    <a href="notice.html">Notice</a>
+    <a class="auth-only" href="classwork.html">Classwork</a>
+    <a class="auth-only" href="info.html">Info</a>
+    <a class="auth-only" href="resources.html">Resources</a>
+    <a class="auth-only" href="result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+    <a href="cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+    <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+  </div>
 
   <main class="games-wrap">
     <div class="games-hero fade-in">
       <div class="games-hero-icon">🎮</div>
       <h1>Games</h1>
-      <p>Play with friends on Discord. Login required — everyone joins from their own device.</p>
+      <p>Play with friends on Discord. No login needed — or login for your name to auto-fill.</p>
     </div>
 
     <div class="games-grid fade-in delay-1">

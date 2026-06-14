@@ -221,9 +221,15 @@
     <a href="../../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
     <ul class="topbar-links">
       <li><a href="../../index.html">Home</a></li>
-      <li><a href="imposter.html" class="active">Game</a></li>
+      <li><a href="../notice.html">Notice</a></li>
+      <li class="auth-only"><a href="../classwork.html">Classwork</a></li>
+      <li class="auth-only"><a href="../info.html">Info</a></li>
+      <li class="auth-only"><a href="../resources.html">Resources</a></li>
+      <li class="auth-only"><a href="../result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line" style="font-size:0.85em;"></i> Results</a></li>
+      <li><a href="../cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf" style="font-size:0.85em;"></i> Cover Page</a></li>
+      <li><a href="../login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
     </ul>
-    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Toggle theme">
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme">
       <i class="fa-solid fa-circle-half-stroke"></i>
     </button>
     <button class="hamburger" id="hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
@@ -231,7 +237,13 @@
   <div class="mobile-nav-overlay" id="mobileNav">
     <button class="mobile-nav-close" id="mobileNavClose">✕</button>
     <a href="../../index.html">Home</a>
-    <a href="imposter.html">Game</a>
+    <a href="../notice.html">Notice</a>
+    <a class="auth-only" href="../classwork.html">Classwork</a>
+    <a class="auth-only" href="../info.html">Info</a>
+    <a class="auth-only" href="../resources.html">Resources</a>
+    <a class="auth-only" href="../result-dashboard.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-chart-line"></i> Results</a>
+    <a href="../cover-page.html" style="color:var(--accent-bright);font-weight:600;"><i class="fa-solid fa-file-pdf"></i> Cover Page</a>
+    <a href="../login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
   </div>
 
   <div class="game-wrap">
@@ -243,13 +255,21 @@
         <h1>Find the Imposter</h1>
         <p>Everyone gets a word — except one person. Find the imposter before they blend in!</p>
       </div>
-      <div class="g-home-card" id="playerInfoCard" style="display:none">
+      <div class="g-home-card" id="playerInfoCard">
         <div class="g-home-card-title"><i class="fa-solid fa-user"></i> Playing as</div>
-        <div id="playerInfoDisplay" style="display:flex;align-items:center;gap:12px;padding:4px 0">
+        <!-- Logged-in user info -->
+        <div id="playerInfoDisplay" style="display:none;align-items:center;gap:12px;padding:4px 0">
           <div id="playerInfoAvatar"></div>
           <div>
             <div id="playerInfoName" style="font-size:1rem;font-weight:700"></div>
             <div id="playerInfoId" style="font-size:.75rem;color:var(--text-secondary)"></div>
+          </div>
+        </div>
+        <!-- Guest name input -->
+        <div id="playerGuestInput" style="display:none;padding:4px 0">
+          <input id="guestNameInput" class="g-name-input" placeholder="Enter your name…" maxlength="20" style="width:100%;box-sizing:border-box;"/>
+          <div style="margin-top:6px;font-size:.72rem;color:var(--text-secondary);">
+            <a href="../login.html" style="color:var(--accent-bright);">Login</a> to save your progress &amp; identity
           </div>
         </div>
       </div>
@@ -386,6 +406,14 @@
               <button class="toggle-btn" data-val="true">Private</button>
             </div>
           </div>
+          <!-- Guest Access -->
+          <div class="setting-row">
+            <span class="setting-label">Guests</span>
+            <div class="toggle-group" id="guestsGroup">
+              <button class="toggle-btn active" data-val="true">🔓 Anyone</button>
+              <button class="toggle-btn" data-val="false">🔒 Login Only</button>
+            </div>
+          </div>
           <!-- Skip Vote -->
           <div class="setting-row">
             <span class="setting-label">Skip Vote</span>
@@ -491,6 +519,19 @@
     </div>
 
   </div><!-- /.game-wrap -->
+
+  <footer>
+    <div class="footer-brand">CSE 62B · PORTAL</div>
+    <div class="footer-links">
+      <a href="../../index.html">Home</a>
+      <a href="../students.html">Students Directory</a>
+      <a href="../info.html">Class Info</a>
+      <a href="../games.html">Games</a>
+      <a href="../user-guide.html">User Guide</a>
+      <a href="https://lus.ac.bd/" target="_blank">Leading University</a>
+    </div>
+    <div class="footer-note">© 2026 CSE 62 B. All Rights Reserved.</div>
+  </footer>
 </div><!-- /.wrapper -->
 
 <!-- Loading overlay -->
@@ -529,6 +570,7 @@ WORD_PACKS.random.words = Object.entries(WORD_PACKS).filter(([k]) => k !== 'rand
 const G = {
   playerId: null,
   playerName: null,
+  isGuest: false,
   roomCode: null,
   room: null,       // game_rooms row
   players: [],      // game_players rows
@@ -538,7 +580,7 @@ const G = {
   timerInterval: null,
   myVote: null,
   // local settings (host)
-  settings: { wordPack:'random', imposterCount:1, discussionTime:60, votingTime:60, rounds:1, maxPlayers:8, isPrivate:false, allowAnyName:true, skipVote:false, revealAtEnd:true }
+  settings: { wordPack:'random', imposterCount:1, discussionTime:60, votingTime:60, rounds:1, maxPlayers:8, isPrivate:false, guestsAllowed:true, allowAnyName:true, skipVote:false, revealAtEnd:true }
 };
 
 // ── Utilities ────────────────────────────────────────────────────────────────
@@ -727,6 +769,7 @@ function renderLobby() {
       ['Rounds', G.room.rounds_total],
       ['Players', G.room.max_players],
       ...(G.room.is_private ? [['Room', 'Private']] : []),
+      ...(G.room.guests_allowed === false ? [['Guests', '🔒 Login Only']] : [['Guests', '🔓 Anyone']]),
       ...(G.room.skip_vote ? [['No Vote', '✓']] : []),
       ...(G.room.reveal_at_end ? [['Reveal', '✓']] : []),
     ];
@@ -744,6 +787,7 @@ function syncSettingsUI() {
   G.settings.imposterCount = G.room.imposter_count;
   G.settings.rounds = G.room.rounds_total;
   G.settings.isPrivate = G.room.is_private;
+  G.settings.guestsAllowed = G.room.guests_allowed !== false;
   G.settings.allowAnyName = G.room.allow_any_name;
   G.settings.skipVote = G.room.skip_vote;
   G.settings.revealAtEnd = G.room.reveal_at_end;
@@ -806,6 +850,7 @@ function syncSettingsUI() {
   }
 
   setActiveToggle('privacyGroup', String(G.room.is_private));
+  setActiveToggle('guestsGroup', String(G.room.guests_allowed !== false));
   $id('setSkipVote').checked = G.room.skip_vote;
   $id('setRevealEnd').checked = G.room.reveal_at_end;
 }
@@ -1024,6 +1069,12 @@ function stopTimer() {
 
 // ── Game Actions ───────────────────────────────────────────────────────────────
 async function createRoom() {
+  if (G.isGuest) {
+    const n = $id('guestNameInput')?.value.trim() || '';
+    if (!n) { toast('Please enter your name first!', 'error'); $id('guestNameInput')?.focus(); return; }
+    G.playerName = n;
+    localStorage.setItem('game_guest_name', n);
+  }
   showLoading('Creating room...');
   const code = genRoomCode();
   const { error } = await sb.from('game_rooms').insert({
@@ -1036,6 +1087,7 @@ async function createRoom() {
     rounds_total: G.settings.rounds,
     max_players: G.settings.maxPlayers,
     is_private: G.settings.isPrivate,
+    guests_allowed: G.settings.guestsAllowed,
     allow_any_name: true,
     skip_vote: G.settings.skipVote,
     reveal_at_end: G.settings.revealAtEnd
@@ -1055,6 +1107,12 @@ async function createRoom() {
 }
 
 async function joinRoom() {
+  if (G.isGuest) {
+    const n = $id('guestNameInput')?.value.trim() || '';
+    if (!n) { toast('Please enter your name first!', 'error'); $id('guestNameInput')?.focus(); return; }
+    G.playerName = n;
+    localStorage.setItem('game_guest_name', n);
+  }
   const code = $id('joinCodeInput').value.trim().toUpperCase();
   if (!code || code.length !== 6) { toast('Enter a 6-character room code!', 'error'); return; }
 
@@ -1062,6 +1120,7 @@ async function joinRoom() {
   const room = await getRoom(code);
   if (!room) { hideLoading(); toast('Room not found!', 'error'); return; }
   if (room.status !== 'lobby') { hideLoading(); toast('Game has already started!', 'error'); return; }
+  if (G.isGuest && room.guests_allowed === false) { hideLoading(); toast('This room requires login!', 'error'); return; }
 
   const existing = await getPlayers(code);
   const approved = existing.filter(p => p.is_approved);
@@ -1253,6 +1312,7 @@ async function onSettingChange(key, val) {
   if (key === 'rounds')        patch.rounds_total = parseInt(val);
   if (key === 'maxPlayers')    patch.max_players = parseInt(val);
   if (key === 'isPrivate')     patch.is_private = val === 'true';
+  if (key === 'guestsAllowed') patch.guests_allowed = val === 'true';
   if (key === 'allowAnyName')  patch.allow_any_name = val === 'true';
   if (key === 'skipVote')      patch.skip_vote = val;
   if (key === 'revealAtEnd')   patch.reveal_at_end = val;
@@ -1341,8 +1401,8 @@ $id('setSkipVote').addEventListener('change', e => {
 $id('setRevealEnd').addEventListener('change', e => onSettingChange('revealAtEnd', e.target.checked));
 
 // Settings: toggle buttons
-['impCountGroup','roundsGroup','privacyGroup'].forEach(groupId => {
-  const keyMap = { impCountGroup:'imposterCount', roundsGroup:'rounds', privacyGroup:'isPrivate' };
+['impCountGroup','roundsGroup','privacyGroup','guestsGroup'].forEach(groupId => {
+  const keyMap = { impCountGroup:'imposterCount', roundsGroup:'rounds', privacyGroup:'isPrivate', guestsGroup:'guestsAllowed' };
   const customInputMap = { impCountGroup:'impCustomInput', roundsGroup:'roundsCustomInput' };
   $id(groupId)?.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1390,29 +1450,41 @@ document.getElementById('mobileNavClose')?.addEventListener('click', () => docum
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 (async function init() {
-  // Auth check — must be logged in
   let session = null;
   try {
     session = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student') || 'null');
   } catch(e) {}
 
-  if (!session || !session.id) {
-    window.location.replace('../login.html?next=games/imposter.html');
-    return;
-  }
-
-  // Set player identity from login session
-  G.playerId = 'student_' + session.id;
-  G.playerName = session.name || session.id;
-
-  // Show player info card on home screen
-  const card = $id('playerInfoCard');
-  if (card) {
-    card.style.display = 'block';
-    const displayName = G.playerName;
-    $id('playerInfoAvatar').innerHTML = avatarHtml(displayName, 40);
-    $id('playerInfoName').textContent = displayName;
-    $id('playerInfoId').textContent = 'ID: ' + session.id;
+  if (session && session.id) {
+    // Logged-in user
+    G.isGuest = false;
+    G.playerId = 'student_' + session.id;
+    G.playerName = session.name || session.id;
+    const display = $id('playerInfoDisplay');
+    if (display) {
+      display.style.display = 'flex';
+      $id('playerInfoAvatar').innerHTML = avatarHtml(G.playerName, 40);
+      $id('playerInfoName').textContent = G.playerName;
+      $id('playerInfoId').textContent = 'ID: ' + session.id;
+    }
+  } else {
+    // Guest user
+    G.isGuest = true;
+    let gid = localStorage.getItem('game_guest_id');
+    if (!gid) { gid = 'guest_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('game_guest_id', gid); }
+    G.playerId = gid;
+    const savedName = localStorage.getItem('game_guest_name') || '';
+    G.playerName = savedName;
+    const guestInput = $id('playerGuestInput');
+    if (guestInput) {
+      guestInput.style.display = 'block';
+      const gni = $id('guestNameInput');
+      if (savedName) { gni.value = savedName; }
+      gni.addEventListener('input', () => {
+        G.playerName = gni.value.trim();
+        if (G.playerName) localStorage.setItem('game_guest_name', G.playerName);
+      });
+    }
   }
 
   // Restore active game session
