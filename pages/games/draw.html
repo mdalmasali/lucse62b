@@ -849,8 +849,8 @@ function renderCurrentScreen() {
   const s = G.room.status;
   if (s === 'lobby') { showScreen('lobbyScreen'); renderLobby(); }
   else if (s === 'word_pick' || s === 'drawing') { showScreen('gameScreen'); updateGameUI(); }
-  else if (s === 'round_end') { showScreen('roundEndScreen'); }
-  else if (s === 'game_over') { showScreen('gameOverScreen'); }
+  else if (s === 'round_end') { stopTimer(); showRoundEnd(); }
+  else if (s === 'game_over') { stopTimer(); showGameOver(); }
 }
 
 /* ── Lobby ── */

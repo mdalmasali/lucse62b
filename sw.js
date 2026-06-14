@@ -1,4 +1,4 @@
-const CACHE     = 'lu62b-v46';
+const CACHE     = 'lu62b-v47';
 const _SW_SUPA  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _SW_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
