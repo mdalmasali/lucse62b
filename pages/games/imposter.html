@@ -723,6 +723,14 @@ function subscribeToRoom(code) {
         return;
       }
       renderCurrentScreen();
+      // Not enough players left to keep playing → host auto-ends the match
+      if (G.isHost && ['role_reveal','discuss','vote'].includes(G.room?.status)) {
+        const active = G.players.filter(p => p.is_approved && !p.left_at);
+        if (active.length < 2) {
+          await updateRoom(code, { status: 'result', rounds_current: G.room.rounds_total, phase_ends_at: null });
+          return;
+        }
+      }
       // If someone left during voting, the remaining active players may now all have voted
       if (G.isHost && G.room?.status === 'vote') {
         const active = G.players.filter(p => p.is_approved && !p.left_at);
@@ -1130,8 +1138,10 @@ async function recordImposterStandings() {
   if (!G.isHost || !G.room || G.room.standings_done) return;
   G.room.standings_done = true; // set first to close the re-entry window
   await updateRoom(G.roomCode, { standings_done: true });
+  // Only count a real game: at least 2 players who didn't leave finished it
+  const players = G.players.filter(p => p.is_approved && !p.left_at);
+  if (players.length < 2) return; // degenerate (everyone left) → don't pollute standings
   const crewWon = (G.room.crewmate_score || 0) >= (G.room.imposter_score || 0);
-  const players = G.players.filter(p => p.is_approved);
   for (const p of players) {
     if (!p.player_id?.startsWith('student_')) continue;
     const isWinner = crewWon ? !p.is_imposter : !!p.is_imposter;

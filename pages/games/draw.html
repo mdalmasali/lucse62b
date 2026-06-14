@@ -175,12 +175,12 @@
     .chat-msg.system { color: var(--text-secondary); font-style: italic; font-size: .74rem; }
     .chat-msg.close { color: #fbbf24; }
     .chat-footer { padding: 8px; border-top: 1px solid var(--border); }
-    .chat-input-row { display: flex; gap: 6px; }
-    #chatInput { flex: 1; min-width: 0; padding: 7px 10px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 9px; color: var(--text); font-family: inherit; font-size: .8rem; outline: none; transition: border-color .2s; }
+    .chat-input-row { display: flex; gap: 6px; align-items: center; width: 100%; box-sizing: border-box; }
+    #chatInput { flex: 1 1 0; width: 0; min-width: 0; box-sizing: border-box; padding: 7px 10px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 9px; color: var(--text); font-family: inherit; font-size: .8rem; outline: none; transition: border-color .2s; }
     #chatInput:focus { border-color: #34d399; }
     html[data-theme="light"] #chatInput { background: rgba(0,0,0,.04); }
-    #chatSendBtn { flex-shrink: 0; padding: 7px 10px; background: rgba(52,211,153,.2); border: 1px solid rgba(52,211,153,.3); border-radius: 9px; color: #34d399; cursor: pointer; font-size: .85rem; transition: background .2s; }
-    #chatSendBtn:hover { background: rgba(52,211,153,.3); }
+    #chatSendBtn { flex: 0 0 auto; box-sizing: border-box; width: 38px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: #34d399; border: none; border-radius: 9px; color: #052e22; cursor: pointer; font-size: .85rem; transition: background .2s; }
+    #chatSendBtn:hover { background: #2bbf88; }
     #chatInput:disabled, #chatSendBtn:disabled { opacity: .4; pointer-events: none; }
 
     /* ── Word Pick Overlay ── */
@@ -740,6 +740,11 @@ function subscribeToRoom() {
         }
         renderLobbyPlayers();
         renderGamePlayers();
+        // Not enough players left to keep playing → host auto-ends the game
+        if (G.isHost && ['word_pick','drawing','round_end'].includes(G.room?.status) && activePlayers().length < 2) {
+          await sb.from('draw_rooms').update({ status: 'game_over' }).eq('room_code', code);
+          return;
+        }
         // If the current drawer left mid-turn, host advances to the next active player
         if (G.isHost && (G.room?.status === 'drawing' || G.room?.status === 'word_pick')) {
           const drawerActive = G.players.some(p => p.player_id === G.room.current_drawer && !p.left_at);
@@ -1253,11 +1258,15 @@ async function showGameOver() {
   if (G.isHost && G.room && !G.room.standings_done) {
     G.room.standings_done = true; // set first to close the re-entry window
     await sb.from('draw_rooms').update({ standings_done: true }).eq('room_code', G.roomCode);
-    const top = G.players[0]?.score || 0;
-    for (const p of G.players) {
-      if (!p.player_id?.startsWith('student_')) continue;
-      const won = top > 0 && p.score === top;
-      await sb.rpc('bump_standing', { p_id: p.player_id, p_name: p.player_name, p_points: p.score || 0, p_won: won, p_bucket: 'draw' });
+    // Only count a real game: at least 2 players who didn't leave were present at the finish
+    const finishers = G.players.filter(p => !p.left_at);
+    if (finishers.length >= 2) {
+      const top = Math.max(0, ...G.players.map(p => p.score || 0));
+      for (const p of G.players) {
+        if (!p.player_id?.startsWith('student_')) continue;
+        const won = top > 0 && p.score === top && !p.left_at; // hollow wins (opponent left) don't count
+        await sb.rpc('bump_standing', { p_id: p.player_id, p_name: p.player_name, p_points: p.score || 0, p_won: won, p_bucket: 'draw' });
+      }
     }
   }
 }
