@@ -343,7 +343,7 @@
     { n: 'beIN Xtra',        u: 'https://d9ssxzmclhfo4.cloudfront.net/bein_sports720p.m3u8', note: '🇪🇸' },
     { n: 'beIN Sports Ñ',    u: 'https://amg01334-beinsportsllc-beinxtraesp-localnow-aekzc.amagi.tv/playlist.m3u8', note: '🇪🇸' },
     { n: 'beIN Extra Ñ',     u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
-    { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master.m3u8', note: '🇺🇸' },
+    { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master_720.m3u8', note: '🇺🇸' },
     { n: 'FOX Sports',       u: 'https://d1jzu95oc8fgt3.cloudfront.net/FOX_Sports720p.m3u8', note: '🇺🇸' },
     { n: 'RS Premiere',      u: 'https://video03.logicahost.com.br/rspremiere/rspremiere/playlist.m3u8', note: '🇧🇷' },
     { n: 'RS Sports',        u: 'https://video07.logicahost.com.br/rssports01/rssports01/playlist.m3u8', note: '🇧🇷' },
@@ -472,8 +472,8 @@
           try { console.warn('[TV]', ch.n, data.type, data.details, 'fatal=' + data.fatal); } catch (e) {}
           if (!data.fatal) return;
           tries++;
-          if (tries <= 2) {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { _hls.startLoad(); return; }
+          if (tries <= 4) {
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { setTimeout(function () { try { _hls.startLoad(); } catch (e) {} }, 800); return; }
             if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !ch.hevc) { _hls.recoverMediaError(); return; }
           }
           showErr((data.type || '') + ' · ' + (data.details || ''));
