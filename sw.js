@@ -1,4 +1,4 @@
-const CACHE     = 'lu62b-v58';
+const CACHE     = 'lu62b-v59';
 const _SW_SUPA  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _SW_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
@@ -80,6 +80,11 @@ self.addEventListener('fetch', e => {
 
   // Skip non-http(s) requests (chrome-extension://, etc.)
   if (!url.protocol.startsWith('http')) return;
+
+  // Never touch live video streams — let the player hit the network directly.
+  // Caching HLS playlists/segments serves a stale playlist, which makes live TV
+  // loop or fail. The SW must stay out of the way of .m3u8/.ts/.m4s/etc.
+  if (/\.(m3u8|ts|m4s|mp4|aac|key|cmfv|cmfa)(\?|$)/i.test(url.pathname)) return;
 
   // Always network for external APIs (sheets, worker, supabase)
   if (
