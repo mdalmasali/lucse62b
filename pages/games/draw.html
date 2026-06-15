@@ -175,6 +175,7 @@
     .chat-msg.system { color: var(--text-secondary); font-style: italic; font-size: .74rem; }
     .chat-msg.close { color: #fbbf24; }
     .chat-footer { padding: 8px; border-top: 1px solid var(--border); }
+    .chat-hint { display: none; text-align: center; font-family: 'Space Grotesk',monospace; font-weight: 700; font-size: 1rem; letter-spacing: 4px; color: #34d399; padding: 2px 0 7px; word-break: break-word; }
     .chat-input-row { display: flex; gap: 6px; align-items: center; width: 100%; box-sizing: border-box; }
     #chatInput { flex: 1 1 0; width: 0; min-width: 0; box-sizing: border-box; padding: 7px 10px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 9px; color: var(--text); font-family: inherit; font-size: .8rem; outline: none; transition: border-color .2s; }
     #chatInput:focus { border-color: #34d399; }
@@ -232,8 +233,13 @@
       .game-players-panel { width: 100%; flex-direction: row; flex-wrap: wrap; overflow-x: auto; }
       .score-player-item { border-bottom: none; border-right: 1px solid var(--border); padding: 4px 10px; min-width: 80px; }
       .score-player-item:last-child { border-right: none; }
-      .game-chat-panel { width: 100%; height: 220px; }
+      .game-chat-panel { width: 100%; height: 260px; }
       .game-hint { font-size: 1.1rem; letter-spacing: 4px; }
+      /* Keep the word + timer pinned (just below the site nav) so guessers never scroll up to see it */
+      .game-topbar {
+        position: sticky; top: 54px; z-index: 50; margin-bottom: 10px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.4);
+      }
     }
     @media (max-width: 480px) {
       .game-topbar { gap: 10px; }
@@ -407,8 +413,9 @@
           <div class="chat-header"><i class="fa-solid fa-comments"></i> Guesses</div>
           <div class="chat-messages" id="chatMessages"></div>
           <div class="chat-footer">
+            <div class="chat-hint" id="chatHint"></div>
             <div class="chat-input-row">
-              <input id="chatInput" placeholder="Type your guess…" maxlength="80" autocomplete="off"/>
+              <input id="chatInput" placeholder="Type your guess…" maxlength="80" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"/>
               <button id="chatSendBtn" onclick="sendGuess()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
           </div>
@@ -1051,17 +1058,21 @@ function updateGameUI() {
   document.getElementById('gDrawerInfo').textContent = G.isDrawer ? 'You are drawing!' : `${drawerName} is drawing`;
 
   const hintEl = document.getElementById('gHint');
+  const chatHintEl = document.getElementById('chatHint');
   if (r.status === 'word_pick') {
     hintEl.textContent = '';
+    if (chatHintEl) { chatHintEl.textContent = ''; chatHintEl.style.display = 'none'; }
     showWordPickOverlay();
   } else if (r.status === 'drawing') {
     hideWordPickOverlay();
     if (G.isDrawer) {
       hintEl.textContent = r.current_word || '';
       hintEl.className = 'game-hint drawer-word';
+      if (chatHintEl) { chatHintEl.textContent = '✏️ ' + (r.current_word || ''); chatHintEl.style.display = 'block'; }
     } else {
       hintEl.textContent = formatHint(r.current_hint || '');
       hintEl.className = 'game-hint';
+      if (chatHintEl) { chatHintEl.textContent = formatHint(r.current_hint || ''); chatHintEl.style.display = 'block'; }
     }
     startTimer();
   }
