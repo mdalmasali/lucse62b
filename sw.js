@@ -1,4 +1,4 @@
-const CACHE     = 'lu62b-v59';
+const CACHE     = 'lu62b-v60';
 const _SW_SUPA  = 'https://ftvtlqxpalwvyserujuh.supabase.co';
 const _SW_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0dnRscXhwYWx3dnlzZXJ1anVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDA1MDgsImV4cCI6MjA5MzQ3NjUwOH0.kdmxzcqmOlCpMmjnvZPaOLIdfdLomrbMZBo4Nd5YecM';
 
@@ -81,26 +81,17 @@ self.addEventListener('fetch', e => {
   // Skip non-http(s) requests (chrome-extension://, etc.)
   if (!url.protocol.startsWith('http')) return;
 
-  // Never touch live video streams — let the player hit the network directly.
-  // Caching HLS playlists/segments serves a stale playlist, which makes live TV
-  // loop or fail. The SW must stay out of the way of .m3u8/.ts/.m4s/etc.
-  if (/\.(m3u8|ts|m4s|mp4|aac|key|cmfv|cmfa)(\?|$)/i.test(url.pathname)) return;
+  // Only ever handle the site's OWN (same-origin) files. Everything cross-origin
+  // — live video streams, CDNs (hls.js, fonts, cdnjs), Supabase — goes straight
+  // to the network, so the SW can never cache/proxy a stream and break playback.
+  if (url.origin !== self.location.origin) return;
 
-  // Always network for external APIs (sheets, worker, supabase)
-  if (
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('workers.dev') ||
-    url.hostname.includes('supabase.co') ||
-    url.hostname.includes('lus.ac.bd') ||
-    url.hostname.includes('fonts.') ||
-    url.hostname.includes('cdnjs.')
-  ) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-    return;
-  }
+  const p = url.pathname;
+
+  // Never cache media, even same-origin
+  if (/\.(m3u8|ts|m4s|mp4|aac|key|cmfv|cmfa)(\?|$)/i.test(p)) return;
 
   // HTML, CSS, JS — network-first (always fresh after deploy, cache as offline fallback)
-  const p = url.pathname;
   if (
     e.request.destination === 'document' ||
     p.endsWith('.css') ||

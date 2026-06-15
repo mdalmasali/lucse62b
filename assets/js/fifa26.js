@@ -452,32 +452,44 @@
       'Open the site in <b>Safari</b>, or on Windows install <b>“HEVC Video Extensions”</b> (Microsoft Store) then use <b>Edge</b>. ' +
       'It also plays in <b>VLC / PotPlayer</b> with this link.';
     var started = function () { msg.style.display = 'none'; vid.play().catch(function () {}); };
-    var failHevcOrGeneric = function () {
-      msg.innerHTML = ch.hevc ? hevcMsg : '⚠️ <b>' + esc(ch.n) + '</b> isn\'t playable in the browser right now (codec or region). Try another channel above.';
-      msg.style.display = 'flex'; if (um) um.style.display = 'none';
+    var showErr = function (detail) {
+      if (um) um.style.display = 'none';
+      msg.innerHTML = ch.hevc ? hevcMsg
+        : '⚠️ <b>' + esc(ch.n) + '</b> didn\'t play.' + (detail ? '<br><code style="font-size:.72rem;opacity:.85">' + esc(detail) + '</code>' : '') + '<br>Try another channel above.';
+      msg.style.display = 'flex';
     };
     /* HEVC channel + browser can't decode HEVC → tell the user up front (still try, in case detection is wrong) */
-    if (ch.hevc && !canHevc() && !nativeHls) failHevcOrGeneric();
+    if (ch.hevc && !canHevc() && !nativeHls) showErr('');
+    var tries = 0;
     loadHls().then(function () {
       if (window.Hls && window.Hls.isSupported()) {
-        _hls = new window.Hls({ lowLatencyMode: true, enableWorker: true, backBufferLength: 30 });
+        _hls = new window.Hls({ enableWorker: true, backBufferLength: 30, manifestLoadingTimeOut: 12000, fragLoadingTimeOut: 20000 });
         _hls.loadSource(ch.u);
         _hls.attachMedia(vid);
         _hls.on(window.Hls.Events.MANIFEST_PARSED, started);
         _hls.on(window.Hls.Events.ERROR, function (ev, data) {
-          if (!data || !data.fatal) return;
-          if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { _hls.startLoad(); return; }       /* retry */
-          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !ch.hevc) { _hls.recoverMediaError(); return; }
-          failHevcOrGeneric();
+          if (!data) return;
+          try { console.warn('[TV]', ch.n, data.type, data.details, 'fatal=' + data.fatal); } catch (e) {}
+          if (!data.fatal) return;
+          tries++;
+          if (tries <= 2) {
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { _hls.startLoad(); return; }
+            if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !ch.hevc) { _hls.recoverMediaError(); return; }
+          }
+          showErr((data.type || '') + ' · ' + (data.details || ''));
         });
       } else if (nativeHls) {
         vid.src = ch.u;
         vid.onloadedmetadata = started;
-        vid.onerror = function () { msg.innerHTML = '⚠️ Couldn\'t play <b>' + esc(ch.n) + '</b>. Try another channel.'; msg.style.display = 'flex'; if (um) um.style.display = 'none'; };
+        vid.onerror = function () { showErr('native playback error'); };
       } else {
-        msg.textContent = 'Your browser cannot play this stream.';
+        msg.innerHTML = '⚠️ This browser can\'t play live streams (no Media Source support). Try Chrome/Edge.';
+        msg.style.display = 'flex'; if (um) um.style.display = 'none';
       }
-    }).catch(function () { msg.textContent = 'Could not load the player.'; });
+    }).catch(function () {
+      msg.innerHTML = '⚠️ Couldn\'t load the video engine (hls.js). Check your internet or any ad-blocker, then retry.';
+      msg.style.display = 'flex'; if (um) um.style.display = 'none';
+    });
   }
   function closeTvPlayer() {
     var overlay = document.getElementById('f26-tv');
