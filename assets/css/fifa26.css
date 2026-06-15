@@ -476,7 +476,7 @@ html[data-theme="light"] .f26-watch-lbl { color: #6b7280; }
   box-shadow: 0 4px 14px rgba(0,0,0,.4);
 }
 .f26-tv-unmute:hover { background: #ef4444; }
-.f26-tv-chans { display: flex; gap: 8px; padding: 12px; flex-wrap: wrap; justify-content: center; }
+.f26-tv-chans { display: flex; gap: 8px; padding: 12px; flex-wrap: wrap; justify-content: center; max-height: 132px; overflow-y: auto; }
 .f26-tv-chan {
   display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
   font-size: .72rem; font-weight: 700; color: #dbeafe;

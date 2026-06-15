@@ -332,13 +332,26 @@
 
   /* In-site live TV — HTTPS HLS streams (open CORS, verified to deliver real
      segments from BD), played with hls.js. Availability/region may still vary. */
+  /* All verified H.264 + open-CORS from BD (browser-playable). Cazé is HEVC (flagged). */
   var TV_CHANNELS = [
-    { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8', note: '🇧🇷', hevc: true },
     { n: 'World Cup (Sky)',  u: 'https://d1211whpimeups.cloudfront.net/smil:rtbgo/chunklist.m3u8', note: '⚽' },
-    { n: 'beIN Xtra',        u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
+    { n: 'beIN Sports 1',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs1.m3u8', note: '⚽' },
+    { n: 'beIN Sports 2',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8', note: '⚽' },
+    { n: 'beIN Sports 3',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs3.m3u8', note: '⚽' },
+    { n: 'beIN Sports 4',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs4.m3u8', note: '⚽' },
+    { n: 'beIN Sports 5',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs5.m3u8', note: '⚽' },
+    { n: 'beIN Xtra',        u: 'https://d9ssxzmclhfo4.cloudfront.net/bein_sports720p.m3u8', note: '🇪🇸' },
     { n: 'beIN Sports Ñ',    u: 'https://amg01334-beinsportsllc-beinxtraesp-localnow-aekzc.amagi.tv/playlist.m3u8', note: '🇪🇸' },
+    { n: 'beIN Extra Ñ',     u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
     { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master.m3u8', note: '🇺🇸' },
+    { n: 'FOX Sports',       u: 'https://d1jzu95oc8fgt3.cloudfront.net/FOX_Sports720p.m3u8', note: '🇺🇸' },
+    { n: 'RS Premiere',      u: 'https://video03.logicahost.com.br/rspremiere/rspremiere/playlist.m3u8', note: '🇧🇷' },
+    { n: 'RS Sports',        u: 'https://video07.logicahost.com.br/rssports01/rssports01/playlist.m3u8', note: '🇧🇷' },
     { n: 'Real Madrid TV',   u: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8', note: '⚪' },
+    { n: 'IDMAN TV',         u: 'https://str2.yodacdn.net/idman_300_to_small/tracks-v1a1/mono.m3u8', note: '🇦🇿' },
+    { n: 'Cricket Gold',     u: 'https://d1nj4u39ja4cn0.cloudfront.net/v1/master/9d062541f2ff39b5c0f48b743c6411d25f62fc25/FLS-MuxIP-CricketGold/418.m3u8', note: '🏏' },
+    { n: '2TV Sport',        u: 'https://tv.cdn.xsg.ge/gpb-2tv/index.m3u8', note: '🇳🇴' },
+    { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8', note: '🇧🇷 HEVC', hevc: true },
   ];
   function canHevc() {
     try {
