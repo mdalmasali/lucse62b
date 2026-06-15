@@ -330,183 +330,6 @@
   /* ── MATCH CENTER ── */
   var mcTab = 'today', mcTimer = null, cdTimer = null, expandedId = null;
 
-  /* In-site live TV — HTTPS HLS streams (open CORS, verified to deliver real
-     segments from BD), played with hls.js. Availability/region may still vary. */
-  /* All verified H.264 + open-CORS from BD (browser-playable). Cazé is HEVC (flagged). */
-  var TV_CHANNELS = [
-    { n: 'World Cup (Sky)',  u: 'https://d1211whpimeups.cloudfront.net/smil:rtbgo/chunklist.m3u8', note: '⚽' },
-    { n: 'beIN Sports 1',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs1.m3u8', note: '⚽' },
-    { n: 'beIN Sports 2',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs2.m3u8', note: '⚽' },
-    { n: 'beIN Sports 3',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs3.m3u8', note: '⚽' },
-    { n: 'beIN Sports 4',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs4.m3u8', note: '⚽' },
-    { n: 'beIN Sports 5',    u: 'https://andro.226503.xyz/checklist/androstreamlivebs5.m3u8', note: '⚽' },
-    { n: 'beIN Xtra',        u: 'https://d9ssxzmclhfo4.cloudfront.net/bein_sports720p.m3u8', note: '🇪🇸' },
-    { n: 'beIN Sports Ñ',    u: 'https://amg01334-beinsportsllc-beinxtraesp-localnow-aekzc.amagi.tv/playlist.m3u8', note: '🇪🇸' },
-    { n: 'beIN Extra Ñ',     u: 'https://bein-esp-xumo.amagi.tv/playlistR1080p.m3u8', note: '🇪🇸' },
-    { n: 'Telemundo',        u: 'https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master_720.m3u8', note: '🇺🇸' },
-    { n: 'FOX Sports',       u: 'https://d1jzu95oc8fgt3.cloudfront.net/FOX_Sports720p.m3u8', note: '🇺🇸' },
-    { n: 'RS Premiere',      u: 'https://video03.logicahost.com.br/rspremiere/rspremiere/playlist.m3u8', note: '🇧🇷' },
-    { n: 'RS Sports',        u: 'https://video07.logicahost.com.br/rssports01/rssports01/playlist.m3u8', note: '🇧🇷' },
-    { n: 'Real Madrid TV',   u: 'https://rmtv.akamaized.net/hls/live/2043153/rmtv-es-web/master.m3u8', note: '⚪' },
-    { n: 'IDMAN TV',         u: 'https://str2.yodacdn.net/idman_300_to_small/tracks-v1a1/mono.m3u8', note: '🇦🇿' },
-    { n: 'Cricket Gold',     u: 'https://d1nj4u39ja4cn0.cloudfront.net/v1/master/9d062541f2ff39b5c0f48b743c6411d25f62fc25/FLS-MuxIP-CricketGold/418.m3u8', note: '🏏' },
-    { n: '2TV Sport',        u: 'https://tv.cdn.xsg.ge/gpb-2tv/index.m3u8', note: '🇳🇴' },
-    { n: 'Cazé TV',          u: 'https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8', note: '🇧🇷 HEVC', hevc: true },
-  ];
-  function canHevc() {
-    try {
-      if (window.MediaSource && MediaSource.isTypeSupported) {
-        if (MediaSource.isTypeSupported('video/mp4; codecs="hvc1.1.6.L120.B0"') ||
-            MediaSource.isTypeSupported('video/mp4; codecs="hev1.1.6.L120.B0"')) return true;
-      }
-      return document.createElement('video').canPlayType('video/mp4; codecs="hvc1.1.6.L120.B0"') !== '';
-    } catch (e) { return false; }
-  }
-  /* Official BD streaming options — reliable fallback that works on any ISP/browser */
-  var WATCH = [
-    { n: 'T Sports', tag: 'FREE TV', u: 'https://www.tsports.com' },
-    { n: 'Toffee',   tag: '',        u: 'https://toffeelive.com' },
-    { n: 'Bioscope', tag: '',        u: 'https://www.bioscopelive.com' },
-  ];
-  function watchRow(state) {
-    var label = state === 'in' ? '<span class="f26-live-dot"></span> Watch Live Now' : '<i class="fa-solid fa-tv"></i> Live TV';
-    return '<div class="f26-watch">' +
-      '<button class="f26-watch-live" data-tv-play="1">' + label + '</button>' +
-      '<div class="f26-watch-alt"><span class="f26-watch-lbl">Not playing? Watch on</span>' +
-        WATCH.map(function (w) {
-          return '<a class="f26-watch-chip" target="_blank" rel="noopener" href="' + w.u + '">' +
-            esc(w.n) + (w.tag ? ' <b>' + w.tag + '</b>' : '') + '</a>';
-        }).join('') +
-      '</div>' +
-    '</div>';
-  }
-
-  /* ── In-site HLS live TV player ── */
-  var _hls = null, _tvIdx = 0;
-  function loadHls() {
-    return new Promise(function (resolve, reject) {
-      if (window.Hls) return resolve();
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-  function openTvPlayer() {
-    var overlay = document.getElementById('f26-tv');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'f26-tv';
-      overlay.className = 'f26-tv-overlay';
-      overlay.innerHTML =
-        '<div class="f26-tv-box">' +
-          '<div class="f26-tv-head">' +
-            '<span class="f26-tv-title"><span class="f26-live-dot"></span> Live TV</span>' +
-            '<button class="f26-tv-close" aria-label="Close">✕</button>' +
-          '</div>' +
-          '<div class="f26-tv-video"><video id="f26-tv-vid" playsinline controls muted></video>' +
-            '<button class="f26-tv-unmute" id="f26-tv-unmute"><i class="fa-solid fa-volume-xmark"></i> Tap to unmute</button>' +
-            '<div class="f26-tv-msg" id="f26-tv-msg"></div></div>' +
-          '<div class="f26-tv-chans" id="f26-tv-chans"></div>' +
-          '<div class="f26-tv-note">Third-party live streams · quality & availability may vary by region.</div>' +
-        '</div>';
-      document.body.appendChild(overlay);
-      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeTvPlayer(); });
-      overlay.querySelector('.f26-tv-close').addEventListener('click', closeTvPlayer);
-      var um = overlay.querySelector('#f26-tv-unmute');
-      um.addEventListener('click', function () {
-        var v = document.getElementById('f26-tv-vid');
-        v.muted = false; v.volume = 1; v.play().catch(function () {});
-        um.style.display = 'none';
-      });
-      var vEl = overlay.querySelector('#f26-tv-vid');
-      vEl.addEventListener('volumechange', function () { if (!vEl.muted) um.style.display = 'none'; });
-    }
-    var chans = overlay.querySelector('#f26-tv-chans');
-    chans.innerHTML = TV_CHANNELS.map(function (c, i) {
-      return '<button class="f26-tv-chan" data-ch="' + i + '">' + esc(c.n) + (c.note ? ' <small>' + esc(c.note) + '</small>' : '') + '</button>';
-    }).join('');
-    chans.querySelectorAll('.f26-tv-chan').forEach(function (b) {
-      b.addEventListener('click', function () { playChannel(parseInt(b.dataset.ch, 10)); });
-    });
-    overlay.classList.add('on');
-    document.body.style.overflow = 'hidden';
-    playChannel(_tvIdx);
-  }
-  function playChannel(idx) {
-    _tvIdx = idx;
-    var ch = TV_CHANNELS[idx]; if (!ch) return;
-    var vid = document.getElementById('f26-tv-vid');
-    var msg = document.getElementById('f26-tv-msg');
-    var um = document.getElementById('f26-tv-unmute');
-    var chans = document.getElementById('f26-tv-chans');
-    if (chans) chans.querySelectorAll('.f26-tv-chan').forEach(function (b, i) { b.classList.toggle('on', i === idx); });
-    msg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to ' + esc(ch.n) + '…';
-    msg.style.display = 'flex';
-    /* Browsers only allow autoplay when muted — start muted, offer an unmute button */
-    vid.muted = true;
-    if (um) um.style.display = 'block';
-    if (_hls) { try { _hls.destroy(); } catch (e) {} _hls = null; }
-    var nativeHls = vid.canPlayType('application/vnd.apple.mpegurl');
-    var hevcMsg = '⚠️ <b>' + esc(ch.n) + '</b> streams in <b>HEVC (H.265)</b>, which this browser can\'t decode.<br>' +
-      'Open the site in <b>Safari</b>, or on Windows install <b>“HEVC Video Extensions”</b> (Microsoft Store) then use <b>Edge</b>. ' +
-      'It also plays in <b>VLC / PotPlayer</b> with this link.';
-    var started = function () { msg.style.display = 'none'; vid.play().catch(function () {}); };
-    var showErr = function (detail) {
-      if (um) um.style.display = 'none';
-      msg.innerHTML = ch.hevc ? hevcMsg
-        : '⚠️ <b>' + esc(ch.n) + '</b> didn\'t play.' + (detail ? '<br><code style="font-size:.72rem;opacity:.85">' + esc(detail) + '</code>' : '') + '<br>Try another channel above.';
-      msg.style.display = 'flex';
-    };
-    /* HEVC channel + browser can't decode HEVC → tell the user up front (still try, in case detection is wrong) */
-    if (ch.hevc && !canHevc() && !nativeHls) showErr('');
-    var tries = 0;
-    loadHls().then(function () {
-      if (window.Hls && window.Hls.isSupported()) {
-        _hls = new window.Hls({ enableWorker: true, backBufferLength: 30, manifestLoadingTimeOut: 12000, fragLoadingTimeOut: 20000 });
-        _hls.loadSource(ch.u);
-        _hls.attachMedia(vid);
-        _hls.on(window.Hls.Events.MANIFEST_PARSED, started);
-        _hls.on(window.Hls.Events.ERROR, function (ev, data) {
-          if (!data) return;
-          try { console.warn('[TV]', ch.n, data.type, data.details, 'fatal=' + data.fatal); } catch (e) {}
-          if (!data.fatal) return;
-          tries++;
-          if (tries <= 4) {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) { setTimeout(function () { try { _hls.startLoad(); } catch (e) {} }, 800); return; }
-            if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !ch.hevc) { _hls.recoverMediaError(); return; }
-          }
-          showErr((data.type || '') + ' · ' + (data.details || ''));
-        });
-      } else if (nativeHls) {
-        vid.src = ch.u;
-        vid.onloadedmetadata = started;
-        vid.onerror = function () { showErr('native playback error'); };
-      } else {
-        msg.innerHTML = '⚠️ This browser can\'t play live streams (no Media Source support). Try Chrome/Edge.';
-        msg.style.display = 'flex'; if (um) um.style.display = 'none';
-      }
-    }).catch(function () {
-      msg.innerHTML = '⚠️ Couldn\'t load the video engine (hls.js). Check your internet or any ad-blocker, then retry.';
-      msg.style.display = 'flex'; if (um) um.style.display = 'none';
-    });
-  }
-  function closeTvPlayer() {
-    var overlay = document.getElementById('f26-tv');
-    if (_hls) { try { _hls.destroy(); } catch (e) {} _hls = null; }
-    var vid = document.getElementById('f26-tv-vid');
-    if (vid) { try { vid.pause(); vid.removeAttribute('src'); vid.load(); } catch (e) {} }
-    if (overlay) overlay.classList.remove('on');
-    document.body.style.overflow = '';
-  }
-  document.addEventListener('click', function (e) {
-    var t = e.target.closest ? e.target.closest('[data-tv-play]') : null;
-    if (t) { e.preventDefault(); openTvPlayer(); }
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { var o = document.getElementById('f26-tv'); if (o && o.classList.contains('on')) closeTvPlayer(); }
-  });
-
   /* ── live match detail (timeline + stats) ── */
   var detailCache = {};
   function fetchDetail(id) {
@@ -563,7 +386,7 @@
     if (body.dataset.f26x) return;
     body.dataset.f26x = '1';
     body.addEventListener('click', function (e) {
-      if (e.target.closest('a') || e.target.closest('[data-tv-play]')) return;
+      if (e.target.closest('a')) return;
       var card = e.target.closest('.f26-match[data-mid]');
       if (!card) return;
       var det = card.querySelector('.f26-detail');
@@ -603,7 +426,6 @@
       ? '<span class="f26-venue">' + (withRound && m.round ? '<span class="f26-round-pill">' + esc(roundLabel(m.round)) + '</span> · ' : '')
         + '<i class="fa-solid fa-location-dot" style="opacity:.5;"></i> ' + esc(m.venue) + (m.city ? ', ' + esc(m.city) : '') + '</span>'
       : '';
-    var watch = (inToday && m.state !== 'post') ? watchRow(m.state) : '';
     var expandable = m.state !== 'pre';   /* live + finished → timeline & stats */
     var hint = expandable ? '<span class="f26-venue" style="opacity:.55;"><i class="fa-solid fa-chevron-down"></i> tap for events &amp; stats</span>' : '';
     return '<div class="f26-match' + (m.state === 'in' ? ' f26-live' : '') + (isMyMatch(m) ? ' f26-mine' : '') + '"' +
@@ -612,7 +434,7 @@
       '<span class="f26-team' + (a.winner ? ' f26-win' : '') + '">' + (a.logo ? '<img src="' + esc(a.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '<b>' + esc(teamLabel(a)) + '</b></span>' +
       '<span class="f26-mid">' + mid + statusBadge(m) + '</span>' +
       '<span class="f26-team away' + (b.winner ? ' f26-win' : '') + '"><b>' + esc(teamLabel(b)) + '</b>' + (b.logo ? '<img src="' + esc(b.logo) + '" alt="">' : '<span class="f26-tbd">⏳</span>') + '</span>' +
-      venue + watch + hint + '</div>';
+      venue + hint + '</div>';
   }
 
   function fmtCD(ms) {
