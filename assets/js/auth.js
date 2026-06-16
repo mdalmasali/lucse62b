@@ -397,9 +397,13 @@
     var root = isInPages ? '../' : '';
     var sub  = isInPages ? '' : 'pages/';
 
+    var isAttendanceAdmin = !!(session && session.id === '0182320012101068');
+
     var items = [
       { href: root + 'index.html',    icon: 'fa-house',            label: 'Home',      id: 'index',     show: true },
-      { href: sub + 'resources.html', icon: 'fa-book-open',        label: 'Materials', id: 'resources', show: isLoggedIn },
+      isAttendanceAdmin
+        ? { href: sub + 'attendance.html', icon: 'fa-clipboard-list', label: 'Attendance', id: 'attendance', show: true }
+        : { href: sub + 'resources.html',  icon: 'fa-book-open',      label: 'Materials',  id: 'resources',  show: isLoggedIn },
       { href: sub + 'cover-page.html', icon: 'fa-file-pdf',        label: 'Cover Page', id: 'cover-page', show: true },
       { href: sub + 'info.html', icon: 'fa-circle-info', label: 'Info', id: 'info', show: isLoggedIn },
       isLoggedIn

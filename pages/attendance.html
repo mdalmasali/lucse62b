@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>!function(){var t=localStorage.getItem('cse62b-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}();</script>
+  <meta charset="UTF-8" />
+  <script>
+    (function(){
+      var raw = localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student');
+      if (!raw) { window.location.replace('login.html'); return; }
+      try {
+        var s = JSON.parse(raw);
+        if (!s || s.id !== '0182320012101068') { window.location.replace('login.html'); }
+      } catch(e) { window.location.replace('login.html'); }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/images/favicon-photo.png">
+  <link rel="apple-touch-icon" href="/assets/images/favicon-photo.png">
+  <title>Attendance | CSE 62B LU</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    .att-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      margin: 32px 0 20px;
+    }
+    .att-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text);
+    }
+    .att-date {
+      font-size: 0.82rem; color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .att-stats {
+      display: flex; gap: 10px; align-items: center;
+      flex-wrap: wrap;
+    }
+    .att-stat-pill {
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 100px; padding: 6px 14px;
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--green);
+    }
+    .att-stat-pill.total {
+      background: rgba(124,58,237,0.1);
+      border-color: rgba(124,58,237,0.25);
+      color: var(--accent-bright);
+    }
+
+    /* Toolbar */
+    .att-toolbar {
+      display: flex; gap: 10px; align-items: center;
+      flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .att-search {
+      flex: 1; min-width: 200px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    .att-search:focus { outline: none; border-color: var(--accent); }
+    .att-search::placeholder { color: var(--muted); }
+
+    .att-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 16px; border-radius: 11px; border: none;
+      font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .att-btn-clear {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #f87171;
+    }
+    .att-btn-clear:hover { background: rgba(239,68,68,0.22); }
+    .att-btn-copy {
+      background: rgba(6,182,212,0.12);
+      border: 1px solid rgba(6,182,212,0.25);
+      color: var(--accent2);
+    }
+    .att-btn-copy:hover { background: rgba(6,182,212,0.22); }
+    .att-btn-pdf {
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.25);
+      color: var(--accent-bright);
+    }
+    .att-btn-pdf:hover { background: rgba(124,58,237,0.22); }
+    .att-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Student Grid */
+    .att-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .att-student {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+    .att-student:hover { border-color: var(--border-light); background: var(--card-hover); }
+    .att-student.present {
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.35);
+    }
+    .att-student.pending-mark { opacity: 0.6; pointer-events: none; }
+
+    .att-check {
+      width: 26px; height: 26px; border-radius: 8px;
+      border: 2px solid var(--border-light);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 0.85rem;
+      transition: all 0.18s;
+    }
+    .att-student.present .att-check {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    .att-student-info { flex: 1; min-width: 0; }
+    .att-student-name {
+      font-size: 0.9rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .att-student-id {
+      font-size: 0.75rem; color: var(--text-secondary);
+      font-family: monospace; margin-top: 2px;
+    }
+    .att-student.present .att-student-name { color: var(--green); }
+
+    /* Empty / loading */
+    .att-empty {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-secondary); font-size: 0.9rem;
+    }
+    .att-loading-spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(124,58,237,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: att-spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes att-spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    .att-toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+      background: rgba(15,15,25,0.95); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-light);
+      border-radius: 12px; padding: 10px 20px;
+      font-size: 0.85rem; color: var(--text);
+      z-index: 9999; white-space: nowrap;
+      animation: att-toast-in 0.25s ease;
+      pointer-events: none;
+    }
+    @keyframes att-toast-in { from { opacity:0; transform: translateX(-50%) translateY(10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+    html[data-theme="light"] .att-search {
+      background: rgba(0,0,0,0.04); color: #1a1a2e;
+    }
+    html[data-theme="light"] .att-search::placeholder { color: #94a3b8; }
+
+    @media (max-width: 600px) {
+      .att-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .att-toolbar { gap: 8px; }
+      .att-header { margin-top: 20px; }
+    }
+    @media (max-width: 380px) {
+      .att-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <nav class="topbar fade-in">
+      <a href="../index.html" class="topbar-brand">CSE 62B · PORTAL</a>
+      <ul class="topbar-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="notice.html">Notice</a></li>
+        <li class="auth-only"><a href="info.html">Info</a></li>
+        <li class="auth-only"><a href="resources.html">Resources</a></li>
+        <li><a href="attendance.html" style="color:var(--green);font-weight:700;"><i class="fa-solid fa-clipboard-list" style="font-size:0.85em;"></i> Attendance</a></li>
+        <li><a href="login.html" class="login-btn" id="navLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+      </ul>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch to Light Mode" aria-label="Toggle theme"><i class="fa-solid fa-circle-half-stroke"></i></button>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="mobile-nav-overlay" id="mobileNav">
+      <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      <a href="../index.html">Home</a>
+      <a href="notice.html">Notice</a>
+      <a class="auth-only" href="info.html">Info</a>
+      <a class="auth-only" href="resources.html">Resources</a>
+      <a href="attendance.html" style="color:var(--green);font-weight:700;"><i class="fa-solid fa-clipboard-list"></i> Attendance</a>
+      <a href="login.html" id="mobileLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+    </div>
+
+    <!-- Header -->
+    <div class="att-header fade-in">
+      <div>
+        <div class="att-title"><i class="fa-solid fa-clipboard-list" style="color:var(--accent-bright);margin-right:10px;"></i>Attendance</div>
+        <div class="att-date" id="attDate">Loading…</div>
+      </div>
+      <div class="att-stats">
+        <div class="att-stat-pill total" id="statTotal">Total: —</div>
+        <div class="att-stat-pill" id="statPresent">Present: 0</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="att-toolbar fade-in delay-1">
+      <input type="text" class="att-search" id="attSearch" placeholder="Search student name or ID…" autocomplete="off">
+      <button class="att-btn att-btn-copy" id="btnCopy" onclick="copyReport()">
+        <i class="fa-solid fa-copy"></i> Copy Report
+      </button>
+      <button class="att-btn att-btn-pdf" id="btnPdf" onclick="downloadPdf()">
+        <i class="fa-solid fa-file-arrow-down"></i> PDF
+      </button>
+      <button class="att-btn att-btn-clear" id="btnClear" onclick="clearAttendance()">
+        <i class="fa-solid fa-rotate-left"></i> Clear
+      </button>
+    </div>
+
+    <!-- Student Grid -->
+    <div class="att-grid fade-in delay-2" id="attGrid">
+      <div class="att-empty">
+        <div class="att-loading-spinner"></div>
+        Loading student list…
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-brand">CSE 62B · PORTAL</div>
+      <div class="footer-note">© 2026 CSE 62 B. All Rights Reserved.</div>
+    </footer>
+  </div>
+
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/analytics.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => r.update());
+    }
+  </script>
+  <script src="/assets/js/portal-status.js"></script>
+
+  <script>
+    const WORKER = 'https://lucse62b-api.sy164425.workers.dev';
+    const ADMIN_ID = '0182320012101068';
+
+    var allStudents   = [];  // { sl, id, name }
+    var presentSet    = new Set();
+    var pendingIds    = new Set();
+    var searchQuery   = '';
+
+    // ── Date display ────────────────────────────────────────────────────
+    (function() {
+      var d = new Date();
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      document.getElementById('attDate').textContent =
+        days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    })();
+
+    // ── Load student list from Sheet ─────────────────────────────────────
+    async function loadStudents() {
+      try {
+        var r = await fetch(WORKER + '/sheet?name=Student%20Info');
+        var data = await r.json();
+        var rows = (data.table && data.table.rows) ? data.table.rows : [];
+        allStudents = [];
+        rows.forEach(function(row) {
+          var cells = (row.c || []).map(function(c) {
+            return (c && c.v != null) ? String(c.f || c.v).trim() : '';
+          });
+          if (cells[0] && /^\d+$/.test(cells[0]) && cells[1] && cells[2]) {
+            allStudents.push({ sl: cells[0], id: cells[1], name: cells[2] });
+          }
+        });
+        document.getElementById('statTotal').textContent = 'Total: ' + allStudents.length;
+      } catch(e) {
+        console.error('Student load failed', e);
+      }
+    }
+
+    // ── Load today's attendance from Supabase ────────────────────────────
+    async function loadAttendance() {
+      try {
+        var r = await fetch(WORKER + '/attendance');
+        var data = await r.json();
+        presentSet = new Set((data.records || []).map(function(rec) { return rec.student_id; }));
+        updateStats();
+      } catch(e) {
+        console.error('Attendance load failed', e);
+      }
+    }
+
+    // ── Render grid ──────────────────────────────────────────────────────
+    function renderGrid() {
+      var grid = document.getElementById('attGrid');
+      var q = searchQuery.toLowerCase();
+      var filtered = allStudents.filter(function(s) {
+        return !q || s.name.toLowerCase().includes(q) || s.id.includes(q);
+      });
+
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="att-empty" style="grid-column:1/-1;">No students found.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      filtered.forEach(function(s) {
+        var isPresent = presentSet.has(s.id);
+        var isPending = pendingIds.has(s.id);
+        var card = document.createElement('div');
+        card.className = 'att-student' + (isPresent ? ' present' : '') + (isPending ? ' pending-mark' : '');
+        card.dataset.id = s.id;
+        card.innerHTML =
+          '<div class="att-check">' + (isPresent ? '<i class="fa-solid fa-check"></i>' : '') + '</div>' +
+          '<div class="att-student-info">' +
+            '<div class="att-student-name">' + escHtml(s.name) + '</div>' +
+            '<div class="att-student-id">' + escHtml(s.id) + '</div>' +
+          '</div>';
+        card.addEventListener('click', function() { toggleStudent(s); });
+        grid.appendChild(card);
+      });
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function updateStats() {
+      document.getElementById('statPresent').textContent = 'Present: ' + presentSet.size;
+    }
+
+    // ── Toggle mark/unmark ───────────────────────────────────────────────
+    async function toggleStudent(s) {
+      if (pendingIds.has(s.id)) return;
+      pendingIds.add(s.id);
+      renderGrid();
+
+      var action = presentSet.has(s.id) ? 'unmark' : 'mark';
+      try {
+        var r = await fetch(WORKER + '/attendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action, admin_id: ADMIN_ID, student_id: s.id, student_name: s.name }),
+        });
+        if (r.ok) {
+          if (action === 'mark') presentSet.add(s.id);
+          else presentSet.delete(s.id);
+          updateStats();
+        } else {
+          showToast('Error saving — try again');
+        }
+      } catch(e) {
+        showToast('Network error');
+      }
+      pendingIds.delete(s.id);
+      renderGrid();
+    }
+
+    // ── Clear all ────────────────────────────────────────────────────────
+    async function clearAttendance() {
+      if (!confirm('Clear all attendance for today?')) return;
+      try {
+        var r = await fetch(WORKER + '/attendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'clear', admin_id: ADMIN_ID }),
+        });
+        if (r.ok) {
+          presentSet.clear();
+          updateStats();
+          renderGrid();
+          showToast('Attendance cleared');
+        }
+      } catch(e) {
+        showToast('Network error');
+      }
+    }
+
+    // ── Copy report ──────────────────────────────────────────────────────
+    function buildReportText() {
+      var d = new Date();
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var dateStr = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+
+      var presentStudents = allStudents.filter(function(s) { return presentSet.has(s.id); });
+      var lines = [];
+      lines.push('📋 CSE 62B Attendance — ' + dateStr);
+      lines.push('━━━━━━━━━━━━━━━━━━━━');
+      lines.push('✅ Present (' + presentStudents.length + '):');
+      presentStudents.forEach(function(s, i) {
+        lines.push((i + 1) + '. ' + s.name);
+      });
+      lines.push('━━━━━━━━━━━━━━━━━━━━');
+      lines.push('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length);
+      return lines.join('\n');
+    }
+
+    function copyReport() {
+      var text = buildReportText();
+      navigator.clipboard.writeText(text).then(function() {
+        showToast('Report copied to clipboard!');
+      }).catch(function() {
+        // fallback
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Report copied!');
+      });
+    }
+
+    // ── PDF download ─────────────────────────────────────────────────────
+    function downloadPdf() {
+      if (!window.jspdf) { showToast('PDF library loading…'); return; }
+      var { jsPDF } = window.jspdf;
+      var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      var d = new Date();
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var dateStr   = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      var timeStr   = d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+
+      var presentStudents = allStudents.filter(function(s) { return presentSet.has(s.id); });
+      var pageW = 210, margin = 18, contentW = pageW - margin * 2;
+      var y = 0;
+
+      // Header band
+      doc.setFillColor(124, 58, 237);
+      doc.rect(0, 0, pageW, 32, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('CSE 62B — Attendance Report', margin, 14);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(dateStr + '   |   ' + timeStr, margin, 22);
+
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(9);
+      doc.text('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length, pageW - margin, 22, { align: 'right' });
+
+      y = 42;
+
+      // Section heading
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, y - 5, contentW, 9, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('PRESENT STUDENTS (' + presentStudents.length + ')', margin + 4, y + 1);
+      y += 10;
+
+      // Table header
+      doc.setFillColor(240, 240, 250);
+      doc.rect(margin, y, contentW, 7, 'F');
+      doc.setTextColor(80, 80, 100);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('#', margin + 3, y + 4.5);
+      doc.text('Student Name', margin + 12, y + 4.5);
+      doc.text('Student ID', margin + contentW - 3, y + 4.5, { align: 'right' });
+      y += 7;
+
+      // Rows
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      presentStudents.forEach(function(s, i) {
+        if (y > 272) {
+          doc.addPage();
+          y = 18;
+        }
+        var rowBg = i % 2 === 0 ? [252, 252, 255] : [255, 255, 255];
+        doc.setFillColor(rowBg[0], rowBg[1], rowBg[2]);
+        doc.rect(margin, y, contentW, 7, 'F');
+
+        doc.setTextColor(60, 60, 80);
+        doc.text(String(i + 1), margin + 3, y + 4.5);
+        doc.setTextColor(20, 20, 40);
+        doc.setFont('helvetica', 'bold');
+        var nameMaxW = contentW - 50;
+        var nameTxt = doc.splitTextToSize(s.name, nameMaxW)[0];
+        doc.text(nameTxt, margin + 12, y + 4.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 80, 160);
+        doc.text(s.id, margin + contentW - 3, y + 4.5, { align: 'right' });
+        y += 7;
+      });
+
+      // Footer line
+      y += 4;
+      doc.setDrawColor(200, 200, 220);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+      doc.setTextColor(130, 130, 160);
+      doc.setFontSize(7.5);
+      doc.text('Generated by CSE 62B Portal  ·  lucse62b.xyz', margin, y);
+      doc.text(new Date().toISOString().slice(0, 16).replace('T', ' '), pageW - margin, y, { align: 'right' });
+
+      doc.save('CSE62B-Attendance-' + new Date().toISOString().slice(0, 10) + '.pdf');
+      showToast('PDF downloaded!');
+    }
+
+    // ── Toast ────────────────────────────────────────────────────────────
+    var _toastTimer = null;
+    function showToast(msg) {
+      var existing = document.querySelector('.att-toast');
+      if (existing) existing.remove();
+      if (_toastTimer) clearTimeout(_toastTimer);
+      var t = document.createElement('div');
+      t.className = 'att-toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      _toastTimer = setTimeout(function() { if (t.parentNode) t.remove(); }, 2500);
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────
+    document.getElementById('attSearch').addEventListener('input', function() {
+      searchQuery = this.value.trim();
+      renderGrid();
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────
+    async function init() {
+      await Promise.all([loadStudents(), loadAttendance()]);
+      renderGrid();
+    }
+
+    init();
+
+    // Auto-refresh attendance every 30s (in case used on multiple devices)
+    setInterval(async function() {
+      await loadAttendance();
+      renderGrid();
+    }, 30000);
+  </script>
+</body>
+</html>

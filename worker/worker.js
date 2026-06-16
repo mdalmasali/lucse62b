@@ -595,6 +595,69 @@ export default {
         return jsonResp(cors, { ok: true, triggered: true, batch: batchParam, at: new Date().toISOString() });
       }
 
+      // ── GET /attendance — today's attendance records ──────────────────
+      if (p === '/attendance' && request.method === 'GET') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const today = new Date().toISOString().slice(0, 10);
+        const r = await fetch(
+          `${SUPA_URL}/rest/v1/attendance_records?session_date=eq.${today}&select=student_id,student_name,marked_at&order=marked_at.asc`,
+          { headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+        ).catch(() => null);
+        if (!r || !r.ok) return errResp(cors, 502, 'Database error');
+        const rows = await r.json();
+        return jsonResp(cors, { date: today, records: rows });
+      }
+
+      // ── POST /attendance — mark / unmark / clear ──────────────────────
+      if (p === '/attendance' && request.method === 'POST') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const ATTENDANCE_ADMIN = '0182320012101068';
+        const body = await request.json().catch(() => null);
+        if (!body || !body.action) return errResp(cors, 400, 'Missing action');
+        const today = new Date().toISOString().slice(0, 10);
+
+        if (body.action === 'mark') {
+          const { student_id, student_name, admin_id } = body;
+          if (admin_id !== ATTENDANCE_ADMIN) return errResp(cors, 403, 'Forbidden');
+          if (!student_id || !student_name) return errResp(cors, 400, 'Missing fields');
+          const r = await fetch(`${SUPA_URL}/rest/v1/attendance_records`, {
+            method: 'POST',
+            headers: {
+              'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}`,
+              'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates',
+            },
+            body: JSON.stringify({ session_date: today, student_id, student_name }),
+          }).catch(() => null);
+          if (!r || !r.ok) return errResp(cors, 502, 'Database error');
+          return jsonResp(cors, { ok: true });
+        }
+
+        if (body.action === 'unmark') {
+          const { student_id, admin_id } = body;
+          if (admin_id !== ATTENDANCE_ADMIN) return errResp(cors, 403, 'Forbidden');
+          if (!student_id) return errResp(cors, 400, 'Missing student_id');
+          const r = await fetch(
+            `${SUPA_URL}/rest/v1/attendance_records?session_date=eq.${today}&student_id=eq.${encodeURIComponent(student_id)}`,
+            { method: 'DELETE', headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+          ).catch(() => null);
+          if (!r || !r.ok) return errResp(cors, 502, 'Database error');
+          return jsonResp(cors, { ok: true });
+        }
+
+        if (body.action === 'clear') {
+          const { admin_id } = body;
+          if (admin_id !== ATTENDANCE_ADMIN) return errResp(cors, 403, 'Forbidden');
+          const r = await fetch(
+            `${SUPA_URL}/rest/v1/attendance_records?session_date=eq.${today}`,
+            { method: 'DELETE', headers: { 'apikey': env.SUPA_KEY, 'Authorization': `Bearer ${env.SUPA_KEY}` } }
+          ).catch(() => null);
+          if (!r || !r.ok) return errResp(cors, 502, 'Database error');
+          return jsonResp(cors, { ok: true });
+        }
+
+        return errResp(cors, 400, 'Unknown action');
+      }
+
       return new Response('Not found', { status: 404, headers: cors });
 
     } catch (e) {
