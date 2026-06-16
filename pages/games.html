@@ -207,26 +207,29 @@
     );
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     try {
-      const { data, error } = await sb.from('game_standings')
-        .select('*').order('total_points', { ascending: false }).limit(20);
+      const { data, error } = await sb.from('game_standings').select('*').limit(500);
       if (error) throw error;
       if (!data || data.length === 0) {
         card.innerHTML = '<div class="standings-empty">No games played yet. Be the first to top the board! 🎮</div>';
         return;
       }
+      const sorted = data
+        .map(p => ({ ...p, avg: p.games_played > 0 ? p.total_points / p.games_played : 0 }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 20);
       const medals = ['🥇','🥈','🥉'];
       let me = null;
       try { me = JSON.parse(localStorage.getItem('lu62b_student') || sessionStorage.getItem('lu62b_student') || 'null'); } catch(e){}
       const myId = me?.id ? 'student_' + me.id : null;
       const head = `<div class="standings-row head">
         <span style="text-align:center">#</span><span>Player</span>
-        <span class="st-col">Pts</span><span class="st-col st-wins-col">Wins</span><span class="st-col">Played</span>
+        <span class="st-col">Avg</span><span class="st-col st-wins-col">Wins</span><span class="st-col">Played</span>
       </div>`;
-      const rows = data.map((p, i) => `
+      const rows = sorted.map((p, i) => `
         <div class="standings-row ${i === 0 ? 'top1' : ''}" ${p.player_id === myId ? 'style="outline:1px solid rgba(52,211,153,.4)"' : ''}>
           <span class="st-rank">${medals[i] || (i + 1)}</span>
           <span class="st-name">${esc(p.player_name) || 'Player'}${p.player_id === myId ? ' <span style="color:#34d399;font-size:.7rem;font-weight:800">YOU</span>' : ''}</span>
-          <span class="st-col pts">${p.total_points}</span>
+          <span class="st-col pts">${Math.round(p.avg)}</span>
           <span class="st-col st-wins-col">${p.wins}</span>
           <span class="st-col">${p.games_played}</span>
         </div>`).join('');
