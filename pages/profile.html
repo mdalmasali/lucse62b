@@ -2052,39 +2052,38 @@
 
       const dob = `${year}-${month}-${day}`;
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying…';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
 
+      // LU's live portal now sits behind a CAPTCHA, so we can no longer verify
+      // this against LU directly. This account is already password-protected,
+      // so we trust the logged-in student's own entry and store it — academic
+      // info (if any result has been imported) is fetched best-effort below.
       try {
-        const r = await fetch(`${WORKER_URL_SMS}/result`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: currentUser.id, birth_date: dob }),
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const text = await r.text();
-        if (text.trimStart().startsWith('<')) throw new Error('LUS blocked');
-        const data = JSON.parse(text);
-        if (data.error) throw new Error(data.error);
-        const info = extractStudentInfo(data);
-        try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
+        await saveDobToSupabase(currentUser.id, dob);
         localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
-        applyStudentInfo(info);
-        showProfileContent(); // also calls showSavedDob internally
+        localStorage.removeItem('lu62b_info_' + currentUser.id);
+        showProfileContent(); // also calls showSavedDob + loadProfileAcademicBar internally
       } catch {
-        errEl.textContent = 'Date of birth did not match. Please try again.';
+        errEl.textContent = 'Could not save right now. Please check your connection and try again.';
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Continue to Profile';
       }
     }
 
-    function initProfileView() {
+    async function initProfileView() {
       if (isDemoUser) {
         enableDemoProfileMode();
         return;
       }
       populateGateDropdowns();
       populateDobEditDropdowns();
-      const savedDob = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      let savedDob = localStorage.getItem('lu62b_dob_' + currentUser.id);
+      if (!savedDob) {
+        // Not cached on this device — it may already be on file from another
+        // device/session. Check Supabase before asking the student to re-enter it.
+        savedDob = await getDobFromSupabase(currentUser.id);
+        if (savedDob) { try { localStorage.setItem('lu62b_dob_' + currentUser.id, savedDob); } catch {} }
+      }
       if (savedDob) {
         showProfileContent();
       } else {
@@ -2151,27 +2150,18 @@
 
       const dob = `${year}-${month}-${day}`;
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying…';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
 
+      // Same as the initial gate — LU can't verify this for us anymore, so we
+      // just save the student's own correction directly.
       try {
-        const r = await fetch(`${WORKER_URL_SMS}/result`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: currentUser.id, birth_date: dob }),
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const text = await r.text();
-        if (text.trimStart().startsWith('<')) throw new Error('LUS blocked');
-        const data = JSON.parse(text);
-        if (data.error) throw new Error(data.error);
-
+        await saveDobToSupabase(currentUser.id, dob);
         localStorage.setItem('lu62b_dob_' + currentUser.id, dob);
         localStorage.removeItem('lu62b_info_' + currentUser.id);
-        const info = extractStudentInfo(data);
-        try { localStorage.setItem('lu62b_info_' + currentUser.id, JSON.stringify(info)); } catch {}
-        applyStudentInfo(info);
         showSavedDob(dob);
+        loadProfileAcademicBar(); // best-effort refresh (works if a result is on file)
       } catch {
-        errEl.textContent = 'Date of birth did not match. Please try again.';
+        errEl.textContent = 'Could not save right now. Please check your connection and try again.';
       }
 
       btn.disabled = false;
