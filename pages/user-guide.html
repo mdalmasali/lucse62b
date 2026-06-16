@@ -286,6 +286,9 @@
         <a class="ug-menu-item" href="#portal-status"><i class="fa-solid fa-circle-dot"></i> Portal Status</a>
         <a class="ug-menu-item ug-auth-item" href="#profile"><i class="fa-solid fa-id-card"></i> Your Profile</a>
         <a class="ug-menu-item" href="#theme"><i class="fa-solid fa-circle-half-stroke"></i> Theme & Display</a>
+        <a class="ug-menu-item" href="#notice"><i class="fa-solid fa-bullhorn"></i> Notice</a>
+        <a class="ug-menu-item" href="#games"><i class="fa-solid fa-gamepad"></i> Games</a>
+        <a class="ug-menu-item" href="#fifa"><i class="fa-solid fa-futbol"></i> World Cup 26</a>
       </aside>
 
       <!-- Main content -->
@@ -745,7 +748,7 @@
           </div>
           <div class="ug-warn">
             <i class="fa-solid fa-triangle-exclamation"></i>
-            Results shown here are fetched live from the LU result server. If a result is not yet published by the university, it will not appear here.
+            Results are loaded from data imported by the class admin — not fetched live from LU at the time of your request. If your result was published recently and hasn't been imported yet, it may not appear. Contact the class rep if your result is missing.
           </div>
         </div>
 
@@ -930,6 +933,14 @@
               <span>Your profile shows your <strong>name, Student ID, photo, department, batch,</strong> and other academic details pulled from the university database.</span>
             </li>
             <li>
+              <i class="fa-solid fa-cake-candles"></i>
+              <span><strong>Date of Birth setup</strong> — The first time you open your profile on any device, you will be asked to enter your Date of Birth. This is saved securely to the cloud and automatically fills in on any other device you log in from — you only need to enter it once ever.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-key"></i>
+              <span><strong>Change Password</strong> — You can update your portal password at any time from your profile page. Enter your current password and a new one to confirm.</span>
+            </li>
+            <li>
               <i class="fa-solid fa-arrow-right-from-bracket"></i>
               <span>To <strong>log out</strong>, click the logout button on your profile page. Your session data will be cleared from the browser.</span>
             </li>
@@ -963,6 +974,147 @@
           </div>
           <div class="ug-divider"></div>
           <p style="font-size:0.82rem;color:var(--text-secondary);margin:0;"><strong style="color:var(--text);">Mobile Navigation</strong> — On small screens, the navbar collapses into a hamburger menu (<i class="fa-solid fa-bars" style="font-size:0.78rem;"></i>). Tap it to open the full navigation menu as a slide-in overlay.</p>
+        </div>
+
+        <!-- 15. Notice -->
+        <div class="ug-section" id="notice">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(251,191,36,.12);color:#fcd34d;">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <h2 class="ug-section-title">Notice</h2>
+            <span class="ug-section-badge badge-free">Public</span>
+          </div>
+          <ul class="ug-feat-list">
+            <li>
+              <i class="fa-solid fa-newspaper"></i>
+              <span>The <strong>Notice</strong> page shows all official announcements posted by class representatives — exam updates, schedule changes, important deadlines, and more.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-bell"></i>
+              <span>When a new notice is posted, logged-in users receive a <strong>push notification</strong> automatically. You can also tap the bell icon in the navbar to see recent notices.</span>
+            </li>
+            <li>
+              <i class="fa-solid fa-clock"></i>
+              <span>Each notice shows the date it was posted and any relevant deadline or event date.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 16. Games -->
+        <div class="ug-section" id="games">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(52,211,153,.12);color:#6ee7b7;">
+              <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <h2 class="ug-section-title">Games</h2>
+            <span class="ug-section-badge badge-free">Public · Login for standings</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 20px;line-height:1.65;">The Games page hosts two multiplayer games you can play with classmates in real time — no app download needed. Guests can play without logging in, but only logged-in students earn points on the <strong>Overall Standings</strong>.</p>
+
+          <!-- Draw & Guess -->
+          <div style="margin-bottom:14px;background:rgba(52,211,153,.04);border:1px solid rgba(52,211,153,.18);border-left:3px solid #34d399;border-radius:12px;padding:16px 18px;">
+            <div style="font-size:0.84rem;font-weight:800;color:#34d399;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-pencil"></i> Draw &amp; Guess
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 10px;line-height:1.65;">One player draws a word on the canvas while the rest try to guess it. The faster you guess, the more points you earn. The drawer also earns points based on how quickly each player guesses — so a clear drawing rewards everyone.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.9;">
+              <li><strong style="color:var(--text);">Create or Join</strong> — Click <em>Create Room</em> to start a lobby and share the room code with friends. Others click <em>Join</em> and enter the code.</li>
+              <li><strong style="color:var(--text);">Host settings</strong> — The host can set number of rounds, drawing time per turn, max players, and whether the room is private.</li>
+              <li><strong style="color:var(--text);">Drawing tools</strong> — Draw, Erase, Fill (flood fill), color palette, custom color picker, three brush sizes, <strong>Undo</strong> (button or Ctrl+Z), and Clear.</li>
+              <li><strong style="color:var(--text);">Scoring</strong> — Guessers earn 50–150 pts based on how quickly they guess. Drawers earn the same per guesser — faster guesses = more for both.</li>
+              <li><strong style="color:var(--text);">No-repeat words</strong> — Words shown to you are not repeated for 7 days (stored on your device), so you won't see the same word every session.</li>
+              <li><strong style="color:var(--text);">Connection status</strong> — A green/yellow dot next to each player name shows whether they are connected. If someone disconnects, they are given a 7-second grace period before being marked as left — so a quick page refresh does not remove you from the game.</li>
+              <li><strong style="color:var(--text);">Rejoin mid-game</strong> — If you accidentally close the tab, reopen the game page and you will automatically rejoin the same room if it is still running.</li>
+              <li><strong style="color:var(--text);">Auto-end</strong> — If fewer than 2 active players remain, the game ends automatically.</li>
+            </ul>
+          </div>
+
+          <!-- Find the Imposter -->
+          <div style="margin-bottom:14px;background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.18);border-left:3px solid #a78bfa;border-radius:12px;padding:16px 18px;">
+            <div style="font-size:0.84rem;font-weight:800;color:#a78bfa;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-user-secret"></i> Find the Imposter
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 10px;line-height:1.65;">Everyone receives the same secret word — except one person, the Imposter, who gets nothing. Players discuss the word without saying it directly, then vote on who they think has no word.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.9;">
+              <li><strong style="color:var(--text);">Roles</strong> — After the host starts the game, each player secretly sees either the word or a "You are the Imposter" screen.</li>
+              <li><strong style="color:var(--text);">Discussion phase</strong> — A timer counts down while everyone gives clues or descriptions without saying the word outright. The imposter tries to blend in.</li>
+              <li><strong style="color:var(--text);">Vote phase</strong> — Each player votes for who they think is the imposter. The player with the most votes is revealed.</li>
+              <li><strong style="color:var(--text);">Word packs</strong> — Multiple themed packs: Movies, Sports, Animals, Food, and Bangla. Words are randomized and don't repeat within 7 days on your device.</li>
+              <li><strong style="color:var(--text);">Scoring</strong> — Every player earns +5 pts for participating. Correct voters (who voted for the imposter) earn +10 pts. The same connection and rejoin rules as Draw &amp; Guess apply.</li>
+            </ul>
+          </div>
+
+          <!-- Overall Standings -->
+          <div style="background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.18);border-left:3px solid #fbbf24;border-radius:12px;padding:16px 18px;">
+            <div style="font-size:0.84rem;font-weight:800;color:#fbbf24;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-trophy"></i> Overall Standings
+            </div>
+            <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 10px;line-height:1.65;">A live leaderboard on the right side of the Games page combining points from both Draw &amp; Guess and Find the Imposter — only for logged-in students.</p>
+            <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:18px;line-height:1.9;">
+              <li><strong style="color:var(--text);">Avg score</strong> — Ranked by <em>average points per game</em>, not total points. This keeps it fair: a player who played 2 games won't beat someone with better per-game performance just by playing more.</li>
+              <li><strong style="color:var(--text);">Columns</strong> — Avg (average pts/game), Wins, and Played.</li>
+              <li>Your own row is highlighted in green so you can find yourself quickly.</li>
+            </ul>
+          </div>
+
+          <div class="ug-tip" style="margin-top:16px;">
+            <i class="fa-solid fa-circle-check"></i>
+            Guests can play both games freely. But to appear on the Overall Standings and have your wins tracked, you must be logged in.
+          </div>
+        </div>
+
+        <!-- 17. FIFA / World Cup 26 -->
+        <div class="ug-section" id="fifa">
+          <div class="ug-section-header">
+            <div class="ug-section-icon" style="background:rgba(34,197,94,.12);color:#86efac;">
+              <i class="fa-solid fa-futbol"></i>
+            </div>
+            <h2 class="ug-section-title">World Cup 26 Match Center</h2>
+            <span class="ug-section-badge badge-free">Public · Login for predictions</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 20px;line-height:1.65;">The FIFA World Cup 2026 Match Center lets you follow the full tournament schedule and predict match scores before kick-off.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+              <div style="font-size:0.78rem;font-weight:800;color:#34d399;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-calendar"></i> Schedule Tab
+              </div>
+              <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                Shows all World Cup matches with date, time (Bangladesh time), group, venue, and result (once played). Matches are grouped by date. A live ticker in the top bar scrolls through today's matches automatically.
+              </p>
+            </div>
+
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+              <div style="font-size:0.78rem;font-weight:800;color:#a78bfa;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-chart-simple"></i> Predict Tab
+              </div>
+              <p style="font-size:0.79rem;color:var(--text-secondary);margin:0 0 6px;line-height:1.65;">
+                Predict the score of upcoming matches before they start. Logged-in users can submit one prediction per match.
+              </p>
+              <ul style="font-size:0.79rem;color:var(--text-secondary);margin:0;padding-left:16px;line-height:1.8;">
+                <li>Upcoming matches show a score-entry form — type your predicted score and click <strong>Save</strong>.</li>
+                <li>Once a match goes live, the prediction card locks and shows a <strong style="color:#ef4444;">LIVE NOW</strong> badge. You can still see your saved prediction — it is not hidden.</li>
+                <li>After the match ends, the actual result is shown alongside your prediction.</li>
+              </ul>
+            </div>
+
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:13px 15px;">
+              <div style="font-size:0.78rem;font-weight:800;color:#fbbf24;margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-table"></i> Groups &amp; Standings Tab
+              </div>
+              <p style="font-size:0.79rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                Shows the current group standings for all World Cup groups — points, wins, draws, losses, and goal difference. Updates after each match result is entered.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="ug-note" style="margin-top:14px;">
+            <i class="fa-solid fa-lock"></i>
+            Predictions require login. The schedule and group standings are publicly visible without an account.
+          </div>
         </div>
 
       </main>
