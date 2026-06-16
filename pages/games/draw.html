@@ -1202,14 +1202,6 @@ function checkAllGuessed() {
 async function endRound() {
   if (!G.isHost || G.room?.status !== 'drawing') return;
   stopTimer();
-  const correctCount = G.players.filter(p => p.player_id !== G.room.current_drawer && p.has_guessed).length;
-  if (correctCount > 0) {
-    const drawer = G.players.find(p => p.player_id === G.room.current_drawer);
-    if (drawer) {
-      await sb.from('draw_players').update({ score: drawer.score + correctCount * 50 })
-        .eq('room_code', G.roomCode).eq('player_id', drawer.player_id);
-    }
-  }
   await sb.from('draw_rooms').update({ status: 'round_end' }).eq('room_code', G.roomCode);
 }
 
@@ -1367,6 +1359,11 @@ async function sendGuess() {
     const pts = Math.floor(100 * (left / total)) + 50;
     await sb.from('draw_players').update({ has_guessed: true, score: (G.me?.score || 0) + pts })
       .eq('room_code', G.roomCode).eq('player_id', G.playerId);
+    const drawer = G.players.find(p => p.player_id === G.room.current_drawer);
+    if (drawer) {
+      await sb.from('draw_players').update({ score: (drawer.score || 0) + pts })
+        .eq('room_code', G.roomCode).eq('player_id', drawer.player_id);
+    }
     await sb.from('draw_chat').insert({
       room_code: G.roomCode, player_id: G.playerId, player_name: G.playerName,
       message: `guessed the word!`, is_correct: true
