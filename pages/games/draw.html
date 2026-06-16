@@ -156,6 +156,9 @@
     .tool-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
     .tool-btn.active { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.5); color: #34d399; }
     .tool-btn:hover { border-color: rgba(52,211,153,.4); color: #34d399; }
+    .tool-btn.undo-btn { color: #60a5fa; border-color: rgba(96,165,250,.3); }
+    .tool-btn.undo-btn:hover { background: rgba(96,165,250,.1); }
+    .tool-btn.undo-btn:disabled { opacity: .35; pointer-events: none; }
     .tool-btn.clear-btn { color: #f87171; border-color: rgba(239,68,68,.3); }
     .tool-btn.clear-btn:hover { background: rgba(239,68,68,.1); }
 
@@ -403,6 +406,7 @@
               <button class="tool-btn active" data-tool="pencil" title="Pencil"><i class="fa-solid fa-pencil"></i> Draw</button>
               <button class="tool-btn" data-tool="eraser" title="Eraser"><i class="fa-solid fa-eraser"></i> Erase</button>
               <button class="tool-btn" data-tool="fill" title="Fill"><i class="fa-solid fa-fill-drip"></i> Fill</button>
+              <button class="tool-btn undo-btn" id="undoBtn" onclick="undoCanvas()" title="Undo (Ctrl+Z)" disabled><i class="fa-solid fa-rotate-left"></i> Undo</button>
               <button class="tool-btn clear-btn" onclick="clearCanvas(true)" title="Clear all"><i class="fa-solid fa-trash"></i> Clear</button>
             </div>
           </div>
@@ -525,6 +529,7 @@ const G = {
   channel: null, timerInterval: null,
   canvas: null, ctx: null,
   isDrawing: false, lastX: 0, lastY: 0,
+  history: [],
   currentColor: '#000000', currentSize: 5, currentTool: 'pencil',
   hintReveal1: false, hintReveal2: false,
   prevScores: {},
@@ -795,6 +800,13 @@ function subscribeToRoom() {
     })
     .on('broadcast', { event: 'clear' }, () => {
       if (!G.isDrawer) clearCanvasLocal();
+    })
+    .on('broadcast', { event: 'snapshot' }, ({ payload: p }) => {
+      if (!G.isDrawer && p.img) {
+        const img = new Image();
+        img.onload = () => G.ctx?.drawImage(img, 0, 0, 800, 550);
+        img.src = p.img;
+      }
     })
     .on('presence', { event: 'sync' }, () => { refreshPresence(); G.presenceReady = true; })
     .on('presence', { event: 'join' }, ({ newPresences }) => {
@@ -1127,6 +1139,7 @@ async function pickWord(word) {
     phase_ends_at: phaseEnd
   }).eq('room_code', G.roomCode);
   await sb.from('draw_players').update({ has_guessed: false }).eq('room_code', G.roomCode);
+  G.history = []; updateUndoBtn();
   clearCanvasLocal();
   G.channel.send({ type: 'broadcast', event: 'clear', payload: {} });
 }
@@ -1427,14 +1440,18 @@ function initCanvas() {
   G.ctx = G.canvas.getContext('2d');
   clearCanvasLocal();
 
-  G.canvas.addEventListener('mousedown', e => { if (!G.isDrawer) return; G.isDrawing = true; const p = getPos(e); G.lastX = p.x; G.lastY = p.y; if (G.currentTool === 'fill') { doFill(p.x, p.y); } });
+  G.canvas.addEventListener('mousedown', e => { if (!G.isDrawer) return; G.isDrawing = true; const p = getPos(e); G.lastX = p.x; G.lastY = p.y; saveHistory(); if (G.currentTool === 'fill') { doFill(p.x, p.y); } });
   G.canvas.addEventListener('mousemove', e => { if (!G.isDrawing || !G.isDrawer) return; if (G.currentTool === 'fill') return; const p = getPos(e); doStroke(G.lastX, G.lastY, p.x, p.y); G.lastX = p.x; G.lastY = p.y; });
   G.canvas.addEventListener('mouseup', () => { G.isDrawing = false; });
   G.canvas.addEventListener('mouseleave', () => { G.isDrawing = false; });
 
-  G.canvas.addEventListener('touchstart', e => { if (!G.isDrawer) return; e.preventDefault(); G.isDrawing = true; const p = getPos(e); G.lastX = p.x; G.lastY = p.y; if (G.currentTool === 'fill') { doFill(p.x, p.y); } }, { passive: false });
+  G.canvas.addEventListener('touchstart', e => { if (!G.isDrawer) return; e.preventDefault(); G.isDrawing = true; const p = getPos(e); G.lastX = p.x; G.lastY = p.y; saveHistory(); if (G.currentTool === 'fill') { doFill(p.x, p.y); } }, { passive: false });
   G.canvas.addEventListener('touchmove', e => { if (!G.isDrawing || !G.isDrawer) return; e.preventDefault(); if (G.currentTool === 'fill') return; const p = getPos(e); doStroke(G.lastX, G.lastY, p.x, p.y); G.lastX = p.x; G.lastY = p.y; }, { passive: false });
   G.canvas.addEventListener('touchend', () => { G.isDrawing = false; });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoCanvas(); }
+  });
 }
 
 function getPos(e) {
@@ -1471,6 +1488,7 @@ function drawStroke(x0, y0, x1, y1, color, size, tool) {
 
 function clearCanvas(broadcast) {
   if (!G.isDrawer) return;
+  saveHistory();
   clearCanvasLocal();
   if (broadcast) G.channel?.send({ type: 'broadcast', event: 'clear', payload: {} });
 }
@@ -1479,6 +1497,26 @@ function clearCanvasLocal() {
   if (!G.ctx) return;
   G.ctx.fillStyle = '#ffffff';
   G.ctx.fillRect(0, 0, 800, 550);
+}
+
+function saveHistory() {
+  if (!G.ctx) return;
+  G.history.push(G.ctx.getImageData(0, 0, 800, 550));
+  if (G.history.length > 15) G.history.shift();
+  updateUndoBtn();
+}
+
+function undoCanvas() {
+  if (!G.isDrawer || G.history.length === 0) return;
+  G.ctx.putImageData(G.history.pop(), 0, 0);
+  updateUndoBtn();
+  const dataUrl = G.canvas.toDataURL('image/jpeg', 0.85);
+  G.channel?.send({ type: 'broadcast', event: 'snapshot', payload: { img: dataUrl } });
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = G.history.length === 0 || !G.isDrawer;
 }
 
 function floodFill(startX, startY, fillColor) {
@@ -1554,6 +1592,7 @@ function updateToolbarState() {
   const tb = document.getElementById('canvasToolbar');
   if (!tb) return;
   tb.className = 'canvas-toolbar' + (G.isDrawer ? '' : ' toolbar-disabled');
+  updateUndoBtn();
   const container = document.getElementById('canvasContainer');
   if (container) container.className = 'canvas-container' + (G.isDrawer ? '' : ' not-drawer');
   const input = document.getElementById('chatInput');
