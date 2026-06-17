@@ -103,6 +103,14 @@
     }
     .att-course-option:hover .att-course-del { opacity: 1; }
     .att-course-del:hover { color: #f87171; }
+    .att-course-code {
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--accent-bright);
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 5px; padding: 1px 7px;
+      flex-shrink: 0; white-space: nowrap;
+    }
 
     /* Toolbar */
     .att-toolbar {
@@ -316,6 +324,7 @@
   <script src="../assets/js/auth.js"></script>
   <script src="../assets/js/theme.js"></script>
   <script src="../assets/js/analytics.js"></script>
+  <script src="../assets/js/sheets.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => r.update());
@@ -774,44 +783,49 @@
       renderGrid();
     });
 
-    // ── Course suggestions ────────────────────────────────────────────────
-    var savedCourses = JSON.parse(localStorage.getItem('lu62b_att_courses') || '[]');
+    // ── Course suggestions (fetched from CPG_Courses sheet) ──────────────
+    var COURSES = [];
 
-    function saveCourse(name) {
-      if (!name) return;
-      savedCourses = savedCourses.filter(function(c) { return c !== name; });
-      savedCourses.unshift(name);
-      if (savedCourses.length > 15) savedCourses = savedCourses.slice(0, 15);
-      localStorage.setItem('lu62b_att_courses', JSON.stringify(savedCourses));
-    }
+    function saveCourse(name) { /* kept for manual/custom entries */ }
 
-    function deleteSavedCourse(name) {
-      savedCourses = savedCourses.filter(function(c) { return c !== name; });
-      localStorage.setItem('lu62b_att_courses', JSON.stringify(savedCourses));
+    async function loadCourses() {
+      try {
+        var data = await fetchSheet('CPG_Courses');
+        var cols = {};
+        ((data.table && data.table.cols) || []).forEach(function(c, i) {
+          var label = (c && c.label) ? String(c.label).trim().toLowerCase() : '';
+          if (label) cols[label] = i;
+        });
+        var tCol = cols['title'] !== undefined ? cols['title']
+                 : cols['course title'] !== undefined ? cols['course title']
+                 : cols['course'] !== undefined ? cols['course'] : 0;
+        var cCol = cols['code'] !== undefined ? cols['code']
+                 : cols['course code'] !== undefined ? cols['course code'] : 1;
+        var rows = (data.table && data.table.rows) || [];
+        COURSES = rows.map(function(r) {
+          var c = (r.c || []).map(function(x) { return (x && x.v != null) ? String(x.v).trim() : ''; });
+          return { title: c[tCol] || '', code: c[cCol] || '' };
+        }).filter(function(c) { return c.title; });
+      } catch(e) { /* fail silently — user can still type manually */ }
     }
 
     function showCourseSuggestions(q) {
       var dropdown = document.getElementById('courseDropdown');
-      var matches = savedCourses.filter(function(c) {
-        return !q || c.toLowerCase().includes(q.toLowerCase());
+      var qLow = q.toLowerCase();
+      var matches = COURSES.filter(function(c) {
+        return !q || c.title.toLowerCase().includes(qLow) || c.code.toLowerCase().includes(qLow);
       });
       if (!matches.length) { dropdown.style.display = 'none'; return; }
       dropdown.innerHTML = matches.map(function(c) {
-        return '<div class="att-course-option" data-val="' + escHtml(c) + '">' +
-          '<span>' + escHtml(c) + '</span>' +
-          '<span class="att-course-del" data-del="' + escHtml(c) + '" title="Remove">✕</span>' +
+        var val = c.code ? c.title + ' (' + c.code + ')' : c.title;
+        return '<div class="att-course-option" data-val="' + escHtml(val) + '">' +
+          '<span>' + escHtml(c.title) + '</span>' +
+          (c.code ? '<span class="att-course-code">' + escHtml(c.code) + '</span>' : '') +
         '</div>';
       }).join('');
       dropdown.style.display = 'block';
       dropdown.querySelectorAll('.att-course-option').forEach(function(el) {
         el.addEventListener('mousedown', function(e) {
-          var del = e.target.closest('.att-course-del');
-          if (del) {
-            e.preventDefault();
-            deleteSavedCourse(del.dataset.del);
-            showCourseSuggestions(document.getElementById('attCourse').value.trim());
-            return;
-          }
           e.preventDefault();
           document.getElementById('attCourse').value = el.dataset.val;
           dropdown.style.display = 'none';
@@ -825,13 +839,12 @@
       inp.addEventListener('input', function() { showCourseSuggestions(this.value.trim()); });
       inp.addEventListener('blur',  function() {
         setTimeout(function() { document.getElementById('courseDropdown').style.display = 'none'; }, 150);
-        saveCourse(inp.value.trim());
       });
     })();
 
     // ── Init ─────────────────────────────────────────────────────────────
     async function init() {
-      await Promise.all([loadStudents(), loadAttendance()]);
+      await Promise.all([loadStudents(), loadAttendance(), loadCourses()]);
       renderGrid();
     }
 
