@@ -246,11 +246,31 @@
     html[data-theme="light"] .att-search::placeholder { color: #94a3b8; }
 
     @media (max-width: 600px) {
-      .att-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .att-header { margin: 18px 0 14px; }
+      .att-title { font-size: 1.25rem; }
+      .att-stats { gap: 6px; }
+      .att-stat-pill { padding: 5px 11px; font-size: 0.76rem; }
+
       .att-toolbar { gap: 8px; }
-      .att-header { margin-top: 20px; }
+      /* search + course each full-width on their own line */
+      .att-search { flex: 1 1 100%; min-width: 0; order: 1; padding: 11px 14px; }
+      .att-course-wrap { flex: 1 1 100%; order: 2; }
+      .att-course { width: 100%; box-sizing: border-box; }
+      .att-course-dropdown { min-width: 0; left: 0; right: 0; }
+      /* three action buttons share one row equally */
+      .att-btn { flex: 1 1 0; min-width: 0; justify-content: center;
+                 padding: 11px 6px; font-size: 0.78rem; gap: 5px; }
+      #btnCopy  { order: 3; }
+      #btnPdf   { order: 4; }
+      #btnClear { order: 5; }
+
+      .att-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .att-student { padding: 12px 12px; gap: 10px; }
+      .att-check { width: 22px; height: 22px; }
+      .att-student-name { font-size: 0.82rem; }
+      .att-student-id { font-size: 0.68rem; }
     }
-    @media (max-width: 380px) {
+    @media (max-width: 400px) {
       .att-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -496,6 +516,8 @@
         });
         if (r.ok) {
           presentSet.clear();
+          document.getElementById('attCourse').value = '';
+          document.getElementById('courseDropdown').style.display = 'none';
           updateStats();
           renderGrid();
           showToast('Attendance cleared');
