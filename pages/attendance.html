@@ -628,8 +628,21 @@
       metaRow('Time:',    timeStr,                       INK2, colRX, y);
       y += 6;
       metaRow('Batch & Section:', 'Batch 62, Section B', INK2, colLX, y);
-      if (course) metaRow('Course:', course, GREEN, colRX, y);
-      y += 6.5;
+      y += 6;
+      // Course on its own full-width row, wrapped so long names never overflow
+      if (course) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(INK[0], INK[1], INK[2]);
+        doc.text('Course:', colLX, y);
+        var clw = doc.getTextWidth('Course:') + 2;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
+        var courseLines = doc.splitTextToSize(course, cW - clw - 1);
+        doc.text(courseLines, colLX + clw, y);
+        y += 6 * courseLines.length;
+      }
+      y += 0.5;
 
       // ══════════════════════════════════════════════════════════
       // TABLE (ruled grid)
