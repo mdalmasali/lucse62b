@@ -59,12 +59,8 @@
       border-color: rgba(239,68,68,0.22);
       color: #f87171;
     }
-    .att-course-wrap {
-      display: flex; align-items: center; gap: 8px;
-      flex-shrink: 0;
-    }
     .att-course {
-      max-width: 190px;
+      width: 200px;
       background: rgba(255,255,255,0.04);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -78,6 +74,35 @@
     .att-course::placeholder { color: var(--muted); }
     html[data-theme="light"] .att-course { background: rgba(0,0,0,0.04); color: #1a1a2e; }
     html[data-theme="light"] .att-course::placeholder { color: #94a3b8; }
+    .att-course-wrap { position: relative; flex-shrink: 0; }
+    .att-course-dropdown {
+      position: absolute;
+      top: calc(100% + 5px); left: 0; right: 0; min-width: 230px;
+      background: var(--card);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 200;
+      display: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .att-course-option {
+      padding: 10px 14px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      color: var(--text);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      transition: background 0.12s;
+    }
+    .att-course-option:hover { background: rgba(124,58,237,0.12); }
+    .att-course-del {
+      font-size: 0.7rem; color: var(--muted);
+      padding: 2px 5px; border-radius: 5px;
+      opacity: 0; transition: opacity 0.12s;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .att-course-option:hover .att-course-del { opacity: 1; }
+    .att-course-del:hover { color: #f87171; }
 
     /* Toolbar */
     .att-toolbar {
@@ -259,7 +284,10 @@
     <!-- Toolbar -->
     <div class="att-toolbar fade-in delay-1">
       <input type="text" class="att-search" id="attSearch" placeholder="Search student name or ID…" autocomplete="off">
-      <input type="text" class="att-course" id="attCourse" placeholder="Course (optional)…" autocomplete="off">
+      <div class="att-course-wrap">
+        <input type="text" class="att-course" id="attCourse" placeholder="Course (optional)…" autocomplete="off" spellcheck="false">
+        <div class="att-course-dropdown" id="courseDropdown"></div>
+      </div>
       <button class="att-btn att-btn-copy" id="btnCopy" onclick="copyReport()">
         <i class="fa-solid fa-copy"></i> Copy Report
       </button>
@@ -463,8 +491,7 @@
       lines.push('━━━━━━━━━━━━━━━━━━━━');
       lines.push('✅ Present (' + presentStudents.length + '):');
       presentStudents.forEach(function(s, i) {
-        var nick = getNickname(s.name);
-        lines.push((i + 1) + '. ' + s.name + ' — ' + s.id + ' (' + nick + ')');
+        lines.push((i + 1) + '. ' + getNickname(s.name) + ' — ' + s.id);
       });
       lines.push('━━━━━━━━━━━━━━━━━━━━');
       lines.push('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length + '  |  Absent: ' + absentStudents.length);
@@ -546,12 +573,12 @@
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.text('ATTENDANCE LIST — ' + dateStr, margin + 3, y + 2);
+      doc.text('ATTENDANCE LIST', margin + 3, y + 2);
       y += 11;
 
       // ── Table header ────────────────────────────────────────────────────
-      // Columns: # | Name | Nick | Student ID | Status
-      var col = { n: margin + 2, name: margin + 9, nick: margin + 96, id: margin + 118, status: margin + contentW - 1 };
+      // Columns: # | Student Name | Student ID | Status
+      var col = { n: margin + 2, name: margin + 9, id: margin + 118, status: margin + contentW - 1 };
       doc.setFillColor(220, 215, 245);
       doc.rect(margin, y, contentW, 7, 'F');
       doc.setTextColor(50, 30, 110);
@@ -559,7 +586,6 @@
       doc.setFontSize(7.5);
       doc.text('#',            col.n,      y + 4.5);
       doc.text('Student Name', col.name,   y + 4.5);
-      doc.text('Nick',         col.nick,   y + 4.5);
       doc.text('Student ID',   col.id,     y + 4.5);
       doc.text('Status',       col.status, y + 4.5, { align: 'right' });
       y += 7;
@@ -569,7 +595,6 @@
       allStudents.forEach(function(s, i) {
         if (y > 278) { doc.addPage(); y = 15; }
         var isPresent = presentSet.has(s.id);
-        var nick = getNickname(s.name);
 
         if (isPresent) {
           doc.setFillColor(232, 252, 242);
@@ -584,18 +609,14 @@
         doc.setFont('helvetica', 'normal');
         doc.text(String(i + 1), col.n, y + 4.3);
 
-        // Name (truncated to nick column)
+        // Full name (truncated to ID column)
         doc.setTextColor(isPresent ? 10 : 30, isPresent ? 100 : 20, isPresent ? 60 : 40);
         doc.setFont('helvetica', isPresent ? 'bold' : 'normal');
-        var nameTxt = doc.splitTextToSize(s.name, col.nick - col.name - 2)[0];
+        var nameTxt = doc.splitTextToSize(s.name, col.id - col.name - 4)[0];
         doc.text(nameTxt, col.name, y + 4.3);
 
-        // Nick
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(90, 70, 150);
-        doc.text(nick, col.nick, y + 4.3);
-
         // ID
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(80, 60, 140);
         doc.text(s.id, col.id, y + 4.3);
 
@@ -657,6 +678,61 @@
       searchQuery = this.value.trim();
       renderGrid();
     });
+
+    // ── Course suggestions ────────────────────────────────────────────────
+    var savedCourses = JSON.parse(localStorage.getItem('lu62b_att_courses') || '[]');
+
+    function saveCourse(name) {
+      if (!name) return;
+      savedCourses = savedCourses.filter(function(c) { return c !== name; });
+      savedCourses.unshift(name);
+      if (savedCourses.length > 15) savedCourses = savedCourses.slice(0, 15);
+      localStorage.setItem('lu62b_att_courses', JSON.stringify(savedCourses));
+    }
+
+    function deleteSavedCourse(name) {
+      savedCourses = savedCourses.filter(function(c) { return c !== name; });
+      localStorage.setItem('lu62b_att_courses', JSON.stringify(savedCourses));
+    }
+
+    function showCourseSuggestions(q) {
+      var dropdown = document.getElementById('courseDropdown');
+      var matches = savedCourses.filter(function(c) {
+        return !q || c.toLowerCase().includes(q.toLowerCase());
+      });
+      if (!matches.length) { dropdown.style.display = 'none'; return; }
+      dropdown.innerHTML = matches.map(function(c) {
+        return '<div class="att-course-option" data-val="' + escHtml(c) + '">' +
+          '<span>' + escHtml(c) + '</span>' +
+          '<span class="att-course-del" data-del="' + escHtml(c) + '" title="Remove">✕</span>' +
+        '</div>';
+      }).join('');
+      dropdown.style.display = 'block';
+      dropdown.querySelectorAll('.att-course-option').forEach(function(el) {
+        el.addEventListener('mousedown', function(e) {
+          var del = e.target.closest('.att-course-del');
+          if (del) {
+            e.preventDefault();
+            deleteSavedCourse(del.dataset.del);
+            showCourseSuggestions(document.getElementById('attCourse').value.trim());
+            return;
+          }
+          e.preventDefault();
+          document.getElementById('attCourse').value = el.dataset.val;
+          dropdown.style.display = 'none';
+        });
+      });
+    }
+
+    (function() {
+      var inp = document.getElementById('attCourse');
+      inp.addEventListener('focus', function() { showCourseSuggestions(this.value.trim()); });
+      inp.addEventListener('input', function() { showCourseSuggestions(this.value.trim()); });
+      inp.addEventListener('blur',  function() {
+        setTimeout(function() { document.getElementById('courseDropdown').style.display = 'none'; }, 150);
+        saveCourse(inp.value.trim());
+      });
+    })();
 
     // ── Init ─────────────────────────────────────────────────────────────
     async function init() {
