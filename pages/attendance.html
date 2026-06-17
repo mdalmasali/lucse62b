@@ -564,242 +564,200 @@
       var pageW = 210, pageH = 297, mg = 16, cW = pageW - mg * 2;
       var y = 0;
 
-      // ── Theme palette ───────────────────────────────────────────────────
-      var INK    = [27, 38, 71];    // deep navy
-      var INK2   = [90, 100, 130];  // muted slate
-      var GREEN  = [21, 128, 61];   // LU green
-      var GREENL = [233, 248, 239]; // green tint
-      var RED     = [180, 45, 45];
-      var REDL    = [253, 235, 235];
-      var LINE    = [225, 228, 238];
+      // ── Palette (sober, formal) ─────────────────────────────────────────
+      var INK   = [25, 33, 58];     // deep navy ink
+      var INK2  = [95, 104, 128];   // muted slate
+      var GREEN = [21, 110, 58];    // present
+      var RED   = [168, 46, 46];    // absent
+      var LINE  = [188, 194, 208];  // table rules
+      var LINEL = [222, 226, 236];  // light row rules
+      var HEADBG = [240, 242, 247]; // table header fill
 
       // ══════════════════════════════════════════════════════════
-      // LETTERHEAD
+      // LETTERHEAD (centered)
       // ══════════════════════════════════════════════════════════
-      // Logo (left)
-      var logoSz = 22;
+      var logoSz = 20;
       if (LU_LOGO) {
-        try { doc.addImage(LU_LOGO, 'PNG', mg, 12, logoSz, logoSz); } catch(e) {}
+        try { doc.addImage(LU_LOGO, 'PNG', (pageW - logoSz) / 2, 12, logoSz, logoSz); } catch(e) {}
       }
-      var tx = mg + logoSz + 6;
-      // University name
       doc.setTextColor(INK[0], INK[1], INK[2]);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.text('Leading University', tx, 21);
-      // Department
+      doc.setFontSize(21);
+      doc.text('LEADING UNIVERSITY', pageW / 2, 41, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9.5);
+      doc.setFontSize(10);
       doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-      doc.text('Department of Computer Science & Engineering', tx, 27.5);
-      // Batch/section
-      doc.setFontSize(8);
-      doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Batch 62  ·  Section B', tx, 33);
+      doc.text('Department of Computer Science & Engineering', pageW / 2, 47, { align: 'center' });
+      doc.setFontSize(8.5);
+      doc.text('Sylhet, Bangladesh', pageW / 2, 52, { align: 'center' });
 
-      // Double rule under letterhead
-      y = 39;
+      // Double rule
+      var ruleY = 56;
       doc.setDrawColor(INK[0], INK[1], INK[2]);
-      doc.setLineWidth(0.7);
-      doc.line(mg, y, pageW - mg, y);
-      doc.setDrawColor(GREEN[0], GREEN[1], GREEN[2]);
-      doc.setLineWidth(0.35);
-      doc.line(mg, y + 1.2, pageW - mg, y + 1.2);
-      y += 8;
+      doc.setLineWidth(0.6);
+      doc.line(mg, ruleY, pageW - mg, ruleY);
+      doc.setLineWidth(0.25);
+      doc.line(mg, ruleY + 1.1, pageW - mg, ruleY + 1.1);
 
       // ── Report title ────────────────────────────────────────────────────
+      y = ruleY + 8.5;
       doc.setTextColor(INK[0], INK[1], INK[2]);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       doc.text('ATTENDANCE REPORT', pageW / 2, y, { align: 'center' });
-      y += 7;
+      // small underline accent under title
+      var titleW = doc.getTextWidth('ATTENDANCE REPORT');
+      doc.setDrawColor(GREEN[0], GREEN[1], GREEN[2]);
+      doc.setLineWidth(0.5);
+      doc.line(pageW / 2 - titleW / 2, y + 1.6, pageW / 2 + titleW / 2, y + 1.6);
+      y += 9;
 
-      // ── Info bar (date / time / course) ────────────────────────────────
-      doc.setFillColor(246, 247, 250);
-      doc.roundedRect(mg, y, cW, 10, 1.5, 1.5, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(INK[0], INK[1], INK[2]);
-      doc.text('Date:', mg + 4, y + 6.4);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-      doc.text(dateStr + '   (' + timeStr + ')', mg + 4 + doc.getTextWidth('Date: ') + 1, y + 6.4);
-
-      if (course) {
-        var cLabel = 'Course: ';
+      // ── Meta block (label : value rows, left+right) ─────────────────────
+      function metaRow(label, value, valColor, leftX, vy) {
         doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
         doc.setTextColor(INK[0], INK[1], INK[2]);
-        var cValW = (doc.setFont('helvetica','normal'), doc.getTextWidth(course));
-        doc.setFont('helvetica', 'bold');
-        var cLabW = doc.getTextWidth(cLabel);
-        var cX = pageW - mg - 4 - cValW - cLabW;
-        doc.text(cLabel, cX, y + 6.4);
+        doc.text(label, leftX, vy);
+        var lw = doc.getTextWidth(label) + 2;
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
-        doc.text(course, cX + cLabW, y + 6.4);
+        doc.setTextColor(valColor[0], valColor[1], valColor[2]);
+        doc.text(value, leftX + lw, vy);
       }
-      y += 15;
-
-      // ── Stat cards ──────────────────────────────────────────────────────
-      var cardH = 18, cardR = 2;
-      var cardW = (cW - 8) / 3;
-      var cards = [
-        { lbl: 'TOTAL STUDENTS', val: allStudents.length,     accent: INK   },
-        { lbl: 'PRESENT',        val: presentStudents.length, accent: GREEN },
-        { lbl: 'ABSENT',         val: absentStudents.length,  accent: RED   },
-      ];
-      cards.forEach(function(c, i) {
-        var cx = mg + i * (cardW + 4);
-        // Card body
-        doc.setFillColor(250, 251, 253);
-        doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(cx, y, cardW, cardH, cardR, cardR, 'FD');
-        // Top accent bar
-        doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
-        doc.roundedRect(cx, y, cardW, 2.4, cardR, cardR, 'F');
-        doc.rect(cx, y + 1.2, cardW, 1.2, 'F');
-        // Label
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6);
-        doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-        doc.text(c.lbl, cx + cardW / 2, y + 8, { align: 'center' });
-        // Value
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
-        doc.text(String(c.val), cx + cardW / 2, y + 15.5, { align: 'center' });
-      });
-      y += cardH + 8;
+      var colLX = mg + 1, colRX = mg + cW / 2 + 4;
+      metaRow('Date:',    dateStr,                       INK2, colLX, y);
+      metaRow('Time:',    timeStr,                       INK2, colRX, y);
+      y += 6;
+      metaRow('Batch & Section:', 'Batch 62, Section B', INK2, colLX, y);
+      if (course) metaRow('Course:', course, GREEN, colRX, y);
+      y += 6.5;
 
       // ══════════════════════════════════════════════════════════
-      // TABLE
+      // TABLE (ruled grid)
       // ══════════════════════════════════════════════════════════
-      var col = { n: mg + 4, name: mg + 12, id: mg + 118, status: mg + cW - 3 };
-      var rowH = 7.4;
+      // Column widths → boundary x positions
+      var wNum = 11, wStatus = 24, wId = 33;
+      var b0 = mg;
+      var b1 = b0 + wNum;                 // | # |
+      var b2 = mg + cW - wStatus - wId;   // name end
+      var b3 = b2 + wId;                  // id end
+      var b4 = mg + cW;                   // status end
+      var rowH = 7.2;
 
       function drawTblHeader(yy) {
         doc.setFillColor(INK[0], INK[1], INK[2]);
-        doc.rect(mg, yy, cW, 8.5, 'F');
+        doc.rect(mg, yy, cW, 8, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.text('#',            col.n,      yy + 5.6);
-        doc.text('STUDENT NAME', col.name,   yy + 5.6);
-        doc.text('STUDENT ID',   col.id,     yy + 5.6);
-        doc.text('STATUS',       col.status, yy + 5.6, { align: 'right' });
-        return yy + 8.5;
+        doc.setFontSize(8);
+        doc.text('#',           (b0 + b1) / 2, yy + 5.4, { align: 'center' });
+        doc.text('Student Name', b1 + 3,       yy + 5.4);
+        doc.text('Student ID',  (b2 + b3) / 2, yy + 5.4, { align: 'center' });
+        doc.text('Status',      (b3 + b4) / 2, yy + 5.4, { align: 'center' });
+        return yy + 8;
       }
 
       y = drawTblHeader(y);
       var tblTop = y;
 
+      function closeTableGrid(top, bottom) {
+        doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
+        doc.setLineWidth(0.3);
+        // outer box
+        doc.rect(mg, top, cW, bottom - top);
+        // vertical rules
+        [b1, b2, b3].forEach(function(bx) { doc.line(bx, top, bx, bottom); });
+      }
+
       allStudents.forEach(function(s, i) {
-        if (y + rowH > pageH - 24) {
-          // close current table border
-          doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-          doc.setLineWidth(0.3);
-          doc.rect(mg, tblTop, cW, y - tblTop);
+        if (y + rowH > pageH - 30) {
+          closeTableGrid(tblTop, y);
           doc.addPage();
           y = drawTblHeader(16);
           tblTop = y;
         }
         var isPresent = presentSet.has(s.id);
 
-        // Row bg
-        if (isPresent) {
-          doc.setFillColor(GREENL[0], GREENL[1], GREENL[2]);
-        } else {
-          doc.setFillColor(i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 250 : 255, i % 2 === 0 ? 252 : 255);
+        // subtle zebra
+        if (i % 2 === 1) {
+          doc.setFillColor(248, 249, 251);
+          doc.rect(mg, y, cW, rowH, 'F');
         }
-        doc.rect(mg, y, cW, rowH, 'F');
-
-        // Green left accent for present
-        if (isPresent) {
-          doc.setFillColor(GREEN[0], GREEN[1], GREEN[2]);
-          doc.rect(mg, y, 1.6, rowH, 'F');
-        }
-
-        // Row separator
-        doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-        doc.setLineWidth(0.12);
+        // light row separator
+        doc.setDrawColor(LINEL[0], LINEL[1], LINEL[2]);
+        doc.setLineWidth(0.1);
         doc.line(mg, y + rowH, mg + cW, y + rowH);
 
         // #
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(160, 165, 180);
-        doc.text(String(i + 1), col.n, y + 4.9);
-
-        // Name
-        doc.setFontSize(8);
-        doc.setTextColor(INK[0], INK[1], INK[2]);
-        doc.setFont('helvetica', isPresent ? 'bold' : 'normal');
-        var nameTxt = doc.splitTextToSize(s.name, col.id - col.name - 5)[0];
-        doc.text(nameTxt, col.name, y + 4.9);
-
-        // ID
-        doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
         doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-        doc.text(s.id, col.id, y + 4.9);
+        doc.text(String(i + 1), (b0 + b1) / 2, y + 4.8, { align: 'center' });
 
-        // Status badge
+        // Name
+        doc.setFontSize(8.5);
+        doc.setTextColor(INK[0], INK[1], INK[2]);
+        doc.setFont('helvetica', 'normal');
+        var nameTxt = doc.splitTextToSize(s.name, b2 - b1 - 6)[0];
+        doc.text(nameTxt, b1 + 3, y + 4.8);
+
+        // ID
+        doc.setFontSize(7.8);
+        doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+        doc.text(s.id, (b2 + b3) / 2, y + 4.8, { align: 'center' });
+
+        // Status (text, colored — no heavy badge for formal look)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
         if (isPresent) {
-          doc.setFillColor(GREEN[0], GREEN[1], GREEN[2]);
-          doc.roundedRect(col.status - 17, y + 1.6, 17, 4.6, 1.2, 1.2, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(6.5);
-          doc.text('PRESENT', col.status - 8.5, y + 4.85, { align: 'center' });
+          doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
+          doc.text('Present', (b3 + b4) / 2, y + 4.8, { align: 'center' });
         } else {
-          doc.setFillColor(REDL[0], REDL[1], REDL[2]);
-          doc.roundedRect(col.status - 15, y + 1.6, 15, 4.6, 1.2, 1.2, 'F');
           doc.setTextColor(RED[0], RED[1], RED[2]);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(6.5);
-          doc.text('ABSENT', col.status - 7.5, y + 4.85, { align: 'center' });
+          doc.text('Absent', (b3 + b4) / 2, y + 4.8, { align: 'center' });
         }
         y += rowH;
       });
 
-      // Outer table border
-      doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-      doc.setLineWidth(0.3);
-      doc.rect(mg, tblTop, cW, y - tblTop);
+      closeTableGrid(tblTop, y);
 
-      // ── Summary row ─────────────────────────────────────────────────────
-      y += 4;
-      if (y + 11 > pageH - 24) { doc.addPage(); y = 16; }
-      doc.setFillColor(INK[0], INK[1], INK[2]);
-      doc.roundedRect(mg, y, cW, 10, 1.5, 1.5, 'F');
-      doc.setTextColor(255, 255, 255);
+      // ── Summary line ────────────────────────────────────────────────────
+      y += 7;
+      if (y + 24 > pageH - 22) { doc.addPage(); y = 20; }
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(INK[0], INK[1], INK[2]);
+      doc.text('Total Students: ' + allStudents.length, mg + 1, y);
+      doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
+      doc.text('Present: ' + presentStudents.length, mg + cW * 0.42, y);
+      doc.setTextColor(RED[0], RED[1], RED[2]);
+      doc.text('Absent: ' + absentStudents.length, mg + cW * 0.72, y);
+
+      // ── Signature lines ─────────────────────────────────────────────────
+      y += 28;
+      if (y > pageH - 24) { doc.addPage(); y = pageH - 50; }
+      var sigW = 55;
+      doc.setDrawColor(INK[0], INK[1], INK[2]);
+      doc.setLineWidth(0.3);
+      doc.line(mg, y, mg + sigW, y);
+      doc.line(pageW - mg - sigW, y, pageW - mg, y);
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
-      var segW = cW / 3;
-      doc.text('Total:  ' + allStudents.length,        mg + segW * 0.5, y + 6.4, { align: 'center' });
-      doc.text('Present:  ' + presentStudents.length,  mg + segW * 1.5, y + 6.4, { align: 'center' });
-      doc.text('Absent:  ' + absentStudents.length,    mg + segW * 2.5, y + 6.4, { align: 'center' });
-      // dividers
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.2);
-      doc.line(mg + segW, y + 2.5, mg + segW, y + 7.5);
-      doc.line(mg + segW * 2, y + 2.5, mg + segW * 2, y + 7.5);
+      doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+      doc.text('Class Representative', mg, y + 5);
+      doc.text('Course Teacher', pageW - mg, y + 5, { align: 'right' });
 
       // ── Footer (every page) ─────────────────────────────────────────────
       var totalPages = doc.internal.getNumberOfPages();
       for (var p = 1; p <= totalPages; p++) {
         doc.setPage(p);
         doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-        doc.setLineWidth(0.3);
-        doc.line(mg, pageH - 14, pageW - mg, pageH - 14);
+        doc.setLineWidth(0.25);
+        doc.line(mg, pageH - 13, pageW - mg, pageH - 13);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-        doc.text('CSE 62B Portal  ·  lucse62b.xyz', mg, pageH - 9);
-        doc.text('Page ' + p + ' of ' + totalPages, pageW / 2, pageH - 9, { align: 'center' });
-        doc.text('Generated: ' + new Date().toISOString().slice(0, 16).replace('T', ' '), pageW - mg, pageH - 9, { align: 'right' });
+        doc.text('Generated via CSE 62B Portal  ·  lucse62b.xyz', mg, pageH - 8.5);
+        doc.text('Page ' + p + ' of ' + totalPages, pageW - mg, pageH - 8.5, { align: 'right' });
       }
 
       doc.save('CSE62B-Attendance-' + new Date().toISOString().slice(0, 10) + '.pdf');
