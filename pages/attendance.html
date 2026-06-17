@@ -695,10 +695,13 @@
           doc.setFillColor(248, 249, 251);
           doc.rect(mg, y, cW, rowH, 'F');
         }
-        // row separator
-        doc.setDrawColor(LINEL[0], LINEL[1], LINEL[2]);
-        doc.setLineWidth(0.25);
-        doc.line(mg, y + rowH, mg + cW, y + rowH);
+        // row separator at TOP of row (drawn after this row's fill so the next
+        // row's zebra fill can never paint over it → uniform line darkness)
+        if (i > 0) {
+          doc.setDrawColor(LINEL[0], LINEL[1], LINEL[2]);
+          doc.setLineWidth(0.25);
+          doc.line(mg, y, mg + cW, y);
+        }
 
         // #
         doc.setFont('helvetica', 'normal');
