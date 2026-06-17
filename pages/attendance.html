@@ -124,6 +124,8 @@
       flex-wrap: wrap; margin-bottom: 20px;
       position: relative; z-index: 20;
     }
+    /* Bottom action bar — only useful on mobile, hidden on desktop */
+    .att-toolbar-bottom { display: none; margin: 4px 0 28px; }
     .att-search {
       flex: 1; min-width: 200px;
       background: rgba(255,255,255,0.04);
@@ -266,6 +268,11 @@
       #btnPdf   { order: 4; }
       #btnClear { order: 5; }
 
+      /* show bottom action bar; its 3 buttons share a row equally */
+      .att-toolbar-bottom { display: flex; gap: 8px; }
+      .att-toolbar-bottom .att-btn { flex: 1 1 0; min-width: 0; justify-content: center;
+        padding: 12px 6px; font-size: 0.8rem; gap: 5px; }
+
       .att-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
       .att-student { padding: 12px 12px; gap: 10px; }
       .att-check { width: 22px; height: 22px; }
@@ -342,6 +349,19 @@
         <div class="att-loading-spinner"></div>
         Loading student list…
       </div>
+    </div>
+
+    <!-- Bottom action bar (mobile only — saves scrolling back up) -->
+    <div class="att-toolbar att-toolbar-bottom">
+      <button class="att-btn att-btn-copy" onclick="copyReport()">
+        <i class="fa-solid fa-copy"></i> Copy Report
+      </button>
+      <button class="att-btn att-btn-pdf" onclick="downloadPdf()">
+        <i class="fa-solid fa-file-arrow-down"></i> PDF
+      </button>
+      <button class="att-btn att-btn-clear" onclick="clearAttendance()">
+        <i class="fa-solid fa-rotate-left"></i> Clear
+      </button>
     </div>
 
     <footer>
