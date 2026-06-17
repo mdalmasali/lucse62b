@@ -569,8 +569,8 @@
       var INK2  = [95, 104, 128];   // muted slate
       var GREEN = [21, 110, 58];    // present
       var RED   = [168, 46, 46];    // absent
-      var LINE  = [188, 194, 208];  // table rules
-      var LINEL = [222, 226, 236];  // light row rules
+      var LINE  = [120, 130, 150];  // table rules (darker)
+      var LINEL = [165, 173, 190];  // row rules
       var HEADBG = [240, 242, 247]; // table header fill
 
       // ══════════════════════════════════════════════════════════
@@ -674,7 +674,7 @@
 
       function closeTableGrid(top, bottom) {
         doc.setDrawColor(LINE[0], LINE[1], LINE[2]);
-        doc.setLineWidth(0.3);
+        doc.setLineWidth(0.45);
         // outer box
         doc.rect(mg, top, cW, bottom - top);
         // vertical rules
@@ -695,9 +695,9 @@
           doc.setFillColor(248, 249, 251);
           doc.rect(mg, y, cW, rowH, 'F');
         }
-        // light row separator
+        // row separator
         doc.setDrawColor(LINEL[0], LINEL[1], LINEL[2]);
-        doc.setLineWidth(0.1);
+        doc.setLineWidth(0.25);
         doc.line(mg, y + rowH, mg + cW, y + rowH);
 
         // #
@@ -733,31 +733,37 @@
 
       closeTableGrid(tblTop, y);
 
-      // ── Summary line ────────────────────────────────────────────────────
-      y += 7;
-      if (y + 24 > pageH - 22) { doc.addPage(); y = 20; }
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9.5);
-      doc.setTextColor(INK[0], INK[1], INK[2]);
-      doc.text('Total Students: ' + allStudents.length, mg + 1, y);
-      doc.setTextColor(GREEN[0], GREEN[1], GREEN[2]);
-      doc.text('Present: ' + presentStudents.length, mg + cW * 0.42, y);
-      doc.setTextColor(RED[0], RED[1], RED[2]);
-      doc.text('Absent: ' + absentStudents.length, mg + cW * 0.72, y);
-
-      // ── Signature lines ─────────────────────────────────────────────────
-      y += 28;
-      if (y > pageH - 24) { doc.addPage(); y = pageH - 50; }
-      var sigW = 55;
-      doc.setDrawColor(INK[0], INK[1], INK[2]);
-      doc.setLineWidth(0.3);
-      doc.line(mg, y, mg + sigW, y);
-      doc.line(pageW - mg - sigW, y, pageW - mg, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(INK2[0], INK2[1], INK2[2]);
-      doc.text('Class Representative', mg, y + 5);
-      doc.text('Course Teacher', pageW - mg, y + 5, { align: 'right' });
+      // ── Summary stat boxes ──────────────────────────────────────────────
+      y += 8;
+      var sumH = 16, sumGap = 5;
+      if (y + sumH > pageH - 20) { doc.addPage(); y = 20; }
+      var sumW = (cW - sumGap * 2) / 3;
+      var sumCards = [
+        { lbl: 'TOTAL STUDENTS', val: allStudents.length,     accent: INK   },
+        { lbl: 'PRESENT',        val: presentStudents.length, accent: GREEN },
+        { lbl: 'ABSENT',         val: absentStudents.length,  accent: RED   },
+      ];
+      sumCards.forEach(function(c, i) {
+        var sx = mg + i * (sumW + sumGap);
+        // bordered box with accent left strip
+        doc.setDrawColor(c.accent[0], c.accent[1], c.accent[2]);
+        doc.setLineWidth(0.4);
+        doc.setFillColor(252, 253, 254);
+        doc.roundedRect(sx, y, sumW, sumH, 1.5, 1.5, 'FD');
+        doc.setFillColor(c.accent[0], c.accent[1], c.accent[2]);
+        doc.rect(sx, y + 1, 1.8, sumH - 2, 'F');
+        // big number
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(c.accent[0], c.accent[1], c.accent[2]);
+        doc.text(String(c.val), sx + 8, y + 11);
+        // label
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(INK2[0], INK2[1], INK2[2]);
+        doc.text(c.lbl, sx + sumW - 3, y + 6.5, { align: 'right' });
+      });
+      y += sumH;
 
       // ── Footer (every page) ─────────────────────────────────────────────
       var totalPages = doc.internal.getNumberOfPages();
