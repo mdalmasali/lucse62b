@@ -178,8 +178,10 @@
       padding: 14px 16px;
       display: flex; align-items: center; gap: 12px;
       cursor: pointer;
-      transition: all 0.18s;
+      transition: background 0.12s, border-color 0.12s;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     .att-student:hover { border-color: var(--border-light); background: var(--card-hover); }
     .att-student.present {
@@ -478,31 +480,39 @@
       return s.split(/\s+/)[0];
     }
 
-    // ── Toggle mark/unmark ───────────────────────────────────────────────
-    async function toggleStudent(s) {
-      if (pendingIds.has(s.id)) return;
-      pendingIds.add(s.id);
-      renderGrid();
+    // Update only one card's visual state (fast — no full grid re-render)
+    function setCardVisual(id, isPresent) {
+      var card = document.querySelector('.att-student[data-id="' + id + '"]');
+      if (!card) return;
+      card.classList.toggle('present', isPresent);
+      var check = card.querySelector('.att-check');
+      if (check) check.innerHTML = isPresent ? '<i class="fa-solid fa-check"></i>' : '';
+    }
 
-      var action = presentSet.has(s.id) ? 'unmark' : 'mark';
-      try {
-        var r = await fetch(WORKER + '/attendance', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: action, admin_id: ADMIN_ID, student_id: s.id, student_name: s.name }),
-        });
-        if (r.ok) {
-          if (action === 'mark') presentSet.add(s.id);
-          else presentSet.delete(s.id);
-          updateStats();
-        } else {
-          showToast('Error saving — try again');
-        }
-      } catch(e) {
-        showToast('Network error');
-      }
-      pendingIds.delete(s.id);
-      renderGrid();
+    // ── Toggle mark/unmark (optimistic — instant on tap, syncs in background) ──
+    function toggleStudent(s) {
+      var willBePresent = !presentSet.has(s.id);
+
+      // 1) update UI immediately
+      if (willBePresent) presentSet.add(s.id); else presentSet.delete(s.id);
+      setCardVisual(s.id, willBePresent);
+      updateStats();
+
+      // 2) sync with server in the background
+      var action = willBePresent ? 'mark' : 'unmark';
+      fetch(WORKER + '/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, admin_id: ADMIN_ID, student_id: s.id, student_name: s.name }),
+      }).then(function(r) {
+        if (!r.ok) throw new Error('save failed');
+      }).catch(function() {
+        // 3) revert on failure
+        if (willBePresent) presentSet.delete(s.id); else presentSet.add(s.id);
+        setCardVisual(s.id, presentSet.has(s.id));
+        updateStats();
+        showToast('Save failed — reverted');
+      });
     }
 
     // ── Clear all ────────────────────────────────────────────────────────
