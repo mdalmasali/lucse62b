@@ -54,6 +54,30 @@
       border-color: rgba(124,58,237,0.25);
       color: var(--accent-bright);
     }
+    .att-stat-pill.absent {
+      background: rgba(239,68,68,0.1);
+      border-color: rgba(239,68,68,0.22);
+      color: #f87171;
+    }
+    .att-course-wrap {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .att-course {
+      max-width: 190px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      transition: border-color 0.2s;
+    }
+    .att-course:focus { outline: none; border-color: var(--accent); }
+    .att-course::placeholder { color: var(--muted); }
+    html[data-theme="light"] .att-course { background: rgba(0,0,0,0.04); color: #1a1a2e; }
+    html[data-theme="light"] .att-course::placeholder { color: #94a3b8; }
 
     /* Toolbar */
     .att-toolbar {
@@ -228,12 +252,14 @@
       <div class="att-stats">
         <div class="att-stat-pill total" id="statTotal">Total: —</div>
         <div class="att-stat-pill" id="statPresent">Present: 0</div>
+        <div class="att-stat-pill absent" id="statAbsent">Absent: —</div>
       </div>
     </div>
 
     <!-- Toolbar -->
     <div class="att-toolbar fade-in delay-1">
       <input type="text" class="att-search" id="attSearch" placeholder="Search student name or ID…" autocomplete="off">
+      <input type="text" class="att-course" id="attCourse" placeholder="Course (optional)…" autocomplete="off">
       <button class="att-btn att-btn-copy" id="btnCopy" onclick="copyReport()">
         <i class="fa-solid fa-copy"></i> Copy Report
       </button>
@@ -356,7 +382,20 @@
     }
 
     function updateStats() {
+      var absent = allStudents.length - presentSet.size;
       document.getElementById('statPresent').textContent = 'Present: ' + presentSet.size;
+      if (allStudents.length > 0) {
+        document.getElementById('statAbsent').textContent = 'Absent: ' + absent;
+      }
+    }
+
+    // Extract Bangladeshi "dak naam" — strip honorific prefixes, return first remaining word
+    function getNickname(fullName) {
+      var prefixes = /^(md\.?|mohammad|mohammed|muhammad|muhammed|abdul|abu|al|sk\.?|sheikh|khandoker|kha\.?)\s+/i;
+      var s = fullName.trim();
+      var prev;
+      do { prev = s; s = s.replace(prefixes, ''); } while (s !== prev);
+      return s.split(/\s+/)[0];
     }
 
     // ── Toggle mark/unmark ───────────────────────────────────────────────
@@ -411,17 +450,24 @@
       var d = new Date();
       var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       var dateStr = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      var timeStr = d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+      var course  = document.getElementById('attCourse').value.trim();
 
       var presentStudents = allStudents.filter(function(s) { return presentSet.has(s.id); });
+      var absentStudents  = allStudents.filter(function(s) { return !presentSet.has(s.id); });
+
       var lines = [];
-      lines.push('📋 CSE 62B Attendance — ' + dateStr);
+      lines.push('🏛️ Leading University');
+      lines.push('📋 CSE 62B Attendance — ' + dateStr + ', ' + timeStr);
+      if (course) lines.push('📚 Course: ' + course);
       lines.push('━━━━━━━━━━━━━━━━━━━━');
       lines.push('✅ Present (' + presentStudents.length + '):');
       presentStudents.forEach(function(s, i) {
-        lines.push((i + 1) + '. ' + s.name);
+        var nick = getNickname(s.name);
+        lines.push((i + 1) + '. ' + s.name + ' — ' + s.id + ' (' + nick + ')');
       });
       lines.push('━━━━━━━━━━━━━━━━━━━━');
-      lines.push('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length);
+      lines.push('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length + '  |  Absent: ' + absentStudents.length);
       return lines.join('\n');
     }
 
@@ -449,83 +495,142 @@
       var d = new Date();
       var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      var dateStr   = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
-      var timeStr   = d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+      var dateStr = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      var timeStr = d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+      var course  = document.getElementById('attCourse').value.trim();
 
       var presentStudents = allStudents.filter(function(s) { return presentSet.has(s.id); });
-      var pageW = 210, margin = 18, contentW = pageW - margin * 2;
+      var absentStudents  = allStudents.filter(function(s) { return !presentSet.has(s.id); });
+      var pageW = 210, margin = 14, contentW = pageW - margin * 2;
       var y = 0;
 
-      // Header band
+      // ── Header band ────────────────────────────────────────────────────
       doc.setFillColor(124, 58, 237);
-      doc.rect(0, 0, pageW, 32, 'F');
+      doc.rect(0, 0, pageW, 40, 'F');
 
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('CSE 62B — Attendance Report', margin, 14);
+      doc.setFontSize(15);
+      doc.text('Leading University', margin, 12);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(dateStr + '   |   ' + timeStr, margin, 22);
+      doc.setFontSize(9.5);
+      doc.text('CSE 62B — Attendance Report', margin, 20);
 
-      doc.setTextColor(255,255,255);
-      doc.setFontSize(9);
-      doc.text('Total: ' + allStudents.length + '  |  Present: ' + presentStudents.length, pageW - margin, 22, { align: 'right' });
+      doc.setFontSize(8);
+      doc.text(dateStr + '   |   ' + timeStr, margin, 28);
+      doc.text(
+        'Total: ' + allStudents.length + '  ·  Present: ' + presentStudents.length + '  ·  Absent: ' + absentStudents.length,
+        pageW - margin, 28, { align: 'right' }
+      );
 
-      y = 42;
+      y = 46;
 
-      // Section heading
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(margin, y - 5, contentW, 9, 2, 2, 'F');
+      // ── Course row ─────────────────────────────────────────────────────
+      if (course) {
+        doc.setFillColor(245, 240, 255);
+        doc.rect(margin, y - 4, contentW, 8, 'F');
+        doc.setTextColor(80, 40, 160);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('Course:', margin + 3, y + 1);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(30, 10, 70);
+        doc.text(course, margin + 20, y + 1);
+        y += 11;
+      }
+
+      // ── Section heading ─────────────────────────────────────────────────
+      doc.setFillColor(40, 40, 70);
+      doc.roundedRect(margin, y - 4, contentW, 9, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text('PRESENT STUDENTS (' + presentStudents.length + ')', margin + 4, y + 1);
-      y += 10;
-
-      // Table header
-      doc.setFillColor(240, 240, 250);
-      doc.rect(margin, y, contentW, 7, 'F');
-      doc.setTextColor(80, 80, 100);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.text('#', margin + 3, y + 4.5);
-      doc.text('Student Name', margin + 12, y + 4.5);
-      doc.text('Student ID', margin + contentW - 3, y + 4.5, { align: 'right' });
+      doc.text('ATTENDANCE LIST — ' + dateStr, margin + 3, y + 2);
+      y += 11;
+
+      // ── Table header ────────────────────────────────────────────────────
+      // Columns: # | Name | Nick | Student ID | Status
+      var col = { n: margin + 2, name: margin + 9, nick: margin + 96, id: margin + 118, status: margin + contentW - 1 };
+      doc.setFillColor(220, 215, 245);
+      doc.rect(margin, y, contentW, 7, 'F');
+      doc.setTextColor(50, 30, 110);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.text('#',            col.n,      y + 4.5);
+      doc.text('Student Name', col.name,   y + 4.5);
+      doc.text('Nick',         col.nick,   y + 4.5);
+      doc.text('Student ID',   col.id,     y + 4.5);
+      doc.text('Status',       col.status, y + 4.5, { align: 'right' });
       y += 7;
 
-      // Rows
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      presentStudents.forEach(function(s, i) {
-        if (y > 272) {
-          doc.addPage();
-          y = 18;
-        }
-        var rowBg = i % 2 === 0 ? [252, 252, 255] : [255, 255, 255];
-        doc.setFillColor(rowBg[0], rowBg[1], rowBg[2]);
-        doc.rect(margin, y, contentW, 7, 'F');
+      // ── All students rows ───────────────────────────────────────────────
+      doc.setFontSize(7.5);
+      allStudents.forEach(function(s, i) {
+        if (y > 278) { doc.addPage(); y = 15; }
+        var isPresent = presentSet.has(s.id);
+        var nick = getNickname(s.name);
 
-        doc.setTextColor(60, 60, 80);
-        doc.text(String(i + 1), margin + 3, y + 4.5);
-        doc.setTextColor(20, 20, 40);
-        doc.setFont('helvetica', 'bold');
-        var nameMaxW = contentW - 50;
-        var nameTxt = doc.splitTextToSize(s.name, nameMaxW)[0];
-        doc.text(nameTxt, margin + 12, y + 4.5);
+        if (isPresent) {
+          doc.setFillColor(232, 252, 242);
+        } else {
+          var alt = i % 2 === 0 ? [252, 252, 255] : [255, 255, 255];
+          doc.setFillColor(alt[0], alt[1], alt[2]);
+        }
+        doc.rect(margin, y, contentW, 6.8, 'F');
+
+        // #
+        doc.setTextColor(110, 110, 130);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 80, 160);
-        doc.text(s.id, margin + contentW - 3, y + 4.5, { align: 'right' });
-        y += 7;
+        doc.text(String(i + 1), col.n, y + 4.3);
+
+        // Name (truncated to nick column)
+        doc.setTextColor(isPresent ? 10 : 30, isPresent ? 100 : 20, isPresent ? 60 : 40);
+        doc.setFont('helvetica', isPresent ? 'bold' : 'normal');
+        var nameTxt = doc.splitTextToSize(s.name, col.nick - col.name - 2)[0];
+        doc.text(nameTxt, col.name, y + 4.3);
+
+        // Nick
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(90, 70, 150);
+        doc.text(nick, col.nick, y + 4.3);
+
+        // ID
+        doc.setTextColor(80, 60, 140);
+        doc.text(s.id, col.id, y + 4.3);
+
+        // Status
+        if (isPresent) {
+          doc.setTextColor(16, 120, 70);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Present', col.status, y + 4.3, { align: 'right' });
+        } else {
+          doc.setTextColor(190, 50, 50);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Absent', col.status, y + 4.3, { align: 'right' });
+        }
+        y += 6.8;
       });
 
-      // Footer line
-      y += 4;
+      // ── Summary row ─────────────────────────────────────────────────────
+      y += 2;
+      doc.setFillColor(220, 215, 245);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setTextColor(50, 30, 110);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text(
+        'Total: ' + allStudents.length + '     Present: ' + presentStudents.length + '     Absent: ' + absentStudents.length,
+        margin + 4, y + 5
+      );
+      y += 13;
+
+      // ── Footer ──────────────────────────────────────────────────────────
       doc.setDrawColor(200, 200, 220);
       doc.line(margin, y, pageW - margin, y);
-      y += 6;
-      doc.setTextColor(130, 130, 160);
+      y += 5;
+      doc.setTextColor(140, 140, 165);
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.text('Generated by CSE 62B Portal  ·  lucse62b.xyz', margin, y);
       doc.text(new Date().toISOString().slice(0, 16).replace('T', ' '), pageW - margin, y, { align: 'right' });
