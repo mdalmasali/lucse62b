@@ -1144,6 +1144,7 @@
         'assignment':   { icon:'fa-pencil',            label:'Assignment',   color:'#a78bfa', bg:'rgba(139,92,246,0.12)',  border:'rgba(139,92,246,0.25)'  },
         'tutorial':     { icon:'fa-book-open',         label:'Tutorial',     color:'#38bdf8', bg:'rgba(14,165,233,0.12)',  border:'rgba(14,165,233,0.25)'  },
         'lab report':   { icon:'fa-flask',             label:'Lab Report',   color:'#34d399', bg:'rgba(16,185,129,0.12)',  border:'rgba(16,185,129,0.25)'  },
+        'lab test':     { icon:'fa-vial',              label:'Lab Test',     color:'#2dd4bf', bg:'rgba(45,212,191,0.12)',  border:'rgba(45,212,191,0.25)'  },
         'viva':         { icon:'fa-microphone',        label:'Viva',         color:'#fbbf24', bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.25)'  },
         'lab final':    { icon:'fa-fire-flame-curved', label:'Lab Final',    color:'#f87171', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.25)'   },
         'project':      { icon:'fa-diagram-project',  label:'Project',      color:'#f472b6', bg:'rgba(236,72,153,0.12)',  border:'rgba(236,72,153,0.25)'  },
@@ -1178,7 +1179,13 @@
         wrap.style.display = 'block';
         list.innerHTML = live.map(i => {
           const diff = i.ts - now;
-          const m = DL_META[i.type] || DL_META['assignment'];
+          /* Unknown/new types: show the typed value (title-cased) with neutral
+             styling instead of silently mislabeling it as "Assignment". */
+          const m = DL_META[i.type] || {
+            icon: 'fa-clipboard-list',
+            label: (i.type || 'Task').replace(/\b\w/g, c => c.toUpperCase()),
+            color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)'
+          };
           const u = urgency(diff);
           const due = new Date(i.ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
           return `
