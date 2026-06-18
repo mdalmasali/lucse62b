@@ -99,6 +99,7 @@
       'assignment':   { icon: 'fa-pencil',           color: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.35)', tag: '#a78bfa', label: 'Assignment' },
       'tutorial':     { icon: 'fa-book-open',         color: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.3)',  tag: '#38bdf8', label: 'Tutorial / Quiz' },
       'lab report':   { icon: 'fa-flask',             color: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)',  tag: '#34d399', label: 'Lab Report' },
+      'lab test':     { icon: 'fa-vial',              color: 'rgba(45,212,191,0.12)', border: 'rgba(45,212,191,0.3)',  tag: '#2dd4bf', label: 'Lab Test' },
       'viva':         { icon: 'fa-microphone',        color: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)',  tag: '#fbbf24', label: 'Viva' },
       'lab final':    { icon: 'fa-fire-flame-curved', color: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   tag: '#f87171', label: 'Lab Final' },
       'project':      { icon: 'fa-diagram-project',   color: 'rgba(236,72,153,0.1)',  border: 'rgba(236,72,153,0.3)',  tag: '#f472b6', label: 'Project' },
@@ -115,7 +116,8 @@
       if (CAT_META[t]) return t;
       if (t.includes('lab report')) return 'lab report';
       if (t.includes('lab final') || t.includes('lab exam')) return 'lab final';
-      if (t.includes('tutorial') || t.includes('quiz') || t.includes('lab test')) return 'tutorial';
+      if (t.includes('lab test')) return 'lab test';
+      if (t.includes('tutorial') || t.includes('quiz')) return 'tutorial';
       if (t.includes('viva')) return 'viva';
       if (t.includes('project')) return 'project';
       if (t.includes('presentation')) return 'presentation';
