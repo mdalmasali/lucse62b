@@ -237,11 +237,11 @@
         card.innerHTML = `
           <div class="info-card-header">
             <div class="info-card-icon" style="background:${meta.color};border:1px solid ${meta.border};"><i class="fa-solid ${meta.icon}" style="color:${meta.tag};"></i></div>
-            <div class="info-card-title">${escapeHtml(item.title)}</div>
+            <div class="info-card-title" style="color:${meta.tag};">${escapeHtml(item.course || item.title)}</div>
             <span class="info-card-tag" style="color:${meta.tag};border-color:${meta.border};background:${meta.color};">${meta.label}</span>
           </div>
           <div class="info-card-body" style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
-            ${item.course ? `<div style="font-size:0.82rem;color:var(--text-secondary);"><i class="fa-solid fa-book" style="font-size:0.75rem;margin-right:5px;opacity:0.7;"></i>${escapeHtml(item.course)}</div>` : ''}
+            ${(item.course && item.title) ? `<div style="font-size:0.92rem;color:var(--text);font-weight:600;line-height:1.4;">${escapeHtml(item.title)}</div>` : ''}
             ${item.deadline ? `
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;">
                 <span style="font-size:0.82rem;color:${urg.color};font-weight:600;"><i class="fa-regular fa-clock" style="font-size:0.75rem;margin-right:4px;"></i>${escapeHtml(formatDeadline(item.deadline))}</span>
