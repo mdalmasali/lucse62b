@@ -335,8 +335,26 @@
       </div>
     </div>
 
+    <!-- Upcoming Deadlines (sits right under the graduation strip, when any exist) -->
+    <div class="deadlines-wrap fade-in delay-2" id="deadlinesWrap" style="display:none;margin-bottom:20px;">
+      <div class="section-header" style="margin-bottom:16px;">
+        <span class="section-label"><i class="fa-solid fa-hourglass-half" style="color:var(--accent-bright);margin-right:6px;"></i>Upcoming Deadlines</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="deadline-list" id="deadlineList"></div>
+    </div>
+
     <!-- Quick Info Strip: Next Class · Time · Room · Next Bus -->
     <div class="qi-strip fade-in delay-2 auth-only" id="qiStrip">
+      <div class="qi-item">
+        <span class="qi-icon">🟢</span>
+        <div class="qi-content">
+          <span class="qi-label">Now Running</span>
+          <span class="qi-val" id="qi-now">—</span>
+          <span class="qi-countdown" id="qi-now-cd"></span>
+        </div>
+      </div>
+      <div class="qi-sep"></div>
       <div class="qi-item">
         <span class="qi-icon">📚</span>
         <div class="qi-content">
@@ -389,15 +407,6 @@
 
     <!-- Exam Countdown (shown when exam ≤ 7 days away) -->
     <div id="examCdHomeWrap" class="auth-only fade-in" style="display:none;margin-bottom:20px;"></div>
-
-    <!-- Upcoming Deadlines -->
-    <div class="deadlines-wrap fade-in delay-2" id="deadlinesWrap" style="display:none;margin-bottom:44px;">
-      <div class="section-header" style="margin-bottom:16px;">
-        <span class="section-label"><i class="fa-solid fa-hourglass-half" style="color:var(--accent-bright);margin-right:6px;"></i>Upcoming Deadlines</span>
-        <div class="section-line"></div>
-      </div>
-      <div class="deadline-list" id="deadlineList"></div>
-    </div>
 
     <!-- Main Links -->
     <div class="section-header fade-in delay-3">
@@ -730,10 +739,15 @@
       function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
       /* Stored target times (in minutes from midnight) for live countdown ticks */
-      let _classMin = null, _busFromMin = null, _busToMin = null;
+      let _classMin = null, _busFromMin = null, _busToMin = null, _nowEndMin = null;
 
       function tickCountdowns() {
         const now = nowMin();
+        if (_nowEndMin !== null) {
+          const cd = document.getElementById('qi-now-cd');
+          const f  = fmtCountdown(_nowEndMin - now);
+          if (cd) cd.textContent = f ? 'ends ' + f : '';
+        }
         if (_classMin !== null) {
           const cd = document.getElementById('qi-class-cd');
           if (cd) cd.textContent = fmtCountdown(_classMin - now) || '';
@@ -800,14 +814,32 @@
               targetRows.map(r => r.slice(3)[i]).find(v => v && v.toUpperCase() !== 'BREAK') || ''
             );
             const now = nowMin();
-            let next = null;
+            let next = null, current = null;
             timeSlots.forEach((time, i) => {
               if (!time || i === breakSlotIdx) return;
               const parsed = parseCell(merged[i]);
               if (!parsed) return;
               const t = timeToMin(time);
               if (t > now && (!next || t < next.tMin)) next = { ...parsed, time, tMin: t };
+              /* currently running: now sits between this slot's start and the next slot's start */
+              let end = t + 90;
+              for (let j = i + 1; j < timeSlots.length; j++) {
+                if (timeSlots[j] && /\d{1,2}:\d{2}/.test(timeSlots[j])) {
+                  const ns = timeToMin(timeSlots[j]);
+                  if (ns > t) { end = ns; break; }
+                }
+              }
+              if (t <= now && now < end) current = { ...parsed, endMin: end };
             });
+
+            if (current) {
+              const cname = courseNames[current.code.toUpperCase()] || '';
+              set('qi-now', cname ? `${current.code} · ${cname}` : current.code);
+              _nowEndMin = current.endMin;
+            } else {
+              set('qi-now', 'No class right now'); _nowEndMin = null;
+            }
+
             if (next) {
               const name = courseNames[next.code.toUpperCase()] || '';
               const classEl = document.getElementById('qi-class');
@@ -819,6 +851,7 @@
               set('qi-class', 'No more classes'); set('qi-time', '—'); set('qi-room', '—');
             }
           } else {
+            set('qi-now', 'No class right now');
             set('qi-class', 'No class today'); set('qi-time', '—'); set('qi-room', '—');
           }
         }

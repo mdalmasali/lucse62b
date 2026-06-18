@@ -278,7 +278,8 @@
     document.getElementById('f26-open').addEventListener('click', function (e) { e.stopPropagation(); openMC(); });
   }
 
-  /* homepage explore strip — sits right under the graduation countdown */
+  /* homepage explore strip — sits after the next-class / exam-countdown info, so
+     the home order reads graduation → deadlines → next class → FIFA. */
   function buildHomeStrip() {
     var grad = document.querySelector('.grad-strip');
     if (!grad || document.getElementById('fifa26-home')) return;
@@ -291,7 +292,10 @@
       '<span class="f26-pass"><span class="f26-passball"><span class="f26-passball-i">⚽</span></span></span>' +
       '<span class="f26-home-cta">Explore <i class="fa-solid fa-arrow-right"></i></span>';
     s.addEventListener('click', function () { openMC(); });
-    grad.insertAdjacentElement('afterend', s);
+    var anchor = document.getElementById('examCdHomeWrap')
+              || document.getElementById('qiStrip')
+              || grad;
+    anchor.insertAdjacentElement('afterend', s);
   }
 
   /* Live subtitle on the homepage Explore strip — driven by the same data as
