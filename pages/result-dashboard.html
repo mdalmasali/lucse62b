@@ -845,7 +845,10 @@
     async function getLuCrMap() {
       if (_luCrMap) return _luCrMap;
       try {
-        const data = await fetchSheet('LU_Course_Offer');
+        /* This page doesn't load sheets.js, so fetch the Worker directly (matching
+           the pattern used elsewhere here) instead of the undefined fetchSheet(). */
+        const resp = await fetch(WORKER_URL + '/sheet?name=' + encodeURIComponent('LU_Course_Offer'));
+        const data = await resp.json();
         const rows = (data.table?.rows || []).map(r => (r.c || []).map(c => (c && c.v != null) ? String(c.v).trim() : ''));
         _luCrMap = {};
         rows.forEach(r => {
