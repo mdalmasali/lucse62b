@@ -68,6 +68,25 @@ async function loadTeachers(body) {
                 const init = cells[initCol]?.toUpperCase().trim();
                 const name = cells[nameCol];
                 if (!init || !name) return;
+
+                /* Resolve phone/email by CONTENT, not fixed column. Cross-department
+                   / guest teachers carry an extra "institution" cell (" LU", " SUST", …)
+                   that shifts the Cell & Email columns one or two places right, so the
+                   header position alone is unreliable. Take the cell that actually holds
+                   an "@" as the email and the one that reads as a phone number; fall back
+                   to the header column when nothing better is found. */
+                const looksEmail = v => /\S+@\S+\.\S+/.test(v);
+                const looksPhone = v => /^\+?\d{7,}$/.test(String(v).replace(/[\s\-()+.]/g, ''));
+                let phone = cells[phCol] || '';
+                let email = cells[emCol] || '';
+                if (!looksEmail(email)) {
+                    email = cells.find((v, i) => i > nameCol && looksEmail(v)) || '';
+                }
+                if (!looksPhone(phone)) {
+                    const p = cells.find((v, i) => i > nameCol && v !== email && looksPhone(v));
+                    if (p) phone = p;
+                }
+
                 const key  = name.toLowerCase().trim();
                 const prev = directory[key] || {};
                 const pick = (existing, incoming) => _tcEmpty(existing) ? (incoming || '') : existing;
@@ -75,8 +94,8 @@ async function loadTeachers(body) {
                     name,
                     designation: pick(prev.designation, cells[deCol]),
                     department:  pick(prev.department,  cells[dpCol]),
-                    phone:       pick(prev.phone,       cells[phCol]),
-                    email:       pick(prev.email,       cells[emCol]),
+                    phone:       pick(prev.phone,       phone),
+                    email:       pick(prev.email,       email),
                 };
                 initialsMap[init] = key;
             });
