@@ -38,10 +38,13 @@
     return get('/sheet?name=' + encodeURIComponent(name) + '&type=bot');
   };
 
-  /* Fetch any sheet by its ID (used for dynamic exam / routine tabs) */
-  window.fetchSheetById = function (id, tab) {
+  /* Fetch any sheet by its ID (used for dynamic exam / routine tabs).
+     raw=true → ask the Worker for &headers=0 so GVIZ doesn't fold a stacked
+     multi-header sheet's first block (e.g. Batch 61) into the column labels. */
+  window.fetchSheetById = function (id, tab, raw) {
     var q = '/fetch?id=' + encodeURIComponent(id);
     if (tab) q += '&sheet=' + encodeURIComponent(tab);
+    if (raw) q += '&raw=1';
     return get(q);
   };
 

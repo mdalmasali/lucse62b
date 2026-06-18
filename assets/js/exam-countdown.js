@@ -274,7 +274,8 @@
 
       for (const [type, ids, color] of [['Mid', midIds, '#4ade80'], ['Final', finalIds, '#f87171']]) {
         if (!ids.length) continue;
-        const tables = await Promise.all(ids.map(id => window.fetchSheetById(id).catch(() => null)));
+        /* raw=true → &headers=0 so a stacked per-batch header block isn't folded into column labels */
+        const tables = await Promise.all(ids.map(id => window.fetchSheetById(id, '', true).catch(() => null)));
         const data = cdMergeTables(tables);
         if (!data) continue;
         const exams = cdParseExams(data, '62', 'B');

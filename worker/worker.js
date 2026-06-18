@@ -82,9 +82,14 @@ export default {
       if (p === '/fetch') {
         const id  = url.searchParams.get('id');
         const tab = url.searchParams.get('sheet') || '';
+        // raw=1 → ask GVIZ not to auto-detect header rows (&headers=0). Multi-header
+        // exam-routine sheets (a Day/Date/Time/Weekday block stacked per batch) get
+        // their FIRST block folded into column labels otherwise, hiding that batch
+        // entirely (e.g. Batch 61 vanished while 62 still parsed).
+        const raw = url.searchParams.get('raw') === '1';
         if (!id) return errResp(cors, 400, 'Missing id');
         if (!/^[A-Za-z0-9_-]{20,60}$/.test(id)) return errResp(cors, 400, 'Invalid sheet ID');
-        return await gvizProxy(id, tab, cors, env);
+        return await gvizProxy(id, tab, cors, env, raw);
       }
 
       // FIFA26-START — temporary World Cup 2026 endpoints, delete this whole block after the tournament
@@ -745,7 +750,7 @@ async function tryV4(sheetId, tab, env) {
   } catch (e) { return null; }
 }
 
-async function gvizProxy(sheetId, tab, cors, env) {
+async function gvizProxy(sheetId, tab, cors, env, rawHeaders) {
   const v4 = await tryV4(sheetId, tab, env);
   if (v4) {
     return new Response(JSON.stringify({ table: v4 }), {
@@ -766,6 +771,10 @@ async function gvizProxy(sheetId, tab, cors, env) {
   try {
     let u = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&_t=${Date.now()}`;
     if (tab) u += `&sheet=${encodeURIComponent(tab)}`;
+    // &headers=0 keeps every row as data so a stacked multi-header sheet's first
+    // block (e.g. Batch 61) isn't silently folded into the column labels. (The v4
+    // path above already returns raw rows, so this only matters on the fallback.)
+    if (rawHeaders) u += `&headers=0`;
     const r    = await fetch(u);
     const text = await r.text();
     const m    = text.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);

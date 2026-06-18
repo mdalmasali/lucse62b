@@ -1064,7 +1064,9 @@
       const tables = await Promise.all(ids.map(async id => {
         const [hidden, table] = await Promise.all([
           _safeHiddenCols(id),
-          fetchSheetById(id).catch(() => null),
+          /* raw=true → &headers=0 so a per-batch stacked header block (e.g. Batch 61
+             on top of Batch 62) isn't folded into column labels and lost. */
+          fetchSheetById(id, '', true).catch(() => null),
         ]);
         /* Single-tab sheet → the first tab's hidden columns apply. */
         const firstHidden = hidden && Object.keys(hidden).length ? Object.values(hidden)[0] : [];
