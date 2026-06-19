@@ -749,6 +749,11 @@ function subscribeToRoom() {
           if (room.status === 'drawing') {
             G.hintReveal1 = false; G.hintReveal2 = false;
             clearCanvasLocal();
+            // Host snapshots each player's score so the drawer's payout = avg of guessers' gains
+            if (G.isHost) {
+              G.roundStart = {};
+              G.players.forEach(p => { G.roundStart[p.player_id] = p.score || 0; });
+            }
           }
           if (room.status === 'round_end') { stopTimer(); showRoundEnd(); }
           else if (room.status === 'game_over') { stopTimer(); showGameOver(); }
@@ -1202,6 +1207,21 @@ function checkAllGuessed() {
 async function endRound() {
   if (!G.isHost || G.room?.status !== 'drawing') return;
   stopTimer();
+  // Skribbl-style drawer payout: the average of what the guessers earned this round.
+  // No one guessed → drawer gets nothing (just like skribbl.io).
+  const drawerId = G.room.current_drawer;
+  const start = G.roundStart || {};
+  const gains = G.players
+    .filter(p => p.player_id !== drawerId && !p.left_at && p.has_guessed)
+    .map(p => Math.max(0, (p.score || 0) - (start[p.player_id] || 0)));
+  if (gains.length > 0) {
+    const avg = Math.round(gains.reduce((a, b) => a + b, 0) / gains.length);
+    const drawer = G.players.find(p => p.player_id === drawerId);
+    if (drawer && avg > 0) {
+      await sb.from('draw_players').update({ score: (drawer.score || 0) + avg })
+        .eq('room_code', G.roomCode).eq('player_id', drawerId);
+    }
+  }
   await sb.from('draw_rooms').update({ status: 'round_end' }).eq('room_code', G.roomCode);
 }
 
@@ -1359,11 +1379,7 @@ async function sendGuess() {
     const pts = Math.floor(100 * (left / total)) + 50;
     await sb.from('draw_players').update({ has_guessed: true, score: (G.me?.score || 0) + pts })
       .eq('room_code', G.roomCode).eq('player_id', G.playerId);
-    const drawer = G.players.find(p => p.player_id === G.room.current_drawer);
-    if (drawer) {
-      await sb.from('draw_players').update({ score: (drawer.score || 0) + pts })
-        .eq('room_code', G.roomCode).eq('player_id', drawer.player_id);
-    }
+    // Drawer is rewarded at round end (skribbl-style: average of what the guessers earned)
     await sb.from('draw_chat').insert({
       room_code: G.roomCode, player_id: G.playerId, player_name: G.playerName,
       message: `guessed the word!`, is_correct: true
@@ -1609,44 +1625,39 @@ function activePlayers() {
   return G.players.filter(p => !p.left_at);
 }
 
-// Device-local word history: a word shown on this device won't repeat for 7 days.
-const WORD_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
 const ALL_WORDS = [...new Set(WORDS)];    // de-duplicated pool
 
-function wordLog() {
-  try { return JSON.parse(localStorage.getItem('dg_word_log') || '{}'); } catch(e) { return {}; }
-}
-function logWords(words) {
+// Persistent "shuffle bag": the whole pool is shuffled, then words are drawn one by
+// one. A word can't reappear until every other word in the pool has been shown — so
+// no repeats for a full cycle (~all 300 words), surviving reloads via localStorage.
+const WORD_BAG_KEY = 'dg_word_bag';
+function getBag() {
   try {
-    const log = wordLog(), now = Date.now();
-    words.forEach(w => { log[w] = now; });
-    for (const k in log) { if (now - log[k] > WORD_TTL) delete log[k]; } // prune old entries
-    localStorage.setItem('dg_word_log', JSON.stringify(log));
-  } catch(e) {}
+    const b = JSON.parse(localStorage.getItem(WORD_BAG_KEY) || '[]');
+    return Array.isArray(b) ? b.filter(w => ALL_WORDS.includes(w)) : [];
+  } catch(e) { return []; }
 }
+function saveBag(bag) { try { localStorage.setItem(WORD_BAG_KEY, JSON.stringify(bag)); } catch(e) {} }
 
 function pickWords(n, used) {
-  const roomUsed = new Set(used || G.room?.used_words || []);
-  const log = wordLog(), now = Date.now();
-  const candidates = ALL_WORDS.filter(w => !roomUsed.has(w));
-  // Prefer words never shown, or shown more than a week ago
-  const fresh = candidates.filter(w => !log[w] || (now - log[w]) > WORD_TTL);
-  let pool;
-  if (fresh.length >= n) {
-    pool = fresh;
-  } else {
-    // Whole pool seen within the week → fall back to the least-recently-shown words
-    const lru = candidates.slice().sort((a, b) => (log[a] || 0) - (log[b] || 0));
-    pool = lru.slice(0, Math.max(n, Math.ceil(candidates.length * 0.4)));
-    if (pool.length < n) pool = candidates.length ? candidates : [...ALL_WORDS];
+  const roomUsed = new Set(used || G.room?.used_words || []); // words already drawn this game
+  let bag = getBag();
+  if (!bag.length) bag = shuffle([...ALL_WORDS]);
+  const picked = [], skipped = [];
+  let guard = 0;
+  while (picked.length < n && guard++ < ALL_WORDS.length * 2 + 10) {
+    if (!bag.length) bag = shuffle([...ALL_WORDS]); // bag empty → reshuffle a fresh cycle
+    const w = bag.shift();
+    if (w === undefined) break;
+    if (roomUsed.has(w) || picked.includes(w)) { skipped.push(w); continue; } // hold, don't burn
+    picked.push(w);
   }
-  const picked = [];
-  const copy = [...pool];
-  while (picked.length < n && copy.length > 0) {
-    const i = Math.floor(Math.random() * copy.length);
-    picked.push(copy.splice(i, 1)[0]);
+  // Safety net: if somehow short, top up from the pool
+  if (picked.length < n) {
+    for (const w of ALL_WORDS) { if (picked.length >= n) break; if (!picked.includes(w)) picked.push(w); }
   }
-  logWords(picked); // these won't reappear on this device for a week
+  // Words skipped (already used this game) go back to the front so they're not lost
+  saveBag([...skipped, ...bag]);
   return picked;
 }
 
