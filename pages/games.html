@@ -213,9 +213,24 @@
         card.innerHTML = '<div class="standings-empty">No games played yet. Be the first to top the board! 🎮</div>';
         return;
       }
+      // Weighted rating, not raw average. Three goals:
+      //  • per-game basis  → 10 games/2 wins can't out-rank 2 games/2 wins by volume alone
+      //  • reward wins     → a high-scoring player who never won doesn't sit at #1
+      //  • confidence      → a 1–2 game fluke is pulled toward the global mean (Bayesian prior)
+      const totGames = data.reduce((s, p) => s + (p.games_played || 0), 0);
+      const totPts   = data.reduce((s, p) => s + (p.total_points || 0), 0);
+      const M = totGames > 0 ? totPts / totGames : 0; // global avg pts/game (prior)
+      const C = 3;          // shrinkage strength: ~3 "phantom" games at the global mean
+      const WIN_BONUS = 75; // each win is worth this much in the rating numerator
       const sorted = data
-        .map(p => ({ ...p, avg: p.games_played > 0 ? p.total_points / p.games_played : 0 }))
-        .sort((a, b) => b.avg - a.avg)
+        .map(p => {
+          const g = p.games_played || 0;
+          const rating = g > 0
+            ? ((p.total_points || 0) + (p.wins || 0) * WIN_BONUS + C * M) / (g + C)
+            : 0;
+          return { ...p, rating };
+        })
+        .sort((a, b) => b.rating - a.rating)
         .slice(0, 20);
       const medals = ['🥇','🥈','🥉'];
       let me = null;
@@ -223,13 +238,13 @@
       const myId = me?.id ? 'student_' + me.id : null;
       const head = `<div class="standings-row head">
         <span style="text-align:center">#</span><span>Player</span>
-        <span class="st-col">Avg</span><span class="st-col st-wins-col">Wins</span><span class="st-col">Played</span>
+        <span class="st-col">Rating</span><span class="st-col st-wins-col">Wins</span><span class="st-col">Played</span>
       </div>`;
       const rows = sorted.map((p, i) => `
         <div class="standings-row ${i === 0 ? 'top1' : ''}" ${p.player_id === myId ? 'style="outline:1px solid rgba(52,211,153,.4)"' : ''}>
           <span class="st-rank">${medals[i] || (i + 1)}</span>
           <span class="st-name">${esc(p.player_name) || 'Player'}${p.player_id === myId ? ' <span style="color:#34d399;font-size:.7rem;font-weight:800">YOU</span>' : ''}</span>
-          <span class="st-col pts">${Math.round(p.avg)}</span>
+          <span class="st-col pts">${Math.round(p.rating)}</span>
           <span class="st-col st-wins-col">${p.wins}</span>
           <span class="st-col">${p.games_played}</span>
         </div>`).join('');
