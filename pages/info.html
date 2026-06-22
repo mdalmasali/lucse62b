@@ -1328,6 +1328,7 @@
 
         const breakCounts = {}; // slotIndex → how many rows have BREAK there
         const slotData    = {}; // slotIndex → [extra]
+        const slotSeen    = {}; // slotIndex → Set of dedup keys (cell+batch+section)
 
         for (let r = dataStart; r < rows.length; r++) {
           const cells = (rows[r].c || []).map(c => c?.v != null ? String(c.v).trim() : '');
@@ -1338,6 +1339,10 @@
             }
             const extra = rowFilter(cells, cell, i);
             if (extra) {
+              const dedupKey = `${cell}|${cells[1]}|${cells[2]}`;
+              if (!slotSeen[i]) slotSeen[i] = new Set();
+              if (slotSeen[i].has(dedupKey)) return;
+              slotSeen[i].add(dedupKey);
               if (!slotData[i]) slotData[i] = [];
               slotData[i].push({ ...parseClassCell(cell), ...extra });
             }
