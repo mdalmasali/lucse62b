@@ -361,7 +361,7 @@ body {
 }
 .qi-item-bus { flex: 1.5; }
 .qi-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1; }
-.qi-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qi-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; overflow: hidden; }
 .qi-label {
   font-size: 0.52rem;
   font-weight: 700;
