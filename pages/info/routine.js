@@ -129,6 +129,20 @@ function _rtRenderCustomList() {
     </div>`).join('');
 }
 
+/* Auto-fill course code when a known course name is picked, and vice versa. */
+window._rtCcSyncCode = function(input) {
+  const entry = Object.entries(_allCourseInfo).find(([, i]) => i.name === input.value.trim());
+  if (!entry) return;
+  const codeEl = document.getElementById('rt-cc-code');
+  if (codeEl && !codeEl.value) codeEl.value = entry[0];
+};
+window._rtCcSyncName = function(input) {
+  const info = _allCourseInfo[input.value.trim().toUpperCase()];
+  if (!info?.name) return;
+  const nameEl = document.getElementById('rt-cc-name');
+  if (nameEl && !nameEl.value) nameEl.value = info.name;
+};
+
 window._rtOpenCustomCourses = function() {
   const existing = document.getElementById('rt-custom-panel');
   if (existing) { existing.remove(); return; }
@@ -138,10 +152,35 @@ window._rtOpenCustomCourses = function() {
   const dayOpts = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']
     .map(d => `<option value="${d}">${d.charAt(0) + d.slice(1).toLowerCase()}</option>`).join('');
 
+  /* Build datalist options from already-loaded sheet data */
+  const courseEntries = Object.entries(_allCourseInfo)
+    .filter(([, i]) => i.name)
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name));
+  const dlName = courseEntries.map(([code, i]) =>
+    `<option value="${escH(i.name)}" data-code="${escH(code)}">`).join('');
+  const dlCode = courseEntries.map(([code, i]) =>
+    `<option value="${escH(code)}" data-name="${escH(i.name)}">`).join('');
+  const dlTeacher = Object.entries(_teacherAcrMap)
+    .filter(([, t]) => t.name)
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+    .map(([acr, t]) => `<option value="${escH(t.name)} (${escH(acr)})">`).join('');
+  const allTimeMap = new Map();
+  ROUTINE_DAY_NAMES.forEach(day =>
+    (_62bCache?.dayTimeframes?.[day] || []).forEach(t => {
+      const k = timeToMin(t); if (!allTimeMap.has(k)) allTimeMap.set(k, t);
+    })
+  );
+  const dlTime = [...allTimeMap.entries()].sort(([a], [b]) => a - b)
+    .map(([, t]) => `<option value="${escH(t)}">`).join('');
+
   const panel = document.createElement('div');
   panel.id = 'rt-custom-panel';
   panel.style.cssText = `background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;`;
   panel.innerHTML = `
+    <datalist id="rt-cc-dl-name">${dlName}</datalist>
+    <datalist id="rt-cc-dl-code">${dlCode}</datalist>
+    <datalist id="rt-cc-dl-teacher">${dlTeacher}</datalist>
+    <datalist id="rt-cc-dl-time">${dlTime}</datalist>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <span style="font-size:0.82rem;font-weight:700;color:var(--text);">
         <i class="fa-solid fa-circle-plus" style="color:#10b981;margin-right:6px;font-size:0.75rem;"></i>Custom Courses
@@ -154,14 +193,14 @@ window._rtOpenCustomCourses = function() {
       These show in your routine and <strong>can conflict</strong> with other classes.
     </p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <input id="rt-cc-name"    placeholder="Course Name *"              style="${inp}">
-      <input id="rt-cc-code"    placeholder="Code (e.g. CSE-3201)"       style="${inp}">
-      <input id="rt-cc-teacher" placeholder="Teacher (optional)"          style="${inp}">
-      <input id="rt-cc-room"    placeholder="Room (optional)"             style="${inp}">
+      <input id="rt-cc-name"    list="rt-cc-dl-name"    placeholder="Course Name *"           oninput="_rtCcSyncCode(this)" style="${inp}">
+      <input id="rt-cc-code"    list="rt-cc-dl-code"    placeholder="Code (e.g. CSE-3201)"    oninput="_rtCcSyncName(this)" style="${inp}">
+      <input id="rt-cc-teacher" list="rt-cc-dl-teacher" placeholder="Teacher (optional)"       style="${inp}">
+      <input id="rt-cc-room"    placeholder="Room (optional)"                                   style="${inp}">
       <select id="rt-cc-day" style="${inp}cursor:pointer;">
         <option value="">Select Day *</option>${dayOpts}
       </select>
-      <input id="rt-cc-time" placeholder="Time e.g. 09:00 - 10:30 *"    style="${inp}">
+      <input id="rt-cc-time"    list="rt-cc-dl-time"    placeholder="Time e.g. 09:00 - 10:30 *" style="${inp}">
     </div>
     <button onclick="_rtAddCustomCourse()"
       style="width:100%;padding:8px;border-radius:9px;background:linear-gradient(135deg,#10b981,#059669);
