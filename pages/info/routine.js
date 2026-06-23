@@ -284,8 +284,8 @@ window._rtOpenCustomCourses = function() {
   const inp = `width:100%;box-sizing:border-box;font-size:0.75rem;font-family:'Inter',sans-serif;
     color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px;outline:none;`;
   const suggBox = `display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
-    background:var(--card);border:1px solid var(--border);border-radius:10px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.45);z-index:100;max-height:210px;overflow-y:auto;`;
+    background:var(--surface,#1e1e2e);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 10px 36px rgba(0,0,0,0.7);z-index:9999;max-height:210px;overflow-y:auto;`;
   const dayOpts = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']
     .map(d => `<option value="${d}">${d.charAt(0) + d.slice(1).toLowerCase()}</option>`).join('');
 
