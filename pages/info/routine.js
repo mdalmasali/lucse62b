@@ -12,6 +12,7 @@ let _improvedCache     = null;
 let _routineTab        = 'regular';
 let _rtLastEnrollments = [];
 window._rtExcluded     = new Set();
+let _customCourses     = [];
 
 /* Multi-batch support */
 let _allDayResults          = null;
@@ -61,6 +62,149 @@ async function _rtLoadExcludedFromSupa(userId) {
     }
   } catch(e) {}
 }
+
+/* ── Custom courses: localStorage ── */
+function _rtLoadCustomCourses(userId) {
+  try { return JSON.parse(localStorage.getItem(`lu62b_custom_courses_${userId}`) || '[]'); }
+  catch(e) { return []; }
+}
+function _rtSaveCustomCourses(userId, courses) {
+  try { localStorage.setItem(`lu62b_custom_courses_${userId}`, JSON.stringify(courses)); } catch(e) {}
+}
+
+/* Merge custom course entries into a cache copy, rebuilding groups so new times
+   get their own column (the grid already handles slots at unlisted times). */
+function _rtApplyCustom(baseCache, customCourses) {
+  if (!baseCache || !customCourses.length) return baseCache;
+  const schedule = {};
+  ROUTINE_DAY_NAMES.forEach(d => { schedule[d] = baseCache.schedule[d] ? [...baseCache.schedule[d]] : []; });
+  customCourses.forEach(c => {
+    if (!c.day || !ROUTINE_DAY_NAMES.includes(c.day)) return;
+    schedule[c.day].push({
+      time: c.time, code: c.code || 'CUSTOM', initials: c.teacher || '',
+      room: c.room || '', isBreak: false, source: 'custom',
+      name: c.name || '', _customId: c.id,
+    });
+  });
+  const groups = buildTimeframeGroups(schedule, baseCache.dayTimeframes);
+  if (!groups.length) return baseCache;
+  return { ...baseCache, schedule, groups,
+           days: ROUTINE_DAY_NAMES.filter(d => schedule[d]?.some(s => !s.isBreak)) };
+}
+
+function _rtRebuildCaches() {
+  if (_selectedBatch !== '62' || _selectedSection !== 'B') return;
+  _routineCache = _rtApplyCustom(_62bCache, _customCourses);
+  if (_rtLastEnrollments.length) {
+    _improvedCache = _rtApplyCustom(_buildImprovedCache(_rtLastEnrollments), _customCourses);
+  }
+  const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
+  const el = document.getElementById('rt-main-content');
+  if (el) el.innerHTML = buildGrid(todayName);
+}
+
+function _rtRenderCustomList() {
+  const list = document.getElementById('rt-cc-list');
+  if (!list) return;
+  if (!_customCourses.length) {
+    list.innerHTML = `<p style="font-size:0.7rem;color:var(--text-secondary);text-align:center;margin:8px 0 0;">No custom courses added yet.</p>`;
+    return;
+  }
+  const dayShort = { SATURDAY:'Sat', SUNDAY:'Sun', MONDAY:'Mon', TUESDAY:'Tue', WEDNESDAY:'Wed', THURSDAY:'Thu', FRIDAY:'Fri' };
+  list.innerHTML = _customCourses.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;
+      border:1px solid var(--border);background:rgba(16,185,129,.05);margin-bottom:6px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escH(c.name)}</div>
+        <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:1px;">
+          ${escH(dayShort[c.day] || c.day)} · ${escH(c.time)}${c.teacher ? ` · ${escH(c.teacher)}` : ''}${c.room ? ` · ${escH(c.room)}` : ''}${c.code ? ` · <span style="font-family:monospace;">${escH(c.code)}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="_rtDeleteCustomCourse('${escH(c.id)}')"
+        style="background:rgba(244,63,94,.12);border:none;color:#f43f5e;border-radius:6px;
+        padding:3px 9px;cursor:pointer;font-size:0.68rem;font-weight:600;flex-shrink:0;font-family:'Inter',sans-serif;">
+        Remove
+      </button>
+    </div>`).join('');
+}
+
+window._rtOpenCustomCourses = function() {
+  const existing = document.getElementById('rt-custom-panel');
+  if (existing) { existing.remove(); return; }
+
+  const inp = `width:100%;box-sizing:border-box;font-size:0.75rem;font-family:'Inter',sans-serif;
+    color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px;outline:none;`;
+  const dayOpts = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']
+    .map(d => `<option value="${d}">${d.charAt(0) + d.slice(1).toLowerCase()}</option>`).join('');
+
+  const panel = document.createElement('div');
+  panel.id = 'rt-custom-panel';
+  panel.style.cssText = `background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;`;
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:0.82rem;font-weight:700;color:var(--text);">
+        <i class="fa-solid fa-circle-plus" style="color:#10b981;margin-right:6px;font-size:0.75rem;"></i>Custom Courses
+      </span>
+      <button onclick="document.getElementById('rt-custom-panel').remove()"
+        style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;">✕</button>
+    </div>
+    <p style="font-size:0.7rem;color:var(--text-secondary);margin:0 0 12px;line-height:1.6;">
+      Add any course not in the Google Sheet — retake from another batch, OL class, or anything else.
+      These show in your routine and <strong>can conflict</strong> with other classes.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <input id="rt-cc-name"    placeholder="Course Name *"              style="${inp}">
+      <input id="rt-cc-code"    placeholder="Code (e.g. CSE-3201)"       style="${inp}">
+      <input id="rt-cc-teacher" placeholder="Teacher (optional)"          style="${inp}">
+      <input id="rt-cc-room"    placeholder="Room (optional)"             style="${inp}">
+      <select id="rt-cc-day" style="${inp}cursor:pointer;">
+        <option value="">Select Day *</option>${dayOpts}
+      </select>
+      <input id="rt-cc-time" placeholder="Time e.g. 09:00 - 10:30 *"    style="${inp}">
+    </div>
+    <button onclick="_rtAddCustomCourse()"
+      style="width:100%;padding:8px;border-radius:9px;background:linear-gradient(135deg,#10b981,#059669);
+      color:#fff;font-weight:700;font-size:0.8rem;border:none;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:14px;">
+      <i class="fa-solid fa-plus"></i> Add to Routine
+    </button>
+    <div id="rt-cc-list"></div>`;
+
+  document.getElementById('rt-main-content')?.parentNode.insertBefore(panel, document.getElementById('rt-main-content'));
+  _rtRenderCustomList();
+};
+
+window._rtAddCustomCourse = function() {
+  const name    = document.getElementById('rt-cc-name')?.value.trim();
+  const code    = document.getElementById('rt-cc-code')?.value.trim();
+  const teacher = document.getElementById('rt-cc-teacher')?.value.trim();
+  const room    = document.getElementById('rt-cc-room')?.value.trim();
+  const day     = document.getElementById('rt-cc-day')?.value;
+  const time    = document.getElementById('rt-cc-time')?.value.trim();
+
+  if (!name || !day || !time) { alert('Course Name, Day, and Time are required.'); return; }
+  if (!/\d+:\d+/.test(time))  { alert('Time must be a range like 09:00 - 10:30'); return; }
+
+  _customCourses = [..._customCourses, { id: `custom_${Date.now()}`, name, code, teacher, room, day, time }];
+  const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+  if (user?.id) _rtSaveCustomCourses(user.id, _customCourses);
+
+  ['rt-cc-name','rt-cc-code','rt-cc-teacher','rt-cc-room','rt-cc-time'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const dayEl = document.getElementById('rt-cc-day'); if (dayEl) dayEl.value = '';
+
+  _rtRenderCustomList();
+  _rtRebuildCaches();
+};
+
+window._rtDeleteCustomCourse = function(id) {
+  _customCourses = _customCourses.filter(c => c.id !== id);
+  const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
+  if (user?.id) _rtSaveCustomCourses(user.id, _customCourses);
+  _rtRenderCustomList();
+  _rtRebuildCaches();
+};
 
 /* ── Fetch enrolled retake/improve sections ── */
 async function _rtFetchEnrollments(userId) {
@@ -250,6 +394,10 @@ function _rtRenderSlot(slot, courseInfo) {
     borderColor = 'rgba(251,146,60,.55)';
     badge = `<span style="font-size:0.52rem;font-weight:800;padding:1px 5px;border-radius:4px;
       background:rgba(251,146,60,.2);color:#fb923c;letter-spacing:0.05em;display:block;margin-top:2px;">IMPROVE</span>`;
+  } else if (slot.source === 'custom') {
+    borderColor = 'rgba(16,185,129,.55)';
+    badge = `<span style="font-size:0.52rem;font-weight:800;padding:1px 5px;border-radius:4px;
+      background:rgba(16,185,129,.2);color:#10b981;letter-spacing:0.05em;display:block;margin-top:2px;">CUSTOM</span>`;
   }
 
   return `<div class="rt-gc" style="background:${color}12;border-color:${borderColor};margin-bottom:3px;">
@@ -280,7 +428,7 @@ function buildGrid(todayName) {
   /* One table per timeframe group (Sat–Thu, then a separate Friday if its
      time columns differ), rendered back-to-back inside one wrap. */
   const renderCourses = courses => courses
-    .filter(s => (!isImproved && is62b ? !excl.has(s.code) : true))
+    .filter(s => (!isImproved && is62b ? (s.source === 'custom' || !excl.has(s.code)) : true))
     .map(s => _rtRenderSlot(s, courseInfo))
     .join('');
 
@@ -343,14 +491,14 @@ window._rtApplyBatchSection = function() {
   const todayName  = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
 
   if (is62b) {
-    /* Restore the 62B cache */
-    _routineCache  = _62bCache;
+    /* Restore the 62B cache, merging in any custom courses */
+    _routineCache  = _rtApplyCustom(_62bCache, _customCourses);
     _routineTab    = 'regular';
     _improvedCache = null;
 
     /* Rebuild Improved cache if enrollments are available */
     if (_rtLastEnrollments.length) {
-      _improvedCache = _buildImprovedCache(_rtLastEnrollments);
+      _improvedCache = _rtApplyCustom(_buildImprovedCache(_rtLastEnrollments), _customCourses);
     }
   } else {
     /* Build a fresh cache for the selected batch/section */
@@ -369,10 +517,12 @@ window._rtApplyBatchSection = function() {
   /* Show/hide 62B-only controls */
   const user   = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
   const tabBar = document.getElementById('rt-tab-bar');
-  const myCoursesBtn = document.getElementById('rt-my-courses-btn');
+  const myCoursesBtn    = document.getElementById('rt-my-courses-btn');
+  const customCoursesBtn = document.getElementById('rt-custom-courses-btn');
 
   if (is62b) {
-    if (myCoursesBtn) myCoursesBtn.style.display = '';
+    if (myCoursesBtn)     myCoursesBtn.style.display = '';
+    if (customCoursesBtn) customCoursesBtn.style.display = '';
     if (tabBar && _improvedCache && _rtLastEnrollments.length) {
       tabBar.innerHTML = `
         <div style="display:flex;gap:8px;">
@@ -387,7 +537,8 @@ window._rtApplyBatchSection = function() {
       _routineTab = 'improved';
     }
   } else {
-    if (myCoursesBtn) myCoursesBtn.style.display = 'none';
+    if (myCoursesBtn)     myCoursesBtn.style.display = 'none';
+    if (customCoursesBtn) customCoursesBtn.style.display = 'none';
     if (tabBar) tabBar.innerHTML = '';
   }
 
@@ -495,7 +646,9 @@ window._rtSaveMyCourses = async function() {
 
   document.getElementById('rt-my-courses-panel')?.remove();
 
-  if (_rtLastEnrollments.length) _improvedCache = _buildImprovedCache(_rtLastEnrollments);
+  if (_rtLastEnrollments.length) {
+    _improvedCache = _rtApplyCustom(_buildImprovedCache(_rtLastEnrollments), _customCourses);
+  }
 
   const todayName = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'][new Date().getDay()];
   const el = document.getElementById('rt-main-content');
@@ -564,9 +717,12 @@ async function loadRoutine(body) {
     _selectedBatch = '62';
     _selectedSection = 'B';
 
-    /* Load excluded courses from localStorage immediately */
+    /* Load excluded + custom courses from localStorage immediately */
     const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
     if (user?.id) {
+      _customCourses = _rtLoadCustomCourses(user.id);
+      if (_customCourses.length) _routineCache = _rtApplyCustom(cache62b, _customCourses);
+
       /* Save full 62B course list for profile's My Courses card */
       try {
         const codeMap = new Map();
@@ -595,12 +751,20 @@ async function loadRoutine(body) {
           <div class="rt-sync-dot"></div>
           <span>Live sync · ${sem} · Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>
         </div>
-        ${user?.id ? `<button id="rt-my-courses-btn" onclick="_rtOpenMyCourses()"
-          style="font-size:0.72rem;color:var(--text-secondary);background:rgba(255,255,255,.05);
-          border:1px solid var(--border);border-radius:8px;padding:5px 11px;cursor:pointer;
-          font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
-          <i class="fa-solid fa-pen-to-square" style="font-size:0.62rem;"></i> My Courses
-        </button>` : ''}
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          ${user?.id ? `<button id="rt-my-courses-btn" onclick="_rtOpenMyCourses()"
+            style="font-size:0.72rem;color:var(--text-secondary);background:rgba(255,255,255,.05);
+            border:1px solid var(--border);border-radius:8px;padding:5px 11px;cursor:pointer;
+            font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
+            <i class="fa-solid fa-pen-to-square" style="font-size:0.62rem;"></i> My Courses
+          </button>` : ''}
+          ${user?.id ? `<button id="rt-custom-courses-btn" onclick="_rtOpenCustomCourses()"
+            style="font-size:0.72rem;color:#10b981;background:rgba(16,185,129,.08);
+            border:1px solid rgba(16,185,129,.35);border-radius:8px;padding:5px 11px;cursor:pointer;
+            font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
+            <i class="fa-solid fa-circle-plus" style="font-size:0.62rem;"></i> Custom Course
+          </button>` : ''}
+        </div>
       </div>
       <div id="rt-tab-bar" style="margin-bottom:16px;"></div>
       <div id="rt-main-content">${buildGrid(todayName)}</div>`;
@@ -610,7 +774,7 @@ async function loadRoutine(body) {
       _rtFetchEnrollments(user.id).then(enrollments => {
         if (!enrollments.length) return;
         _rtLastEnrollments = enrollments;
-        _improvedCache = _buildImprovedCache(enrollments);
+        _improvedCache = _rtApplyCustom(_buildImprovedCache(enrollments), _customCourses);
         if (!_improvedCache) return;
 
         /* Only show Improved tab if still on 62B */
