@@ -63,13 +63,41 @@ async function _rtLoadExcludedFromSupa(userId) {
   } catch(e) {}
 }
 
-/* ── Custom courses: localStorage ── */
+/* ── Custom courses: localStorage + Supabase ── */
 function _rtLoadCustomCourses(userId) {
   try { return JSON.parse(localStorage.getItem(`lu62b_custom_courses_${userId}`) || '[]'); }
   catch(e) { return []; }
 }
 function _rtSaveCustomCourses(userId, courses) {
   try { localStorage.setItem(`lu62b_custom_courses_${userId}`, JSON.stringify(courses)); } catch(e) {}
+}
+async function _rtSaveCustomToSupa(userId, courses) {
+  try {
+    await fetch(`${_RT_SUPA}/rest/v1/student_custom_courses`, {
+      method: 'POST',
+      headers: {
+        'apikey': _RT_KEY, 'Authorization': `Bearer ${_RT_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ student_id: userId, courses, updated_at: new Date().toISOString() }),
+    });
+  } catch(e) {}
+}
+async function _rtLoadCustomFromSupa(userId) {
+  try {
+    const r = await fetch(
+      `${_RT_SUPA}/rest/v1/student_custom_courses?student_id=eq.${encodeURIComponent(userId)}&select=courses`,
+      { headers: { 'apikey': _RT_KEY, 'Authorization': `Bearer ${_RT_KEY}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows.length && Array.isArray(rows[0].courses) ? rows[0].courses : null;
+  } catch(e) { return null; }
+}
+function _rtSaveCustomAll(userId, courses) {
+  _rtSaveCustomCourses(userId, courses);
+  _rtSaveCustomToSupa(userId, courses);
 }
 
 /* Merge custom course entries into a cache copy, rebuilding groups so new times
@@ -129,18 +157,124 @@ function _rtRenderCustomList() {
     </div>`).join('');
 }
 
-/* Auto-fill course code when a known course name is picked, and vice versa. */
-window._rtCcSyncCode = function(input) {
-  const entry = Object.entries(_allCourseInfo).find(([, i]) => i.name === input.value.trim());
-  if (!entry) return;
-  const codeEl = document.getElementById('rt-cc-code');
-  if (codeEl && !codeEl.value) codeEl.value = entry[0];
+/* ── Custom course form: dropdown suggestion helpers ── */
+function _rtCcRenderSugg(suggId, items) {
+  const sugg = document.getElementById(suggId);
+  if (!sugg) return;
+  if (!items.length) { sugg.style.display = 'none'; return; }
+  sugg.style.display = 'block';
+  sugg.innerHTML = items.map(i => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:0.78rem;
+      border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.12s;"
+      onmouseover="this.style.background='rgba(124,58,237,0.12)'"
+      onmouseout="this.style.background=''"
+      onmousedown="_rtCcPickItem(this)"
+      data-target="${escH(i.target)}" data-value="${escH(i.value)}"
+      ${i.also ? `data-also="${escH(i.also)}" data-also-val="${escH(i.alsoVal||'')}"` : ''}
+      data-sugg="${escH(suggId)}">
+      <div style="font-weight:700;color:var(--text);">${escH(i.label)}</div>
+      ${i.sub ? `<div style="font-size:0.68rem;color:var(--text-secondary);margin-top:2px;">${i.sub}</div>` : ''}
+    </div>`).join('');
+}
+
+window._rtCcPickItem = function(el) {
+  const targetEl = document.getElementById(el.dataset.target);
+  if (targetEl) targetEl.value = el.dataset.value;
+  if (el.dataset.also && el.dataset.alsoVal) {
+    const alsoEl = document.getElementById(el.dataset.also);
+    if (alsoEl && !alsoEl.value) alsoEl.value = el.dataset.alsoVal;
+  }
+  const suggEl = document.getElementById(el.dataset.sugg);
+  if (suggEl) suggEl.style.display = 'none';
 };
-window._rtCcSyncName = function(input) {
-  const info = _allCourseInfo[input.value.trim().toUpperCase()];
-  if (!info?.name) return;
-  const nameEl = document.getElementById('rt-cc-name');
-  if (nameEl && !nameEl.value) nameEl.value = info.name;
+
+window._rtCcBlur = function(suggId) {
+  setTimeout(() => { const el = document.getElementById(suggId); if (el) el.style.display = 'none'; }, 150);
+};
+
+window._rtCcInputName = function(val) {
+  if (!val) { const s = document.getElementById('rt-cc-name-sugg'); if (s) s.style.display = 'none'; return; }
+  const q = val.toLowerCase();
+  _rtCcRenderSugg('rt-cc-name-sugg',
+    Object.entries(_allCourseInfo)
+      .filter(([code, i]) => i.name && (i.name.toLowerCase().includes(q) || code.toLowerCase().includes(q)))
+      .sort(([, a], [, b]) => {
+        const as = a.name.toLowerCase().startsWith(q), bs = b.name.toLowerCase().startsWith(q);
+        return as === bs ? a.name.localeCompare(b.name) : as ? -1 : 1;
+      })
+      .slice(0, 8)
+      .map(([code, i]) => ({
+        target: 'rt-cc-name', value: i.name, also: 'rt-cc-code', alsoVal: code,
+        label: i.name,
+        sub: `<span style="font-family:monospace;color:var(--accent-bright);">${escH(code)}</span>`,
+      }))
+  );
+};
+
+window._rtCcInputCode = function(val) {
+  if (!val) { const s = document.getElementById('rt-cc-code-sugg'); if (s) s.style.display = 'none'; return; }
+  const q = val.toLowerCase();
+  _rtCcRenderSugg('rt-cc-code-sugg',
+    Object.entries(_allCourseInfo)
+      .filter(([code, i]) => code.toLowerCase().includes(q) || (i.name && i.name.toLowerCase().includes(q)))
+      .sort(([a], [b]) => {
+        const as = a.toLowerCase().startsWith(q), bs = b.toLowerCase().startsWith(q);
+        return as === bs ? a.localeCompare(b) : as ? -1 : 1;
+      })
+      .slice(0, 8)
+      .map(([code, i]) => ({
+        target: 'rt-cc-code', value: code, also: 'rt-cc-name', alsoVal: i.name,
+        label: code, sub: i.name ? escH(i.name) : '',
+      }))
+  );
+};
+
+window._rtCcInputTeacher = function(val) {
+  if (!val) { const s = document.getElementById('rt-cc-teacher-sugg'); if (s) s.style.display = 'none'; return; }
+  const q = val.toLowerCase();
+  _rtCcRenderSugg('rt-cc-teacher-sugg',
+    Object.entries(_teacherAcrMap)
+      .filter(([acr, t]) => t.name && (t.name.toLowerCase().includes(q) || acr.toLowerCase().includes(q)))
+      .sort(([, a], [, b]) => {
+        const as = a.name.toLowerCase().startsWith(q), bs = b.name.toLowerCase().startsWith(q);
+        return as === bs ? a.name.localeCompare(b.name) : as ? -1 : 1;
+      })
+      .slice(0, 8)
+      .map(([acr, t]) => ({
+        target: 'rt-cc-teacher', value: acr,
+        label: t.name,
+        sub: `<span style="font-family:monospace;color:var(--accent-bright);">${escH(acr)}</span>${t.desig ? ` · ${escH(t.desig)}` : ''}`,
+      }))
+  );
+};
+
+window._rtCcInputTime = function(val) {
+  const sugg = document.getElementById('rt-cc-time-sugg');
+  if (!sugg) return;
+  const allTimeMap = new Map();
+  ROUTINE_DAY_NAMES.forEach(day =>
+    (_62bCache?.dayTimeframes?.[day] || []).forEach(t => {
+      const k = timeToMin(t); if (!allTimeMap.has(k)) allTimeMap.set(k, t);
+    })
+  );
+  const times = [...allTimeMap.entries()].sort(([a], [b]) => a - b).map(([, t]) => t);
+  const q = val.replace(/\s/g, '').toLowerCase();
+  const filtered = val ? times.filter(t => t.replace(/\s/g, '').toLowerCase().includes(q)) : times;
+  if (!filtered.length) { sugg.style.display = 'none'; return; }
+  sugg.style.display = 'block';
+  sugg.innerHTML = filtered.slice(0, 10).map(t => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:0.78rem;font-family:monospace;
+      border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.12s;color:var(--text);"
+      onmouseover="this.style.background='rgba(124,58,237,0.12)'"
+      onmouseout="this.style.background=''"
+      onmousedown="_rtCcPickTime(this)" data-val="${escH(t)}">${escH(t)}</div>`).join('');
+};
+
+window._rtCcPickTime = function(el) {
+  const timeEl = document.getElementById('rt-cc-time');
+  if (timeEl) timeEl.value = el.dataset.val;
+  const sugg = document.getElementById('rt-cc-time-sugg');
+  if (sugg) sugg.style.display = 'none';
 };
 
 window._rtOpenCustomCourses = function() {
@@ -149,38 +283,16 @@ window._rtOpenCustomCourses = function() {
 
   const inp = `width:100%;box-sizing:border-box;font-size:0.75rem;font-family:'Inter',sans-serif;
     color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px;outline:none;`;
+  const suggBox = `display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.45);z-index:100;max-height:210px;overflow-y:auto;`;
   const dayOpts = ['SATURDAY','SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']
     .map(d => `<option value="${d}">${d.charAt(0) + d.slice(1).toLowerCase()}</option>`).join('');
-
-  /* Build datalist options from already-loaded sheet data */
-  const courseEntries = Object.entries(_allCourseInfo)
-    .filter(([, i]) => i.name)
-    .sort(([, a], [, b]) => a.name.localeCompare(b.name));
-  const dlName = courseEntries.map(([code, i]) =>
-    `<option value="${escH(i.name)}" data-code="${escH(code)}">`).join('');
-  const dlCode = courseEntries.map(([code, i]) =>
-    `<option value="${escH(code)}" data-name="${escH(i.name)}">`).join('');
-  const dlTeacher = Object.entries(_teacherAcrMap)
-    .filter(([, t]) => t.name)
-    .sort(([, a], [, b]) => a.name.localeCompare(b.name))
-    .map(([acr, t]) => `<option value="${escH(t.name)} (${escH(acr)})">`).join('');
-  const allTimeMap = new Map();
-  ROUTINE_DAY_NAMES.forEach(day =>
-    (_62bCache?.dayTimeframes?.[day] || []).forEach(t => {
-      const k = timeToMin(t); if (!allTimeMap.has(k)) allTimeMap.set(k, t);
-    })
-  );
-  const dlTime = [...allTimeMap.entries()].sort(([a], [b]) => a - b)
-    .map(([, t]) => `<option value="${escH(t)}">`).join('');
 
   const panel = document.createElement('div');
   panel.id = 'rt-custom-panel';
   panel.style.cssText = `background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;`;
   panel.innerHTML = `
-    <datalist id="rt-cc-dl-name">${dlName}</datalist>
-    <datalist id="rt-cc-dl-code">${dlCode}</datalist>
-    <datalist id="rt-cc-dl-teacher">${dlTeacher}</datalist>
-    <datalist id="rt-cc-dl-time">${dlTime}</datalist>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <span style="font-size:0.82rem;font-weight:700;color:var(--text);">
         <i class="fa-solid fa-circle-plus" style="color:#10b981;margin-right:6px;font-size:0.75rem;"></i>Custom Courses
@@ -193,14 +305,30 @@ window._rtOpenCustomCourses = function() {
       These show in your routine and <strong>can conflict</strong> with other classes.
     </p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <input id="rt-cc-name"    list="rt-cc-dl-name"    placeholder="Course Name *"           oninput="_rtCcSyncCode(this)" style="${inp}">
-      <input id="rt-cc-code"    list="rt-cc-dl-code"    placeholder="Code (e.g. CSE-3201)"    oninput="_rtCcSyncName(this)" style="${inp}">
-      <input id="rt-cc-teacher" list="rt-cc-dl-teacher" placeholder="Teacher (optional)"       style="${inp}">
-      <input id="rt-cc-room"    placeholder="Room (optional)"                                   style="${inp}">
+      <div style="position:relative;">
+        <input id="rt-cc-name" placeholder="Course Name *" autocomplete="off"
+          oninput="_rtCcInputName(this.value)" onblur="_rtCcBlur('rt-cc-name-sugg')" style="${inp}">
+        <div id="rt-cc-name-sugg" style="${suggBox}"></div>
+      </div>
+      <div style="position:relative;">
+        <input id="rt-cc-code" placeholder="Code (e.g. CSE-3201)" autocomplete="off"
+          oninput="_rtCcInputCode(this.value)" onblur="_rtCcBlur('rt-cc-code-sugg')" style="${inp}">
+        <div id="rt-cc-code-sugg" style="${suggBox}"></div>
+      </div>
+      <div style="position:relative;">
+        <input id="rt-cc-teacher" placeholder="Teacher (optional)" autocomplete="off"
+          oninput="_rtCcInputTeacher(this.value)" onblur="_rtCcBlur('rt-cc-teacher-sugg')" style="${inp}">
+        <div id="rt-cc-teacher-sugg" style="${suggBox}"></div>
+      </div>
+      <input id="rt-cc-room" placeholder="Room (optional)" autocomplete="off" style="${inp}">
       <select id="rt-cc-day" style="${inp}cursor:pointer;">
         <option value="">Select Day *</option>${dayOpts}
       </select>
-      <input id="rt-cc-time"    list="rt-cc-dl-time"    placeholder="Time e.g. 09:00 - 10:30 *" style="${inp}">
+      <div style="position:relative;">
+        <input id="rt-cc-time" placeholder="Time e.g. 09:00 - 10:30 *" autocomplete="off"
+          oninput="_rtCcInputTime(this.value)" onfocus="_rtCcInputTime(this.value)" onblur="_rtCcBlur('rt-cc-time-sugg')" style="${inp}">
+        <div id="rt-cc-time-sugg" style="${suggBox}"></div>
+      </div>
     </div>
     <button onclick="_rtAddCustomCourse()"
       style="width:100%;padding:8px;border-radius:9px;background:linear-gradient(135deg,#10b981,#059669);
@@ -226,7 +354,7 @@ window._rtAddCustomCourse = function() {
 
   _customCourses = [..._customCourses, { id: `custom_${Date.now()}`, name, code, teacher, room, day, time }];
   const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
-  if (user?.id) _rtSaveCustomCourses(user.id, _customCourses);
+  if (user?.id) _rtSaveCustomAll(user.id, _customCourses);
 
   ['rt-cc-name','rt-cc-code','rt-cc-teacher','rt-cc-room','rt-cc-time'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -240,7 +368,7 @@ window._rtAddCustomCourse = function() {
 window._rtDeleteCustomCourse = function(id) {
   _customCourses = _customCourses.filter(c => c.id !== id);
   const user = JSON.parse(localStorage.getItem('lu62b_student') || 'null');
-  if (user?.id) _rtSaveCustomCourses(user.id, _customCourses);
+  if (user?.id) _rtSaveCustomAll(user.id, _customCourses);
   _rtRenderCustomList();
   _rtRebuildCaches();
 };
@@ -761,6 +889,24 @@ async function loadRoutine(body) {
     if (user?.id) {
       _customCourses = _rtLoadCustomCourses(user.id);
       if (_customCourses.length) _routineCache = _rtApplyCustom(cache62b, _customCourses);
+
+      /* Sync custom courses with Supabase in background.
+         Supabase is authoritative; if localStorage has data not yet pushed, push it. */
+      _rtLoadCustomFromSupa(user.id).then(supaCourses => {
+        if (supaCourses === null) {
+          if (_customCourses.length) _rtSaveCustomToSupa(user.id, _customCourses);
+          return;
+        }
+        if (JSON.stringify(supaCourses) !== JSON.stringify(_customCourses)) {
+          _customCourses = supaCourses;
+          _rtSaveCustomCourses(user.id, supaCourses);
+          _routineCache = _rtApplyCustom(_62bCache, _customCourses);
+          if (_rtLastEnrollments.length)
+            _improvedCache = _rtApplyCustom(_buildImprovedCache(_rtLastEnrollments), _customCourses);
+          const el = document.getElementById('rt-main-content');
+          if (el) el.innerHTML = buildGrid(todayName);
+        }
+      });
 
       /* Save full 62B course list for profile's My Courses card */
       try {
