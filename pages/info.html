@@ -1451,7 +1451,10 @@
         const lookup = {};
         group.days.forEach(day => {
           lookup[day] = {};
-          (schedule[day] || []).forEach(s => { if (!lookup[day][s.time]) lookup[day][s.time] = s; });
+          (schedule[day] || []).forEach(s => {
+            if (!lookup[day][s.time]) lookup[day][s.time] = [];
+            lookup[day][s.time].push(s);
+          });
         });
 
         let tbl = `<table style="width:100%;border-collapse:collapse;table-layout:fixed;${gi ? 'margin-top:14px;' : ''}"><thead><tr>
@@ -1465,27 +1468,31 @@
         group.days.forEach((day, ri) => {
           const daySlots = lookup[day];
           const hasClass = schedule[day] && schedule[day].some(s => !s.isBreak);
-          if (!hasClass) return;  /* hide days with no class */
-          const rowBg    = ri % 2 === 0 ? t.rowEven : t.rowOdd;
+          if (!hasClass) return;
+          const rowBg = ri % 2 === 0 ? t.rowEven : t.rowOdd;
           tbl += `<tr><td style="padding:10px 14px;font-size:13px;font-weight:700;color:${t.dayCellText};background:${t.dayCell};border:1px solid ${t.borderSub};white-space:nowrap;">${escH(DAY_DISPLAY[day]||day)}</td>`;
           allTimes.forEach(time => {
-            const isBreak = breakTimesSet.has(time);
-            const slot    = daySlots[time];
+            const isBreak   = breakTimesSet.has(time);
+            const slots     = daySlots[time] || [];
+            const hasBreak  = slots.some(s => s.isBreak);
+            const courses   = slots.filter(s => !s.isBreak);
             if (isBreak) {
-              tbl += `<td style="padding:6px 4px;text-align:center;background:rgba(251,191,36,0.07);border:1px solid ${t.borderSub};font-size:9px;font-weight:700;color:${slot?.isBreak?t.breakColor:'transparent'};letter-spacing:0.07em;">${slot?.isBreak?'&#9749; BREAK':''}</td>`;
-            } else if (slot && !slot.isBreak) {
-              const color = courseColor(slot.code);
-              const info  = courseInfo[slot.code?.toUpperCase()] || {};
-              const line2 = getCellLine2(slot, info);
-              const name  = info.name || slot.name || '';
-              const title2 = name || slot.code || '';
-              tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};">
-                <div style="background:${color}1a;border:1.5px solid ${color}55;border-radius:8px;padding:7px 5px;margin:0 auto;max-width:98%;">
+              tbl += `<td style="padding:6px 4px;text-align:center;background:rgba(251,191,36,0.07);border:1px solid ${t.borderSub};font-size:9px;font-weight:700;color:${hasBreak?t.breakColor:'transparent'};letter-spacing:0.07em;">${hasBreak?'&#9749; BREAK':''}</td>`;
+            } else if (courses.length) {
+              const cells = courses.map(slot => {
+                const color  = courseColor(slot.code);
+                const info   = courseInfo[slot.code?.toUpperCase()] || {};
+                const line2  = getCellLine2(slot, info);
+                const name   = info.name || slot.name || '';
+                const title2 = name || slot.code || '';
+                return `<div style="background:${color}1a;border:1.5px solid ${color}55;border-radius:8px;padding:7px 5px;margin:0 auto 3px;max-width:98%;">
                   <div style="font-size:10.5px;font-weight:800;color:${color};letter-spacing:0.01em;line-height:1.25;">${escH(title2)}</div>
                   ${name?`<div style="font-size:8.5px;font-weight:700;color:${color};opacity:0.6;letter-spacing:0.03em;margin-top:1px;">${escH(slot.code)}</div>`:''}
                   ${line2?`<div style="font-size:10px;color:${t.line2};font-weight:600;margin-top:3px;">${escH(line2)}</div>`:''}
                   ${slot.room?`<div style="font-size:9.5px;color:${t.room};margin-top:2px;">${escH(slot.room)}</div>`:''}
-                </div></td>`;
+                </div>`;
+              }).join('');
+              tbl += `<td style="padding:5px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};">${cells}</td>`;
             } else {
               tbl += `<td style="padding:8px 4px;text-align:center;background:${rowBg};border:1px solid ${t.borderSub};color:${t.free};font-size:14px;">—</td>`;
             }
