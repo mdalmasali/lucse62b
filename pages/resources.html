@@ -626,8 +626,8 @@
     let marksData    = {};  // { code: [{component, marks}] }
     let activeCourse = null;
 
-    /* -- Drive API: list files in a folder (proxied via Worker) -- */
-    async function loadFolderFiles(folderId) {
+    /* -- Drive API: list files in a folder recursively (max 3 levels) -- */
+    async function loadFolderFiles(folderId, _path, _depth) {
       const data = await fetchDriveFolder(folderId);
       if (data.error) {
         const code = data.error.code;
@@ -636,7 +636,21 @@
                    : data.error.message || 'Drive API error';
         throw new Error(msg);
       }
-      return data.files || [];
+      const items = data.files || [];
+      const depth = _depth || 0;
+      const path  = _path  || '';
+      const result = [];
+      await Promise.all(items.map(async item => {
+        if (item.mimeType === 'application/vnd.google-apps.folder') {
+          if (depth >= 2) return; // max 3 levels (0,1,2)
+          const subPath = path ? `${path} / ${item.name}` : item.name;
+          const children = await loadFolderFiles(item.id, subPath, depth + 1).catch(() => []);
+          children.forEach(c => result.push(c));
+        } else {
+          result.push(path ? { ...item, _folderPath: path } : item);
+        }
+      }));
+      return result;
     }
 
     /* -- Level 1: course cards -- */
@@ -750,7 +764,7 @@
           <div class="file-type-icon ${tm.cls}"><i class="fa-solid ${tm.icon}"></i></div>
           <div class="file-info">
             <span class="file-name" title="${esc(f.name)}">${esc(f.name)}</span>
-            <span class="file-type-label">${tm.label}</span>
+            <span class="file-type-label">${f._folderPath ? `<i class="fa-solid fa-folder" style="font-size:0.65rem;margin-right:3px;opacity:0.6;"></i>${esc(f._folderPath)} · ` : ''}${tm.label}</span>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;">
             ${preview ? `<button class="file-btn vw" onclick="openPreview('${nameEsc}','${esc(prevUrl)}','${esc(dlUrl)}')" style="border:none;cursor:pointer;">
