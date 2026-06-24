@@ -524,11 +524,15 @@
       document.getElementById('previewDl').href = downloadUrl;
       document.getElementById('previewModal').classList.add('open');
       document.body.style.overflow = 'hidden';
+      const ft = document.querySelector('footer');
+      if (ft) ft.style.display = 'none';
     }
     function closePreview() {
       document.getElementById('previewModal').classList.remove('open');
       document.getElementById('previewFrame').src = '';
       document.body.style.overflow = '';
+      const ft = document.querySelector('footer');
+      if (ft) ft.style.display = '';
     }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
 
