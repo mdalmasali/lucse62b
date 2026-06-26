@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/worker_api.dart';
+import '../../data/download_service.dart';
+import '../../shared/app_toast.dart';
 import '../../shared/glass_card.dart';
 import 'resources_screen.dart';
 
@@ -18,6 +20,19 @@ class CourseMaterialsScreen extends StatefulWidget {
 class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
   String _tab = 'mid';
   late Future<List<Map<String, dynamic>>> _future = _load();
+  Set<String> _downloaded = {};
+  final Map<String, double> _progress = {}; // fileId → download progress
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshDownloaded();
+  }
+
+  Future<void> _refreshDownloaded() async {
+    final ids = await DownloadService.instance.downloadedIds();
+    if (mounted) setState(() => _downloaded = ids);
+  }
 
   Future<List<Map<String, dynamic>>> _load() {
     final id = _tab == 'mid' ? widget.course.midFolderId : widget.course.finalFolderId;
@@ -124,11 +139,13 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
     final id = (f['id'] ?? '').toString();
     final mime = (f['mimeType'] ?? '').toString();
     final (icon, color, label) = _typeMeta(mime);
+    final isDown = _downloaded.contains(id);
+    final downloading = _progress.containsKey(id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: GlassCard(
-        onTap: () => _open(id),
+        onTap: downloading ? null : () => _onTap(id, name, mime),
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
@@ -154,16 +171,58 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
                           fontWeight: FontWeight.w600,
                           fontSize: 13)),
                   const SizedBox(height: 2),
-                  Text(label,
-                      style: TextStyle(color: color, fontSize: 11)),
+                  Row(
+                    children: [
+                      Text(label, style: TextStyle(color: color, fontSize: 11)),
+                      if (isDown) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.offline_pin_rounded, size: 12, color: Color(0xFF34D399)),
+                        const SizedBox(width: 3),
+                        const Text('Saved offline',
+                            style: TextStyle(color: Color(0xFF34D399), fontSize: 10.5, fontWeight: FontWeight.w600)),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.download_rounded, size: 18, color: AppColors.muted),
+            _trailing(id, isDown, downloading),
           ],
         ),
       ),
     );
+  }
+
+  Widget _trailing(String id, bool isDown, bool downloading) {
+    if (downloading) {
+      final p = _progress[id] ?? 0;
+      return SizedBox(
+        width: 26,
+        height: 26,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.4,
+          value: p > 0 ? p : null,
+          color: AppColors.accentBright,
+        ),
+      );
+    }
+    if (isDown) {
+      return PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.muted),
+        color: AppColors.card,
+        onSelected: (v) {
+          if (v == 'open') _open(id);
+          if (v == 'drive') _openInDrive(id);
+          if (v == 'delete') _deleteDownload(id);
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'open', child: Text('Open', style: TextStyle(color: AppColors.text))),
+          PopupMenuItem(value: 'drive', child: Text('Open in Drive', style: TextStyle(color: AppColors.text))),
+          PopupMenuItem(value: 'delete', child: Text('Delete download', style: TextStyle(color: AppColors.red))),
+        ],
+      );
+    }
+    return const Icon(Icons.download_rounded, size: 20, color: AppColors.muted);
   }
 
   (IconData, Color, String) _typeMeta(String mime) {
@@ -188,11 +247,54 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
     return (Icons.insert_drive_file_rounded, AppColors.accentBright, 'File');
   }
 
+  /// Tapping a file: open the local copy if we have it, otherwise download it
+  /// once (saved for offline) and open it with the device's default viewer.
+  Future<void> _onTap(String id, String name, String mime) async {
+    if (id.isEmpty || _progress.containsKey(id)) return;
+    if (_downloaded.contains(id)) {
+      await _open(id);
+      return;
+    }
+    setState(() => _progress[id] = 0);
+    final ent = await DownloadService.instance.download(
+      id,
+      name,
+      mime: mime,
+      source: widget.course.code,
+      onProgress: (p) {
+        if (mounted) setState(() => _progress[id] = p);
+      },
+    );
+    if (!mounted) return;
+    setState(() {
+      _progress.remove(id);
+      if (ent != null) _downloaded.add(id);
+    });
+    if (ent != null) {
+      AppToast.show(context, 'Saved for offline · opening…');
+      await _open(id);
+    } else {
+      // Large file / Drive confirm page — fall back to the Drive viewer.
+      AppToast.show(context, 'Opening in Drive…');
+      await _openInDrive(id);
+    }
+  }
+
   Future<void> _open(String id) async {
+    final ok = await DownloadService.instance.open(id);
+    if (!ok && mounted) await _openInDrive(id);
+  }
+
+  Future<void> _openInDrive(String id) async {
     if (id.isEmpty) return;
     final uri = Uri.parse('https://drive.google.com/file/d/$id/view');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  Future<void> _deleteDownload(String id) async {
+    await DownloadService.instance.delete(id);
+    if (mounted) setState(() => _downloaded.remove(id));
   }
 }

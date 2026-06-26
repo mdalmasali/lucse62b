@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'constants.dart';
 
 /// A fetched sheet tab: GVIZ column labels and parsed string rows.
@@ -56,35 +58,80 @@ class SheetsApi {
   /// Call this from pull-to-refresh handlers.
   void clearCache() => _cache.clear();
 
+  // ── Persistent (offline) cache ───────────────────────────────────────────
+  // Every successful fetch is also written to disk so the app keeps working
+  // with the last-known data when there's no internet (common on campus). When
+  // a network fetch fails, we transparently fall back to the saved copy.
+  Directory? _diskDir;
+  Future<Directory> _cacheDir() async {
+    if (_diskDir != null) return _diskDir!;
+    final base = await getApplicationDocumentsDirectory();
+    final d = Directory('${base.path}/sheet_cache');
+    if (!await d.exists()) await d.create(recursive: true);
+    return _diskDir = d;
+  }
+
+  static String _diskKey(String k) => k.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_');
+
+  Future<void> _persist(String key, Object data) async {
+    try {
+      final d = await _cacheDir();
+      await File('${d.path}/${_diskKey(key)}.json').writeAsString(jsonEncode(data));
+    } catch (_) {}
+  }
+
+  Future<dynamic> _readDisk(String key) async {
+    try {
+      final f = File('${(await _cacheDir()).path}/${_diskKey(key)}.json');
+      if (await f.exists()) return jsonDecode(await f.readAsString());
+    } catch (_) {}
+    return null;
+  }
+
   /// A fetched sheet: GVIZ column labels + parsed string rows.
   Future<SheetTable> _fetch(String path) => _cached('fetch:$path', () => _fetchRaw(path));
 
   Future<SheetTable> _fetchRaw(String path) async {
-    final r = await http
-        .get(Uri.parse('${K.workerUrl}$path'),
-            headers: const {'Origin': K.portalOrigin})
-        .timeout(const Duration(seconds: 12));
-    if (r.statusCode != 200) throw Exception('sheet ${r.statusCode}');
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    final table = json['table'] as Map<String, dynamic>?;
-    final cols = ((table?['cols'] as List?) ?? const [])
-        .map<String>((c) => ((c as Map)['label'] ?? '').toString().trim())
-        .toList();
-    final rows = ((table?['rows'] as List?) ?? const [])
-        .map<List<String>>((row) {
-      final cells = ((row as Map)['c'] as List?) ?? const [];
-      return cells.map<String>((c) {
-        if (c == null) return '';
-        final m = c as Map;
-        final v = m['v'];
-        final f = m['f'];
-        // Prefer the formatted string (dates/times already pretty).
-        if (f != null && f.toString().isNotEmpty) return f.toString();
-        if (v == null) return '';
-        return _gvizValue(v.toString());
+    try {
+      final r = await http
+          .get(Uri.parse('${K.workerUrl}$path'),
+              headers: const {'Origin': K.portalOrigin})
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) throw Exception('sheet ${r.statusCode}');
+      final json = jsonDecode(r.body) as Map<String, dynamic>;
+      final table = json['table'] as Map<String, dynamic>?;
+      final cols = ((table?['cols'] as List?) ?? const [])
+          .map<String>((c) => ((c as Map)['label'] ?? '').toString().trim())
+          .toList();
+      final rows = ((table?['rows'] as List?) ?? const [])
+          .map<List<String>>((row) {
+        final cells = ((row as Map)['c'] as List?) ?? const [];
+        return cells.map<String>((c) {
+          if (c == null) return '';
+          final m = c as Map;
+          final v = m['v'];
+          final f = m['f'];
+          // Prefer the formatted string (dates/times already pretty).
+          if (f != null && f.toString().isNotEmpty) return f.toString();
+          if (v == null) return '';
+          return _gvizValue(v.toString());
+        }).toList();
       }).toList();
-    }).toList();
-    return SheetTable(cols: cols, rows: rows);
+      await _persist('fetch:$path', {'cols': cols, 'rows': rows});
+      return SheetTable(cols: cols, rows: rows);
+    } catch (e) {
+      // Offline / fetch failed → serve the last saved copy if we have one.
+      final cached = await _readDisk('fetch:$path');
+      if (cached is Map) {
+        return SheetTable(
+          cols: ((cached['cols'] as List?) ?? const []).map((e) => '$e').toList(),
+          rows: ((cached['rows'] as List?) ?? const [])
+              .map<List<String>>((r) => (r as List).map((e) => '$e').toList())
+              .toList(),
+        );
+      }
+      rethrow;
+    }
   }
 
   /// Convert GVIZ "Date(y,m,d[,h,mi,s])" sentinels to a readable string.
@@ -115,19 +162,31 @@ class SheetsApi {
       _cached('bot:$name', () => _botSheetRawNet(name));
 
   Future<List<List<String>>> _botSheetRawNet(String name) async {
-    final r = await http
-        .get(Uri.parse('${K.workerUrl}/sheet?name=${Uri.encodeComponent(name)}&type=bot'),
-            headers: const {'Origin': K.portalOrigin})
-        .timeout(const Duration(seconds: 12));
-    if (r.statusCode != 200) throw Exception('bot sheet ${r.statusCode}');
-    final json = jsonDecode(r.body) as Map<String, dynamic>;
-    final table = json['table'] as Map<String, dynamic>?;
-    return ((table?['rows'] as List?) ?? const []).map<List<String>>((row) {
-      final cells = ((row as Map)['c'] as List?) ?? const [];
-      return cells
-          .map<String>((c) => c == null ? '' : (((c as Map)['v'])?.toString() ?? ''))
-          .toList();
-    }).toList();
+    try {
+      final r = await http
+          .get(Uri.parse('${K.workerUrl}/sheet?name=${Uri.encodeComponent(name)}&type=bot'),
+              headers: const {'Origin': K.portalOrigin})
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) throw Exception('bot sheet ${r.statusCode}');
+      final json = jsonDecode(r.body) as Map<String, dynamic>;
+      final table = json['table'] as Map<String, dynamic>?;
+      final rows = ((table?['rows'] as List?) ?? const []).map<List<String>>((row) {
+        final cells = ((row as Map)['c'] as List?) ?? const [];
+        return cells
+            .map<String>((c) => c == null ? '' : (((c as Map)['v'])?.toString() ?? ''))
+            .toList();
+      }).toList();
+      await _persist('bot:$name', {'rows': rows});
+      return rows;
+    } catch (e) {
+      final cached = await _readDisk('bot:$name');
+      if (cached is Map) {
+        return ((cached['rows'] as List?) ?? const [])
+            .map<List<String>>((r) => (r as List).map((e) => '$e').toList())
+            .toList();
+      }
+      rethrow;
+    }
   }
 
   Future<SheetTable> sheetTable(String name) =>

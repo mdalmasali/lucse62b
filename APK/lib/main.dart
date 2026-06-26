@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'core/app_theme.dart';
 import 'core/router.dart';
 import 'core/supa.dart';
+import 'data/connectivity_service.dart';
 import 'data/models/app_version.dart';
 import 'data/push_service.dart';
 import 'data/session.dart';
@@ -19,6 +20,9 @@ Future<void> main() async {
   // whenever the login state changes so pushes target the right student.
   PushService.instance.init();
   Session.instance.addListener(() => PushService.instance.onAuthChanged());
+
+  // Watch online/offline (drives the home indicator + auto-refresh on reconnect).
+  ConnectivityService.instance.start();
 
   // Check for updates before anything else. A FORCED update blocks the whole
   // app; an optional one is surfaced on the home screen.

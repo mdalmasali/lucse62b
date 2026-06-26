@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/sheets_api.dart';
+import '../../data/connectivity_service.dart';
 import '../../data/routine_grid_repository.dart';
 import '../../data/session.dart';
 import '../../shared/app_toast.dart';
@@ -44,6 +45,7 @@ class HomeScreen extends StatelessWidget {
     (label: 'Results', icon: Icons.bar_chart_rounded, route: '/results'),
     (label: 'Gallery', icon: Icons.photo_library_rounded, route: '/gallery'),
     (label: 'Students', icon: Icons.groups_rounded, route: '/students'),
+    (label: 'Downloads', icon: Icons.download_done_rounded, route: '/downloads'),
     (label: 'User Guide', icon: Icons.help_outline_rounded, route: '/user-guide'),
   ];
 
@@ -76,6 +78,20 @@ class HomeScreen extends StatelessWidget {
                       letterSpacing: 0.5,
                       color: AppColors.accentBright)),
               actions: [
+                ListenableBuilder(
+                  listenable: ConnectivityService.instance,
+                  builder: (_, _) {
+                    final on = ConnectivityService.instance.online;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 2),
+                      child: Tooltip(
+                        message: on ? 'Online' : 'Offline — showing saved data',
+                        child: Icon(on ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                            size: 18, color: on ? const Color(0xFF34D399) : const Color(0xFFFBBF24)),
+                      ),
+                    );
+                  },
+                ),
                 const NotificationBell(),
                 Padding(
                   padding: const EdgeInsets.only(left: 2, right: 12),
@@ -88,6 +104,30 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            SliverToBoxAdapter(
+              child: ListenableBuilder(
+                listenable: ConnectivityService.instance,
+                builder: (_, _) => ConnectivityService.instance.online
+                    ? const SizedBox.shrink()
+                    : Container(
+                        margin: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBBF24).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.35)),
+                        ),
+                        child: const Row(children: [
+                          Icon(Icons.cloud_off_rounded, size: 15, color: Color(0xFFFBBF24)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text("You're offline — showing saved data. Downloads still open.",
+                                style: TextStyle(color: Color(0xFFFBBF24), fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
+                      ),
+              ),
             ),
             SliverToBoxAdapter(child: _greeting(student?.name)),
             if (student != null && !Session.instance.isDemo)

@@ -23,6 +23,7 @@ import '../features/notice/notice_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/resources/resources_screen.dart';
 import '../features/resources/category_screen.dart';
+import '../features/resources/downloads_screen.dart';
 import '../features/guide/user_guide_screen.dart';
 import '../features/attendance/attendance_screen.dart';
 import '../features/results/results_screen.dart';
@@ -75,6 +76,7 @@ GoRouter buildRouter() {
       GoRoute(path: '/games/draw', builder: (_, _) => const DrawScreen()),
       GoRoute(path: '/classwork', builder: (_, _) => const ClassworkScreen()),
       GoRoute(path: '/resources', builder: (_, _) => const ResourcesScreen()),
+      GoRoute(path: '/downloads', builder: (_, _) => const DownloadsScreen()),
       GoRoute(
         path: '/category/:cat',
         builder: (_, state) => CategoryScreen(
