@@ -621,7 +621,15 @@
         <div class="cg-sec">Submission</div>
         <div class="cg-field">
           <label>Date of Submission</label>
-          <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()">
+          <div style="position:relative;">
+            <input id="fDate" type="text" placeholder="e.g. 25th April 2026" oninput="updatePreview()" style="padding-right:40px;">
+            <input id="fDatePicker" type="date" onchange="onDatePick(this.value)" tabindex="-1"
+              style="position:absolute;width:1px;height:1px;opacity:0;right:10px;bottom:0;pointer-events:none;">
+            <button type="button" onclick="openDatePicker()" title="Pick a date"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--accent-bright);font-size:1.05rem;padding:4px;">
+              <i class="fa-solid fa-calendar-days"></i>
+            </button>
+          </div>
         </div>
 
         <div class="pdf-counter-line" id="pdfCounterLine">
@@ -690,6 +698,22 @@
     }
     document.getElementById('fTDept').value   = 'Department of Computer Science & Engineering';
     document.getElementById('fDate').value    = formatDateNice(new Date());
+
+    /* ── Date picker: calendar → formatted text ── */
+    function openDatePicker() {
+      const p = document.getElementById('fDatePicker');
+      if (!p) return;
+      if (p.showPicker) { try { p.showPicker(); return; } catch (e) {} }
+      p.click();
+    }
+    function onDatePick(val) {
+      if (!val) return;
+      const d = new Date(val + 'T00:00:00');
+      if (!isNaN(d)) {
+        document.getElementById('fDate').value = formatDateNice(d);
+        updatePreview();
+      }
+    }
 
     /* ── Date helper ── */
     function formatDateNice(d) {

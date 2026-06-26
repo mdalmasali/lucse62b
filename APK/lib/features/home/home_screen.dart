@@ -32,8 +32,8 @@ class HomeScreen extends StatelessWidget {
   // categories.
   static const _items = <_NavItem>[
     _NavItem(Icons.assignment_rounded, 'Classwork', 'Tasks, categories & deadlines', Color(0xFF059669), '/classwork'),
-    _NavItem(Icons.photo_library_rounded, 'Gallery', 'Class photos & events', Color(0xFFEC4899), '/gallery'),
-    _NavItem(Icons.groups_rounded, 'Students', 'Class directory', Color(0xFF6366F1), '/students'),
+    _NavItem(Icons.description_rounded, 'Cover Page', 'Generate assignment covers', Color(0xFF8B5CF6), '/cover-page'),
+    _NavItem(Icons.menu_book_rounded, 'Resources', 'Lectures, notes & PDFs', Color(0xFFEC4899), '/resources'),
     _NavItem(Icons.sports_esports_rounded, 'Games', 'Imposter & Draw — multiplayer', Color(0xFFFB923C), '/games'),
   ];
 
@@ -41,9 +41,9 @@ class HomeScreen extends StatelessWidget {
   static const _menuPages = <({String label, IconData icon, String route})>[
     (label: 'Notice', icon: Icons.campaign_rounded, route: '/notice'),
     (label: 'Info', icon: Icons.event_note_rounded, route: '/info'),
-    (label: 'Resources', icon: Icons.menu_book_rounded, route: '/resources'),
     (label: 'Results', icon: Icons.bar_chart_rounded, route: '/results'),
-    (label: 'Cover Page', icon: Icons.description_rounded, route: '/cover-page'),
+    (label: 'Gallery', icon: Icons.photo_library_rounded, route: '/gallery'),
+    (label: 'Students', icon: Icons.groups_rounded, route: '/students'),
     (label: 'User Guide', icon: Icons.help_outline_rounded, route: '/user-guide'),
   ];
 

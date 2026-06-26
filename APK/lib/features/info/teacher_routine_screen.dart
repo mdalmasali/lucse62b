@@ -185,14 +185,47 @@ class _TeacherDetailScreen extends StatelessWidget {
   static const _accent = Color(0xFF14B8A6);
   static const _dayOrder = ['SATURDAY', 'SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 
+  static const _dayW = 80.0;
+  static const _timeW = 122.0;
+
+  static int _toMin(String t) {
+    final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(t);
+    if (m == null) return 9999;
+    var h = int.parse(m[1]!);
+    final mi = int.parse(m[2]!);
+    if (h < 8) h += 12;
+    return h * 60 + mi;
+  }
+
+  static String _todayName() {
+    const map = {
+      DateTime.saturday: 'SATURDAY', DateTime.sunday: 'SUNDAY', DateTime.monday: 'MONDAY',
+      DateTime.tuesday: 'TUESDAY', DateTime.wednesday: 'WEDNESDAY', DateTime.thursday: 'THURSDAY', DateTime.friday: 'FRIDAY',
+    };
+    return map[DateTime.now().weekday] ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Group by day, preserving routine day order.
+    // Build a weekly grid: rows = days with classes, columns = distinct times.
     final byDay = <String, List<TeacherClass>>{};
     for (final c in classes) {
       byDay.putIfAbsent(c.day, () => []).add(c);
     }
     final days = _dayOrder.where(byDay.containsKey).toList();
+    // Distinct time columns (canonical label per time key), sorted by minute.
+    final timeKey = <int, String>{};
+    for (final c in classes) {
+      timeKey.putIfAbsent(_toMin(c.time), () => c.time);
+    }
+    final times = (timeKey.keys.toList()..sort()).map((k) => timeKey[k]!).toList();
+    // day → timeLabel → classes
+    final lookup = <String, Map<String, List<TeacherClass>>>{};
+    for (final c in classes) {
+      final tl = timeKey[_toMin(c.time)]!;
+      lookup.putIfAbsent(c.day, () => {}).putIfAbsent(tl, () => []).add(c);
+    }
+    final today = _todayName();
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -202,10 +235,126 @@ class _TeacherDetailScreen extends StatelessWidget {
         children: [
           _header(),
           const SizedBox(height: 16),
-          for (final day in days) ..._daySection(day, byDay[day]!),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: _dayW + _timeW * times.length,
+              child: Table(
+                border: TableBorder.all(color: AppColors.border, width: 1),
+                defaultColumnWidth: const FixedColumnWidth(_timeW),
+                columnWidths: const {0: FixedColumnWidth(_dayW)},
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(
+                    decoration: const BoxDecoration(color: AppColors.surface),
+                    children: [
+                      _headCell('Day'),
+                      for (final t in times) _headCell(t),
+                    ],
+                  ),
+                  for (final day in days)
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: day == today ? _accent.withValues(alpha: 0.08) : null,
+                      ),
+                      children: [
+                        _dayCell(day, day == today),
+                        for (final t in times) _cell(lookup[day]?[t] ?? const []),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _headCell(String text) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+        child: Text(text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w700)),
+      );
+
+  Widget _dayCell(String day, bool isToday) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_title(day).substring(0, 3),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: isToday ? _accent : AppColors.textBright, fontSize: 11.5, fontWeight: FontWeight.w700)),
+            if (isToday) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(color: _accent, borderRadius: BorderRadius.circular(4)),
+                child: const Text('Today', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ],
+        ),
+      );
+
+  Widget _cell(List<TeacherClass> list) {
+    if (list.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(8),
+        child: Center(child: Text('—', style: TextStyle(color: AppColors.muted, fontSize: 13))),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(5),
+      child: Column(mainAxisSize: MainAxisSize.min, children: list.map(_courseCard).toList()),
+    );
+  }
+
+  Widget _courseCard(TeacherClass c) {
+    final color = _courseColor(c.code);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        children: [
+          Text(c.courseName.isNotEmpty ? c.courseName : c.code,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 9.5, height: 1.2)),
+          if (c.courseName.isNotEmpty)
+            Text(c.code,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 8, fontWeight: FontWeight.w700)),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('${c.batch}-${c.section}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 8.5, fontWeight: FontWeight.w700)),
+          ),
+          if (c.room.isNotEmpty)
+            Text(c.room, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, fontSize: 8)),
+        ],
+      ),
+    );
+  }
+
+  Color _courseColor(String code) {
+    var h = 0;
+    for (var i = 0; i < code.length; i++) {
+      h = (h * 31 + code.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    const palette = [
+      Color(0xFFA78BFA), Color(0xFF38BDF8), Color(0xFF34D399),
+      Color(0xFFF87171), Color(0xFFFBBF24), Color(0xFFF472B6),
+      Color(0xFF22D3EE), Color(0xFFC084FC),
+    ];
+    return palette[h % palette.length];
   }
 
   Widget _header() => Container(
@@ -227,104 +376,6 @@ class _TeacherDetailScreen extends StatelessWidget {
           ],
         ),
       );
-
-  List<Widget> _daySection(String day, List<TeacherClass> list) {
-    return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(2, 4, 2, 8),
-        child: Row(
-          children: [
-            Text(_title(day),
-                style: const TextStyle(
-                    color: AppColors.accentBright, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
-            const SizedBox(width: 8),
-            Expanded(child: Container(height: 1, color: AppColors.border)),
-            const SizedBox(width: 8),
-            Text('${list.length}', style: const TextStyle(color: AppColors.muted, fontSize: 11.5)),
-          ],
-        ),
-      ),
-      ...list.map(_classCard),
-      const SizedBox(height: 12),
-    ];
-  }
-
-  Widget _classCard(TeacherClass c) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 62,
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Center(
-              child: Text(c.time,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: _accent, fontWeight: FontWeight.w700, fontSize: 11.5, height: 1.2)),
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(c.code,
-                        style: const TextStyle(
-                            color: AppColors.accentBright,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
-                            fontFamily: 'monospace')),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text('${c.batch}-${c.section}',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-                if (c.courseName.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(c.courseName,
-                      style: const TextStyle(color: AppColors.text, fontSize: 12.5, height: 1.3)),
-                ],
-                if (c.room.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(Icons.meeting_room_outlined, size: 12, color: AppColors.muted),
-                      const SizedBox(width: 4),
-                      Text('Room ${c.room}',
-                          style: const TextStyle(color: AppColors.muted, fontSize: 11)),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   static String _title(String day) =>
       day.isEmpty ? day : day[0] + day.substring(1).toLowerCase();

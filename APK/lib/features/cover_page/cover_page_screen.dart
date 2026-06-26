@@ -142,9 +142,9 @@ class _CoverPageScreenState extends State<CoverPageScreen> {
     return '${_docType.replaceAll(' ', '_')}_$base.pdf';
   }
 
-  /// [print] = true opens the print dialog; false opens the share/save sheet
-  /// (Save to Files, WhatsApp, Drive, …) — the "Download" action.
-  Future<void> _export({required bool print}) async {
+  /// Generates the PDF and opens the share/save sheet (Save to Files, WhatsApp,
+  /// Drive, …). Printing lives on the website only.
+  Future<void> _export() async {
     if (_courseTitle.text.trim().isEmpty) {
       AppToast.show(context, 'Please enter the course title', error: true);
       return;
@@ -153,12 +153,7 @@ class _CoverPageScreenState extends State<CoverPageScreen> {
     try {
       final bytes = await CoverPdf.build(_collect());
       if (!mounted) return;
-      final name = _fileName();
-      if (print) {
-        await Printing.layoutPdf(onLayout: (_) async => bytes, name: name);
-      } else {
-        await Printing.sharePdf(bytes: bytes, filename: name);
-      }
+      await Printing.sharePdf(bytes: bytes, filename: _fileName());
       // Remember the topic for next time (logged-in students only).
       final s = Session.instance.student;
       if (s != null && !s.isDemo) {
@@ -170,6 +165,30 @@ class _CoverPageScreenState extends State<CoverPageScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Pick the submission date from a calendar; fills the field in the same
+  /// ordinal format ("24th June 2026"). The field stays manually editable.
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.accent,
+            surface: AppColors.card,
+            onSurface: AppColors.text,
+          ),
+          dialogTheme: const DialogThemeData(backgroundColor: AppColors.bg),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _date.text = _formatDateNice(picked));
   }
 
   @override
@@ -279,29 +298,17 @@ class _CoverPageScreenState extends State<CoverPageScreen> {
             ),
           ],
           _sectionLabel('Submission'),
-          _field(_date, 'Date of Submission', hint: 'e.g. 25th April 2026'),
+          _dateField(),
           const SizedBox(height: 18),
           GradientButton(
             label: 'Download PDF',
             icon: Icons.file_download_rounded,
             busy: _busy,
-            onPressed: () => _export(print: false),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : () => _export(print: true),
-            icon: const Icon(Icons.print_rounded, color: AppColors.accentBright, size: 20),
-            label: const Text('Print',
-                style: TextStyle(color: AppColors.accentBright, fontWeight: FontWeight.w600)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: BorderSide(color: AppColors.accentBright.withValues(alpha: 0.4)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
-            ),
+            onPressed: _export,
           ),
           const SizedBox(height: 8),
           const Center(
-            child: Text('Download saves or shares the PDF · Print opens the print dialog',
+            child: Text('Generates the cover page and opens save / share',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.muted, fontSize: 11.5)),
           ),
@@ -475,6 +482,23 @@ class _CoverPageScreenState extends State<CoverPageScreen> {
           controller: c,
           style: const TextStyle(color: AppColors.text, fontSize: 14),
           decoration: InputDecoration(labelText: label, hintText: hint),
+        ),
+      );
+
+  Widget _dateField() => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: TextField(
+          controller: _date,
+          style: const TextStyle(color: AppColors.text, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: 'Date of Submission',
+            hintText: 'e.g. 25th April 2026',
+            suffixIcon: IconButton(
+              tooltip: 'Pick a date',
+              icon: const Icon(Icons.calendar_month_rounded, color: AppColors.accentBright, size: 20),
+              onPressed: _pickDate,
+            ),
+          ),
         ),
       );
 
