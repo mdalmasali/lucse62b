@@ -28,6 +28,9 @@ import '../features/attendance/attendance_screen.dart';
 import '../features/results/results_screen.dart';
 import '../features/retake/retake_screen.dart';
 import '../features/students/students_screen.dart';
+import '../features/games/games_hub_screen.dart';
+import '../features/games/imposter/imposter_screen.dart';
+import '../features/games/draw/draw_screen.dart';
 import '../features/update/update_gate.dart';
 
 /// Optional (non-forced) update surfaced after startup; the `/update` route
@@ -67,6 +70,9 @@ GoRouter buildRouter() {
       GoRoute(path: '/info/links', builder: (_, _) => const GroupLinksScreen()),
       GoRoute(path: '/students', builder: (_, _) => const StudentsScreen()),
       GoRoute(path: '/gallery', builder: (_, _) => const GalleryScreen()),
+      GoRoute(path: '/games', builder: (_, _) => const GamesHubScreen()),
+      GoRoute(path: '/games/imposter', builder: (_, _) => const ImposterScreen()),
+      GoRoute(path: '/games/draw', builder: (_, _) => const DrawScreen()),
       GoRoute(path: '/classwork', builder: (_, _) => const ClassworkScreen()),
       GoRoute(path: '/resources', builder: (_, _) => const ResourcesScreen()),
       GoRoute(

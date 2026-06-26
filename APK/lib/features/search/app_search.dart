@@ -87,6 +87,14 @@ const List<SearchDest> appDestinations = [
     keywords: ['deadline', 'homework', 'tasks', 'submission'],
     popular: true,
   ),
+  SearchDest(
+    label: 'Games',
+    subtitle: 'Imposter & Draw — multiplayer',
+    icon: Icons.sports_esports_rounded,
+    color: Color(0xFFFB923C),
+    route: '/games',
+    keywords: ['game', 'games', 'imposter', 'draw', 'skribbl', 'play', 'multiplayer'],
+  ),
   // Classwork categories — searchable on their own so typing "presentation",
   // "viva", "lab test" etc. jumps straight to that category browser.
   SearchDest(

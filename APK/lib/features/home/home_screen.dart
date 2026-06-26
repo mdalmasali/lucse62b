@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
     _NavItem(Icons.assignment_rounded, 'Classwork', 'Tasks, categories & deadlines', Color(0xFF059669), '/classwork'),
     _NavItem(Icons.photo_library_rounded, 'Gallery', 'Class photos & events', Color(0xFFEC4899), '/gallery'),
     _NavItem(Icons.groups_rounded, 'Students', 'Class directory', Color(0xFF6366F1), '/students'),
-    _NavItem(Icons.sports_esports_rounded, 'Games', 'Play with friends', Color(0xFFFB923C)),
+    _NavItem(Icons.sports_esports_rounded, 'Games', 'Imposter & Draw — multiplayer', Color(0xFFFB923C), '/games'),
   ];
 
   // The website's header/navbar pages — surfaced in the slide-out drawer.
