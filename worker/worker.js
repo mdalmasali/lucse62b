@@ -378,6 +378,45 @@ export default {
         return jsonResp(cors, { phone: phone3 });
       }
 
+      // ── GET /student-phones — { id: phone } map for the class directory ──
+      // The public /sheet endpoint strips the phone column; this dedicated route
+      // returns the numbers so the (auth-gated) student directory can show a
+      // WhatsApp button per student. Gated to the portal Origin like /my-phone.
+      if (p === '/student-phones') {
+        if (!ALLOWED_ORIGINS.includes(origin)) return errResp(cors, 403, 'Forbidden');
+        const shIdP = env.MAIN_SHEET_ID;
+        if (!shIdP) return errResp(cors, 500, 'Not configured');
+
+        // Rate limit: max 30/hour per IP (a directory refresh is occasional).
+        if (env.SMS_RATE) {
+          const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
+          const key = `phones:h:${ip}:${Math.floor(Date.now() / 3600000)}`;
+          const cnt = parseInt(await env.SMS_RATE.get(key) || '0');
+          if (cnt >= 30) return errResp(cors, 429, 'Too many requests');
+          await env.SMS_RATE.put(key, String(cnt + 1), { expirationTtl: 3600 });
+        }
+
+        const uP = `https://docs.google.com/spreadsheets/d/${shIdP}/gviz/tq?tqx=out:json&sheet=Student%20Info`;
+        const rP = await fetch(uP);
+        const tP = await rP.text();
+        const mP = tP.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+        if (!mP) return errResp(cors, 502, 'Bad upstream');
+        const rowsP = JSON.parse(mP[1]).table?.rows || [];
+        const phones = {};
+        for (const row of rowsP) {
+          const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
+          const id = (cells[1] || '').replace(/\s+/g, '');
+          if (!/^\d{8,16}$/.test(id)) continue;          // skip title/header rows
+          let ph = (cells[3] || '').replace(/\s+/g, '');
+          if (ph.length === 10 && ph.startsWith('1')) ph = '0' + ph;
+          if (ph.startsWith('+88')) ph = ph.substring(3);
+          else if (ph.startsWith('88') && ph.length === 13) ph = ph.substring(2);
+          if (!/^01[3-9]\d{8}$/.test(ph)) continue;       // skip rows without a valid BD number
+          phones[id] = ph;
+        }
+        return jsonResp(cors, { phones });
+      }
+
       // ── POST /result  { student_id, birth_date } ─────────────────────
       if (p === '/result' && request.method === 'POST') {
         const { student_id, birth_date } = await request.json();
@@ -1103,10 +1142,11 @@ async function runMonitor(env) {
         checkExamRoutine(env, 'mid').catch(() => {}),
         checkExamRoutine(env, 'final').catch(() => {}),
         checkNotices(env).catch(() => {}),
+        checkDeadlines(env).catch(() => {}),
       ]);
       /* Enrolled retake/improve course routine + exam changes — per-student */
       await checkEnrolledCourses(env).catch(() => {});
-      note = 'routine+exam+notices+enrolled';
+      note = 'routine+exam+notices+enrolled+deadlines';
     } else {
       note = await checkResult(env).catch(e => 'error:' + ((e && e.message) || e)) || '';
     }
@@ -1543,6 +1583,53 @@ async function checkNotices(env) {
               + (fresh.length > 5 ? `\n…and ${fresh.length - 5} more` : '');
   /* Open our own Notice page (the student sees every notice there). */
   await insertNotification(env, 'lu_notice', title, body, '/pages/notice.html');
+  await sendPushToAll(env);
+}
+
+/* ── Classwork Deadlines Monitor ──
+   Fires when a new row is added to the "Deadlines" tab (a classwork event —
+   assignment / tutorial / lab report / viva / lab final / project — was posted),
+   so students get an in-app + push notification. Seeds a baseline on first run so
+   existing deadlines aren't re-announced. */
+async function checkDeadlines(env) {
+  if (!env.SUPA_KEY || !env.MAIN_SHEET_ID) return;
+  const u = `https://docs.google.com/spreadsheets/d/${env.MAIN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Deadlines`;
+  const r = await fetch(u).catch(() => null);
+  if (!r || !r.ok) return;
+  const t = await r.text();
+  const m = t.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  if (!m) return;
+  let rows;
+  try { rows = JSON.parse(m[1]).table?.rows || []; } catch (e) { return; }
+
+  const items = [];
+  for (const row of rows) {
+    const cells = (row.c || []).map(c => (c && c.v !== null && c.v !== undefined) ? String(c.f || c.v).trim() : '');
+    const course = cells[0] || '', type = cells[1] || '', title = cells[2] || '';
+    if (!title) continue;
+    if (course.toLowerCase() === 'course' || type.toLowerCase() === 'type') continue; // header row
+    items.push({ course, type, title, key: `${course}|${type}|${title}|${cells[3] || ''}` });
+  }
+  if (!items.length) return;
+
+  const keys   = items.map(i => i.key);
+  const hash   = await sha256(JSON.stringify(keys));
+  const stored = await supabaseGetState(env, 'classwork_deadlines');
+
+  if (!stored) { await supabaseUpsertState(env, 'classwork_deadlines', hash, { keys }); return; }
+  if (stored.state_hash === hash) return;
+
+  const known = new Set(stored.state_data?.keys || []);
+  const fresh = items.filter(i => !known.has(i.key));
+  await supabaseUpsertState(env, 'classwork_deadlines', hash, { keys });
+  if (!fresh.length) return;
+
+  const title = fresh.length === 1 ? '📝 New Classwork Posted' : `📝 ${fresh.length} New Classwork Items`;
+  const body  = fresh.slice(0, 5)
+                  .map(i => `• ${i.type ? i.type + ': ' : ''}${i.title}${i.course ? ' (' + i.course + ')' : ''}`)
+                  .join('\n')
+              + (fresh.length > 5 ? `\n…and ${fresh.length - 5} more` : '');
+  await insertNotification(env, 'classwork', title, body, '/pages/classwork.html');
   await sendPushToAll(env);
 }
 

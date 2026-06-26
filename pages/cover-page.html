@@ -1376,7 +1376,7 @@
       filtered.slice(0, 7).forEach(item => {
         const div = document.createElement('div');
         div.className = 'ac-item';
-        div.innerHTML = `<strong>${escH(item.topic)}</strong>${item.count > 1 ? ` <small>(${item.count} জন)</small>` : ''}`;
+        div.innerHTML = `<strong>${escH(item.topic)}</strong>${item.count > 1 ? ` <small>(${item.count})</small>` : ''}`;
         div.addEventListener('mousedown', e => {
           e.preventDefault();
           topicInp.value = item.topic;

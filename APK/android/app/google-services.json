@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "163472339237",
+    "project_id": "cse-62b-portal",
+    "storage_bucket": "cse-62b-portal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:163472339237:android:e5972727829238abeeeacc",
+        "android_client_info": {
+          "package_name": "com.lucse62b.portal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4r-wRQX4Q2KoY5_5-xuM5hF4A_mCUVZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

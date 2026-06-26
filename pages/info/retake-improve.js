@@ -817,17 +817,27 @@ async function loadRetakeImprove(body) {
       const d = window._riData;
       let code = raw.toUpperCase();
 
-      /* If input doesn't look like a code, try name lookup */
-      if (d?.nameToCode && !raw.includes('-') && !/^[A-Z]{2,4}\d{3,4}$/i.test(raw)) {
-        const exact = d.nameToCode[raw.toLowerCase()];
-        if (exact) {
-          code = exact;
-        } else {
-          const partials = Object.entries(d.nameToCode)
-            .filter(([name]) => name.includes(raw.toLowerCase()))
-            .map(([, c]) => c);
-          if (partials.length >= 1) code = partials[0];
+      /* If input doesn't look like a code, resolve it to a course code by name.
+         Use the SAME matching as the suggestion dropdown (search courseNameMap
+         directly), so typing a partial name like "calculus" and hitting Search
+         works even without picking a suggestion. Previously this only consulted
+         nameToCode with an exact-first lookup, so a partial name that wasn't an
+         exact key fell through to treating the raw text as a literal code →
+         blank card. */
+      if (d && !raw.includes('-') && !/^[A-Z]{2,4}\d{3,4}$/i.test(raw)) {
+        const ql = raw.toLowerCase();
+        let resolved = (d.nameToCode && d.nameToCode[ql]) || '';   // exact full name
+        if (!resolved) {
+          const hit = Object.entries(d.courseNameMap || {}).find(
+            ([c, name]) => (name || '').toLowerCase().includes(ql) || c.toLowerCase().includes(ql));
+          if (hit) {
+            resolved = hit[0];
+          } else {
+            const np = Object.entries(d.nameToCode || {}).find(([name]) => name.includes(ql));
+            if (np) resolved = np[1];
+          }
         }
+        if (resolved) code = resolved;
       }
 
       const srEl = document.getElementById('ri-search-result');
